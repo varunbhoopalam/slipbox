@@ -1,0 +1,19 @@
+.parent {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    border: black 1px solid;
+    justify-content: center;
+    min-width: 10rem;
+}
+
+.questionContainer {
+    border: black 1px solid;
+    margin: 0.5rem 0;
+    cursor: pointer;
+    text-align: center;
+    background-color: gray;
+    opacity: 80%;
+    color: white;
+    padding: 0.5rem 0;
+}
