@@ -1,4 +1,6 @@
-module Notes exposing (Notes, Note, NoteId, add, remove, find, isMember, equals)
+module Notes exposing (Foobar)
+
+type Foobar = Foobar
 
 type alias Notes = List Note
 type alias Note = 

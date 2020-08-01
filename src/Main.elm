@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (Foo)
 
 import Browser
 import Time exposing (now, posixToMillis)
@@ -7,6 +7,7 @@ import Notes as N
 import Force as F
 
 -- MAIN
+type Foo = Foo
 main = Browser.sandbox { init = init, update = update, view = view }
 
 -- MODEL
