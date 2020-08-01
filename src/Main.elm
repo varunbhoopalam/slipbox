@@ -2,7 +2,9 @@ module Main exposing (..)
 
 import Browser
 import Time exposing (now, posixToMillis)
-import Html exposing (s)
+import Notes as N
+-- import Html exposing (s)
+import Force as F
 
 -- MAIN
 main = Browser.sandbox { init = init, update = update, view = view }
@@ -20,7 +22,7 @@ type alias Page =
 -- SLIPBOX
 
 type alias Slipbox = 
-  { notes: Notes
+  { notes: N.Notes
   , connections: Connections
   , graph: Graph
   , history: History 
@@ -29,110 +31,112 @@ type alias Slipbox =
 
 
 --Update Graph as well after implementing
-createNote: Slipbox -> Note -> Slipbox
+createNote: Slipbox -> N.Note -> Slipbox
 createNote s n =
-  if (isMember n s.notes) == true then
+  if N.isMember n s.notes == true then
     s
   else
     { s | notes = add s.notes n
     , history = addHistoricalAction s.history CreateNote n
     }
 --Update Graph as well after implementing
-removeNote: Slipbox -> Note -> Slipbox
+removeNote: Slipbox -> N.Note -> Slipbox
 removeNote s n =
-  if (isMember n s.notes) == true then
-    { s | notes = remove s.notes n
+  if N.isMember n s.notes == true then
+    { s | notes = N.remove s.notes n
     , history = addHistoricalAction s.history DeleteNote n
     }
   else
     s
 
-updateNote: Slipbox -> Note -> Slipbox
+updateNote: Slipbox -> N.Note -> Slipbox
 updateNote s updatedNote =
   let
-      maybeNoteToBeUpdated = findNote s.notes updatedNote
+      maybeNoteToBeUpdated = N.get s.notes updatedNote
   in
-    case maybeNote of
+    case maybeNoteToBeUpdated of
       Just noteToBeUpdated ->
-        if (equals noteToBeUpdated updatedNote) then
+        if N.equals noteToBeUpdated updatedNote then
           s
         else
           {s | notes = 
             s.notes
-              |> remove noteToBeUpdated
-              |> add updatedNote
+              |> N.remove noteToBeUpdated
+              |> N.add updatedNote
           , history = addHistoricalAction s.history Update noteToBeUpdated updatedNote}
       Nothing ->
         s
 
--- createConnection: Slipbox -> Connection -> Slipbox
--- deleteConnection: Slipbox -> Connection -> Slipbox
-  
+--Update Graph as well after implementing
+
+createConnection: Slipbox -> Connection -> Slipbox
+createConnection s c =
+  if isMember s.connections c then
+    s
+  else
+    {s | connections = addConnection s.connections c
+    , history = addHistoricalAction CreateConnection c
+    }
+
+--Update Graph as well after implementing
+deleteConnection: Slipbox -> Connection -> Slipbox
+deleteConnection s c =
+  if isMember s.connections c then
+    {s | connections = removeConnection s.connections c
+    , history = addHistoricalAction DeleteConnection c
+    }
+  else 
+    s
+
 -- undo: Slipbox -> HistoryId -> Slipbox
 -- redo: Slipbox -> HistoryId -> Slipbox
--- getQuestions: Slipbox -> (List Display)
+getQuestions: Slipbox -> (N.Notes)
+getQuestions s =
+  N.getIndexQuestions s.notes
 -- getHistory: Slipbox -> History
 -- getDescriptions: Slipbox -> (List Display)
 -- initialize: Notes -> Connections -> History -> Slipbox
 -- updateGraph
 -- getNoteAndConnectionPositions
 
--- NOTES
-type alias Notes = List Note
-type alias Note = 
-  {id : NoteId
-  , content : Content
-  , source : Source
-  , noteType: NoteType}
-type alias Description = String
-type alias NoteId = Int
-type NoteType = Regular | Index
-
-type alias Content = String
-type alias Source = String
-
-
-add: Notes -> Note -> Notes
-add notes note =
-  note :: notes
-remove: Notes -> Note -> Notes
-remove notes note =
-  List.filter (\x -> x.id == note.id) notes
-
-findNote: Notes -> Note -> Maybe Note
-findNote notes note =
-  List.head (List.filter (\x -> x.id == note.id) notes)
-
-createNote: Content -> Source -> NoteType -> Note
-createNote = c s n
-  Note generateId c s n
-
-isMember: Notes -> Note -> Boolean
-isMember notes note =
-  List.member note.id (List.map (\x -> x.id) notes)
-
-equals: Note -> Note -> Boolean
-equals n1 n2 =
-  n1 == n2
-
--- description: Notes -> Note -> Description
-
 -- CONNECTIONS 
 type alias Connections = List Connection
-type alias Connection = {from : NoteId , to : NoteId , id : ConnectionId}
+type alias Connection = 
+  {from : N.NoteId 
+  , to : N.NoteId 
+  , id : ConnectionId
+  }
 type alias ConnectionId = Int
 
 addConnection: Connections -> Connection -> Connections
 addConnection connections c =
   c :: connections
-removeConnection: Connections -> ConnectionId -> Connections
-removeConnection connections id =
-  List.filter (\x -> x.id == id) connections
+removeConnection: Connections -> Connection -> Connections
+removeConnection connections connection =
+  List.filter (\x -> x.id == connection.id) connections
 
--- GRAPH  --From Elm Community Graph and Elm-Visualization
--- type alias Graph = Graph Entity ()
--- initialize: Nodes -> Edges -> Graph
+isMember: Connections -> Connection -> Bool 
+isMember connections c =
+  List.member c.id List.map (\x -> x.id) connections
 
+-- GRAPH
+-- Can the list of entity handle node and edge positions?
+-- Do we represent edges as forces between nodes as well?
+  -- So if we delete an edge we have to delete thfat force as well?
+type alias Graph = List F.Entity LinkForce CenteringForce ManyBodyForce 
+type alias LinkForce = F.Force
+type alias CenteringForce = F.Force
+type alias ManyBodyForce = F.Force
+
+initialize: N.Notes -> Connections -> Graph
+initialize n c =
+  let 
+    noteIds = List.map (\x -> x.id) n
+    linkedForce = F.links (List.map (\x -> (x.from, x.to)) c)
+    centeringForce = F.center 0 0
+    manyBodyForce = F.manyBody noteIds
+  in
+    Graph F.entity noteIds linkedForce centeringForce manyBodyForce
 
 
 -- HISTORY
@@ -140,8 +144,7 @@ removeConnection connections id =
 -- Undoing a history item undoes every HistoricalAction above it in order from latest added to stack to undone action
 -- Redoing a HistoricalAction restores the action from earliest added to stack to restored action
 
-type History =
-  List HistoricalActions
+type alias History = List HistoricalActions
 
 type Action =
   CreateNote Note |
@@ -166,6 +169,8 @@ addHistoricalAction h a =
 -- read: History -> HistoryId -> HistoricalAction
 -- readAll: History -> List HistoricalActions
 -- summary: HistoricalAction -> (???) --Will need to figure out the view for this particular one
+
+-- DescriptionQueue
 
 
 -- ID
