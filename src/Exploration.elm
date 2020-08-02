@@ -5,8 +5,8 @@ import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
 import Force exposing (entity, computeSimulation, manyBody, simulation)
-import Svg exposing (Svg, svg, circle)
-import Svg.Attributes exposing (width, height, viewBox, cx, cy, r)
+import Svg exposing (Svg, svg, circle, line)
+import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style)
 
 -- MAIN
 
@@ -15,12 +15,12 @@ main =
 
 -- MODEL
 
-type Model = Model Notes QuestionQuery
+type Model = Model Notes QuestionQuery Links
 
 
 init : Model
 init =
-  Model (initializeNotes initNoteData) (Shown "")
+  Model (initializeNotes initNoteData) (Shown "") (initializeLinks initLinkData)
 
 initNoteData : List Note
 initNoteData = 
@@ -28,7 +28,11 @@ initNoteData =
   , Note 2 "Why does some food taste better than others?" "" "index"
   , Note 3 "Note 0" "" "note"]
 
-
+initLinkData: List LinkRecord
+initLinkData =
+  [
+    LinkRecord 1 3 1
+  ]
 
 -- NOTES
 type Notes = Notes (List PositionNote)
@@ -102,6 +106,12 @@ toViewNote: PositionNote -> ViewNote
 toViewNote pn =
   ViewNote pn.id pn.content pn.source
 
+findNote: NoteId -> Notes -> Maybe PositionNote
+findNote id n =
+  case n of
+    Notes noteList ->
+      List.head (List.filter (\note -> note.id == id) noteList)
+
 -- QuestionFilter
 type QuestionQuery = 
   Shown String |
@@ -119,6 +129,60 @@ updateQuestionQuery s q =
     Shown _ -> Shown s
     Hidden _ -> Hidden s
 
+-- LINKS
+type Links = Links (List Link)
+type alias Link = 
+  { source: NoteId
+  , target: NoteId
+  , id: LinkId
+  }
+
+type alias LinkRecord =
+  { source: NoteId
+  , target: NoteId
+  , id: LinkId
+  }
+
+type alias LinkId = Int
+
+initializeLinks: (List LinkRecord) -> Links
+initializeLinks l =
+  Links (List.map (\lr -> Link lr.source lr.target lr.id) l)
+
+type LinkView = 
+  BadLink |
+  LinkView LinkViewRecord
+
+type alias LinkViewRecord = 
+  { sourceId: NoteId
+  , sourceX: Float
+  , sourceY: Float
+  , targetId: NoteId
+  , targetX: Float
+  , targetY: Float
+  , id: LinkId
+  }
+
+getLinkViews: Links -> Notes -> List LinkView
+getLinkViews links notes = 
+  case links of
+    Links linkList -> 
+      List.map (\link -> linkToLinkView link notes) linkList 
+
+linkToLinkView: Link -> Notes -> LinkView
+linkToLinkView link notes =
+  let
+    maybeSource = findNote link.source notes
+    maybeTarget = findNote link.target notes
+  in
+    case maybeSource of
+      Just source -> 
+        case maybeTarget of 
+          Just target ->
+            LinkView (LinkViewRecord source.id source.x source.y target.id target.x target.y link.id)
+          Nothing -> BadLink
+      Nothing -> BadLink
+
 -- UPDATE
 
 type Msg = 
@@ -129,10 +193,10 @@ type Msg =
 update : Msg -> Model -> Model
 update msg model =
   case model of
-    Model n q ->
+    Model n q l ->
       case msg of 
-        ShowQuestionList -> Model n (reverseQuestionQueryState q)
-        Change s -> Model n (updateQuestionQuery s q)
+        ShowQuestionList -> Model n (reverseQuestionQueryState q) l
+        Change s -> Model n (updateQuestionQuery s q) l
 
 -- VIEW
 
@@ -148,13 +212,28 @@ view m =
 graphView: Model -> Svg Msg
 graphView m =
   case m of
-    Model n _ -> 
+    Model n _ l-> 
       svg
         [ width "500"
         , height "500"
         , viewBox "-250 -250 500 500"
         ]
-        (List.map noteCircles (getNotes n))
+        ( List.map noteCircles (getNotes n) ++
+         List.map linkLine (getLinkViews l n))
+
+linkLine: LinkView -> Svg Msg
+linkLine lv =
+  case lv of
+    BadLink -> line [] []
+    LinkView lvr ->
+      line 
+        [x1 (String.fromFloat lvr.sourceX)
+        , y1 (String.fromFloat lvr.sourceY)
+        , x2 (String.fromFloat lvr.targetX)
+        , y2 (String.fromFloat lvr.targetY)
+        , style "stroke:rgb(0,0,0);stroke-width:2"
+        ] 
+        []
 
 noteCircles: PositionNote -> Svg Msg
 noteCircles pn =
@@ -163,7 +242,7 @@ noteCircles pn =
 questionView : Model -> Html Msg
 questionView m =
   case m of 
-    Model n q ->
+    Model n q _->
       case q of
         Shown query -> div [] 
           [ questionFilter query
