@@ -4,7 +4,7 @@ import Browser
 import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
-import Force exposing (entity, computeSimulation, manyBody, simulation)
+import Force exposing (entity, computeSimulation, manyBody, simulation, links)
 import Svg exposing (Svg, svg, circle, line)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style)
 
@@ -15,12 +15,12 @@ main =
 
 -- MODEL
 
-type Model = Model Notes QuestionQuery Links
+type Model = Model Graph QuestionQuery
 
 
 init : Model
 init =
-  Model (initializeNotes initNoteData) (Shown "") (initializeLinks initLinkData)
+  Model (initializeGraph initNoteData initLinkData) (Shown "")
 
 initNoteData : List Note
 initNoteData = 
@@ -33,6 +33,33 @@ initLinkData =
   [
     LinkRecord 1 3 1
   ]
+
+-- GRAPH
+type Graph = Graph Notes Links
+
+initializeGraph: (List Note) -> (List LinkRecord) -> Graph
+initializeGraph notes links =
+  Graph (initializeNotes notes links) (initializeLinks links)
+
+getNotes: Graph -> (List PositionNote)
+getNotes graph =
+  case graph of
+    Graph notes _ ->
+      case notes of
+        Notes positionNotes -> positionNotes
+
+getLinkViews: Graph -> List LinkView
+getLinkViews graph =
+  case graph of
+    Graph notes links ->
+      case links of
+        Links linkList -> 
+          List.map (\link -> linkToLinkView link notes) linkList 
+
+getIndexQuestions: Graph -> (List ViewNote)
+getIndexQuestions graph =
+  case graph of
+    Graph notes _ -> findIndexQuestions notes
 
 -- NOTES
 type Notes = Notes (List PositionNote)
@@ -65,16 +92,26 @@ type alias Content = String
 type NoteType = Regular | Index
 type alias Source = String
 
-initializeNotes: (List Note) -> Notes
-initializeNotes l =
-  Notes (initSimulation (List.indexedMap initializePosition l))
+initializeNotes: (List Note) -> (List LinkRecord) -> Notes
+initializeNotes notes links =
+  Notes (initSimulation (List.indexedMap initializePosition notes) links)
 
-initSimulation: (List PositionNote) -> (List PositionNote)
-initSimulation l =
+findIndexQuestions: Notes -> (List ViewNote)
+findIndexQuestions notes =
+  case notes of
+    Notes positionNotes -> positionNotes
+      |> List.filter (\note -> note.noteType == Index)
+      |> List.map toViewNote
+
+initSimulation: (List PositionNote) -> (List LinkRecord) -> (List PositionNote)
+initSimulation notes linkRecords =
   let
-    state = simulation [manyBody (List.map (\n -> n.id) l)]
+    state = 
+      simulation 
+        [ manyBody (List.map (\n -> n.id) notes)
+        , links (List.map (\l -> (l.source, l.target)) linkRecords)]
   in
-    computeSimulation state l
+    computeSimulation state notes
 
 initializePosition: Int -> Note -> PositionNote
 initializePosition index note =
@@ -90,18 +127,6 @@ noteType s =
   else
     Regular
 
-getNotes: Notes -> (List PositionNote)
-getNotes n =
-  case n of
-    Notes pn -> pn
-
-getIndexQuestions: Notes -> (List ViewNote)
-getIndexQuestions n =
-  case n of
-    Notes positionNotes -> positionNotes
-      |> List.filter (\note -> note.noteType == Index)
-      |> List.map toViewNote
-
 toViewNote: PositionNote -> ViewNote
 toViewNote pn =
   ViewNote pn.id pn.content pn.source
@@ -111,23 +136,6 @@ findNote id n =
   case n of
     Notes noteList ->
       List.head (List.filter (\note -> note.id == id) noteList)
-
--- QuestionFilter
-type QuestionQuery = 
-  Shown String |
-  Hidden String
-
-reverseQuestionQueryState: QuestionQuery -> QuestionQuery
-reverseQuestionQueryState q =
-  case q of
-    Shown s -> Hidden s
-    Hidden s -> Shown s
-
-updateQuestionQuery: String -> QuestionQuery -> QuestionQuery
-updateQuestionQuery s q =
-  case q of
-    Shown _ -> Shown s
-    Hidden _ -> Hidden s
 
 -- LINKS
 type Links = Links (List Link)
@@ -163,12 +171,6 @@ type alias LinkViewRecord =
   , id: LinkId
   }
 
-getLinkViews: Links -> Notes -> List LinkView
-getLinkViews links notes = 
-  case links of
-    Links linkList -> 
-      List.map (\link -> linkToLinkView link notes) linkList 
-
 linkToLinkView: Link -> Notes -> LinkView
 linkToLinkView link notes =
   let
@@ -183,6 +185,23 @@ linkToLinkView link notes =
           Nothing -> BadLink
       Nothing -> BadLink
 
+-- QuestionFilter
+type QuestionQuery = 
+  Shown String |
+  Hidden String
+
+reverseQuestionQueryState: QuestionQuery -> QuestionQuery
+reverseQuestionQueryState q =
+  case q of
+    Shown s -> Hidden s
+    Hidden s -> Shown s
+
+updateQuestionQuery: String -> QuestionQuery -> QuestionQuery
+updateQuestionQuery s q =
+  case q of
+    Shown _ -> Shown s
+    Hidden _ -> Hidden s
+
 -- UPDATE
 
 type Msg = 
@@ -193,10 +212,10 @@ type Msg =
 update : Msg -> Model -> Model
 update msg model =
   case model of
-    Model n q l ->
+    Model graph query ->
       case msg of 
-        ShowQuestionList -> Model n (reverseQuestionQueryState q) l
-        Change s -> Model n (updateQuestionQuery s q) l
+        ShowQuestionList -> Model graph (reverseQuestionQueryState query)
+        Change str -> Model graph (updateQuestionQuery str query)
 
 -- VIEW
 
@@ -212,14 +231,14 @@ view m =
 graphView: Model -> Svg Msg
 graphView m =
   case m of
-    Model n _ l-> 
+    Model graph _ -> 
       svg
         [ width "500"
         , height "500"
         , viewBox "-250 -250 500 500"
         ]
-        ( List.map noteCircles (getNotes n) ++
-         List.map linkLine (getLinkViews l n))
+        ( List.map noteCircles (getNotes graph) ++
+         List.map linkLine (getLinkViews graph))
 
 linkLine: LinkView -> Svg Msg
 linkLine lv =
@@ -242,11 +261,11 @@ noteCircles pn =
 questionView : Model -> Html Msg
 questionView m =
   case m of 
-    Model n q _->
+    Model graph q ->
       case q of
         Shown query -> div [] 
           [ questionFilter query
-          , div [id "Question List"] (questionList n query)
+          , div [id "Question List"] (questionList graph query)
           , questionButton
           ]
         Hidden _ -> questionButton
@@ -259,9 +278,9 @@ questionFilter: String -> Html Msg
 questionFilter s = 
   input [placeholder "Question Filter", value s, onInput Change] []
 
-questionList: Notes -> String -> List (Html Msg)
-questionList n query =
-  n 
+questionList: Graph -> String -> List (Html Msg)
+questionList graph query =
+  graph 
     |> getIndexQuestions 
     |> List.filter (\note -> String.contains query note.content)
     |> List.map divFromViewNote 
