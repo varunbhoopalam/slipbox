@@ -1,22 +1,19 @@
 module Exploration exposing (..)
 
 import Browser
-import Html exposing (Html, Attribute, div, input, text, button)
-import Html.Attributes exposing (..)
+import Html exposing (Html, div, input, text, button)
+import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
-import Force exposing (entity)
-
+import Force exposing (entity, computeSimulation, manyBody, simulation)
+import Svg exposing (Svg, svg, circle)
+import Svg.Attributes exposing (width, height, viewBox, cx, cy, r)
 
 -- MAIN
-
 
 main =
   Browser.sandbox { init = init, update = update, view = view }
 
-
-
 -- MODEL
-
 
 type Model = Model Notes QuestionQuery
 
@@ -66,7 +63,14 @@ type alias Source = String
 
 initializeNotes: (List Note) -> Notes
 initializeNotes l =
-  Notes (List.indexedMap initializePosition l)
+  Notes (initSimulation (List.indexedMap initializePosition l))
+
+initSimulation: (List PositionNote) -> (List PositionNote)
+initSimulation l =
+  let
+    state = simulation [manyBody (List.map (\n -> n.id) l)]
+  in
+    computeSimulation state l
 
 initializePosition: Int -> Note -> PositionNote
 initializePosition index note =
@@ -81,6 +85,11 @@ noteType s =
     Index
   else
     Regular
+
+getNotes: Notes -> (List PositionNote)
+getNotes n =
+  case n of
+    Notes pn -> pn
 
 getIndexQuestions: Notes -> (List ViewNote)
 getIndexQuestions n =
@@ -132,16 +141,31 @@ view : Model -> Html Msg
 view m =
   div []
     [ div [id "Questions"] [questionView m]
-    , div [id "Control-Ship"] [ text "Control Ship" ]
+    , div [id "Graph"] [ graphView m ]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
+
+graphView: Model -> Svg Msg
+graphView m =
+  case m of
+    Model n _ -> 
+      svg
+        [ width "500"
+        , height "500"
+        , viewBox "-250 -250 500 500"
+        ]
+        (List.map noteCircles (getNotes n))
+
+noteCircles: PositionNote -> Svg Msg
+noteCircles pn =
+  circle [cx (String.fromFloat pn.x), cy (String.fromFloat pn.y) , r "5"] []
   
 questionView : Model -> Html Msg
 questionView m =
   case m of 
     Model n q ->
       case q of
-        Shown query -> div [id "Questions"] 
+        Shown query -> div [] 
           [ questionFilter query
           , div [id "Question List"] (questionList n query)
           , questionButton
