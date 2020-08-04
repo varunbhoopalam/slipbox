@@ -4,9 +4,12 @@ import Browser
 import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
-import Force exposing (entity, computeSimulation, manyBody, simulation, links)
+import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
 import Svg exposing (Svg, svg, circle, line)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style)
+import Svg.Events exposing (on, onMouseUp, onMouseOut)
+import Json.Decode exposing (Decoder, int, map, field, map2)
+import Browser.Dom exposing (Viewport)
 
 -- MAIN
 
@@ -15,12 +18,12 @@ main =
 
 -- MODEL
 
-type Model = Model Graph QuestionQuery
+type Model = Model Graph QuestionQuery Viewport
 
 
 init : Model
 init =
-  Model (initializeGraph initNoteData initLinkData) (Shown "")
+  Model (initializeGraph initNoteData initLinkData) (Shown "") initializeViewport
 
 initNoteData : List Note
 initNoteData = 
@@ -109,7 +112,9 @@ initSimulation notes linkRecords =
     state = 
       simulation 
         [ manyBody (List.map (\n -> n.id) notes)
-        , links (List.map (\l -> (l.source, l.target)) linkRecords)]
+        , links (List.map (\l -> (l.source, l.target)) linkRecords)
+        , center 0 0
+        ]
   in
     computeSimulation state notes
 
@@ -176,14 +181,16 @@ linkToLinkView link notes =
   let
     maybeSource = findNote link.source notes
     maybeTarget = findNote link.target notes
+    maybeLinkViewRecord = Maybe.map3 linkViewRecord maybeSource maybeTarget (Just link.id)
   in
-    case maybeSource of
-      Just source -> 
-        case maybeTarget of 
-          Just target ->
-            LinkView (LinkViewRecord source.id source.x source.y target.id target.x target.y link.id)
-          Nothing -> BadLink
+    case maybeLinkViewRecord of
+      Just r -> LinkView r
       Nothing -> BadLink
+    
+
+linkViewRecord: PositionNote -> PositionNote -> LinkId -> LinkViewRecord
+linkViewRecord source target id =
+  LinkViewRecord source.id source.x source.y target.id target.x target.y id
 
 -- QuestionFilter
 type QuestionQuery = 
@@ -202,40 +209,122 @@ updateQuestionQuery s q =
     Shown _ -> Shown s
     Hidden _ -> Hidden s
 
+-- VIEWPORT
+type Viewport = 
+  Resting Viewbox |
+  Moving Viewbox MouseCoordinates
+
+type alias Viewbox = 
+  { minX: Int
+  , minY: Int
+  , length: Int
+  , width: Int
+  }
+
+type alias MouseCoordinates = (Int, Int)
+
+initializeViewport: Viewport
+initializeViewport =
+  Resting (Viewbox -200 -200 400 400)
+
+getViewbox: Viewport -> String
+getViewbox viewport =
+  case viewport of
+    Resting box -> assembleViewbox box
+    Moving box _ -> assembleViewbox box
+
+assembleViewbox: Viewbox -> String
+assembleViewbox box =
+   String.fromInt box.minX ++ " " ++  String.fromInt box.minY ++ " " ++  String.fromInt box.width ++ " " ++  String.fromInt box.length
+
+updateViewportMouseDown: MouseEvent -> Viewport -> Viewport
+updateViewportMouseDown mouseEvent viewport =
+  case viewport of
+    Resting box -> Moving box (mouseEvent.offsetX, mouseEvent.offsetY)
+    Moving box coordinates ->  Moving (updateViewbox mouseEvent coordinates box) (mouseEvent.offsetX, mouseEvent.offsetY)
+
+updateViewportMouseMove: MouseEvent -> Viewport -> Viewport
+updateViewportMouseMove mouseEvent viewport =
+  case viewport of
+    Resting box -> Resting box
+    Moving box coordinates ->  Moving (updateViewbox mouseEvent coordinates box) (mouseEvent.offsetX, mouseEvent.offsetY)
+
+updateViewbox: MouseEvent -> (Int, Int) -> Viewbox -> Viewbox
+updateViewbox mouseEvent priorCoords viewbox =
+  let
+    xChange = Tuple.first priorCoords - mouseEvent.offsetX
+    yChange = Tuple.second priorCoords - mouseEvent.offsetY
+  in
+    Viewbox (calcCoord viewbox.minX xChange) (calcCoord viewbox.minY yChange) viewbox.length viewbox.width
+
+calcCoord: Int -> Int -> Int
+calcCoord coordinate change =
+  let
+    newCoordinate = coordinate + change
+  in
+    if  newCoordinate > 0 then
+      0
+    else if  newCoordinate < -400 then
+      -400
+    else
+      newCoordinate  
+
+restViewport: Viewport -> Viewport
+restViewport viewport =
+  case viewport of
+    Resting box -> Resting box
+    Moving box _ -> Resting box
+
+getCursorStyle: Viewport -> String
+getCursorStyle viewport =
+  case viewport of
+    Resting _ -> "cursor: grab;"
+    Moving _ _ -> "cursor: grabbing;"
+
 -- UPDATE
 
 type Msg = 
   Change String |
-  ShowQuestionList
-
+  ShowQuestionList |
+  MouseMove MouseEvent |
+  MouseDown MouseEvent |
+  MouseUp |
+  MouseOut
 
 update : Msg -> Model -> Model
 update msg model =
   case model of
-    Model graph query ->
+    Model graph query viewport->
       case msg of 
-        ShowQuestionList -> Model graph (reverseQuestionQueryState query)
-        Change str -> Model graph (updateQuestionQuery str query)
+        ShowQuestionList -> Model graph (reverseQuestionQueryState query) viewport
+        Change str -> Model graph (updateQuestionQuery str query) viewport
+        MouseUp -> Model graph query (restViewport viewport)
+        MouseDown e -> Model graph query (updateViewportMouseDown e viewport)
+        MouseMove e -> Model graph query (updateViewportMouseMove e viewport)
+        MouseOut -> Model graph query (restViewport viewport)
 
 -- VIEW
-
-
 view : Model -> Html Msg
 view m =
   div []
     [ div [id "Questions"] [questionView m]
-    , div [id "Graph"] [ graphView m ]
+    , div [id "Graph-container", style "padding: 16px; border: 4px solid black"] [ graphView m ]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
 
 graphView: Model -> Svg Msg
 graphView m =
   case m of
-    Model graph _ -> 
+    Model graph _ viewport -> 
       svg
-        [ width "500"
-        , height "500"
-        , viewBox "-250 -250 500 500"
+        [ width "800"
+        , height "800"
+        , viewBox (getViewbox viewport)
+        , style ("border: 4px solid black;" ++  getCursorStyle viewport)
+        , on "mousemove" mouseMoveDecoder
+        , on "mousedown" mouseDownDecoder
+        , onMouseUp MouseUp
+        , onMouseOut MouseOut
         ]
         ( List.map noteCircles (getNotes graph) ++
          List.map linkLine (getLinkViews graph))
@@ -261,7 +350,7 @@ noteCircles pn =
 questionView : Model -> Html Msg
 questionView m =
   case m of 
-    Model graph q ->
+    Model graph q _ ->
       case q of
         Shown query -> div [] 
           [ questionFilter query
@@ -288,3 +377,28 @@ questionList graph query =
 divFromViewNote: ViewNote -> Html Msg
 divFromViewNote v =
   div [] [text v.content]
+
+type alias MouseEvent =
+    { offsetX : Int
+    , offsetY : Int
+    }
+
+offsetXDecoder: Decoder Int
+offsetXDecoder = 
+  field "offsetX" int
+
+offsetYDecoder: Decoder Int
+offsetYDecoder =
+  field "offsetY" int
+
+mouseEventDecoder: Decoder MouseEvent
+mouseEventDecoder =
+  map2 MouseEvent offsetXDecoder offsetYDecoder
+
+mouseMoveDecoder: Decoder Msg
+mouseMoveDecoder =
+  map MouseMove mouseEventDecoder
+
+mouseDownDecoder: Decoder Msg
+mouseDownDecoder =
+  map MouseDown mouseEventDecoder
