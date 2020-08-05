@@ -5,8 +5,8 @@ import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
 import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
-import Svg exposing (Svg, svg, circle, line)
-import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style)
+import Svg exposing (Svg, svg, circle, line, rect)
+import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
 import Browser.Dom exposing (Viewport)
@@ -281,6 +281,20 @@ getCursorStyle viewport =
     Resting _ -> "cursor: grab;"
     Moving _ _ -> "cursor: grabbing;"
 
+panningSquareTranslation: Viewport -> String
+panningSquareTranslation viewport =
+  case viewport of 
+    Resting viewbox -> viewBoxToTranslation viewbox
+    Moving viewbox _ -> viewBoxToTranslation viewbox
+
+viewBoxToTranslation: Viewbox -> String
+viewBoxToTranslation viewbox =
+  let
+    x = toFloat (viewbox.minX + 400) / 10
+    y = toFloat (viewbox.minY + 400) / 10
+  in
+    "translate(" ++ String.fromFloat x ++ "," ++ String.fromFloat y ++ ")"
+
 -- UPDATE
 
 type Msg = 
@@ -308,7 +322,8 @@ view : Model -> Html Msg
 view m =
   div []
     [ div [id "Questions"] [questionView m]
-    , div [id "Graph-container", style "padding: 16px; border: 4px solid black"] [ graphView m ]
+    , div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
+      [ graphView m, panningVisual m]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
 
@@ -328,6 +343,25 @@ graphView m =
         ]
         ( List.map noteCircles (getNotes graph) ++
          List.map linkLine (getLinkViews graph))
+
+panningVisual: Model -> Svg Msg
+panningVisual m =
+  case m of
+    Model _ _ viewport ->
+      svg 
+        [ width "80" 
+        , height "80"
+        , style "border: 4px solid black;"
+        ] 
+        [
+          rect 
+            [ width "40"
+            , height "40"
+            , style "fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0)"
+            , transform (panningSquareTranslation viewport)
+            ] 
+            []
+        ]
 
 linkLine: LinkView -> Svg Msg
 linkLine lv =
