@@ -9,7 +9,6 @@ import Svg exposing (Svg, svg, circle, line, rect)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
-import Browser.Dom exposing (Viewport)
 
 -- MAIN
 
@@ -59,11 +58,6 @@ getLinkViews graph =
         Links linkList -> 
           List.map (\link -> linkToLinkView link notes) linkList 
 
-getIndexQuestions: Graph -> (List ViewNote)
-getIndexQuestions graph =
-  case graph of
-    Graph notes _ -> findIndexQuestions notes
-
 -- NOTES
 type Notes = Notes (List PositionNote)
 type alias PositionNote =
@@ -84,12 +78,6 @@ type alias Note =
   , noteType: String
   }
 
-type alias ViewNote =
-  { id : NoteId
-  , content : Content
-  , source : Source
-  }
-
 type alias NoteId = Int
 type alias Content = String
 type NoteType = Regular | Index
@@ -98,13 +86,6 @@ type alias Source = String
 initializeNotes: (List Note) -> (List LinkRecord) -> Notes
 initializeNotes notes links =
   Notes (initSimulation (List.indexedMap initializePosition notes) links)
-
-findIndexQuestions: Notes -> (List ViewNote)
-findIndexQuestions notes =
-  case notes of
-    Notes positionNotes -> positionNotes
-      |> List.filter (\note -> note.noteType == Index)
-      |> List.map toViewNote
 
 initSimulation: (List PositionNote) -> (List LinkRecord) -> (List PositionNote)
 initSimulation notes linkRecords =
@@ -131,10 +112,6 @@ noteType s =
     Index
   else
     Regular
-
-toViewNote: PositionNote -> ViewNote
-toViewNote pn =
-  ViewNote pn.id pn.content pn.source
 
 findNote: NoteId -> Notes -> Maybe PositionNote
 findNote id n =
@@ -321,9 +298,8 @@ update msg model =
 view : Model -> Html Msg
 view m =
   div []
-    [ div [id "Questions"] [questionView m]
-    , div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
-      [ graphView m, panningVisual m]
+    [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
+      [ questionView m, graphView m, panningVisual m]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
 
@@ -379,7 +355,18 @@ linkLine lv =
 
 noteCircles: PositionNote -> Svg Msg
 noteCircles pn =
-  circle [cx (String.fromFloat pn.x), cy (String.fromFloat pn.y) , r "5"] []
+  let
+    color = noteColor pn.noteType
+    fill = "fill:" ++ color ++ ";"
+    styleString = "Cursor:Pointer;" ++ fill
+  in
+    circle 
+      [ cx (String.fromFloat pn.x)
+      , cy (String.fromFloat pn.y) 
+      , r "5"
+      , style styleString
+      ]
+      []
   
 questionView : Model -> Html Msg
 questionView m =
@@ -388,7 +375,7 @@ questionView m =
       case q of
         Shown query -> div [] 
           [ questionFilter query
-          , div [id "Question List"] (questionList graph query)
+          , div [id "Question List", style "border: 4px solid black; padding: 16px;"] (questionList graph query)
           , questionButton
           ]
         Hidden _ -> questionButton
@@ -399,18 +386,29 @@ questionButton =
 
 questionFilter: String -> Html Msg 
 questionFilter s = 
-  input [placeholder "Question Filter", value s, onInput Change] []
+  input [placeholder "Find Note", value s, onInput Change] []
 
 questionList: Graph -> String -> List (Html Msg)
 questionList graph query =
   graph 
-    |> getIndexQuestions 
+    |> getNotes 
     |> List.filter (\note -> String.contains query note.content)
-    |> List.map divFromViewNote 
+    |> List.map divFromNote 
 
-divFromViewNote: ViewNote -> Html Msg
-divFromViewNote v =
-  div [] [text v.content]
+divFromNote: PositionNote -> Html Msg
+divFromNote v =
+  let 
+    color = noteColor v.noteType
+    backgroundColor = "background-color:" ++ color ++ ";"
+    styleString = "border: 1px solid black;margin-bottom: 16px;cursor:pointer;" ++ backgroundColor
+  in
+    div [style styleString] [text v.content]
+
+noteColor: NoteType -> String
+noteColor notetype =
+  case notetype of
+    Regular -> "rgba(137, 196, 244, 1)"
+    Index -> "rgba(250, 190, 88, 1)"
 
 type alias MouseEvent =
     { offsetX : Int
