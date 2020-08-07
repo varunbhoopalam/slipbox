@@ -198,6 +198,12 @@ type alias Viewbox =
   , width: Int
   }
 
+svgWidth: Int
+svgWidth = 800
+
+svgLength: Int
+svgLength = 800
+
 type alias MouseCoordinates = (Int, Int)
 
 initializeViewport: Viewport
@@ -232,19 +238,92 @@ updateViewbox mouseEvent priorCoords viewbox =
     xChange = Tuple.first priorCoords - mouseEvent.offsetX
     yChange = Tuple.second priorCoords - mouseEvent.offsetY
   in
-    Viewbox (calcCoord viewbox.minX xChange) (calcCoord viewbox.minY yChange) viewbox.length viewbox.width
+    Viewbox (calcXCoord viewbox xChange) (calcYCoord viewbox yChange) viewbox.length viewbox.width
 
-calcCoord: Int -> Int -> Int
-calcCoord coordinate change =
+zoomIn: Viewport -> Viewport
+zoomIn viewport =
+  case viewport of
+    Resting viewbox -> Resting (zoomInViewbox viewbox)
+    Moving _ _ -> viewport
+
+zoomInViewbox: Viewbox -> Viewbox
+zoomInViewbox viewbox =
   let
-    newCoordinate = coordinate - (change * 10)
+    newWidthHeight = viewbox.width - 100
+    edgeConstraint = 300
   in
-    if  newCoordinate > 0 then
-      0
-    else if  newCoordinate < -400 then
-      -400
+    if newWidthHeight < edgeConstraint then
+      Viewbox viewbox.minX viewbox.minY edgeConstraint edgeConstraint
     else
-      newCoordinate  
+      Viewbox viewbox.minX viewbox.minY newWidthHeight newWidthHeight
+  
+zoomOut: Viewport -> Viewport
+zoomOut viewport =
+  case viewport of
+    Resting viewbox -> Resting (zoomOutViewbox viewbox)
+    Moving _ _ -> viewport
+
+zoomOutViewbox: Viewbox -> Viewbox
+zoomOutViewbox viewbox = 
+  let
+    shouldCalcX = shouldCalcXCoordinate viewbox
+    shouldCalcY = shouldCalcYCoordinate viewbox
+    change = 10
+  in
+    if shouldCalcX && shouldCalcY then
+      Viewbox (calcXCoord viewbox change) (calcYCoord viewbox change) (expandLength viewbox.length) (expandWidth viewbox.width)
+    else if shouldCalcX then
+      Viewbox (calcXCoord viewbox change) viewbox.minY (expandLength viewbox.length) (expandWidth viewbox.width)
+    else if shouldCalcY then
+      Viewbox viewbox.minX (calcYCoord viewbox change) (expandLength viewbox.length) (expandWidth viewbox.width)
+    else
+      Viewbox viewbox.minX viewbox.minY (expandLength viewbox.length) (expandWidth viewbox.width)
+
+expandWidth: Int -> Int
+expandWidth edge =
+  if edge + 100 > svgWidth then  
+    svgWidth
+  else
+    edge + 100
+
+expandLength: Int -> Int
+expandLength edge =
+  if edge + 100 > svgLength then  
+    svgLength
+  else
+    edge + 100
+
+shouldCalcXCoordinate: Viewbox -> Bool
+shouldCalcXCoordinate viewbox =
+  viewbox.width + viewbox.minX > floor ( toFloat svgWidth / 2)
+
+shouldCalcYCoordinate: Viewbox -> Bool
+shouldCalcYCoordinate viewbox =
+  viewbox.length + viewbox.minY > floor ( toFloat svgLength / 2)
+
+calcXCoord: Viewbox -> Int -> Int
+calcXCoord viewbox change =
+  let
+    newMinX = viewbox.minX - (change * 10)
+  in
+    if newMinX + viewbox.width > floor (toFloat svgWidth / 2) then
+      viewbox.minX
+    else if newMinX < negate (floor(toFloat svgWidth / 2)) then
+      viewbox.minX
+    else
+      newMinX
+
+calcYCoord: Viewbox -> Int -> Int
+calcYCoord viewbox change =
+  let
+    newMinY = viewbox.minY - (change * 10)
+  in
+    if newMinY + viewbox.length > floor (toFloat svgLength / 2) then
+      viewbox.minY
+    else if newMinY < negate (floor(toFloat svgWidth / 2)) then
+      viewbox.minY
+    else
+      newMinY  
 
 restViewport: Viewport -> Viewport
 restViewport viewport =
@@ -272,6 +351,18 @@ viewBoxToTranslation viewbox =
   in
     "translate(" ++ String.fromFloat x ++ "," ++ String.fromFloat y ++ ")"
 
+panningWidth: Viewport -> String
+panningWidth viewport =
+  case viewport of
+    Resting viewbox -> String.fromInt (floor (toFloat viewbox.width / 10))
+    Moving viewbox _ -> String.fromInt (floor (toFloat viewbox.width / 10))
+
+panningHeight: Viewport -> String
+panningHeight viewport =
+  case viewport of
+    Resting viewbox -> String.fromInt (floor (toFloat viewbox.length / 10))
+    Moving viewbox _ -> String.fromInt (floor (toFloat viewbox.length / 10))
+
 -- UPDATE
 
 type Msg = 
@@ -280,7 +371,9 @@ type Msg =
   MouseMove MouseEvent |
   MouseDown MouseEvent |
   MouseUp |
-  MouseOut
+  MouseOut |
+  ZoomIn |
+  ZoomOut
 
 update : Msg -> Model -> Model
 update msg model =
@@ -293,13 +386,15 @@ update msg model =
         MouseDown e -> Model graph query (updateViewportMouseDown e viewport)
         MouseMove e -> Model graph query (updateViewportMouseMove e viewport)
         MouseOut -> Model graph query (restViewport viewport)
+        ZoomIn -> Model graph query (zoomIn viewport)
+        ZoomOut -> Model graph query (zoomOut viewport)
 
 -- VIEW
 view : Model -> Html Msg
 view m =
   div []
     [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
-      [ questionView m, graphView m, panningVisual m]
+      [ questionView m, graphView m, panningVisual m, zoomOutButton, zoomInButton]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
 
@@ -327,8 +422,8 @@ panningVisual m =
         ] 
         [
           rect 
-            [ width "40"
-            , height "40"
+            [ width (panningWidth viewport)
+            , height (panningHeight viewport)
             , style ("fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0);" ++ getCursorStyle viewport)
             , transform (panningSquareTranslation viewport)
             , on "mousemove" mouseMoveDecoder
@@ -379,6 +474,14 @@ questionView m =
           , questionButton
           ]
         Hidden _ -> questionButton
+
+zoomInButton: Html Msg
+zoomInButton =
+  button [ onClick ZoomIn ] [ text "+" ]
+
+zoomOutButton: Html Msg
+zoomOutButton =
+  button [ onClick ZoomOut ] [ text "-" ]
 
 questionButton: Html Msg
 questionButton = 
