@@ -237,7 +237,7 @@ updateViewbox mouseEvent priorCoords viewbox =
 calcCoord: Int -> Int -> Int
 calcCoord coordinate change =
   let
-    newCoordinate = coordinate + change
+    newCoordinate = coordinate - (change * 10)
   in
     if  newCoordinate > 0 then
       0
@@ -311,11 +311,7 @@ graphView m =
         [ width "800"
         , height "800"
         , viewBox (getViewbox viewport)
-        , style ("border: 4px solid black;" ++  getCursorStyle viewport)
-        , on "mousemove" mouseMoveDecoder
-        , on "mousedown" mouseDownDecoder
-        , onMouseUp MouseUp
-        , onMouseOut MouseOut
+        , style "border: 4px solid black;"
         ]
         ( List.map noteCircles (getNotes graph) ++
          List.map linkLine (getLinkViews graph))
@@ -333,8 +329,12 @@ panningVisual m =
           rect 
             [ width "40"
             , height "40"
-            , style "fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0)"
+            , style ("fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0);" ++ getCursorStyle viewport)
             , transform (panningSquareTranslation viewport)
+            , on "mousemove" mouseMoveDecoder
+            , on "mousedown" mouseDownDecoder
+            , onMouseUp MouseUp
+            , onMouseOut MouseOut
             ] 
             []
         ]
