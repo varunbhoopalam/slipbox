@@ -502,8 +502,6 @@ divFromNote v =
     div 
       [style styleString
       , onClick (SelectDescription v)
-      , onMouseEnter (MouseEnterDesc v)
-      , onMouseLeave (MouseLeaveDesc v)
       ] 
       [text v.content]
 
