@@ -1,7 +1,9 @@
 module Viewport exposing (
   Viewport, MouseEvent, panningWidth, panningHeight, restViewport
   , updateViewportMouseDown, updateViewportMouseMove, zoomIn, zoomOut
-  , getCursorStyle, panningSquareTranslation, getViewbox, initializeViewport)
+  , getCursorStyle, panningSquareTranslation, getViewbox, initializeViewport
+  , centerOn)
+import Tuple
 
 
 -- VIEWPORT
@@ -22,7 +24,62 @@ svgWidth = 800
 svgLength: Int
 svgLength = 800
 
+minXMinValue: Int
+minXMinValue =
+  negate (floor (toFloat svgWidth / 2))
+
+minXMaxValue: Int -> Int
+minXMaxValue width =
+  floor (toFloat svgWidth / 2) - width
+
+minYMinValue: Int
+minYMinValue =
+  negate (floor (toFloat svgLength / 2))
+
+minYMaxValue: Int -> Int
+minYMaxValue length =
+  floor (toFloat svgLength / 2) - length
+
 type alias MouseCoordinates = (Int, Int)
+
+centerOn: (Float, Float) -> Viewport -> Viewport
+centerOn coords viewport =
+  let
+    width = 400
+    length = 400
+    xTranslation = 200
+    yTranslation = 200
+    minX = floor (Tuple.first coords) - xTranslation
+    minY = floor (Tuple.second coords) - yTranslation
+  in
+    case viewport of 
+      Resting _ -> Resting (Viewbox (validMinX minX width) (validMinY minY length) length width)
+      Moving _ _ -> viewport
+
+validMinX: Int -> Int -> Int
+validMinX minX width =
+  let
+    maxValue = minXMaxValue width
+  in 
+    if minX < minXMinValue then
+      minXMinValue
+    else if minX > maxValue then
+      maxValue
+    else
+      minX
+
+validMinY: Int -> Int -> Int
+validMinY minY length =
+  let
+    maxValue = minYMaxValue length
+  in 
+    if minY < minYMinValue then
+      minXMinValue
+    else if minY > maxValue then
+      maxValue
+    else
+      minY
+
 
 initializeViewport: Viewport
 initializeViewport =

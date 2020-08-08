@@ -10,6 +10,7 @@ import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
 import Viewport exposing (..)
+import Set
 
 -- MAIN
 
@@ -40,6 +41,11 @@ initLinkData =
 -- GRAPH
 type Graph = Graph Notes Links
 
+selectNote: NoteId -> Graph -> Graph
+selectNote noteId graph =
+  case graph of 
+    Graph notes links -> Graph (selectNoteById noteId notes) links
+
 initializeGraph: (List Note) -> (List LinkRecord) -> Graph
 initializeGraph notes links =
   Graph (initializeNotes notes links) (initializeLinks links)
@@ -59,7 +65,56 @@ getLinkViews graph =
         Links linkList -> 
           List.map (\link -> linkToLinkView link notes) linkList 
 
+type alias DescriptiveNote = 
+  { id : NoteId
+  , content : Content
+  , source : Source
+  , noteType: NoteType
+  , linkedNotes : (List NoteId)
+  }
+
+getSelectedNoteDescriptions: Graph -> (List DescriptiveNote)
+getSelectedNoteDescriptions graph =
+  case graph of
+    Graph notes links -> List.map (\note -> toDescriptiveNote note links) (getSelectedNotes notes)
+
+toDescriptiveNote: PositionNote -> Links -> DescriptiveNote
+toDescriptiveNote note links =
+  DescriptiveNote note.id note.content note.source note.noteType (getLinkedNotes note.id links)
+
+
 -- NOTES
+
+selectNoteById: NoteId -> Notes -> Notes
+selectNoteById noteId notes =
+  let
+    maybeNote = findNote noteId notes
+  in
+    case notes of 
+      Notes positionNotes -> 
+        case maybeNote of
+          Nothing -> notes
+          Just n -> 
+            if isSelectedNote n then
+              notes
+            else 
+              Notes (filterOutAndAddNote {n | selected = Selected} positionNotes)
+            
+filterOutAndAddNote: PositionNote -> (List PositionNote) -> (List PositionNote)
+filterOutAndAddNote pn notes = 
+  pn :: List.filter (\note -> note.id /= pn.id) notes
+
+getSelectedNotes: Notes -> (List PositionNote)
+getSelectedNotes notes =
+  case notes of 
+    Notes positionNotes -> List.filter isSelectedNote positionNotes
+
+isSelectedNote: PositionNote -> Bool
+isSelectedNote note = 
+  case note.selected of 
+    Selected -> True
+    NotSelected -> False
+
 type Notes = Notes (List PositionNote)
 type alias PositionNote =
   { id : NoteId
@@ -70,7 +125,12 @@ type alias PositionNote =
   , y : Float
   , vx : Float
   , vy : Float
+  , selected : Selected
   }
+
+type Selected = 
+  Selected |
+  NotSelected
 
 type alias Note = 
   { id : NoteId
@@ -105,7 +165,7 @@ initializePosition index note =
   let
     positions = entity index 1
   in
-    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy
+    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected
 
 noteType: String -> NoteType
 noteType s =
@@ -154,6 +214,20 @@ type alias LinkViewRecord =
   , id: LinkId
   }
 
+getLinkedNotes: NoteId -> Links -> (List Int)
+getLinkedNotes noteId links =
+  case links of
+    Links linkList -> Set.toList (Set.fromList (List.filterMap (\link -> maybeGetLinkedNoteId noteId link) linkList))
+
+maybeGetLinkedNoteId: NoteId -> Link -> (Maybe NoteId)
+maybeGetLinkedNoteId noteId link =
+  if link.source == noteId then 
+    Just link.target
+  else if link.target == noteId then 
+    Just link.source
+  else 
+    Nothing
+
 linkToLinkView: Link -> Notes -> LinkView
 linkToLinkView link notes =
   let
@@ -165,7 +239,6 @@ linkToLinkView link notes =
       Just r -> LinkView r
       Nothing -> BadLink
     
-
 linkViewRecord: PositionNote -> PositionNote -> LinkId -> LinkViewRecord
 linkViewRecord source target id =
   LinkViewRecord source.id source.x source.y target.id target.x target.y id
@@ -197,7 +270,8 @@ type Msg =
   MouseUp |
   MouseOut |
   ZoomIn |
-  ZoomOut
+  ZoomOut |
+  SelectDescription PositionNote
 
 update : Msg -> Model -> Model
 update msg model =
@@ -212,15 +286,41 @@ update msg model =
         MouseOut -> Model graph query (restViewport viewport)
         ZoomIn -> Model graph query (zoomIn viewport)
         ZoomOut -> Model graph query (zoomOut viewport)
+        SelectDescription note -> handleSelectDescription note model
+
+handleSelectDescription: PositionNote -> Model -> Model
+handleSelectDescription note model =
+  case model of
+    Model graph query viewport->
+      Model (selectNote note.id graph) query (centerOn (note.x, note.y) viewport)
 
 -- VIEW
 view : Model -> Html Msg
 view m =
   div []
     [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
-      [ questionView m, graphView m, panningVisual m, zoomOutButton, zoomInButton]
+      [ questionView m
+      , graphView m
+      , panningVisual m
+      , zoomOutButton
+      , zoomInButton
+      , descriptionQueue m]
     , div [id "History-Queue"] [ text "History Queue"]
     ]
+
+descriptionQueue: Model -> Html Msg
+descriptionQueue m =
+  case m of
+    Model graph _ _ ->
+      div [style "border: 4px solid black; padding: 16px;"] (List.map toDescription (getSelectedNoteDescriptions graph))
+
+toDescription: DescriptiveNote -> Html Msg
+toDescription dn =
+  div [style "border: 1px solid black;margin-bottom: 16px;"] [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
+
+linkListDiv: (List Int) -> Html Msg
+linkListDiv list =
+  div [] (List.map (\link -> Html.text (String.fromInt link)) list)
 
 graphView: Model -> Svg Msg
 graphView m =
@@ -294,7 +394,10 @@ questionView m =
       case q of
         Shown query -> div [] 
           [ questionFilter query
-          , div [id "Question List", style "border: 4px solid black; padding: 16px;"] (questionList graph query)
+          , div 
+            [ id "Question List"
+            , style "border: 4px solid black; padding: 16px;"] 
+            (questionList graph query)
           , questionButton
           ]
         Hidden _ -> questionButton
@@ -329,7 +432,11 @@ divFromNote v =
     backgroundColor = "background-color:" ++ color ++ ";"
     styleString = "border: 1px solid black;margin-bottom: 16px;cursor:pointer;" ++ backgroundColor
   in
-    div [style styleString] [text v.content]
+    div 
+      [style styleString
+      , onClick (SelectDescription v)
+      ] 
+      [text v.content]
 
 noteColor: NoteType -> String
 noteColor notetype =
