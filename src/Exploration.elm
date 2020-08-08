@@ -25,7 +25,7 @@ type Model = Model Graph QuestionQuery Viewport
 
 init : Model
 init =
-  Model (initializeGraph initNoteData initLinkData) (Shown "") initializeViewport
+  Model (initializeGraph initNoteData initLinkData) (Shown "") initialize
 
 initNoteData : List Note
 initNoteData = 
@@ -322,10 +322,10 @@ update msg model =
       case msg of 
         ShowQuestionList -> Model graph (reverseQuestionQueryState query) viewport
         Change str -> Model graph (updateQuestionQuery str query) viewport
-        MouseUp -> Model graph query (restViewport viewport)
-        MouseDown e -> Model graph query (updateViewportMouseDown e viewport)
-        MouseMove e -> Model graph query (updateViewportMouseMove e viewport)
-        MouseOut -> Model graph query (restViewport viewport)
+        MouseUp -> Model graph query (stopPanning viewport)
+        MouseDown e -> Model graph query (startPanning e viewport)
+        MouseMove e -> Model graph query (shiftIfPanning e viewport)
+        MouseOut -> Model graph query (stopPanning viewport)
         ZoomIn -> Model graph query (zoomIn viewport)
         ZoomOut -> Model graph query (zoomOut viewport)
         SelectDescription note -> handleSelectDescription note model
@@ -393,8 +393,8 @@ graphView m =
   case m of
     Model graph _ viewport -> 
       svg
-        [ width "800"
-        , height "800"
+        [ width (svgWidthString)
+        , height svgLengthString
         , viewBox (getViewbox viewport)
         , style "border: 4px solid black;"
         ]
@@ -404,25 +404,32 @@ graphView m =
 panningVisual: Model -> Svg Msg
 panningVisual m =
   case m of
-    Model _ _ viewport ->
-      svg 
-        [ width "80" 
-        , height "80"
-        , style "border: 4px solid black;"
-        ] 
-        [
-          rect 
-            [ width (panningWidth viewport)
-            , height (panningHeight viewport)
-            , style ("fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0);" ++ getCursorStyle viewport)
-            , transform (panningSquareTranslation viewport)
-            , on "mousemove" mouseMoveDecoder
-            , on "mousedown" mouseDownDecoder
-            , onMouseUp MouseUp
-            , onMouseOut MouseOut
-            ] 
-            []
-        ]
+    Model _ _ viewport -> panningSvg viewport
+      
+panningSvg: Viewport -> Svg Msg
+panningSvg viewport =
+  let
+    attr = getPanningAttributes viewport
+  in
+    svg 
+      [ width attr.svgWidth
+      , height attr.svgHeight
+      , style "border: 4px solid black;"
+      ] 
+      [
+        rect 
+          [ width attr.rectWidth
+          , height attr.rectHeight
+          , style attr.rectStyle
+          , transform attr.rectTransform
+          , on "mousemove" mouseMoveDecoder
+          , on "mousedown" mouseDownDecoder
+          , onMouseUp MouseUp
+          , onMouseOut MouseOut
+          ] 
+          []
+      ]
+  
 
 linkLine: LinkView -> Svg Msg
 linkLine lv =
