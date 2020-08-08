@@ -5,12 +5,13 @@ import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
 import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
-import Svg exposing (Svg, svg, circle, line, rect)
-import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform)
+import Svg exposing (Svg, svg, circle, line, rect, animate)
+import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
 import Viewport exposing (..)
 import Set
+import Html.Events exposing (onMouseLeave, onMouseEnter)
 
 -- MAIN
 
@@ -71,6 +72,12 @@ type alias DescriptiveNote =
   , source : Source
   , noteType: NoteType
   , linkedNotes : (List NoteId)
+  , selected : Selected
+  , x : Float
+  , y : Float
+  , vx : Float
+  , vy : Float
+  , hover: Hover
   }
 
 getSelectedNoteDescriptions: Graph -> (List DescriptiveNote)
@@ -80,7 +87,7 @@ getSelectedNoteDescriptions graph =
 
 toDescriptiveNote: PositionNote -> Links -> DescriptiveNote
 toDescriptiveNote note links =
-  DescriptiveNote note.id note.content note.source note.noteType (getLinkedNotes note.id links)
+  DescriptiveNote note.id note.content note.source note.noteType (getLinkedNotes note.id links) note.selected note.x note.y note.vx note.vy note.hover
 
 
 -- NOTES
@@ -126,11 +133,44 @@ type alias PositionNote =
   , vx : Float
   , vy : Float
   , selected : Selected
+  , hover : Hover
   }
 
 type Selected = 
   Selected |
   NotSelected
+
+type Hover =
+  Hover |
+  NotHover
+
+hoverNote: PositionNote -> Graph -> Graph
+hoverNote pn graph =
+  case graph of 
+    Graph notes links -> Graph (hoverNoteState pn notes) links
+
+hoverNoteState: PositionNote -> Notes -> Notes
+hoverNoteState pn notes =
+  case notes of 
+    Notes positionNotes ->
+      Notes (filterOutAndAddNote {pn | hover = Hover} positionNotes)
+
+notHoverNote: PositionNote -> Graph -> Graph
+notHoverNote pn graph =
+  case graph of 
+    Graph notes links -> Graph (notHoverNoteState pn notes) links
+
+notHoverNoteState: PositionNote -> Notes -> Notes
+notHoverNoteState pn notes =
+  case notes of 
+    Notes positionNotes ->
+      Notes (filterOutAndAddNote {pn | hover = NotHover} positionNotes)
+
+circleChildren: Hover -> (List (Svg Msg))
+circleChildren hover =
+  case hover of 
+    Hover -> [animate [attributeName "r", values "5;9;5", dur "3s", repeatCount "indefinite"] []]
+    NotHover -> []
 
 type alias Note = 
   { id : NoteId
@@ -165,7 +205,7 @@ initializePosition index note =
   let
     positions = entity index 1
   in
-    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected
+    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
 
 noteType: String -> NoteType
 noteType s =
@@ -271,7 +311,9 @@ type Msg =
   MouseOut |
   ZoomIn |
   ZoomOut |
-  SelectDescription PositionNote
+  SelectDescription PositionNote |
+  MouseEnterDesc PositionNote |
+  MouseLeaveDesc PositionNote
 
 update : Msg -> Model -> Model
 update msg model =
@@ -287,6 +329,20 @@ update msg model =
         ZoomIn -> Model graph query (zoomIn viewport)
         ZoomOut -> Model graph query (zoomOut viewport)
         SelectDescription note -> handleSelectDescription note model
+        MouseEnterDesc note -> handleMouseEnterDesc note model
+        MouseLeaveDesc note -> handleMouseLeaveDesc note model
+
+handleMouseEnterDesc: PositionNote -> Model -> Model
+handleMouseEnterDesc note model =
+  case model of
+    Model graph query viewport->
+      Model (hoverNote note graph) query viewport
+
+handleMouseLeaveDesc: PositionNote -> Model -> Model
+handleMouseLeaveDesc note model =
+  case model of
+    Model graph query viewport->
+      Model (notHoverNote note graph) query viewport
 
 handleSelectDescription: PositionNote -> Model -> Model
 handleSelectDescription note model =
@@ -314,9 +370,19 @@ descriptionQueue m =
     Model graph _ _ ->
       div [style "border: 4px solid black; padding: 16px;"] (List.map toDescription (getSelectedNoteDescriptions graph))
 
+toPositionNote: DescriptiveNote -> PositionNote
+toPositionNote note =
+  PositionNote note.id note.content note.source note.noteType note.x note.y note.vx note.vy note.selected note.hover
+
 toDescription: DescriptiveNote -> Html Msg
 toDescription dn =
-  div [style "border: 1px solid black;margin-bottom: 16px;"] [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
+  div 
+    [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
+    , onClick (SelectDescription (toPositionNote dn))
+    , onMouseEnter (MouseEnterDesc (toPositionNote dn))
+    , onMouseLeave (MouseLeaveDesc (toPositionNote dn))
+    ] 
+    [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
 
 linkListDiv: (List Int) -> Html Msg
 linkListDiv list =
@@ -384,8 +450,9 @@ noteCircles pn =
       , cy (String.fromFloat pn.y) 
       , r "5"
       , style styleString
+      , onClick (SelectDescription pn)
       ]
-      []
+      (circleChildren pn.hover)
   
 questionView : Model -> Html Msg
 questionView m =
@@ -435,6 +502,8 @@ divFromNote v =
     div 
       [style styleString
       , onClick (SelectDescription v)
+      , onMouseEnter (MouseEnterDesc v)
+      , onMouseLeave (MouseLeaveDesc v)
       ] 
       [text v.content]
 
