@@ -47,6 +47,11 @@ selectNote noteId graph =
   case graph of 
     Graph notes links -> Graph (selectOnNote noteId notes) links
 
+dismissNote: NoteId -> Graph -> Graph
+dismissNote noteId graph =
+  case graph of 
+    Graph notes links -> Graph (unselectNote noteId notes) links
+
 initializeGraph: (List Note) -> (List LinkRecord) -> Graph
 initializeGraph notes links =
   Graph (initializeNotes notes links) (initializeLinks links)
@@ -188,6 +193,7 @@ type Msg =
   ZoomIn |
   ZoomOut |
   SelectDescription PositionNote |
+  DismissDescription PositionNote |
   MouseEnterDesc PositionNote |
   MouseLeaveDesc
 
@@ -205,6 +211,7 @@ update msg model =
         ZoomIn -> Model graph query (zoomIn viewport)
         ZoomOut -> Model graph query (zoomOut viewport)
         SelectDescription note -> handleSelectDescription note model
+        DismissDescription note -> handleDismissDescription note model
         MouseEnterDesc note -> handleMouseEnterDesc note model
         MouseLeaveDesc -> handleMouseLeaveDesc model
 
@@ -225,6 +232,12 @@ handleSelectDescription note model =
   case model of
     Model graph query viewport->
       Model (selectNote note.id graph) query (centerOn (note.x, note.y) viewport)
+
+handleDismissDescription: PositionNote -> Model -> Model
+handleDismissDescription note model =
+  case model of
+    Model graph query viewport->
+      Model (dismissNote note.id graph) query viewport
 
 -- VIEW
 view : Model -> Html Msg
@@ -252,13 +265,16 @@ toPositionNote note =
 
 toDescription: DescriptiveNote -> Html Msg
 toDescription dn =
-  div 
-    [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
-    , onClick (SelectDescription (toPositionNote dn))
-    , onMouseEnter (MouseEnterDesc (toPositionNote dn))
-    , onMouseLeave MouseLeaveDesc
-    ] 
-    [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
+  div [] [
+    button [onClick (DismissDescription (toPositionNote dn))] [text "-"]
+    , div 
+      [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
+      , onClick (SelectDescription (toPositionNote dn))
+      , onMouseEnter (MouseEnterDesc (toPositionNote dn))
+      , onMouseLeave MouseLeaveDesc
+      ] 
+      [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
+  ]
 
 linkListDiv: (List Int) -> Html Msg
 linkListDiv list =

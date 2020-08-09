@@ -2,7 +2,7 @@ module Notes exposing (Notes, initializePosition, selectOnNote,
   getSelectedNotes, hoverOnNote, clearHover, findNote, NoteId,
   NoteType, Selected, Hover, Content, Source, PositionNote,
   Note, noteColor, get, shouldAnimateNoteCircle,
-  LinkRecord, initializeNotes, LinkId)
+  LinkRecord, initializeNotes, LinkId, unselectNote)
 
 import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
 
@@ -99,6 +99,11 @@ selectOnNote noteId notes =
   case notes of 
     Notes pns -> Notes (List.map (\note -> selectNoteById noteId note) pns)
 
+unselectNote: NoteId -> Notes -> Notes
+unselectNote noteId notes =
+  case notes of 
+    Notes pns -> Notes (List.map (\note -> unselectNoteById noteId note) pns)
+
 getSelectedNotes: Notes -> (List PositionNote)
 getSelectedNotes notes =
   case notes of 
@@ -120,6 +125,13 @@ selectNoteById: NoteId -> PositionNote -> PositionNote
 selectNoteById noteId note =
   if  note.id == noteId then
     {note | selected = Selected}
+  else
+    note
+
+unselectNoteById: NoteId -> PositionNote -> PositionNote
+unselectNoteById noteId note =
+  if  note.id == noteId then
+    {note | selected = NotSelected}
   else
     note
 
