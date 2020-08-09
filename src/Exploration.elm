@@ -4,7 +4,6 @@ import Browser
 import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
 import Html.Events exposing (onInput, onClick)
-import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
@@ -12,6 +11,7 @@ import Json.Decode exposing (Decoder, int, map, field, map2)
 import Viewport exposing (..)
 import Set
 import Html.Events exposing (onMouseLeave, onMouseEnter)
+import Notes exposing (..)
 
 -- MAIN
 
@@ -45,7 +45,7 @@ type Graph = Graph Notes Links
 selectNote: NoteId -> Graph -> Graph
 selectNote noteId graph =
   case graph of 
-    Graph notes links -> Graph (selectNoteById noteId notes) links
+    Graph notes links -> Graph (selectOnNote noteId notes) links
 
 initializeGraph: (List Note) -> (List LinkRecord) -> Graph
 initializeGraph notes links =
@@ -54,9 +54,7 @@ initializeGraph notes links =
 getNotes: Graph -> (List PositionNote)
 getNotes graph =
   case graph of
-    Graph notes _ ->
-      case notes of
-        Notes positionNotes -> positionNotes
+    Graph notes _ -> get notes
 
 getLinkViews: Graph -> List LinkView
 getLinkViews graph =
@@ -89,136 +87,22 @@ toDescriptiveNote: PositionNote -> Links -> DescriptiveNote
 toDescriptiveNote note links =
   DescriptiveNote note.id note.content note.source note.noteType (getLinkedNotes note.id links) note.selected note.x note.y note.vx note.vy note.hover
 
-
--- NOTES
-
-selectNoteById: NoteId -> Notes -> Notes
-selectNoteById noteId notes =
-  let
-    maybeNote = findNote noteId notes
-  in
-    case notes of 
-      Notes positionNotes -> 
-        case maybeNote of
-          Nothing -> notes
-          Just n -> 
-            if isSelectedNote n then
-              notes
-            else 
-              Notes (filterOutAndAddNote {n | selected = Selected} positionNotes)
-            
-filterOutAndAddNote: PositionNote -> (List PositionNote) -> (List PositionNote)
-filterOutAndAddNote pn notes = 
-  pn :: List.filter (\note -> note.id /= pn.id) notes
-
-getSelectedNotes: Notes -> (List PositionNote)
-getSelectedNotes notes =
-  case notes of 
-    Notes positionNotes -> List.filter isSelectedNote positionNotes
-
-isSelectedNote: PositionNote -> Bool
-isSelectedNote note = 
-  case note.selected of 
-    Selected -> True
-    NotSelected -> False
-
-type Notes = Notes (List PositionNote)
-type alias PositionNote =
-  { id : NoteId
-  , content : Content
-  , source : Source
-  , noteType: NoteType
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  , selected : Selected
-  , hover : Hover
-  }
-
-type Selected = 
-  Selected |
-  NotSelected
-
-type Hover =
-  Hover |
-  NotHover
-
 hoverNote: PositionNote -> Graph -> Graph
 hoverNote pn graph =
   case graph of 
-    Graph notes links -> Graph (hoverNoteState pn notes) links
+    Graph notes links -> Graph (hoverOnNote pn notes) links
 
-hoverNoteState: PositionNote -> Notes -> Notes
-hoverNoteState pn notes =
-  case notes of 
-    Notes positionNotes ->
-      Notes (filterOutAndAddNote {pn | hover = Hover} positionNotes)
-
-notHoverNote: PositionNote -> Graph -> Graph
-notHoverNote pn graph =
+notHoverNote: Graph -> Graph
+notHoverNote graph =
   case graph of 
-    Graph notes links -> Graph (notHoverNoteState pn notes) links
+    Graph notes links -> Graph (clearHover notes) links
 
-notHoverNoteState: PositionNote -> Notes -> Notes
-notHoverNoteState pn notes =
-  case notes of 
-    Notes positionNotes ->
-      Notes (filterOutAndAddNote {pn | hover = NotHover} positionNotes)
-
-circleChildren: Hover -> (List (Svg Msg))
-circleChildren hover =
-  case hover of 
-    Hover -> [animate [attributeName "r", values "5;9;5", dur "3s", repeatCount "indefinite"] []]
-    NotHover -> []
-
-type alias Note = 
-  { id : NoteId
-  , content : Content
-  , source : Source
-  , noteType: String
-  }
-
-type alias NoteId = Int
-type alias Content = String
-type NoteType = Regular | Index
-type alias Source = String
-
-initializeNotes: (List Note) -> (List LinkRecord) -> Notes
-initializeNotes notes links =
-  Notes (initSimulation (List.indexedMap initializePosition notes) links)
-
-initSimulation: (List PositionNote) -> (List LinkRecord) -> (List PositionNote)
-initSimulation notes linkRecords =
-  let
-    state = 
-      simulation 
-        [ manyBody (List.map (\n -> n.id) notes)
-        , links (List.map (\l -> (l.source, l.target)) linkRecords)
-        , center 0 0
-        ]
-  in
-    computeSimulation state notes
-
-initializePosition: Int -> Note -> PositionNote
-initializePosition index note =
-  let
-    positions = entity index 1
-  in
-    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
-
-noteType: String -> NoteType
-noteType s =
-  if s == "index" then
-    Index
+circleChildren: PositionNote -> (List (Svg Msg))
+circleChildren pn =
+  if  shouldAnimateNoteCircle pn == True then
+    [animate [attributeName "r", values "5;9;5", dur "3s", repeatCount "indefinite"] []]
   else
-    Regular
-
-findNote: NoteId -> Notes -> Maybe PositionNote
-findNote id n =
-  case n of
-    Notes noteList ->
-      List.head (List.filter (\note -> note.id == id) noteList)
+    []
 
 -- LINKS
 type Links = Links (List Link)
@@ -227,14 +111,6 @@ type alias Link =
   , target: NoteId
   , id: LinkId
   }
-
-type alias LinkRecord =
-  { source: NoteId
-  , target: NoteId
-  , id: LinkId
-  }
-
-type alias LinkId = Int
 
 initializeLinks: (List LinkRecord) -> Links
 initializeLinks l =
@@ -313,7 +189,7 @@ type Msg =
   ZoomOut |
   SelectDescription PositionNote |
   MouseEnterDesc PositionNote |
-  MouseLeaveDesc PositionNote
+  MouseLeaveDesc
 
 update : Msg -> Model -> Model
 update msg model =
@@ -330,7 +206,7 @@ update msg model =
         ZoomOut -> Model graph query (zoomOut viewport)
         SelectDescription note -> handleSelectDescription note model
         MouseEnterDesc note -> handleMouseEnterDesc note model
-        MouseLeaveDesc note -> handleMouseLeaveDesc note model
+        MouseLeaveDesc -> handleMouseLeaveDesc model
 
 handleMouseEnterDesc: PositionNote -> Model -> Model
 handleMouseEnterDesc note model =
@@ -338,11 +214,11 @@ handleMouseEnterDesc note model =
     Model graph query viewport->
       Model (hoverNote note graph) query viewport
 
-handleMouseLeaveDesc: PositionNote -> Model -> Model
-handleMouseLeaveDesc note model =
+handleMouseLeaveDesc: Model -> Model
+handleMouseLeaveDesc model =
   case model of
     Model graph query viewport->
-      Model (notHoverNote note graph) query viewport
+      Model (notHoverNote graph) query viewport
 
 handleSelectDescription: PositionNote -> Model -> Model
 handleSelectDescription note model =
@@ -380,7 +256,7 @@ toDescription dn =
     [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
     , onClick (SelectDescription (toPositionNote dn))
     , onMouseEnter (MouseEnterDesc (toPositionNote dn))
-    , onMouseLeave (MouseLeaveDesc (toPositionNote dn))
+    , onMouseLeave MouseLeaveDesc
     ] 
     [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
 
@@ -459,7 +335,7 @@ noteCircles pn =
       , style styleString
       , onClick (SelectDescription pn)
       ]
-      (circleChildren pn.hover)
+      (circleChildren pn)
   
 questionView : Model -> Html Msg
 questionView m =
@@ -511,12 +387,6 @@ divFromNote v =
       , onClick (SelectDescription v)
       ] 
       [text v.content]
-
-noteColor: NoteType -> String
-noteColor notetype =
-  case notetype of
-    Regular -> "rgba(137, 196, 244, 1)"
-    Index -> "rgba(250, 190, 88, 1)"
 
 offsetXDecoder: Decoder Int
 offsetXDecoder = 
