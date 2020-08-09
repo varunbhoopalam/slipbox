@@ -393,7 +393,7 @@ graphView m =
   case m of
     Model graph _ viewport -> 
       svg
-        [ width (svgWidthString)
+        [ width svgWidthString
         , height svgLengthString
         , viewBox (getViewbox viewport)
         , style "border: 4px solid black;"
