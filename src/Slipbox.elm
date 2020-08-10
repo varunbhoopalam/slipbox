@@ -1,13 +1,13 @@
 module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize, 
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
-  , DescriptionLink, NoteId, hoverNote)
+  , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord)
 
 import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
 import Set
 
 --Types
-type Slipbox = Slipbox (List Note) (List Link)
+type Slipbox = Slipbox (List Note) (List Link) (List Action)
 
 type alias Note =
   { id : NoteId
@@ -26,6 +26,19 @@ type alias Link =
   { source: NoteId
   , target: NoteId
   , id: LinkId
+  }
+
+type Action =
+  CreateNote HistoryId HistoryNote |
+  CreateLink HistoryId Link
+
+type alias HistoryId = Int
+
+type alias HistoryNote =
+  { id : NoteId
+  , content : String
+  , source : String
+  , noteType: String
   }
 
 type Selected = 
@@ -50,6 +63,16 @@ type alias NoteRecord =
   , content : String
   , source : String
   , noteType: String
+  }
+
+type alias CreateNoteRecord =
+  { id : Int
+  , action : NoteRecord
+  }
+
+type alias CreateLinkRecord =
+  { id : Int
+  , action : LinkRecord
   }
 
 type alias SearchResult = 
@@ -95,9 +118,9 @@ type alias DescriptionLink =
 
 -- Methods
 
-initialize: (List NoteRecord) -> (List LinkRecord) -> Slipbox
-initialize notes links =
-  Slipbox (initializeNotes notes links) (initializeLinks links)
+initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
+initialize notes links (noteRecords, linkRecords) =
+  Slipbox (initializeNotes notes links) (initializeLinks links) (initializeHistory (noteRecords, linkRecords))
 
 initializeLinks: (List LinkRecord) -> (List Link)
 initializeLinks l =
@@ -126,6 +149,35 @@ initializePosition index note =
   in
     Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
 
+initializeHistory: ((List CreateNoteRecord), (List CreateLinkRecord)) -> (List Action)
+initializeHistory (noteRecords, linkRecords) =
+  List.sortWith actionSorterDesc (List.map createNoteAction noteRecords ++ List.map createLinkAction linkRecords)
+
+createNoteAction: CreateNoteRecord -> Action
+createNoteAction note =
+  CreateNote note.id (HistoryNote note.action.id note.action.content note.action.source note.action.noteType)
+
+createLinkAction: CreateLinkRecord -> Action
+createLinkAction link =
+  CreateLink link.id (Link link.action.source link.action.target link.action.id)
+
+actionSorterDesc: (Action -> Action -> Order)
+actionSorterDesc actionA actionB =
+  let
+      idA = getHistoryId actionA
+      idB = getHistoryId actionB
+  in
+    case compare idA idB of
+       LT -> GT
+       EQ -> EQ
+       GT -> LT
+
+getHistoryId: Action -> HistoryId
+getHistoryId action =
+  case action of 
+    CreateNote id _ -> id
+    CreateLink id _ -> id
+
 noteType: String -> NoteType
 noteType s =
   if s == "index" then
@@ -148,7 +200,7 @@ shouldAnimateNoteCircle hover =
 selectNote: NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links
+    Slipbox notes links history -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links history
 
 selectNoteById: NoteId -> Note -> Note
 selectNoteById noteId note =
@@ -160,7 +212,7 @@ selectNoteById noteId note =
 dismissNote: NoteId -> Slipbox -> Slipbox
 dismissNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links
+    Slipbox notes links history -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links history
 
 unselectNoteById: NoteId -> Note -> Note
 unselectNoteById noteId note =
@@ -172,7 +224,7 @@ unselectNoteById noteId note =
 hoverNote: NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links
+    Slipbox notes links history -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history
 
 hoverNoteById: NoteId -> Note -> Note
 hoverNoteById noteId note =
@@ -184,12 +236,12 @@ hoverNoteById noteId note =
 stopHoverNote: Slipbox -> Slipbox
 stopHoverNote slipbox =
   case slipbox of 
-    Slipbox notes links -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links
+    Slipbox notes links history -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history
 
 searchSlipbox: String -> Slipbox -> (List SearchResult)
 searchSlipbox searchString slipbox =
   case slipbox of
-     Slipbox notes _ -> 
+     Slipbox notes _ _-> 
       notes
         |> List.filter (\note -> String.contains searchString note.content)
         |> List.map toSearchResult
@@ -201,7 +253,7 @@ toSearchResult pn =
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
   case slipbox of
-    Slipbox notes links -> 
+    Slipbox notes links history -> 
       ( List.map toGraphNote notes
       , List.filterMap (\link -> toGraphLink link notes) links)
 
@@ -224,7 +276,7 @@ graphLinkBuilder source target id =
 getSelectedNotes: Slipbox -> (List DescriptionNote)
 getSelectedNotes slipbox =
   case slipbox of 
-    Slipbox notes links -> 
+    Slipbox notes links _ -> 
       notes
        |> List.filter (\note -> note.selected == Selected )
        |> List.map (\note -> toDescriptionNote notes note links)

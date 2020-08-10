@@ -23,19 +23,28 @@ type Model = Model S.Slipbox Search V.Viewport
 
 init : Model
 init =
-  Model (S.initialize initNoteData initLinkData) (Shown "") V.initialize
+  Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize
 
 initNoteData : List S.NoteRecord
 initNoteData = 
-  [ S.NoteRecord 1 "What is the Elm langauge?" "" "index"
-  , S.NoteRecord 2 "Why does some food taste better than others?" "" "index"
-  , S.NoteRecord 3 "Note 0" "" "note"]
+  [ S.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index"
+  , S.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index"
+  , S.NoteRecord 3 "Note 0" "Source 1" "note"]
 
 initLinkData: List S.LinkRecord
 initLinkData =
-  [
-    S.LinkRecord 1 3 1
+  [ S.LinkRecord 1 3 1
   ]
+
+initHistoryData: ((List S.CreateNoteRecord), (List S.CreateLinkRecord))
+initHistoryData =
+  (
+    [ S.CreateNoteRecord 1 (S.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index")
+    , S.CreateNoteRecord 2 (S.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index")
+    , S.CreateNoteRecord 3 (S.NoteRecord 3 "Note 0" "Source 1" "note")
+    ]
+    , [ S.CreateLinkRecord 4 (S.LinkRecord 1 3 1) ]
+  )
 
 -- SEARCH
 type Search = 
