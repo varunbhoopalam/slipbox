@@ -2,7 +2,7 @@ module Viewport exposing (
   Viewport, MouseEvent, stopPanning, getPanningAttributes
   , startPanning, shiftIfPanning, zoomIn, zoomOut
   , getCursorStyle, getViewbox, initialize, centerOn
-  , svgWidthString, svgLengthString)
+  , svgWidthString, svgLengthString, PanningAttributes)
 import Tuple
 
 -- TYPES

@@ -8,10 +8,11 @@ import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
-import Viewport exposing (..)
-import Set
 import Html.Events exposing (onMouseLeave, onMouseEnter)
-import Notes exposing (..)
+
+-- Modules
+import Viewport as V
+import Slipbox as S
 
 -- MAIN
 
@@ -19,407 +20,314 @@ main =
   Browser.sandbox { init = init, update = update, view = view }
 
 -- MODEL
-
-type Model = Model Graph QuestionQuery Viewport
-
+type Model = Model S.Slipbox Search V.Viewport
 
 init : Model
 init =
-  Model (initializeGraph initNoteData initLinkData) (Shown "") initialize
+  Model (S.initialize initNoteData initLinkData) (Shown "") V.initialize
 
-initNoteData : List Note
+initNoteData : List S.Note
 initNoteData = 
-  [ Note 1 "What is the Elm langauge?" "" "index"
-  , Note 2 "Why does some food taste better than others?" "" "index"
-  , Note 3 "Note 0" "" "note"]
+  [ S.Note 1 "What is the Elm langauge?" "" "index"
+  , S.Note 2 "Why does some food taste better than others?" "" "index"
+  , S.Note 3 "Note 0" "" "note"]
 
-initLinkData: List LinkRecord
+initLinkData: List S.LinkRecord
 initLinkData =
   [
-    LinkRecord 1 3 1
+    S.LinkRecord 1 3 1
   ]
 
--- GRAPH
-type Graph = Graph Notes Links
+-- SEARCH
+type Search = 
+  Shown Query |
+  Hidden Query
 
-selectNote: NoteId -> Graph -> Graph
-selectNote noteId graph =
-  case graph of 
-    Graph notes links -> Graph (selectOnNote noteId notes) links
+type alias Query = String
 
-dismissNote: NoteId -> Graph -> Graph
-dismissNote noteId graph =
-  case graph of 
-    Graph notes links -> Graph (unselectNote noteId notes) links
+toggle: Search -> Search
+toggle search =
+  case search of
+    Shown query -> Hidden query
+    Hidden query -> Shown query
 
-initializeGraph: (List Note) -> (List LinkRecord) -> Graph
-initializeGraph notes links =
-  Graph (initializeNotes notes links) (initializeLinks links)
+updateSearch: String -> Search -> Search
+updateSearch query search =
+  case search of
+    Shown _ -> Shown query
+    Hidden _ -> Hidden query
 
-getNotes: Graph -> (List PositionNote)
-getNotes graph =
-  case graph of
-    Graph notes _ -> get notes
+shouldShowSearch: Search -> Bool
+shouldShowSearch search =
+  case search of
+    Shown _ -> True
+    Hidden _ -> False
 
-getLinkViews: Graph -> List LinkView
-getLinkViews graph =
-  case graph of
-    Graph notes links ->
-      case links of
-        Links linkList -> 
-          List.map (\link -> linkToLinkView link notes) linkList 
-
-type alias DescriptiveNote = 
-  { id : NoteId
-  , content : Content
-  , source : Source
-  , noteType: NoteType
-  , linkedNotes : (List NoteId)
-  , selected : Selected
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  , hover: Hover
-  }
-
-getSelectedNoteDescriptions: Graph -> (List DescriptiveNote)
-getSelectedNoteDescriptions graph =
-  case graph of
-    Graph notes links -> List.map (\note -> toDescriptiveNote note links) (getSelectedNotes notes)
-
-toDescriptiveNote: PositionNote -> Links -> DescriptiveNote
-toDescriptiveNote note links =
-  DescriptiveNote note.id note.content note.source note.noteType (getLinkedNotes note.id links) note.selected note.x note.y note.vx note.vy note.hover
-
-hoverNote: PositionNote -> Graph -> Graph
-hoverNote pn graph =
-  case graph of 
-    Graph notes links -> Graph (hoverOnNote pn notes) links
-
-notHoverNote: Graph -> Graph
-notHoverNote graph =
-  case graph of 
-    Graph notes links -> Graph (clearHover notes) links
-
-circleChildren: PositionNote -> (List (Svg Msg))
-circleChildren pn =
-  if  shouldAnimateNoteCircle pn == True then
-    [animate [attributeName "r", values "5;9;5", dur "3s", repeatCount "indefinite"] []]
-  else
-    []
-
--- LINKS
-type Links = Links (List Link)
-type alias Link = 
-  { source: NoteId
-  , target: NoteId
-  , id: LinkId
-  }
-
-initializeLinks: (List LinkRecord) -> Links
-initializeLinks l =
-  Links (List.map (\lr -> Link lr.source lr.target lr.id) l)
-
-type LinkView = 
-  BadLink |
-  LinkView LinkViewRecord
-
-type alias LinkViewRecord = 
-  { sourceId: NoteId
-  , sourceX: Float
-  , sourceY: Float
-  , targetId: NoteId
-  , targetX: Float
-  , targetY: Float
-  , id: LinkId
-  }
-
-getLinkedNotes: NoteId -> Links -> (List Int)
-getLinkedNotes noteId links =
-  case links of
-    Links linkList -> Set.toList (Set.fromList (List.filterMap (\link -> maybeGetLinkedNoteId noteId link) linkList))
-
-maybeGetLinkedNoteId: NoteId -> Link -> (Maybe NoteId)
-maybeGetLinkedNoteId noteId link =
-  if link.source == noteId then 
-    Just link.target
-  else if link.target == noteId then 
-    Just link.source
-  else 
-    Nothing
-
-linkToLinkView: Link -> Notes -> LinkView
-linkToLinkView link notes =
-  let
-    maybeSource = findNote link.source notes
-    maybeTarget = findNote link.target notes
-    maybeLinkViewRecord = Maybe.map3 linkViewRecord maybeSource maybeTarget (Just link.id)
-  in
-    case maybeLinkViewRecord of
-      Just r -> LinkView r
-      Nothing -> BadLink
-    
-linkViewRecord: PositionNote -> PositionNote -> LinkId -> LinkViewRecord
-linkViewRecord source target id =
-  LinkViewRecord source.id source.x source.y target.id target.x target.y id
-
--- QuestionFilter
-type QuestionQuery = 
-  Shown String |
-  Hidden String
-
-reverseQuestionQueryState: QuestionQuery -> QuestionQuery
-reverseQuestionQueryState q =
-  case q of
-    Shown s -> Hidden s
-    Hidden s -> Shown s
-
-updateQuestionQuery: String -> QuestionQuery -> QuestionQuery
-updateQuestionQuery s q =
-  case q of
-    Shown _ -> Shown s
-    Hidden _ -> Hidden s
+getSearchString: Search -> String
+getSearchString search =
+  case search of 
+    Shown str -> str
+    Hidden str -> str
 
 -- UPDATE
 
 type Msg = 
-  Change String |
-  ShowQuestionList |
-  MouseMove MouseEvent |
-  MouseDown MouseEvent |
-  MouseUp |
-  MouseOut |
+  ToggleSearch |
+  UpdateSearch String |
+  PanningStart V.MouseEvent |
+  IfPanningShift V.MouseEvent |
+  PanningStop |
   ZoomIn |
   ZoomOut |
-  SelectDescription PositionNote |
-  DismissDescription PositionNote |
-  MouseEnterDesc PositionNote |
-  MouseLeaveDesc
+  NoteSelect S.NoteId (Float, Float) |
+  NoteDismiss S.NoteId |
+  NoteHighlight S.NoteId |
+  NoteRemoveHighlights
 
 update : Msg -> Model -> Model
 update msg model =
-  case model of
-    Model graph query viewport->
-      case msg of 
-        ShowQuestionList -> Model graph (reverseQuestionQueryState query) viewport
-        Change str -> Model graph (updateQuestionQuery str query) viewport
-        MouseUp -> Model graph query (stopPanning viewport)
-        MouseDown e -> Model graph query (startPanning e viewport)
-        MouseMove e -> Model graph query (shiftIfPanning e viewport)
-        MouseOut -> Model graph query (stopPanning viewport)
-        ZoomIn -> Model graph query (zoomIn viewport)
-        ZoomOut -> Model graph query (zoomOut viewport)
-        SelectDescription note -> handleSelectDescription note model
-        DismissDescription note -> handleDismissDescription note model
-        MouseEnterDesc note -> handleMouseEnterDesc note model
-        MouseLeaveDesc -> handleMouseLeaveDesc model
+  case msg of 
+    ToggleSearch -> handleToggleSearch model
+    UpdateSearch query -> handleUpdateSearch query model
+    PanningStart mouseEvent -> handlePanningStart mouseEvent model
+    IfPanningShift mouseEvent -> handleIfPanningShift mouseEvent model
+    PanningStop -> handlePanningStop model
+    ZoomIn -> handleZoomIn model
+    ZoomOut -> handleZoomOut model
+    NoteSelect note coords -> handleNoteSelect note coords model
+    NoteDismiss note -> handleNoteDismiss note model
+    NoteHighlight note -> handleNoteHighlight note model
+    NoteRemoveHighlights -> handleNoteRemoveHighlights model
 
-handleMouseEnterDesc: PositionNote -> Model -> Model
-handleMouseEnterDesc note model =
-  case model of
-    Model graph query viewport->
-      Model (hoverNote note graph) query viewport
+handleToggleSearch: Model -> Model
+handleToggleSearch model =
+  case model of 
+    Model slipbox search viewport ->
+      Model slipbox (toggle search) viewport
 
-handleMouseLeaveDesc: Model -> Model
-handleMouseLeaveDesc model =
+handleUpdateSearch: String -> Model -> Model
+handleUpdateSearch query model =
+  case model of 
+    Model slipbox search viewport ->
+      Model slipbox (updateSearch query search) viewport
+  
+handlePanningStart: V.MouseEvent -> Model -> Model
+handlePanningStart mouseEvent model =
   case model of
-    Model graph query viewport->
-      Model (notHoverNote graph) query viewport
+    Model slipbox search viewport ->
+      Model slipbox search (V.startPanning mouseEvent viewport)
 
-handleSelectDescription: PositionNote -> Model -> Model
-handleSelectDescription note model =
-  case model of
-    Model graph query viewport->
-      Model (selectNote note.id graph) query (centerOn (note.x, note.y) viewport)
+handleIfPanningShift: V.MouseEvent -> Model -> Model
+handleIfPanningShift mouseEvent model =
+  case model of 
+    Model slipbox search viewport ->
+      Model slipbox search (V.shiftIfPanning mouseEvent viewport)
 
-handleDismissDescription: PositionNote -> Model -> Model
-handleDismissDescription note model =
+handlePanningStop: Model -> Model
+handlePanningStop model =
   case model of
-    Model graph query viewport->
-      Model (dismissNote note.id graph) query viewport
+    Model slipbox search viewport ->
+      Model slipbox search (V.stopPanning viewport)
+
+handleZoomIn: Model -> Model
+handleZoomIn model =
+  case model of 
+    Model slipbox search viewport ->
+      Model slipbox search (V.zoomIn viewport)
+
+handleZoomOut: Model -> Model
+handleZoomOut model =
+  case model of
+    Model slipbox search viewport ->
+      Model slipbox search (V.zoomOut viewport)
+
+handleNoteSelect: S.NoteId -> (Float, Float) -> Model -> Model
+handleNoteSelect noteId coords model =
+  case model of
+    Model slipbox search viewport->
+      Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport)
+
+handleNoteDismiss: S.NoteId -> Model -> Model
+handleNoteDismiss noteId model =
+  case model of
+    Model slipbox query viewport->
+      Model (S.dismissNote noteId slipbox) query viewport
+
+handleNoteHighlight: S.NoteId -> Model -> Model
+handleNoteHighlight noteId model =
+  case model of
+    Model slipbox query viewport->
+      Model (S.hoverNote noteId slipbox) query viewport
+
+handleNoteRemoveHighlights: Model -> Model
+handleNoteRemoveHighlights model =
+  case model of
+    Model slipbox query viewport->
+      Model (S.stopHoverNote slipbox) query viewport
 
 -- VIEW
 view : Model -> Html Msg
-view m =
-  div []
-    [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
-      [ questionView m
-      , graphView m
-      , panningVisual m
-      , zoomOutButton
-      , zoomInButton
-      , descriptionQueue m]
-    , div [id "History-Queue"] [ text "History Queue"]
-    ]
-
-descriptionQueue: Model -> Html Msg
-descriptionQueue m =
-  case m of
-    Model graph _ _ ->
-      div [style "border: 4px solid black; padding: 16px;"] (List.map toDescription (getSelectedNoteDescriptions graph))
-
-toPositionNote: DescriptiveNote -> PositionNote
-toPositionNote note =
-  PositionNote note.id note.content note.source note.noteType note.x note.y note.vx note.vy note.selected note.hover
-
-toDescription: DescriptiveNote -> Html Msg
-toDescription dn =
-  div [] [
-    button [onClick (DismissDescription (toPositionNote dn))] [text "-"]
-    , div 
-      [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
-      , onClick (SelectDescription (toPositionNote dn))
-      , onMouseEnter (MouseEnterDesc (toPositionNote dn))
-      , onMouseLeave MouseLeaveDesc
-      ] 
-      [Html.text dn.content, Html.text dn.source, linkListDiv dn.linkedNotes]
-  ]
-
-linkListDiv: (List Int) -> Html Msg
-linkListDiv list =
-  div [] (List.map (\link -> Html.text (String.fromInt link)) list)
-
-graphView: Model -> Svg Msg
-graphView m =
-  case m of
-    Model graph _ viewport -> 
-      svg
-        [ width svgWidthString
-        , height svgLengthString
-        , viewBox (getViewbox viewport)
-        , style "border: 4px solid black;"
+view model =
+  case model of 
+    Model slipbox search viewport ->
+      div []
+        [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
+          [ searchBox slipbox search
+          , noteNetwork slipbox viewport
+          , panningVisual viewport
+          , button [ onClick ZoomOut ] [ text "-" ]
+          , button [ onClick ZoomIn ] [ text "+" ]
+          , selectedNotes slipbox]
+        , div [id "History-Queue"] [ text "History Queue"]
         ]
-        ( List.map noteCircles (getNotes graph) ++
-         List.map linkLine (getLinkViews graph))
 
-panningVisual: Model -> Svg Msg
-panningVisual m =
-  case m of
-    Model _ _ viewport -> panningSvg viewport
-      
-panningSvg: Viewport -> Svg Msg
-panningSvg viewport =
-  let
-    attr = getPanningAttributes viewport
-  in
-    svg 
-      [ width attr.svgWidth
-      , height attr.svgHeight
-      , style "border: 4px solid black;"
-      ] 
-      [
-        rect 
-          [ width attr.rectWidth
-          , height attr.rectHeight
-          , style attr.rectStyle
-          , transform attr.rectTransform
-          , on "mousemove" mouseMoveDecoder
-          , on "mousedown" mouseDownDecoder
-          , onMouseUp MouseUp
-          , onMouseOut MouseOut
-          ] 
-          []
-      ]
-  
-
-linkLine: LinkView -> Svg Msg
-linkLine lv =
-  case lv of
-    BadLink -> line [] []
-    LinkView lvr ->
-      line 
-        [x1 (String.fromFloat lvr.sourceX)
-        , y1 (String.fromFloat lvr.sourceY)
-        , x2 (String.fromFloat lvr.targetX)
-        , y2 (String.fromFloat lvr.targetY)
-        , style "stroke:rgb(0,0,0);stroke-width:2"
-        ] 
-        []
-
-noteCircles: PositionNote -> Svg Msg
-noteCircles pn =
-  let
-    color = noteColor pn.noteType
-    fill = "fill:" ++ color ++ ";"
-    styleString = "Cursor:Pointer;" ++ fill
-  in
-    circle 
-      [ cx (String.fromFloat pn.x)
-      , cy (String.fromFloat pn.y) 
-      , r "5"
-      , style styleString
-      , onClick (SelectDescription pn)
-      ]
-      (circleChildren pn)
-  
-questionView : Model -> Html Msg
-questionView m =
-  case m of 
-    Model graph q _ ->
-      case q of
-        Shown query -> div [] 
-          [ questionFilter query
-          , div 
-            [ id "Question List"
-            , style "border: 4px solid black; padding: 16px;"] 
-            (questionList graph query)
-          , questionButton
-          ]
-        Hidden _ -> questionButton
-
-zoomInButton: Html Msg
-zoomInButton =
-  button [ onClick ZoomIn ] [ text "+" ]
-
-zoomOutButton: Html Msg
-zoomOutButton =
-  button [ onClick ZoomOut ] [ text "-" ]
+searchBox : S.Slipbox -> Search -> Html Msg
+searchBox slipbox search =
+  if shouldShowSearch search then
+    searchBoxShown slipbox (getSearchString search)
+  else
+    questionButton
 
 questionButton: Html Msg
 questionButton = 
-  button [ id "Show Question Button", onClick ShowQuestionList ] [ text "Q" ]
+  button [ onClick ToggleSearch ] [ text "S" ]
 
-questionFilter: String -> Html Msg 
-questionFilter s = 
-  input [placeholder "Find Note", value s, onInput Change] []
+searchBoxShown: S.Slipbox -> String -> Html Msg
+searchBoxShown slipbox searchString =
+  div [] 
+    [ input [placeholder "Find Note", value searchString, onInput UpdateSearch] []
+    , searchResults slipbox searchString
+    , questionButton
+    ]
 
-questionList: Graph -> String -> List (Html Msg)
-questionList graph query =
-  graph 
-    |> getNotes 
-    |> List.filter (\note -> String.contains query note.content)
-    |> List.map divFromNote 
+searchResults: S.Slipbox -> String -> Html Msg
+searchResults slipbox searchString =
+  div 
+    [ style "border: 4px solid black; padding: 16px;"] 
+    (List.map toResultPane (S.searchSlipbox searchString slipbox))
 
-divFromNote: PositionNote -> Html Msg
-divFromNote v =
+toResultPane: S.SearchResult -> Html Msg
+toResultPane sr =
   let 
-    color = noteColor v.noteType
-    backgroundColor = "background-color:" ++ color ++ ";"
+    backgroundColor = "background-color:" ++ sr.color ++ ";"
     styleString = "border: 1px solid black;margin-bottom: 16px;cursor:pointer;" ++ backgroundColor
   in
     div 
       [style styleString
-      , onClick (SelectDescription v)
+      , onClick (NoteSelect sr.id (sr.x, sr.y))
       ] 
-      [text v.content]
+      [text sr.content]
+
+noteNetwork: S.Slipbox -> V.Viewport -> Svg Msg
+noteNetwork slipbox viewport =
+  svg
+    [ width V.svgWidthString
+    , height V.svgLengthString
+    , viewBox (V.getViewbox viewport)
+    , style "border: 4px solid black;"
+    ]
+    (graphElements (S.getGraphElements slipbox))
+
+graphElements: ((List S.GraphNote),(List S.GraphLink)) -> (List (Svg Msg))
+graphElements (notes, links) =
+  List.map toSvgCircle notes ++ List.map toSvgLine links
+
+toSvgCircle: S.GraphNote -> Svg Msg
+toSvgCircle note =
+  circle 
+    [ cx (String.fromFloat note.x)
+    , cy (String.fromFloat note.y) 
+    , r "5"
+    , style ("Cursor:Pointer;" ++ "fill:" ++ note.color ++ ";")
+    , onClick (NoteSelect note.id (note.x, note.y))
+    ]
+    (handleCircleAnimation note.shouldAnimate)
+
+handleCircleAnimation: Bool -> (List (Svg Msg))
+handleCircleAnimation shouldAnimate =
+  if shouldAnimate then
+    [circleAnimation]
+  else
+    []
+
+circleAnimation: Svg Msg
+circleAnimation = animate [attributeName "r", values "5;9;5", dur "3s", repeatCount "indefinite"] []
+
+toSvgLine: S.GraphLink -> Svg Msg
+toSvgLine link =
+  line 
+    [x1 (String.fromFloat link.sourceX)
+    , y1 (String.fromFloat link.sourceY)
+    , x2 (String.fromFloat link.targetX)
+    , y2 (String.fromFloat link.targetY)
+    , style "stroke:rgb(0,0,0);stroke-width:2"
+    ] 
+    []
+
+panningVisual: V.Viewport -> Svg Msg
+panningVisual viewport =
+  panningSvg (V.getPanningAttributes viewport)
+      
+panningSvg: V.PanningAttributes -> Svg Msg
+panningSvg attr =
+  svg 
+    [ width attr.svgWidth
+    , height attr.svgHeight
+    , style "border: 4px solid black;"
+    ] 
+    [
+      rect 
+        [ width attr.rectWidth
+        , height attr.rectHeight
+        , style attr.rectStyle
+        , transform attr.rectTransform
+        , on "mousemove" mouseMoveDecoder
+        , on "mousedown" mouseDownDecoder
+        , onMouseUp PanningStop
+        , onMouseOut PanningStop
+        ] 
+        []
+    ]
 
 offsetXDecoder: Decoder Int
-offsetXDecoder = 
-  field "offsetX" int
+offsetXDecoder = field "offsetX" int
 
 offsetYDecoder: Decoder Int
-offsetYDecoder =
-  field "offsetY" int
+offsetYDecoder =field "offsetY" int
 
-mouseEventDecoder: Decoder MouseEvent
-mouseEventDecoder =
-  map2 MouseEvent offsetXDecoder offsetYDecoder
+mouseEventDecoder: Decoder V.MouseEvent
+mouseEventDecoder = map2 V.MouseEvent offsetXDecoder offsetYDecoder
 
 mouseMoveDecoder: Decoder Msg
-mouseMoveDecoder =
-  map MouseMove mouseEventDecoder
+mouseMoveDecoder = map IfPanningShift mouseEventDecoder
 
 mouseDownDecoder: Decoder Msg
-mouseDownDecoder =
-  map MouseDown mouseEventDecoder
+mouseDownDecoder = map PanningStart mouseEventDecoder
+
+selectedNotes: S.Slipbox -> Html Msg
+selectedNotes slipbox =
+  div 
+    [style "border: 4px solid black; padding: 16px;"] 
+    (List.map toDescription (S.getSelectedNotes slipbox))
+
+toDescription: S.DescriptionNote -> Html Msg
+toDescription note =
+  div [] [
+    button [onClick (NoteDismiss note.id)] [text "-"]
+    , div 
+      [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
+      , onClick (NoteSelect note.id (note.x, note.y))
+      , onMouseEnter (NoteHighlight note.id)
+      , onMouseLeave NoteRemoveHighlights
+      ] 
+      [ Html.text note.content
+      , Html.text note.source
+      , div [] (List.map toClickableLink note.links)
+      ]
+  ]
+
+toClickableLink: S.DescriptionLink -> Html Msg
+toClickableLink link =
+  div 
+    [ onClick (NoteSelect link.target (link.targetX, link.targetY))] 
+    [ Html.text (String.fromInt link.target)]
