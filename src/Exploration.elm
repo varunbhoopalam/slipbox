@@ -178,15 +178,14 @@ view : Model -> Html Msg
 view model =
   case model of 
     Model slipbox search viewport ->
-      div []
-        [ div [id "Graph-container", style "padding: 16px; border: 4px solid black"] 
-          [ searchBox slipbox search
-          , noteNetwork slipbox viewport
-          , panningVisual viewport
-          , button [ onClick ZoomOut ] [ text "-" ]
-          , button [ onClick ZoomIn ] [ text "+" ]
-          , selectedNotes slipbox]
-        , div [id "History-Queue"] [ text "History Queue"]
+      div [style "padding: 16px; border: 4px solid black"] 
+        [ searchBox slipbox search
+        , noteNetwork slipbox viewport
+        , panningVisual viewport
+        , button [ onClick ZoomOut ] [ text "-" ]
+        , button [ onClick ZoomIn ] [ text "+" ]
+        , selectedNotes slipbox
+        , historyView slipbox
         ]
 
 searchBox : S.Slipbox -> Search -> Html Msg
@@ -339,3 +338,20 @@ toClickableLink link =
   div 
     [ onClick (NoteSelect link.target (link.targetX, link.targetY))] 
     [ Html.text (String.fromInt link.target)]
+
+historyView: S.Slipbox -> Html Msg
+historyView slipbox =
+  div [style "padding: 16px; border: 4px solid black"] (List.map toHistoryPane (S.getHistory slipbox))
+
+toHistoryPane: S.HistoryAction -> Html Msg
+toHistoryPane action =
+  div 
+    [style (historyTextColor action.undone)] 
+    [text action.summary]
+
+historyTextColor: Bool -> String
+historyTextColor undone =
+  if undone then
+    "color:gray;"
+  else
+    "color:black;"

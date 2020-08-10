@@ -1,7 +1,8 @@
 module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize, 
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
-  , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord)
+  , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
+  , HistoryAction, getHistory)
 
 import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
 import Set
@@ -29,16 +30,30 @@ type alias Link =
   }
 
 type Action =
-  CreateNote HistoryId HistoryNote |
-  CreateLink HistoryId Link
+  CreateNote HistoryId Undone HistoryNote |
+  CreateLink HistoryId Undone HistoryLink
 
 type alias HistoryId = Int
+
+type alias Undone = Bool
 
 type alias HistoryNote =
   { id : NoteId
   , content : String
   , source : String
   , noteType: String
+  }
+
+type alias HistoryLink =
+  { source: NoteId
+  , target: NoteId
+  , id: LinkId
+  }
+
+type alias HistoryAction =
+  { id : HistoryId
+  , undone : Bool
+  , summary : String
   }
 
 type Selected = 
@@ -116,6 +131,12 @@ type alias DescriptionLink =
   , targetY : Float
   }
 
+
+-- Invariants
+summaryLengthMin: Int
+summaryLengthMin = 20
+
+
 -- Methods
 
 initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
@@ -155,11 +176,11 @@ initializeHistory (noteRecords, linkRecords) =
 
 createNoteAction: CreateNoteRecord -> Action
 createNoteAction note =
-  CreateNote note.id (HistoryNote note.action.id note.action.content note.action.source note.action.noteType)
+  CreateNote note.id False (HistoryNote note.action.id note.action.content note.action.source note.action.noteType)
 
 createLinkAction: CreateLinkRecord -> Action
 createLinkAction link =
-  CreateLink link.id (Link link.action.source link.action.target link.action.id)
+  CreateLink link.id False (Link link.action.source link.action.target link.action.id)
 
 actionSorterDesc: (Action -> Action -> Order)
 actionSorterDesc actionA actionB =
@@ -175,8 +196,8 @@ actionSorterDesc actionA actionB =
 getHistoryId: Action -> HistoryId
 getHistoryId action =
   case action of 
-    CreateNote id _ -> id
-    CreateLink id _ -> id
+    CreateNote id _ _ -> id
+    CreateLink id _ _ -> id
 
 noteType: String -> NoteType
 noteType s =
@@ -253,7 +274,7 @@ toSearchResult pn =
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
   case slipbox of
-    Slipbox notes links history -> 
+    Slipbox notes links _ -> 
       ( List.map toGraphNote notes
       , List.filterMap (\link -> toGraphLink link notes) links)
 
@@ -315,3 +336,27 @@ toLinkParts note = (note.id, note.x, note.y)
 findNote: NoteId -> (List Note) -> (Maybe Note)
 findNote noteId notes =
   List.head (List.filter (\note -> note.id == noteId) notes)
+
+getHistory: Slipbox -> (List HistoryAction)
+getHistory slipbox =
+  case slipbox of
+    Slipbox _ _ history -> List.map toHistoryAction history
+
+toHistoryAction: Action -> HistoryAction
+toHistoryAction action = 
+  case action of
+    CreateNote id undone historyNote -> HistoryAction id undone (createNoteSummary historyNote)
+    CreateLink id undone historyLink -> HistoryAction id undone (createLinkSummary historyLink)
+
+createNoteSummary: HistoryNote -> String
+createNoteSummary note =
+  "Create Note:" ++  String.fromInt note.id ++
+  " with Content: " ++  String.slice 0 summaryLengthMin note.content ++ "..."
+
+createLinkSummary: HistoryLink -> String
+createLinkSummary link =
+  "Create Link:" ++  String.fromInt link.id ++ 
+  " from Source:" ++  String.fromInt link.source ++ 
+  " to Target:" ++  String.fromInt link.target
+
+
