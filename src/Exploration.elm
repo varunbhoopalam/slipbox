@@ -3,12 +3,11 @@ module Exploration exposing (..)
 import Browser
 import Html exposing (Html, div, input, text, button)
 import Html.Attributes exposing (id, placeholder, value)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onInput, onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
-import Html.Events exposing (onMouseLeave, onMouseEnter)
 
 -- Modules
 import Viewport as V
@@ -26,11 +25,11 @@ init : Model
 init =
   Model (S.initialize initNoteData initLinkData) (Shown "") V.initialize
 
-initNoteData : List S.Note
+initNoteData : List S.NoteRecord
 initNoteData = 
-  [ S.Note 1 "What is the Elm langauge?" "" "index"
-  , S.Note 2 "Why does some food taste better than others?" "" "index"
-  , S.Note 3 "Note 0" "" "note"]
+  [ S.NoteRecord 1 "What is the Elm langauge?" "" "index"
+  , S.NoteRecord 2 "Why does some food taste better than others?" "" "index"
+  , S.NoteRecord 3 "Note 0" "" "note"]
 
 initLinkData: List S.LinkRecord
 initLinkData =

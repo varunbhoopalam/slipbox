@@ -1,4 +1,4 @@
-module Slipbox exposing (Slipbox, Note, LinkRecord, initialize, 
+module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize, 
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote)
@@ -7,14 +7,45 @@ import Force exposing (entity, computeSimulation, manyBody, simulation, links, c
 import Set
 
 --Types
-type Slipbox = Slipbox (List PositionNote) (List Link)
+type Slipbox = Slipbox (List Note) (List Link)
+
+type alias Note =
+  { id : NoteId
+  , content : String
+  , source : String
+  , noteType: NoteType
+  , x : Float
+  , y : Float
+  , vx : Float
+  , vy : Float
+  , selected : Selected
+  , hover : Hover
+  }
+
+type alias Link = 
+  { source: NoteId
+  , target: NoteId
+  , id: LinkId
+  }
+
+type Selected = 
+  Selected |
+  NotSelected
+
+type Hover =
+  Hover |
+  NotHover
+
+type alias NoteId = Int
+type NoteType = Regular | Index
+type alias LinkId = Int
 
 type alias LinkRecord =
   { source: Int
   , target: Int
   , id: Int
   }
-type alias Note = 
+type alias NoteRecord = 
   { id : Int
   , content : String
   , source : String
@@ -47,12 +78,6 @@ type alias GraphLink =
   , id: LinkId
   }
 
-type alias Link = 
-  { source: NoteId
-  , target: NoteId
-  , id: LinkId
-  }
-
 type alias DescriptionNote =
   { id : NoteId
   , x : Float
@@ -70,7 +95,7 @@ type alias DescriptionLink =
 
 -- Methods
 
-initialize: (List Note) -> (List LinkRecord) -> Slipbox
+initialize: (List NoteRecord) -> (List LinkRecord) -> Slipbox
 initialize notes links =
   Slipbox (initializeNotes notes links) (initializeLinks links)
 
@@ -78,7 +103,7 @@ initializeLinks: (List LinkRecord) -> (List Link)
 initializeLinks l =
   List.map (\lr -> Link lr.source lr.target lr.id) l
 
-initSimulation: (List PositionNote) -> (List LinkRecord) -> (List PositionNote)
+initSimulation: (List Note) -> (List LinkRecord) -> (List Note)
 initSimulation notes linkRecords =
   let
     state = 
@@ -90,16 +115,16 @@ initSimulation notes linkRecords =
   in
     computeSimulation state notes
 
-initializeNotes: (List Note) -> (List LinkRecord) -> (List PositionNote)
+initializeNotes: (List NoteRecord) -> (List LinkRecord) -> (List Note)
 initializeNotes notes links =
   initSimulation (List.indexedMap initializePosition notes) links
 
-initializePosition: Int -> Note -> PositionNote
+initializePosition: Int -> NoteRecord -> Note
 initializePosition index note =
   let
     positions = entity index 1
   in
-    PositionNote note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
+    Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
 
 noteType: String -> NoteType
 noteType s =
@@ -125,7 +150,7 @@ selectNote noteId slipbox =
   case slipbox of 
     Slipbox notes links -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links
 
-selectNoteById: NoteId -> PositionNote -> PositionNote
+selectNoteById: NoteId -> Note -> Note
 selectNoteById noteId note =
   if  note.id == noteId then
     {note | selected = Selected}
@@ -137,7 +162,7 @@ dismissNote noteId slipbox =
   case slipbox of 
     Slipbox notes links -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links
 
-unselectNoteById: NoteId -> PositionNote -> PositionNote
+unselectNoteById: NoteId -> Note -> Note
 unselectNoteById noteId note =
   if  note.id == noteId then
     {note | selected = NotSelected}
@@ -149,7 +174,7 @@ hoverNote noteId slipbox =
   case slipbox of 
     Slipbox notes links -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links
 
-hoverNoteById: NoteId -> PositionNote -> PositionNote
+hoverNoteById: NoteId -> Note -> Note
 hoverNoteById noteId note =
   if  note.id == noteId then
     {note | hover = Hover}
@@ -164,12 +189,12 @@ stopHoverNote slipbox =
 searchSlipbox: String -> Slipbox -> (List SearchResult)
 searchSlipbox searchString slipbox =
   case slipbox of
-     Slipbox notes links -> 
+     Slipbox notes _ -> 
       notes
         |> List.filter (\note -> String.contains searchString note.content)
         |> List.map toSearchResult
 
-toSearchResult: PositionNote -> SearchResult
+toSearchResult: Note -> SearchResult
 toSearchResult pn =
   SearchResult pn.id pn.x pn.y (noteColor pn.noteType) pn.content
 
@@ -178,13 +203,13 @@ getGraphElements slipbox =
   case slipbox of
     Slipbox notes links -> 
       ( List.map toGraphNote notes
-      , List.filterMap (\link -> (toGraphLink link notes)) links)
+      , List.filterMap (\link -> toGraphLink link notes) links)
 
-toGraphNote: PositionNote -> GraphNote
+toGraphNote: Note -> GraphNote
 toGraphNote pn =
   GraphNote pn.id pn.x pn.y (noteColor pn.noteType) (shouldAnimateNoteCircle pn.hover)
 
-toGraphLink: Link -> (List PositionNote) -> (Maybe GraphLink)
+toGraphLink: Link -> (List Note) -> (Maybe GraphLink)
 toGraphLink link notes =
   let
       source = findNote link.source notes
@@ -192,7 +217,7 @@ toGraphLink link notes =
   in
     Maybe.map3 graphLinkBuilder source target (Just link.id)
     
-graphLinkBuilder: PositionNote -> PositionNote -> LinkId -> GraphLink
+graphLinkBuilder: Note -> Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
   GraphLink source.id source.x source.y target.id target.x target.y id
 
@@ -202,13 +227,13 @@ getSelectedNotes slipbox =
     Slipbox notes links -> 
       notes
        |> List.filter (\note -> note.selected == Selected )
-       |> List.map (\note -> (toDescriptionNote notes note links))
+       |> List.map (\note -> toDescriptionNote notes note links)
 
-toDescriptionNote: (List PositionNote) -> PositionNote -> (List Link) -> DescriptionNote
+toDescriptionNote: (List Note) -> Note -> (List Link) -> DescriptionNote
 toDescriptionNote notes note links =
   DescriptionNote note.id note.x note.y note.content note.source (getDescriptionLinks notes note.id links)
 
-getDescriptionLinks: (List PositionNote) -> NoteId -> (List Link) -> (List DescriptionLink)
+getDescriptionLinks: (List Note) -> NoteId -> (List Link) -> (List DescriptionLink)
 getDescriptionLinks notes noteId links =
   List.map toDescriptionLink (uniqueLinkParts (getLinkParts notes noteId links))
 
@@ -216,14 +241,14 @@ toDescriptionLink: (Int, Float, Float) -> DescriptionLink
 toDescriptionLink (noteId, x, y) =
   DescriptionLink noteId x y
 
-getLinkParts: (List PositionNote) -> NoteId -> (List Link) -> (List (Int, Float, Float))
+getLinkParts: (List Note) -> NoteId -> (List Link) -> (List (Int, Float, Float))
 getLinkParts notes noteId links =
   List.filterMap (\link -> maybeGetDescriptionLinkParts notes noteId link) links
 
 uniqueLinkParts: (List (Int, Float, Float)) -> (List (Int, Float, Float))
 uniqueLinkParts linkParts = Set.toList (Set.fromList linkParts)
 
-maybeGetDescriptionLinkParts: (List PositionNote) -> NoteId -> Link -> (Maybe (Int, Float, Float))
+maybeGetDescriptionLinkParts: (List Note) -> NoteId -> Link -> (Maybe (Int, Float, Float))
 maybeGetDescriptionLinkParts notes noteId link =
   if link.source == noteId then 
     Maybe.map toLinkParts (findNote link.target notes)
@@ -232,37 +257,9 @@ maybeGetDescriptionLinkParts notes noteId link =
   else 
     Nothing
 
-toLinkParts: PositionNote -> (Int, Float, Float)
+toLinkParts: Note -> (Int, Float, Float)
 toLinkParts note = (note.id, note.x, note.y)
 
-findNote: NoteId -> (List PositionNote) -> (Maybe PositionNote)
+findNote: NoteId -> (List Note) -> (Maybe Note)
 findNote noteId notes =
   List.head (List.filter (\note -> note.id == noteId) notes)
-
-type alias PositionNote =
-  { id : NoteId
-  , content : Content
-  , source : Source
-  , noteType: NoteType
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  , selected : Selected
-  , hover : Hover
-  }
-
-type Selected = 
-  Selected |
-  NotSelected
-
-type Hover =
-  Hover |
-  NotHover
-
-type alias NoteId = Int
-type alias Content = String
-type NoteType = Regular | Index
-type alias Source = String
-
-type alias LinkId = Int
