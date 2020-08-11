@@ -137,11 +137,37 @@ type alias DescriptionLink =
   , targetY : Float
   }
 
-
 -- Invariants
 summaryLengthMin: Int
 summaryLengthMin = 20
 
+
+-- UNSORTED-NOTES: Notes must be sorted. Simulation must always return UnsortedNotes type
+type UnsortedNotes = UnsortedNotes (List Note)
+
+initSimulation: (List Note) -> (List Link) -> UnsortedNotes
+initSimulation notes linkRecords =
+  let
+    state = 
+      Force.simulation 
+        [ Force.manyBodyStrength -10 (List.map (\n -> n.id) notes)
+        , Force.links (List.map (\l -> (l.source, l.target)) linkRecords)
+        , Force.center 0 0
+        ]
+  in
+    UnsortedNotes (Force.computeSimulation state notes)
+
+sortNotes: UnsortedNotes -> (List Note)
+sortNotes unsortedNotes =
+  case unsortedNotes of
+    UnsortedNotes notes -> (List.sortWith noteSorterDesc notes)
+
+noteSorterDesc: (Note -> Note -> Order)
+noteSorterDesc noteA noteB =
+  case compare noteA.id noteB.id of
+       LT -> GT
+       EQ -> EQ
+       GT -> LT
 
 -- Methods
 
@@ -156,21 +182,9 @@ initializeLinks: (List LinkRecord) -> (List Link)
 initializeLinks l =
   List.map (\lr -> Link lr.source lr.target lr.id) l
 
-initSimulation: (List Note) -> (List Link) -> (List Note)
-initSimulation notes linkRecords =
-  let
-    state = 
-      Force.simulation 
-        [ Force.manyBodyStrength -10 (List.map (\n -> n.id) notes)
-        , Force.links (List.map (\l -> (l.source, l.target)) linkRecords)
-        , Force.center 0 0
-        ]
-  in
-    Force.computeSimulation state notes
-
 initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
 initializeNotes notes links =
-  List.sortWith noteSorterDesc (initSimulation (List.indexedMap initializePosition notes) links)
+  sortNotes (initSimulation (List.indexedMap initializePosition notes) links)
 
 initializePosition: Int -> NoteRecord -> Note
 initializePosition index note =
@@ -198,13 +212,6 @@ actionSorterDesc actionA actionB =
       idB = getHistoryId actionB
   in
     case compare idA idB of
-       LT -> GT
-       EQ -> EQ
-       GT -> LT
-
-noteSorterDesc: (Note -> Note -> Order)
-noteSorterDesc noteA noteB =
-  case compare noteA.id noteB.id of
        LT -> GT
        EQ -> EQ
        GT -> LT
@@ -378,7 +385,15 @@ createLinkSummary link =
 createNote: MakeNoteRecord -> Slipbox -> Slipbox
 createNote note slipbox =
   case slipbox of
-     Slipbox notes links actions -> Slipbox (List.sortWith noteSorterDesc (addNoteToNotes (toNoteRecord note notes) notes links)) links (addNoteToActions (toNoteRecord note notes) actions)
+     Slipbox notes links actions -> handleCreateNote note notes links actions
+
+handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+handleCreateNote makeNoteRecord notes links actions =
+  let
+    newNote = toNoteRecord makeNoteRecord notes
+    newNoteList = addNoteToNotes newNote notes links
+  in
+    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions)
 
 toNoteRecord: MakeNoteRecord -> (List Note) -> NoteRecord
 toNoteRecord note notes =
@@ -392,7 +407,7 @@ getNextNoteId notes =
 
 addNoteToNotes: NoteRecord -> (List Note) -> (List Link) -> (List Note)
 addNoteToNotes note notes links =
-  initSimulation ( initializePosition note.id note :: notes) links
+  sortNotes (initSimulation ( initializePosition note.id note :: notes) links)
 
 addNoteToActions : NoteRecord -> (List Action) -> (List Action)
 addNoteToActions note actions =
