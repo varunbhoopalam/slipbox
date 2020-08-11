@@ -148,8 +148,108 @@ type alias DescriptionLink =
 summaryLengthMin: Int
 summaryLengthMin = 20
 
+-- Methods
 
--- UNSORTED-NOTES: Notes must be sorted. Simulation must always return UnsortedNotes type
+-- Returns Slipbox
+initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
+initialize notes links (noteRecords, linkRecords) =
+  let
+    l =  initializeLinks links
+  in
+    Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords))
+
+selectNote: NoteId -> Slipbox -> Slipbox
+selectNote noteId slipbox =
+  case slipbox of 
+    Slipbox notes links history -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links history
+
+dismissNote: NoteId -> Slipbox -> Slipbox
+dismissNote noteId slipbox =
+  case slipbox of 
+    Slipbox notes links history -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links history
+
+
+hoverNote: NoteId -> Slipbox -> Slipbox
+hoverNote noteId slipbox =
+  case slipbox of 
+    Slipbox notes links history -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history
+
+stopHoverNote: Slipbox -> Slipbox
+stopHoverNote slipbox =
+  case slipbox of 
+    Slipbox notes links history -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history
+
+createNote: MakeNoteRecord -> Slipbox -> Slipbox
+createNote note slipbox =
+  case slipbox of
+     Slipbox notes links actions -> handleCreateNote note notes links actions
+
+handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+handleCreateNote makeNoteRecord notes links actions =
+  let
+    newNote = toNoteRecord makeNoteRecord notes
+    newNoteList = addNoteToNotes newNote notes links
+  in
+    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions)
+
+createLink: MakeLinkRecord -> Slipbox -> Slipbox
+createLink link slipbox =
+  case slipbox of 
+    Slipbox notes links actions -> createLinkHandler link notes links actions
+  
+createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+createLinkHandler makeLinkRecord notes links actions =
+  let
+    maybeLink = toMaybeLink makeLinkRecord links notes
+  in 
+    case maybeLink of
+      Just link -> addLinkToSlipbox link notes links actions
+      Nothing -> Slipbox notes links actions
+
+addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+addLinkToSlipbox link notes links actions =
+  let
+    newLinks =  addLinkToLinks link links
+  in
+    Slipbox 
+      (sortNotes (initSimulation notes newLinks))
+      newLinks
+      (addLinkToActions link actions)
+
+-- Publicly Exposed for View
+searchSlipbox: String -> Slipbox -> (List SearchResult)
+searchSlipbox searchString slipbox =
+  case slipbox of
+     Slipbox notes _ _-> 
+      notes
+        |> List.filter (\note -> String.contains searchString note.content)
+        |> List.map toSearchResult
+  
+getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
+getGraphElements slipbox =
+  case slipbox of
+    Slipbox notes links _ -> 
+      ( List.map toGraphNote notes
+      , List.filterMap (\link -> toGraphLink link notes) links)
+
+getSelectedNotes: Slipbox -> (List DescriptionNote)
+getSelectedNotes slipbox =
+  case slipbox of 
+    Slipbox notes links _ -> 
+      notes
+       |> List.filter (\note -> note.selected == Selected )
+       |> List.map (\note -> toDescriptionNote notes note links)
+
+getHistory: Slipbox -> (List HistoryAction)
+getHistory slipbox =
+  case slipbox of
+    Slipbox _ _ history -> List.map toHistoryAction history
+
+-- Helpers
+initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
+initializeNotes notes links =
+  sortNotes (initSimulation (List.indexedMap initializePosition notes) links)
+
 type UnsortedNotes = UnsortedNotes (List Note)
 
 initSimulation: (List Note) -> (List Link) -> UnsortedNotes
@@ -176,23 +276,6 @@ noteSorterDesc noteA noteB =
        EQ -> EQ
        GT -> LT
 
--- Methods
-
-initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
-initialize notes links (noteRecords, linkRecords) =
-  let
-    l =  initializeLinks links
-  in
-    Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords))
-
-initializeLinks: (List LinkRecord) -> (List Link)
-initializeLinks linkRecords =
-  List.sortWith linkSorterDesc (List.map (\lr -> Link lr.source lr.target lr.id) linkRecords)
-
-initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
-initializeNotes notes links =
-  sortNotes (initSimulation (List.indexedMap initializePosition notes) links)
-
 initializePosition: Int -> NoteRecord -> Note
 initializePosition index note =
   let
@@ -206,6 +289,73 @@ createNewNote index note =
     positions = Force.entity index 1
   in
     Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy Selected NotHover
+
+noteType: String -> NoteType
+noteType s =
+  if s == "index" then
+    Index
+  else
+    Regular
+
+selectNoteById: NoteId -> Note -> Note
+selectNoteById noteId note =
+  if  note.id == noteId then
+    {note | selected = Selected}
+  else
+    note
+
+unselectNoteById: NoteId -> Note -> Note
+unselectNoteById noteId note =
+  if  note.id == noteId then
+    {note | selected = NotSelected}
+  else
+    note
+
+hoverNoteById: NoteId -> Note -> Note
+hoverNoteById noteId note =
+  if  note.id == noteId then
+    {note | hover = Hover}
+  else
+    {note | hover = NotHover}
+
+noteColor: NoteType -> String
+noteColor notetype =
+  case notetype of
+    Regular -> "rgba(137, 196, 244, 1)"
+    Index -> "rgba(250, 190, 88, 1)"
+
+shouldAnimateNoteCircle: Hover -> Bool
+shouldAnimateNoteCircle hover =
+  case hover of
+     Hover -> True
+     NotHover -> False
+
+toSearchResult: Note -> SearchResult
+toSearchResult pn =
+  SearchResult pn.id pn.x pn.y (noteColor pn.noteType) pn.content
+
+toGraphNote: Note -> GraphNote
+toGraphNote pn =
+  GraphNote pn.id pn.x pn.y (noteColor pn.noteType) (shouldAnimateNoteCircle pn.hover)
+
+initializeLinks: (List LinkRecord) -> (List Link)
+initializeLinks linkRecords =
+  List.sortWith linkSorterDesc (List.map (\lr -> Link lr.source lr.target lr.id) linkRecords)
+
+linkSorterDesc: (Link -> Link -> Order)
+linkSorterDesc linkA linkB =
+  case compare linkA.id linkB.id of
+    LT -> GT
+    EQ -> EQ
+    GT -> LT
+
+toGraphLink: Link -> (List Note) -> (Maybe GraphLink)
+toGraphLink link notes =
+  let
+      source = findNote link.source notes
+      target = findNote link.target notes
+  in
+    Maybe.map3 graphLinkBuilder source target (Just link.id)
 
 initializeHistory: ((List CreateNoteRecord), (List CreateLinkRecord)) -> (List Action)
 initializeHistory (noteRecords, linkRecords) =
@@ -230,121 +380,15 @@ actionSorterDesc actionA actionB =
        EQ -> EQ
        GT -> LT
 
-linkSorterDesc: (Link -> Link -> Order)
-linkSorterDesc linkA linkB =
-  case compare linkA.id linkB.id of
-    LT -> GT
-    EQ -> EQ
-    GT -> LT
-
 getHistoryId: Action -> HistoryId
 getHistoryId action =
   case action of 
     CreateNote id _ _ -> id
     CreateLink id _ _ -> id
-
-noteType: String -> NoteType
-noteType s =
-  if s == "index" then
-    Index
-  else
-    Regular
-
-noteColor: NoteType -> String
-noteColor notetype =
-  case notetype of
-    Regular -> "rgba(137, 196, 244, 1)"
-    Index -> "rgba(250, 190, 88, 1)"
-
-shouldAnimateNoteCircle: Hover -> Bool
-shouldAnimateNoteCircle hover =
-  case hover of
-     Hover -> True
-     NotHover -> False
-
-selectNote: NoteId -> Slipbox -> Slipbox
-selectNote noteId slipbox =
-  case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links history
-
-selectNoteById: NoteId -> Note -> Note
-selectNoteById noteId note =
-  if  note.id == noteId then
-    {note | selected = Selected}
-  else
-    note
-
-dismissNote: NoteId -> Slipbox -> Slipbox
-dismissNote noteId slipbox =
-  case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links history
-
-unselectNoteById: NoteId -> Note -> Note
-unselectNoteById noteId note =
-  if  note.id == noteId then
-    {note | selected = NotSelected}
-  else
-    note
-
-hoverNote: NoteId -> Slipbox -> Slipbox
-hoverNote noteId slipbox =
-  case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history
-
-hoverNoteById: NoteId -> Note -> Note
-hoverNoteById noteId note =
-  if  note.id == noteId then
-    {note | hover = Hover}
-  else
-    {note | hover = NotHover}
-
-stopHoverNote: Slipbox -> Slipbox
-stopHoverNote slipbox =
-  case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history
-
-searchSlipbox: String -> Slipbox -> (List SearchResult)
-searchSlipbox searchString slipbox =
-  case slipbox of
-     Slipbox notes _ _-> 
-      notes
-        |> List.filter (\note -> String.contains searchString note.content)
-        |> List.map toSearchResult
-
-toSearchResult: Note -> SearchResult
-toSearchResult pn =
-  SearchResult pn.id pn.x pn.y (noteColor pn.noteType) pn.content
-
-getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
-getGraphElements slipbox =
-  case slipbox of
-    Slipbox notes links _ -> 
-      ( List.map toGraphNote notes
-      , List.filterMap (\link -> toGraphLink link notes) links)
-
-toGraphNote: Note -> GraphNote
-toGraphNote pn =
-  GraphNote pn.id pn.x pn.y (noteColor pn.noteType) (shouldAnimateNoteCircle pn.hover)
-
-toGraphLink: Link -> (List Note) -> (Maybe GraphLink)
-toGraphLink link notes =
-  let
-      source = findNote link.source notes
-      target = findNote link.target notes
-  in
-    Maybe.map3 graphLinkBuilder source target (Just link.id)
     
 graphLinkBuilder: Note -> Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
   GraphLink source.id source.x source.y target.id target.x target.y id
-
-getSelectedNotes: Slipbox -> (List DescriptionNote)
-getSelectedNotes slipbox =
-  case slipbox of 
-    Slipbox notes links _ -> 
-      notes
-       |> List.filter (\note -> note.selected == Selected )
-       |> List.map (\note -> toDescriptionNote notes note links)
 
 toDescriptionNote: (List Note) -> Note -> (List Link) -> DescriptionNote
 toDescriptionNote notes note links =
@@ -381,11 +425,6 @@ findNote: NoteId -> (List Note) -> (Maybe Note)
 findNote noteId notes =
   List.head (List.filter (\note -> note.id == noteId) notes)
 
-getHistory: Slipbox -> (List HistoryAction)
-getHistory slipbox =
-  case slipbox of
-    Slipbox _ _ history -> List.map toHistoryAction history
-
 toHistoryAction: Action -> HistoryAction
 toHistoryAction action = 
   case action of
@@ -402,19 +441,6 @@ createLinkSummary link =
   "Create Link:" ++  String.fromInt link.id ++ 
   " from Source:" ++  String.fromInt link.source ++ 
   " to Target:" ++  String.fromInt link.target
-
-createNote: MakeNoteRecord -> Slipbox -> Slipbox
-createNote note slipbox =
-  case slipbox of
-     Slipbox notes links actions -> handleCreateNote note notes links actions
-
-handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-handleCreateNote makeNoteRecord notes links actions =
-  let
-    newNote = toNoteRecord makeNoteRecord notes
-    newNoteList = addNoteToNotes newNote notes links
-  in
-    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions)
 
 toNoteRecord: MakeNoteRecord -> (List Note) -> NoteRecord
 toNoteRecord note notes =
@@ -446,30 +472,6 @@ getNextHistoryId actions =
 toHistoryNote: NoteRecord -> HistoryNote
 toHistoryNote note =
   HistoryNote note.id note.content note.source note.noteType
-
-createLink: MakeLinkRecord -> Slipbox -> Slipbox
-createLink link slipbox =
-  case slipbox of 
-    Slipbox notes links actions -> createLinkHandler link notes links actions
-  
-createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-createLinkHandler makeLinkRecord notes links actions =
-  let
-    maybeLink = toMaybeLink makeLinkRecord links notes
-  in 
-    case maybeLink of
-      Just link -> addLinkToSlipbox link notes links actions
-      Nothing -> Slipbox notes links actions
-
-addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-addLinkToSlipbox link notes links actions =
-  let
-    newLinks =  addLinkToLinks link links
-  in
-    Slipbox 
-      (sortNotes (initSimulation notes newLinks))
-      newLinks
-      (addLinkToActions link actions)
 
 addLinkToLinks: Link -> (List Link) -> (List Link)
 addLinkToLinks link links =
