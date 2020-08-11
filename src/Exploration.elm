@@ -174,6 +174,7 @@ type Msg =
   ZoomIn |
   ZoomOut |
   NoteSelect S.NoteId (Float, Float) |
+  MapNoteSelect S.NoteId |
   NoteDismiss S.NoteId |
   NoteHighlight S.NoteId |
   NoteRemoveHighlights |
@@ -194,6 +195,7 @@ update msg model =
     ZoomIn -> handleZoomIn model
     ZoomOut -> handleZoomOut model
     NoteSelect note coords -> handleNoteSelect note coords model
+    MapNoteSelect note -> handleMapNoteSelect note model
     NoteDismiss note -> handleNoteDismiss note model
     NoteHighlight note -> handleNoteHighlight note model
     NoteRemoveHighlights -> handleNoteRemoveHighlights model
@@ -250,6 +252,12 @@ handleNoteSelect noteId coords model =
   case model of
     Model slipbox search viewport form ->
       Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport) form
+
+handleMapNoteSelect: S.NoteId -> Model -> Model
+handleMapNoteSelect noteId model =
+  case model of
+    Model slipbox search viewport form ->
+      Model (S.selectNote noteId slipbox) search viewport form
 
 handleNoteDismiss: S.NoteId -> Model -> Model
 handleNoteDismiss noteId model =
@@ -373,7 +381,7 @@ toSvgCircle note =
     , cy (String.fromFloat note.y) 
     , r "5"
     , style ("Cursor:Pointer;" ++ "fill:" ++ note.color ++ ";")
-    , onClick (NoteSelect note.id (note.x, note.y))
+    , onClick (MapNoteSelect note.id) 
     ]
     (handleCircleAnimation note.shouldAnimate)
 
