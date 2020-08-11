@@ -200,6 +200,13 @@ initializePosition index note =
   in
     Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
 
+createNewNote: Int -> NoteRecord -> Note
+createNewNote index note =
+  let
+    positions = Force.entity index 1
+  in
+    Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy Selected NotHover
+
 initializeHistory: ((List CreateNoteRecord), (List CreateLinkRecord)) -> (List Action)
 initializeHistory (noteRecords, linkRecords) =
   List.sortWith actionSorterDesc (List.map createNoteAction noteRecords ++ List.map createLinkAction linkRecords)
@@ -421,7 +428,7 @@ getNextNoteId notes =
 
 addNoteToNotes: NoteRecord -> (List Note) -> (List Link) -> (List Note)
 addNoteToNotes note notes links =
-  sortNotes (initSimulation ( initializePosition note.id note :: notes) links)
+  sortNotes (initSimulation ( createNewNote note.id note :: notes) links)
 
 addNoteToActions : NoteRecord -> (List Action) -> (List Action)
 addNoteToActions note actions =

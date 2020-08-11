@@ -97,7 +97,7 @@ type alias CreateForm =
 
 initCreateNoteForm: CreateNoteForm 
 initCreateNoteForm =
-  HideForm "" "" Regular
+  ShowForm "" "" Regular
 
 updateContent: String -> CreateNoteForm -> CreateNoteForm
 updateContent content form =
