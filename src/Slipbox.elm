@@ -2,7 +2,8 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
-  , HistoryAction, getHistory, createNote, MakeNoteRecord)
+  , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
+  , createLink)
 
 import Force
 import Set
@@ -73,6 +74,12 @@ type alias LinkRecord =
   , target: Int
   , id: Int
   }
+
+type alias MakeLinkRecord =
+  { source: Int
+  , target: Int
+  }
+
 type alias NoteRecord = 
   { id : Int
   , content : String
@@ -146,12 +153,12 @@ summaryLengthMin = 20
 type UnsortedNotes = UnsortedNotes (List Note)
 
 initSimulation: (List Note) -> (List Link) -> UnsortedNotes
-initSimulation notes linkRecords =
+initSimulation notes links =
   let
     state = 
       Force.simulation 
         [ Force.manyBodyStrength -10 (List.map (\n -> n.id) notes)
-        , Force.links (List.map (\l -> (l.source, l.target)) linkRecords)
+        , Force.links (List.map (\l -> (l.source, l.target)) links)
         , Force.center 0 0
         ]
   in
@@ -179,8 +186,8 @@ initialize notes links (noteRecords, linkRecords) =
     Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords))
 
 initializeLinks: (List LinkRecord) -> (List Link)
-initializeLinks l =
-  List.map (\lr -> Link lr.source lr.target lr.id) l
+initializeLinks linkRecords =
+  List.sortWith linkSorterDesc (List.map (\lr -> Link lr.source lr.target lr.id) linkRecords)
 
 initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
 initializeNotes notes links =
@@ -215,6 +222,13 @@ actionSorterDesc actionA actionB =
        LT -> GT
        EQ -> EQ
        GT -> LT
+
+linkSorterDesc: (Link -> Link -> Order)
+linkSorterDesc linkA linkB =
+  case compare linkA.id linkB.id of
+    LT -> GT
+    EQ -> EQ
+    GT -> LT
 
 getHistoryId: Action -> HistoryId
 getHistoryId action =
@@ -425,3 +439,68 @@ getNextHistoryId actions =
 toHistoryNote: NoteRecord -> HistoryNote
 toHistoryNote note =
   HistoryNote note.id note.content note.source note.noteType
+
+createLink: MakeLinkRecord -> Slipbox -> Slipbox
+createLink link slipbox =
+  case slipbox of 
+    Slipbox notes links actions -> createLinkHandler link notes links actions
+  
+createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+createLinkHandler makeLinkRecord notes links actions =
+  let
+    maybeLink = toMaybeLink makeLinkRecord links notes
+  in 
+    case maybeLink of
+      Just link -> addLinkToSlipbox link notes links actions
+      Nothing -> Slipbox notes links actions
+
+addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+addLinkToSlipbox link notes links actions =
+  let
+    newLinks =  addLinkToLinks link links
+  in
+    Slipbox 
+      (sortNotes (initSimulation notes newLinks))
+      newLinks
+      (addLinkToActions link actions)
+
+addLinkToLinks: Link -> (List Link) -> (List Link)
+addLinkToLinks link links =
+  link :: links
+
+addLinkToActions: Link -> (List Action) -> (List Action)
+addLinkToActions link actions =
+  CreateLink (getNextHistoryId actions) False (toHistoryLink link) :: actions
+
+toHistoryLink: Link -> HistoryLink
+toHistoryLink link =
+  HistoryLink link.source link.target link.id
+
+toMaybeLink: MakeLinkRecord -> (List Link) -> (List Note) -> (Maybe Link)
+toMaybeLink makeLinkRecord links notes =
+  let
+      source = makeLinkRecord.source
+      target = makeLinkRecord.target
+  in
+  
+  if linkRecordIsValid source target notes then
+    Just (Link source target (nextLinkId links))
+  else 
+    Nothing
+
+linkRecordIsValid: Int -> Int -> (List Note) -> Bool
+linkRecordIsValid source target notes =
+  noteExists source notes && noteExists target notes
+
+noteExists: Int -> (List Note) -> Bool
+noteExists noteId notes =
+  List.member noteId (List.map (\note -> note.id) notes)
+
+nextLinkId: (List Link) -> Int
+nextLinkId links =
+  let
+    mLink = List.head links
+  in
+    case mLink of
+      Just link -> link.id + 1
+      Nothing -> 1
