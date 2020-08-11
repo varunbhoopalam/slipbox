@@ -1,8 +1,8 @@
 module Exploration exposing (..)
 
 import Browser
-import Html exposing (Html, div, input, text, button)
-import Html.Attributes exposing (id, placeholder, value)
+import Html exposing (Html, div, input, text, button, form, textarea, option, select)
+import Html.Attributes exposing (placeholder, value, selected)
 import Html.Events exposing (onInput, onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
@@ -19,11 +19,11 @@ main =
   Browser.sandbox { init = init, update = update, view = view }
 
 -- MODEL
-type Model = Model S.Slipbox Search V.Viewport
+type Model = Model S.Slipbox Search V.Viewport CreateNoteForm
 
 init : Model
 init =
-  Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize
+  Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize initCreateNoteForm
 
 initNoteData : List S.NoteRecord
 initNoteData = 
@@ -77,8 +77,94 @@ getSearchString search =
     Shown str -> str
     Hidden str -> str
 
--- UPDATE
+-- CreateNoteForm
 
+type CreateNoteForm =
+  ShowForm Content Source NoteType |
+  HideForm Content Source NoteType
+
+type NoteType = Index | Regular
+type alias Content = String
+type alias Source = String
+
+type alias CreateForm =
+  { shown: Bool
+  , content: String
+  , source: String
+  , isIndex: Bool
+  , canSubmit: Bool
+  }
+
+initCreateNoteForm: CreateNoteForm 
+initCreateNoteForm =
+  HideForm "" "" Regular
+
+updateContent: String -> CreateNoteForm -> CreateNoteForm
+updateContent content form =
+  case form of
+    ShowForm _ source noteType -> ShowForm content source noteType
+    HideForm _ _ _ -> form
+
+updateSource: String -> CreateNoteForm -> CreateNoteForm
+updateSource source form =
+  case form of
+    ShowForm content _ noteType -> ShowForm content source noteType
+    HideForm _ _ _ -> form
+
+updateNoteType: String -> CreateNoteForm -> CreateNoteForm
+updateNoteType noteType form =
+  case form of
+    ShowForm content source _ -> ShowForm content source (toNoteType noteType)
+    HideForm _ _ _ -> form
+
+toNoteType: String -> NoteType
+toNoteType noteType =
+  if noteType == "Index" then
+    Index
+  else
+    Regular
+
+toggleCreateNoteForm: CreateNoteForm -> CreateNoteForm
+toggleCreateNoteForm form =
+  case form of
+     ShowForm content source noteType -> HideForm content source noteType
+     HideForm content source noteType -> ShowForm content source noteType
+
+getCreateFormData: CreateNoteForm -> CreateForm
+getCreateFormData form =
+  case form of
+    ShowForm content source noteType -> CreateForm True content source (isIndex noteType) (canSubmit content source)
+    HideForm content source noteType -> CreateForm False content source (isIndex noteType) False
+
+canSubmit: Content -> Source -> Bool
+canSubmit content source =
+  content /= "" && source /= ""
+
+isIndex: NoteType -> Bool
+isIndex noteType = 
+  case noteType of
+    Index -> True
+    Regular -> False
+
+wipeAndHideForm: CreateNoteForm -> CreateNoteForm
+wipeAndHideForm form =
+  case form of
+    ShowForm _ _ _ -> HideForm "" "" Regular
+    HideForm _ _ _ -> form
+
+noteTypeToString: NoteType -> String
+noteTypeToString noteType =
+  case noteType of 
+    Index -> "Index"
+    Regular -> "Regular"
+
+makeNoteRecord: CreateNoteForm -> S.MakeNoteRecord
+makeNoteRecord form =
+  case form of
+    ShowForm content source noteType -> S.MakeNoteRecord content source (noteTypeToString noteType)
+    HideForm content source noteType -> S.MakeNoteRecord content source (noteTypeToString noteType)
+
+-- UPDATE
 type Msg = 
   ToggleSearch |
   UpdateSearch String |
@@ -90,7 +176,12 @@ type Msg =
   NoteSelect S.NoteId (Float, Float) |
   NoteDismiss S.NoteId |
   NoteHighlight S.NoteId |
-  NoteRemoveHighlights
+  NoteRemoveHighlights |
+  ToggleCreateNoteForm |
+  ContentInputCreateNoteForm String |
+  SourceInputCreateNoteForm String |
+  ChangeNoteTypeCreateNoteForm String |
+  SubmitCreateNoteForm
 
 update : Msg -> Model -> Model
 update msg model =
@@ -106,78 +197,113 @@ update msg model =
     NoteDismiss note -> handleNoteDismiss note model
     NoteHighlight note -> handleNoteHighlight note model
     NoteRemoveHighlights -> handleNoteRemoveHighlights model
+    ToggleCreateNoteForm -> handleToggleCreateNoteForm model
+    ContentInputCreateNoteForm s -> handleContentInputCreateNoteForm s model
+    SourceInputCreateNoteForm s -> handleSourceInputCreateNoteForm s model
+    ChangeNoteTypeCreateNoteForm s -> handleChangeNoteTypeCreateNoteForm s model 
+    SubmitCreateNoteForm -> handleSubmitCreateNoteForm model
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
   case model of 
-    Model slipbox search viewport ->
-      Model slipbox (toggle search) viewport
+    Model slipbox search viewport form ->
+      Model slipbox (toggle search) viewport form
 
 handleUpdateSearch: String -> Model -> Model
 handleUpdateSearch query model =
   case model of 
-    Model slipbox search viewport ->
-      Model slipbox (updateSearch query search) viewport
+    Model slipbox search viewport form ->
+      Model slipbox (updateSearch query search) viewport form
   
 handlePanningStart: V.MouseEvent -> Model -> Model
 handlePanningStart mouseEvent model =
   case model of
-    Model slipbox search viewport ->
-      Model slipbox search (V.startPanning mouseEvent viewport)
+    Model slipbox search viewport form->
+      Model slipbox search (V.startPanning mouseEvent viewport) form
 
 handleIfPanningShift: V.MouseEvent -> Model -> Model
 handleIfPanningShift mouseEvent model =
   case model of 
-    Model slipbox search viewport ->
-      Model slipbox search (V.shiftIfPanning mouseEvent viewport)
+    Model slipbox search viewport form ->
+      Model slipbox search (V.shiftIfPanning mouseEvent viewport) form
 
 handlePanningStop: Model -> Model
 handlePanningStop model =
   case model of
-    Model slipbox search viewport ->
-      Model slipbox search (V.stopPanning viewport)
+    Model slipbox search viewport form->
+      Model slipbox search (V.stopPanning viewport) form
 
 handleZoomIn: Model -> Model
 handleZoomIn model =
   case model of 
-    Model slipbox search viewport ->
-      Model slipbox search (V.zoomIn viewport)
+    Model slipbox search viewport form->
+      Model slipbox search (V.zoomIn viewport) form
 
 handleZoomOut: Model -> Model
 handleZoomOut model =
   case model of
-    Model slipbox search viewport ->
-      Model slipbox search (V.zoomOut viewport)
+    Model slipbox search viewport form->
+      Model slipbox search (V.zoomOut viewport) form
 
 handleNoteSelect: S.NoteId -> (Float, Float) -> Model -> Model
 handleNoteSelect noteId coords model =
   case model of
-    Model slipbox search viewport->
-      Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport)
+    Model slipbox search viewport form ->
+      Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport) form
 
 handleNoteDismiss: S.NoteId -> Model -> Model
 handleNoteDismiss noteId model =
   case model of
-    Model slipbox query viewport->
-      Model (S.dismissNote noteId slipbox) query viewport
+    Model slipbox query viewport form ->
+      Model (S.dismissNote noteId slipbox) query viewport form
 
 handleNoteHighlight: S.NoteId -> Model -> Model
 handleNoteHighlight noteId model =
   case model of
-    Model slipbox query viewport->
-      Model (S.hoverNote noteId slipbox) query viewport
+    Model slipbox query viewport form ->
+      Model (S.hoverNote noteId slipbox) query viewport form
 
 handleNoteRemoveHighlights: Model -> Model
 handleNoteRemoveHighlights model =
   case model of
-    Model slipbox query viewport->
-      Model (S.stopHoverNote slipbox) query viewport
+    Model slipbox query viewport form ->
+      Model (S.stopHoverNote slipbox) query viewport form
+
+handleToggleCreateNoteForm: Model -> Model
+handleToggleCreateNoteForm model =
+  case model of 
+    Model slipbox query viewport form ->
+      Model slipbox query viewport (toggleCreateNoteForm form)
+
+handleContentInputCreateNoteForm: String -> Model -> Model
+handleContentInputCreateNoteForm content model =
+  case model of
+    Model slipbox query viewport form ->
+      Model slipbox query viewport (updateContent content form)
+
+handleSourceInputCreateNoteForm: String -> Model -> Model
+handleSourceInputCreateNoteForm source model =
+  case model of
+    Model slipbox query viewport form ->
+      Model slipbox query viewport (updateSource source form)
+
+handleChangeNoteTypeCreateNoteForm: String -> Model -> Model
+handleChangeNoteTypeCreateNoteForm noteType model =
+  case model of
+    Model slipbox query viewport form ->
+      Model slipbox query viewport (updateNoteType noteType form)
+
+handleSubmitCreateNoteForm: Model -> Model
+handleSubmitCreateNoteForm model =
+  case model of 
+    Model slipbox query viewport form ->
+      Model (S.createNote (makeNoteRecord form) slipbox) query viewport (wipeAndHideForm form)
 
 -- VIEW
 view : Model -> Html Msg
 view model =
   case model of 
-    Model slipbox search viewport ->
+    Model slipbox search viewport form->
       div [style "padding: 16px; border: 4px solid black"] 
         [ searchBox slipbox search
         , noteNetwork slipbox viewport
@@ -186,6 +312,7 @@ view model =
         , button [ onClick ZoomIn ] [ text "+" ]
         , selectedNotes slipbox
         , historyView slipbox
+        , handleCreateNoteForm form
         ]
 
 searchBox : S.Slipbox -> Search -> Html Msg
@@ -355,3 +482,46 @@ historyTextColor undone =
     "color:gray;"
   else
     "color:black;"
+
+handleCreateNoteForm: CreateNoteForm -> Html Msg
+handleCreateNoteForm form =
+  let
+    formData = getCreateFormData form
+  in
+    if formData.shown then
+      createNoteForm formData
+    else
+      createFormButton
+
+createNoteForm: CreateForm -> Html Msg
+createNoteForm form =
+  div [] 
+  [ div [style "padding: 16px; border: 4px solid black"]
+    [ textarea [onInput ContentInputCreateNoteForm] [text form.content]
+    , input [onInput SourceInputCreateNoteForm] [text form.source]
+    , select [onInput ChangeNoteTypeCreateNoteForm] (formOptions form.isIndex)
+    , submitFormButton form.canSubmit
+    ]
+  , createFormButton
+  ]
+
+formOptions: Bool -> (List (Html Msg))
+formOptions indexOptionChosen =
+  if indexOptionChosen then
+    [ option [selected True] [text "Index"]
+    , option [] [text "Regular"]
+    ]
+  else
+    [ option [] [text "Index"]
+    , option [selected True] [text "Regular"]
+    ]
+
+createFormButton: Html Msg
+createFormButton = button [onClick ToggleCreateNoteForm] [text "+"] 
+
+submitFormButton: Bool -> Html Msg
+submitFormButton canSubmitNote = 
+  if canSubmitNote then
+    button [onClick SubmitCreateNoteForm, style "cursor:pointer;"] [text "Create Note"]
+  else
+    button [] [text "Create Note"]

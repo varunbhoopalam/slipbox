@@ -2,10 +2,11 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
-  , HistoryAction, getHistory)
+  , HistoryAction, getHistory, createNote, MakeNoteRecord)
 
-import Force exposing (entity, computeSimulation, manyBody, simulation, links, center)
+import Force exposing (entity, computeSimulation, manyBody, simulation, links, center, manyBodyStrength)
 import Set
+import Viewport exposing (initialize)
 
 --Types
 type Slipbox = Slipbox (List Note) (List Link) (List Action)
@@ -80,6 +81,12 @@ type alias NoteRecord =
   , noteType: String
   }
 
+type alias MakeNoteRecord =
+  { content : String
+  , source : String
+  , noteType : String
+  }
+
 type alias CreateNoteRecord =
   { id : Int
   , action : NoteRecord
@@ -141,27 +148,30 @@ summaryLengthMin = 20
 
 initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
 initialize notes links (noteRecords, linkRecords) =
-  Slipbox (initializeNotes notes links) (initializeLinks links) (initializeHistory (noteRecords, linkRecords))
+  let
+    l =  initializeLinks links
+  in
+    Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords))
 
 initializeLinks: (List LinkRecord) -> (List Link)
 initializeLinks l =
   List.map (\lr -> Link lr.source lr.target lr.id) l
 
-initSimulation: (List Note) -> (List LinkRecord) -> (List Note)
+initSimulation: (List Note) -> (List Link) -> (List Note)
 initSimulation notes linkRecords =
   let
     state = 
       simulation 
-        [ manyBody (List.map (\n -> n.id) notes)
+        [ manyBodyStrength -10 (List.map (\n -> n.id) notes)
         , links (List.map (\l -> (l.source, l.target)) linkRecords)
         , center 0 0
         ]
   in
     computeSimulation state notes
 
-initializeNotes: (List NoteRecord) -> (List LinkRecord) -> (List Note)
+initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
 initializeNotes notes links =
-  initSimulation (List.indexedMap initializePosition notes) links
+  List.sortWith noteSorterDesc (initSimulation (List.indexedMap initializePosition notes) links)
 
 initializePosition: Int -> NoteRecord -> Note
 initializePosition index note =
@@ -189,6 +199,13 @@ actionSorterDesc actionA actionB =
       idB = getHistoryId actionB
   in
     case compare idA idB of
+       LT -> GT
+       EQ -> EQ
+       GT -> LT
+
+noteSorterDesc: (Note -> Note -> Order)
+noteSorterDesc noteA noteB =
+  case compare noteA.id noteB.id of
        LT -> GT
        EQ -> EQ
        GT -> LT
@@ -359,4 +376,38 @@ createLinkSummary link =
   " from Source:" ++  String.fromInt link.source ++ 
   " to Target:" ++  String.fromInt link.target
 
+createNote: MakeNoteRecord -> Slipbox -> Slipbox
+createNote note slipbox =
+  case slipbox of
+     Slipbox notes links actions -> Slipbox (List.sortWith noteSorterDesc (addNoteToNotes (toNoteRecord note notes) notes links)) links (addNoteToActions (toNoteRecord note notes) actions)
 
+toNoteRecord: MakeNoteRecord -> (List Note) -> NoteRecord
+toNoteRecord note notes =
+  NoteRecord (getNextNoteId notes) note.content note.source note.noteType
+
+getNextNoteId: (List Note) -> Int
+getNextNoteId notes = 
+  case List.head notes of
+    Just note -> note.id + 1
+    Nothing -> 1
+
+addNoteToNotes: NoteRecord -> (List Note) -> (List Link) -> (List Note)
+addNoteToNotes note notes links =
+  initSimulation ( initializePosition note.id note :: notes) links
+
+addNoteToActions : NoteRecord -> (List Action) -> (List Action)
+addNoteToActions note actions =
+  CreateNote (getNextHistoryId actions) False (toHistoryNote note) :: actions
+
+getNextHistoryId : (List Action) -> Int
+getNextHistoryId actions =
+  case List.head actions of
+    Just action -> 
+      case action of 
+        CreateNote historyId _ _ -> historyId + 1
+        CreateLink historyId _ _ -> historyId + 1
+    Nothing -> 1
+
+toHistoryNote: NoteRecord -> HistoryNote
+toHistoryNote note =
+  HistoryNote note.id note.content note.source note.noteType
