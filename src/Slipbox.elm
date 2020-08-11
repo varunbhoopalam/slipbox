@@ -4,9 +4,8 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord)
 
-import Force exposing (entity, computeSimulation, manyBody, simulation, links, center, manyBodyStrength)
+import Force
 import Set
-import Viewport exposing (initialize)
 
 --Types
 type Slipbox = Slipbox (List Note) (List Link) (List Action)
@@ -161,13 +160,13 @@ initSimulation: (List Note) -> (List Link) -> (List Note)
 initSimulation notes linkRecords =
   let
     state = 
-      simulation 
-        [ manyBodyStrength -10 (List.map (\n -> n.id) notes)
-        , links (List.map (\l -> (l.source, l.target)) linkRecords)
-        , center 0 0
+      Force.simulation 
+        [ Force.manyBodyStrength -10 (List.map (\n -> n.id) notes)
+        , Force.links (List.map (\l -> (l.source, l.target)) linkRecords)
+        , Force.center 0 0
         ]
   in
-    computeSimulation state notes
+    Force.computeSimulation state notes
 
 initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
 initializeNotes notes links =
@@ -176,7 +175,7 @@ initializeNotes notes links =
 initializePosition: Int -> NoteRecord -> Note
 initializePosition index note =
   let
-    positions = entity index 1
+    positions = Force.entity index 1
   in
     Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
 
