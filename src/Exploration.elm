@@ -566,21 +566,42 @@ linkForm slipbox =
 createLinkForm: S.LinkFormData -> Html Msg
 createLinkForm formData =
   if formData.shown then
-    createLinkFormHandler formData.sourceChoices formData.targetChoices formData.canSubmit
+    createLinkFormHandler formData
   else
     div [] []
 
-createLinkFormHandler: (List S.LinkNoteChoice) -> (List S.LinkNoteChoice) -> Bool -> Html Msg
-createLinkFormHandler sourceChoices targetChoices canSubmitLink =
+createLinkFormHandler: S.LinkFormData -> Html Msg
+createLinkFormHandler formData =
   div []
-    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected ] (List.map toOption sourceChoices) 
-    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected ] (List.map toOption targetChoices)
-    , createLinkButton canSubmitLink
+    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected ] (optionHandler formData.sourceChosen formData.sourceChoices) 
+    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected ] (optionHandler formData.sourceChosen formData.targetChoices)
+    , createLinkButton formData.canSubmit
     ]
+
+optionHandler: S.Choice -> (List S.LinkNoteChoice) -> (List (Html Msg))
+optionHandler choice options =
+  if choice.choiceMade then
+    optionWithChoiceHandler choice.choiceValue options
+  else
+    notChosenDefault :: List.map toOption options
+
+notChosenDefault: Html Msg
+notChosenDefault = option [Html.Attributes.disabled True, selected True, value "--select an option--"] [text "--select an option--"]
 
 toOption: S.LinkNoteChoice -> Html Msg
 toOption linkNoteChoice =
   option [value (String.fromInt linkNoteChoice.value)] [text linkNoteChoice.display]
+
+optionWithChoiceHandler: S.NoteId -> (List S.LinkNoteChoice) -> (List (Html Msg))
+optionWithChoiceHandler noteId options =
+  List.map (toOptionWithChoice noteId) options
+
+toOptionWithChoice: S.NoteId -> S.LinkNoteChoice -> Html Msg
+toOptionWithChoice noteId linkNoteChoice =
+  if noteId == linkNoteChoice.value then
+    option [value (String.fromInt linkNoteChoice.value), selected True] [text linkNoteChoice.display]
+  else
+    toOption linkNoteChoice
 
 createLinkButton: Bool -> Html Msg
 createLinkButton canSubmitLink =

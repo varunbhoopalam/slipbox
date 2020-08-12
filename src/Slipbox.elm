@@ -4,7 +4,7 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, LinkFormData, sourceSelected, targetSelected, getLinkFormData
-  , LinkNoteChoice)
+  , LinkNoteChoice, Choice)
 
 import Force
 import Set
