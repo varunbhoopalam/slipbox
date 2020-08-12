@@ -3,7 +3,8 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
-  , createLink, LinkFormData, LinkNoteChoice, sourceSelected, targetSelected)
+  , createLink, LinkFormData, LinkNoteChoice, sourceSelected, targetSelected
+  , getLinkFormData)
 
 import Force
 import Set
@@ -147,8 +148,15 @@ type alias DescriptionLink =
 type alias LinkFormData =
   { shown: Bool
   , sourceChoices: (List LinkNoteChoice)
+  , sourceChosen: Choice
   , targetChoices: (List LinkNoteChoice)
+  , targetChosen: Choice
   , canSubmit: Bool
+  }
+
+type alias Choice = 
+  { choiceMade: Bool
+  , choiceValue: NoteId
   }
 
 type alias LinkNoteChoice =
@@ -304,6 +312,12 @@ getHistory: Slipbox -> (List HistoryAction)
 getHistory slipbox =
   case slipbox of
     Slipbox _ _ history _ -> List.map toHistoryAction history
+
+getLinkFormData: Slipbox -> LinkFormData
+getLinkFormData slipbox =
+  case slipbox of
+    Slipbox notes links _ form -> 
+      handleGetLinkFormData (getFormNotes notes links) form
 
 -- Helpers
 initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
@@ -723,3 +737,69 @@ maybeLinkRecordFromForm form =
      SourceSelected _ -> Nothing
      TargetSelected _ -> Nothing
      ReadyToSubmit selections -> Just (MakeLinkRecord selections.source selections.target)
+
+noChoice: Choice
+noChoice = Choice False -1
+
+hiddenLinkFormData: LinkFormData
+hiddenLinkFormData = LinkFormData False [] noChoice [] noChoice False
+
+handleGetLinkFormData: (List FormNote) -> LinkForm -> LinkFormData
+handleGetLinkFormData notes form =
+  case form of
+     Hidden -> hiddenLinkFormData
+     NoSelections -> buildLinkFormData notes
+     SourceSelected noteId -> sourceSelectedLinkFormDataHandler noteId notes
+     TargetSelected noteId -> targetSelectedLinkFormDataHandler noteId notes
+     ReadyToSubmit selections -> LinkFormData False [] (Choice False -1) [] (Choice False -1) False
+
+buildLinkFormData: (List FormNote) -> LinkFormData
+buildLinkFormData notes =
+  let
+    idChoices = choices notes
+  in 
+    LinkFormData True idChoices noChoice idChoices noChoice False
+
+choices: (List FormNote) -> (List NoteId)
+choices notes = Set.toList (List.foldl Set.union (Set.empty) (possibleLinksList notes))
+
+noteChoices: FormNote -> (List FormNote) -> (List NoteId)
+noteChoices formNote notes = 
+  getPossibleLinks formNote (removeFormNote formNote.id notes)
+
+sourceSelectedLinkFormDataHandler: NoteId -> (List FormNote) -> LinkFormData
+sourceSelectedLinkFormDataHandler noteId notes =
+  let
+    maybeFormNote = List.head (List.filter (\note -> note.id == noteId) notes)
+  in
+    case maybeFormNote of
+      Just formNote -> LinkFormData True (choices notes) (Choice True noteId) (noteChoices formNote notes) noChoice False
+      Nothing -> buildLinkFormData notes
+
+targetSelectedLinkFormDataHandler: NoteId -> (List FormNote) -> LinkFormData
+targetSelectedLinkFormDataHandler noteId notes =
+  let
+    maybeFormNote = List.head (List.filter (\note -> note.id == noteId) notes)
+  in
+    case maybeFormNote of
+      Just formNote -> LinkFormData True (noteChoices formNote notes) noChoice (choices notes) (Choice True noteId) False
+      Nothing -> buildLinkFormData notes
+
+readyToSubmitLinkFormDataHandler: Selections (List FormNote) -> LinkForm
+readyToSubmitLinkFormDataHandler selections notes =
+  let
+    sourceId = selections.source
+    targetId = selections.target
+    maybeSource = List.head (List.filter (\note -> note.id == sourceId) notes)
+    maybeTarget = List.head (List.filter (\note -> note.id == targetId) notes)
+  in
+    case maybeSource of
+      Just source -> 
+        case maybeTarget of
+          Just target -> linkFormDataBothChoices source target notes
+          Nothing -> buildLinkFormData notes
+      Nothing -> buildLinkFormData notes
+
+linkFormDataBothChoices: FormNote -> FormNote -> (List Note) -> LinkForm
+linkFormDataBothChoices source target notes =
+  LinkFormData True (noteChoices target notes) (Choice True source.id) (noteChoices source notes) (Choice True target.id) True

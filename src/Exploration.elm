@@ -1,7 +1,7 @@
 module Exploration exposing (..)
 
 import Browser
-import Html exposing (Html, div, input, text, button, form, textarea, option, select)
+import Html exposing (Html, div, input, text, button, textarea, option, select)
 import Html.Attributes exposing (placeholder, value, selected)
 import Html.Events exposing (onInput, onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
@@ -343,6 +343,7 @@ view model =
         , button [ onClick ZoomOut ] [ text "-" ]
         , button [ onClick ZoomIn ] [ text "+" ]
         , selectedNotes slipbox
+        , linkForm slipbox
         , historyView slipbox
         , handleCreateNoteForm form
         ]
@@ -558,15 +559,19 @@ submitFormButton canSubmitNote =
   else
     button [] [text "Create Note"]
 
-createLinkFormHandler: S.LinkFormData -> Html Msg
-createLinkFormHandler formData =
+linkForm: S.Slipbox -> Html Msg
+linkForm slipbox =
+  createLinkForm S.getLinkFormData
+
+createLinkForm: S.LinkFormData -> Html Msg
+createLinkForm formData =
   if formData.shown then
     createLinkForm formData.sourceChoices formData.targetChoices formData.canSubmit
   else
     div [] []
 
-createLinkForm: (List S.LinkNoteChoice) -> (List S.LinkNoteChoice) -> Bool -> Html Msg
-createLinkForm sourceChoices targetChoices canSubmitLink =
+createLinkFormHandler: (List S.LinkNoteChoice) -> (List S.LinkNoteChoice) -> Bool -> Html Msg
+createLinkFormHandler sourceChoices targetChoices canSubmitLink =
   div []
     [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected ] (List.map toOption sourceChoices) 
     , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected ] (List.map toOption targetChoices)
