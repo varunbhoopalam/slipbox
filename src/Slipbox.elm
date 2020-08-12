@@ -234,19 +234,26 @@ handleCreateNote makeNoteRecord notes links actions form =
   in
     Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions) form
 
-createLink: MakeLinkRecord -> Slipbox -> Slipbox
-createLink link slipbox =
+createLink: Slipbox -> Slipbox
+createLink slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> createLinkHandler link notes links actions form
+    Slipbox notes links actions form -> createLinkHandler (maybeLinkRecordFromForm form) notes links actions form
   
-createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
-createLinkHandler makeLinkRecord notes links actions form =
-  let
-    maybeLink = toMaybeLink makeLinkRecord links notes
-  in 
-    case maybeLink of
-      Just link -> addLinkToSlipbox link notes links actions form
-      Nothing -> Slipbox notes links actions (removeSelections form notes links)
+createLinkHandler: (Maybe MakeLinkRecord) -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+createLinkHandler maybeMakeLinkRecord notes links actions form =
+  case maybeMakeLinkRecord of
+    Just makeLinkRecord -> createLinkHandlerFork makeLinkRecord notes links actions form
+    Nothing -> removeSelectionsFork notes links actions form
+
+createLinkHandlerFork: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+createLinkHandlerFork makeLinkRecord notes links actions form =
+  case toMaybeLink makeLinkRecord links notes of
+    Just link -> addLinkToSlipbox link notes links actions form
+    Nothing -> removeSelectionsFork notes links actions form
+
+removeSelectionsFork: (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+removeSelectionsFork notes links actions form =
+  Slipbox notes links actions (removeSelections form notes links)
 
 addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
 addLinkToSlipbox link notes links actions form =
@@ -707,3 +714,12 @@ maybeGetNoteId noteId link =
     Just link.source
   else 
     Nothing
+
+maybeLinkRecordFromForm: LinkForm -> (Maybe MakeLinkRecord)
+maybeLinkRecordFromForm form =
+  case form of
+     Hidden -> Nothing
+     NoSelections -> Nothing
+     SourceSelected _ -> Nothing
+     TargetSelected _ -> Nothing
+     ReadyToSubmit selections -> Just (MakeLinkRecord selections.source selections.target)
