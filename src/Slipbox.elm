@@ -3,8 +3,8 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
-  , createLink, LinkFormData, LinkNoteChoice, sourceSelected, targetSelected
-  , getLinkFormData)
+  , createLink, LinkFormData, sourceSelected, targetSelected, getLinkFormData
+  , LinkNoteChoice)
 
 import Force
 import Set
@@ -152,7 +152,7 @@ type alias LinkFormData =
   , targetChoices: (List LinkNoteChoice)
   , targetChosen: Choice
   , canSubmit: Bool
-  }
+  }  
 
 type alias Choice = 
   { choiceMade: Bool
@@ -178,6 +178,7 @@ type alias Selections =
 
 type alias FormNote =
   { id: NoteId
+  , summary: String
   , linkedNotes: (List NoteId)
   }
 
@@ -508,7 +509,11 @@ toHistoryAction action =
 createNoteSummary: HistoryNote -> String
 createNoteSummary note =
   "Create Note:" ++  String.fromInt note.id ++
-  " with Content: " ++  String.slice 0 summaryLengthMin note.content ++ "..."
+  " with Content: " ++ contentSummary note.content
+
+contentSummary: String -> String
+contentSummary content = String.slice 0 summaryLengthMin content ++ "..."
+
 
 createLinkSummary: HistoryLink -> String
 createLinkSummary link =
@@ -714,7 +719,7 @@ getFormNotes notes links =
 
 toFormNote: Note -> (List Link) -> FormNote
 toFormNote note links =
-  FormNote note.id (getNoteIds note.id links) 
+  FormNote note.id (contentSummary note.content) (getNoteIds note.id links)
 
 getNoteIds: NoteId -> (List Link) -> (List Int)
 getNoteIds noteId links =
@@ -751,21 +756,36 @@ handleGetLinkFormData notes form =
      NoSelections -> buildLinkFormData notes
      SourceSelected noteId -> sourceSelectedLinkFormDataHandler noteId notes
      TargetSelected noteId -> targetSelectedLinkFormDataHandler noteId notes
-     ReadyToSubmit selections -> LinkFormData False [] (Choice False -1) [] (Choice False -1) False
+     ReadyToSubmit selections -> readyToSubmitLinkFormDataHandler selections notes
 
 buildLinkFormData: (List FormNote) -> LinkFormData
 buildLinkFormData notes =
   let
     idChoices = choices notes
+    linkNoteChoices = buildLinkNoteChoices idChoices notes
   in 
-    LinkFormData True idChoices noChoice idChoices noChoice False
+    LinkFormData True linkNoteChoices noChoice linkNoteChoices noChoice False
 
 choices: (List FormNote) -> (List NoteId)
-choices notes = Set.toList (List.foldl Set.union (Set.empty) (possibleLinksList notes))
+choices notes = Set.toList (List.foldl Set.union  Set.empty (possibleLinksList notes))
 
 noteChoices: FormNote -> (List FormNote) -> (List NoteId)
 noteChoices formNote notes = 
-  getPossibleLinks formNote (removeFormNote formNote.id notes)
+  Set.toList (getPossibleLinks formNote (removeFormNote formNote.id notes))
+
+buildLinkNoteChoices: (List NoteId) -> (List FormNote) -> (List LinkNoteChoice)
+buildLinkNoteChoices noteIds notes =
+  List.map (toLinkNoteChoice notes) noteIds
+
+toLinkNoteChoice: (List FormNote) -> NoteId -> LinkNoteChoice
+toLinkNoteChoice notes noteId =
+  let 
+    maybeFormNote = List.head (List.filter (\note -> note.id == noteId) notes)
+    noteIdStr = "NoteId: " ++ String.fromInt noteId
+  in
+    case maybeFormNote of
+      Just formNote -> LinkNoteChoice noteId (noteIdStr ++ " | " ++ formNote.summary)
+      Nothing -> LinkNoteChoice noteId noteIdStr
 
 sourceSelectedLinkFormDataHandler: NoteId -> (List FormNote) -> LinkFormData
 sourceSelectedLinkFormDataHandler noteId notes =
@@ -773,7 +793,7 @@ sourceSelectedLinkFormDataHandler noteId notes =
     maybeFormNote = List.head (List.filter (\note -> note.id == noteId) notes)
   in
     case maybeFormNote of
-      Just formNote -> LinkFormData True (choices notes) (Choice True noteId) (noteChoices formNote notes) noChoice False
+      Just formNote -> LinkFormData True (buildLinkNoteChoices (choices notes) notes) (Choice True noteId) (buildLinkNoteChoices (noteChoices formNote notes) notes) noChoice False
       Nothing -> buildLinkFormData notes
 
 targetSelectedLinkFormDataHandler: NoteId -> (List FormNote) -> LinkFormData
@@ -782,10 +802,10 @@ targetSelectedLinkFormDataHandler noteId notes =
     maybeFormNote = List.head (List.filter (\note -> note.id == noteId) notes)
   in
     case maybeFormNote of
-      Just formNote -> LinkFormData True (noteChoices formNote notes) noChoice (choices notes) (Choice True noteId) False
+      Just formNote -> LinkFormData True (buildLinkNoteChoices (noteChoices formNote notes) notes) noChoice (buildLinkNoteChoices (choices notes) notes) (Choice True noteId) False
       Nothing -> buildLinkFormData notes
 
-readyToSubmitLinkFormDataHandler: Selections (List FormNote) -> LinkForm
+readyToSubmitLinkFormDataHandler: Selections -> (List FormNote) -> LinkFormData
 readyToSubmitLinkFormDataHandler selections notes =
   let
     sourceId = selections.source
@@ -800,6 +820,6 @@ readyToSubmitLinkFormDataHandler selections notes =
           Nothing -> buildLinkFormData notes
       Nothing -> buildLinkFormData notes
 
-linkFormDataBothChoices: FormNote -> FormNote -> (List Note) -> LinkForm
+linkFormDataBothChoices: FormNote -> FormNote -> (List FormNote) -> LinkFormData
 linkFormDataBothChoices source target notes =
-  LinkFormData True (noteChoices target notes) (Choice True source.id) (noteChoices source notes) (Choice True target.id) True
+  LinkFormData True (buildLinkNoteChoices (noteChoices target notes) notes) (Choice True source.id) (buildLinkNoteChoices (noteChoices source notes) notes) (Choice True target.id) True

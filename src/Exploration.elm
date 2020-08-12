@@ -561,12 +561,12 @@ submitFormButton canSubmitNote =
 
 linkForm: S.Slipbox -> Html Msg
 linkForm slipbox =
-  createLinkForm S.getLinkFormData
+  createLinkForm (S.getLinkFormData slipbox)
 
 createLinkForm: S.LinkFormData -> Html Msg
 createLinkForm formData =
   if formData.shown then
-    createLinkForm formData.sourceChoices formData.targetChoices formData.canSubmit
+    createLinkFormHandler formData.sourceChoices formData.targetChoices formData.canSubmit
   else
     div [] []
 
