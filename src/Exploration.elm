@@ -182,7 +182,10 @@ type Msg =
   ContentInputCreateNoteForm String |
   SourceInputCreateNoteForm String |
   ChangeNoteTypeCreateNoteForm String |
-  SubmitCreateNoteForm
+  SubmitCreateNoteForm |
+  SubmitCreateLink |
+  LinkFormSourceSelected String |
+  LinkFormTargetSelected String
 
 update : Msg -> Model -> Model
 update msg model =
@@ -204,6 +207,9 @@ update msg model =
     SourceInputCreateNoteForm s -> handleSourceInputCreateNoteForm s model
     ChangeNoteTypeCreateNoteForm s -> handleChangeNoteTypeCreateNoteForm s model 
     SubmitCreateNoteForm -> handleSubmitCreateNoteForm model
+    SubmitCreateLink -> handleSubmitCreateLink model
+    LinkFormSourceSelected s -> handleLinkFormSourceSelected s model
+    LinkFormTargetSelected s -> handleLinkFormTargetSelected s model 
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -306,6 +312,24 @@ handleSubmitCreateNoteForm model =
   case model of 
     Model slipbox query viewport form ->
       Model (S.createNote (makeNoteRecord form) slipbox) query viewport (wipeAndHideForm form)
+
+handleSubmitCreateLink: Model -> Model
+handleSubmitCreateLink model =
+  case model of 
+    Model slipbox query viewport form ->
+      Model (S.createLink slipbox) query viewport form
+
+handleLinkFormSourceSelected: String -> Model -> Model
+handleLinkFormSourceSelected source model =
+  case model of 
+    Model slipbox query viewport form ->
+      Model (S.sourceSelected source slipbox) query viewport form
+
+handleLinkFormTargetSelected: String -> Model -> Model
+handleLinkFormTargetSelected target model =
+  case model of 
+    Model slipbox query viewport form ->
+      Model (S.targetSelected target slipbox) query viewport form
 
 -- VIEW
 view : Model -> Html Msg
@@ -516,12 +540,12 @@ createNoteForm form =
 formOptions: Bool -> (List (Html Msg))
 formOptions indexOptionChosen =
   if indexOptionChosen then
-    [ option [selected True] [text "Index"]
-    , option [] [text "Regular"]
+    [ option [selected True, value "Index"] [text "Index"]
+    , option [value "Regular"] [text "Regular"]
     ]
   else
-    [ option [] [text "Index"]
-    , option [selected True] [text "Regular"]
+    [ option [value "Index"] [text "Index"]
+    , option [selected True, value "Regular"] [text "Regular"]
     ]
 
 createFormButton: Html Msg
@@ -533,3 +557,29 @@ submitFormButton canSubmitNote =
     button [onClick SubmitCreateNoteForm, style "cursor:pointer;"] [text "Create Note"]
   else
     button [] [text "Create Note"]
+
+createLinkFormHandler: S.LinkFormData -> Html Msg
+createLinkFormHandler formData =
+  if formData.shown then
+    createLinkForm formData.sourceChoices formData.targetChoices formData.canSubmit
+  else
+    div [] []
+
+createLinkForm: (List S.LinkNoteChoice) -> (List S.LinkNoteChoice) -> Bool -> Html Msg
+createLinkForm sourceChoices targetChoices canSubmitLink =
+  div []
+    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected ] (List.map toOption sourceChoices) 
+    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected ] (List.map toOption targetChoices)
+    , createLinkButton canSubmitLink
+    ]
+
+toOption: S.LinkNoteChoice -> Html Msg
+toOption linkNoteChoice =
+  option [value (String.fromInt linkNoteChoice.value)] [text linkNoteChoice.display]
+
+createLinkButton: Bool -> Html Msg
+createLinkButton canSubmitLink =
+  if canSubmitLink then
+    button [style "cursor:pointer;", onClick SubmitCreateLink] [text "Create Link"]
+  else 
+    button [style "background:gray;"] [text "Create Link"]

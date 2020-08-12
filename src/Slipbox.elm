@@ -3,13 +3,13 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
-  , createLink)
+  , createLink, LinkFormData, LinkNoteChoice)
 
 import Force
 import Set
 
 --Types
-type Slipbox = Slipbox (List Note) (List Link) (List Action)
+type Slipbox = Slipbox (List Note) (List Link) (List Action) LinkForm
 
 type alias Note =
   { id : NoteId
@@ -144,6 +144,35 @@ type alias DescriptionLink =
   , targetY : Float
   }
 
+type alias LinkFormData =
+  { shown: Bool
+  , sourceChoices: (List LinkNoteChoice)
+  , targetChoices: (List LinkNoteChoice)
+  , canSubmit: Bool
+  }
+
+type alias LinkNoteChoice =
+  { value: NoteId
+  , display: String
+  }
+
+type LinkForm =
+  Hidden |
+  NoSelections |
+  SourceSelected NoteId |
+  TargetSelected NoteId |
+  ReadyToSubmit Selections
+
+type alias Selections =
+  { source: NoteId
+  , target: NoteId
+  }
+
+type alias FormNote =
+  { id: NoteId
+  , linkedNotes: (List NoteId)
+  }
+
 -- Invariants
 summaryLengthMin: Int
 summaryLengthMin = 20
@@ -156,58 +185,71 @@ initialize notes links (noteRecords, linkRecords) =
   let
     l =  initializeLinks links
   in
-    Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords))
+    Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords)) Hidden
 
 selectNote: NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> selectNoteById noteId note) notes) links history
+    Slipbox notes links actions form -> handleSelectNote noteId notes links actions form
+
+handleSelectNote: NoteId -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+handleSelectNote noteId notes links actions form =
+  let
+    newNotes = List.map (\note -> selectNoteById noteId note) notes
+  in
+    Slipbox newNotes links actions (selectionsChange form newNotes links)
 
 dismissNote: NoteId -> Slipbox -> Slipbox
 dismissNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> unselectNoteById noteId note) notes) links history
+    Slipbox notes links actions form -> handleDismissNote noteId notes links actions form
 
+handleDismissNote: NoteId -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+handleDismissNote noteId notes links actions form =
+  let
+    newNotes = List.map (\note -> unselectNoteById noteId note) notes
+  in 
+    Slipbox newNotes links actions (selectionsChange form newNotes links)
 
 hoverNote: NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history
+    Slipbox notes links history form-> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history form
 
 stopHoverNote: Slipbox -> Slipbox
 stopHoverNote slipbox =
   case slipbox of 
-    Slipbox notes links history -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history
+    Slipbox notes links history form -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history form
 
 createNote: MakeNoteRecord -> Slipbox -> Slipbox
 createNote note slipbox =
   case slipbox of
-     Slipbox notes links actions -> handleCreateNote note notes links actions
+     Slipbox notes links actions form -> handleCreateNote note notes links actions form
 
-handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-handleCreateNote makeNoteRecord notes links actions =
+handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+handleCreateNote makeNoteRecord notes links actions form =
   let
     newNote = toNoteRecord makeNoteRecord notes
     newNoteList = addNoteToNotes newNote notes links
   in
-    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions)
+    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions) form
 
 createLink: MakeLinkRecord -> Slipbox -> Slipbox
 createLink link slipbox =
   case slipbox of 
-    Slipbox notes links actions -> createLinkHandler link notes links actions
+    Slipbox notes links actions form -> createLinkHandler link notes links actions form
   
-createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-createLinkHandler makeLinkRecord notes links actions =
+createLinkHandler: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+createLinkHandler makeLinkRecord notes links actions form =
   let
     maybeLink = toMaybeLink makeLinkRecord links notes
   in 
     case maybeLink of
-      Just link -> addLinkToSlipbox link notes links actions
-      Nothing -> Slipbox notes links actions
+      Just link -> addLinkToSlipbox link notes links actions form
+      Nothing -> Slipbox notes links actions (removeSelections form notes links)
 
-addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> Slipbox
-addLinkToSlipbox link notes links actions =
+addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> LinkForm -> Slipbox
+addLinkToSlipbox link notes links actions form =
   let
     newLinks =  addLinkToLinks link links
   in
@@ -215,12 +257,13 @@ addLinkToSlipbox link notes links actions =
       (sortNotes (initSimulation notes newLinks))
       newLinks
       (addLinkToActions link actions)
+      (removeSelections form notes links)
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
 searchSlipbox searchString slipbox =
   case slipbox of
-     Slipbox notes _ _-> 
+     Slipbox notes _ _ _-> 
       notes
         |> List.filter (\note -> String.contains searchString note.content)
         |> List.map toSearchResult
@@ -228,14 +271,14 @@ searchSlipbox searchString slipbox =
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
   case slipbox of
-    Slipbox notes links _ -> 
+    Slipbox notes links _ _ -> 
       ( List.map toGraphNote notes
       , List.filterMap (\link -> toGraphLink link notes) links)
 
 getSelectedNotes: Slipbox -> (List DescriptionNote)
 getSelectedNotes slipbox =
   case slipbox of 
-    Slipbox notes links _ -> 
+    Slipbox notes links _ _ -> 
       notes
        |> List.filter (\note -> note.selected == Selected )
        |> List.map (\note -> toDescriptionNote notes note links)
@@ -243,7 +286,7 @@ getSelectedNotes slipbox =
 getHistory: Slipbox -> (List HistoryAction)
 getHistory slipbox =
   case slipbox of
-    Slipbox _ _ history -> List.map toHistoryAction history
+    Slipbox _ _ history _ -> List.map toHistoryAction history
 
 -- Helpers
 initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
@@ -513,3 +556,117 @@ nextLinkId links =
     case mLink of
       Just link -> link.id + 1
       Nothing -> 1
+
+selectionsChange: LinkForm -> (List Note) -> (List Link) -> LinkForm
+selectionsChange form notes links =
+  let
+    formNotes = getFormNotes notes links
+  in
+  case form of
+     Hidden -> noneSelectedHandler formNotes
+     NoSelections -> noneSelectedHandler formNotes
+     SourceSelected noteId -> sourceSelectedHandler noteId formNotes
+     TargetSelected noteId -> targetSelectedHandler noteId formNotes
+     ReadyToSubmit selections -> readyToSubmitHandler selections formNotes
+
+removeSelections: LinkForm -> (List Note) -> (List Link) -> LinkForm
+removeSelections form notes links =
+  let
+    formNotes = getFormNotes notes links
+  in
+  case form of
+     Hidden -> noneSelectedHandler formNotes
+     NoSelections -> noneSelectedHandler formNotes
+     SourceSelected _ -> noneSelectedHandler formNotes
+     TargetSelected _ -> noneSelectedHandler formNotes
+     ReadyToSubmit _ -> noneSelectedHandler formNotes
+
+noneSelectedHandler: (List FormNote) -> LinkForm
+noneSelectedHandler notes =
+  if canCreateLink notes then
+    NoSelections
+  else
+    Hidden
+
+sourceSelectedHandler: NoteId -> (List FormNote) -> LinkForm
+sourceSelectedHandler noteId notes =
+  if canCreateLink notes && inFormNotes noteId notes then
+    SourceSelected noteId
+  else 
+    noneSelectedHandler notes
+
+targetSelectedHandler: NoteId -> (List FormNote) -> LinkForm
+targetSelectedHandler noteId notes =
+  if canCreateLink notes && inFormNotes noteId notes then
+    TargetSelected noteId
+  else
+    noneSelectedHandler notes
+
+readyToSubmitHandler: Selections -> (List FormNote) -> LinkForm
+readyToSubmitHandler selections notes =
+  let
+    sourceId = selections.source
+    targetId = selections.target
+  in
+    if canCreateLink notes && inFormNotes sourceId notes && inFormNotes targetId notes then
+      ReadyToSubmit selections
+    else if canCreateLink notes && inFormNotes sourceId notes then
+      SourceSelected sourceId
+    else if canCreateLink notes && inFormNotes targetId notes then
+      TargetSelected targetId
+    else 
+      noneSelectedHandler notes
+
+inFormNotes: NoteId -> (List FormNote) -> Bool
+inFormNotes noteId notes =
+  List.member noteId (List.map (\n -> n.id) notes)
+
+getPossibleLinks: FormNote -> (List FormNote) -> (Set.Set NoteId)
+getPossibleLinks note notes =
+  let
+    existingNoteConnections = Set.fromList note.linkedNotes
+    selectedNotes = Set.fromList (List.map (\n -> n.id) notes)
+  in
+    Set.diff selectedNotes existingNoteConnections
+
+canCreateLink: (List FormNote) -> Bool
+canCreateLink notes =
+  List.foldl (+) 0 (possibleLinksListCount notes) > 0
+
+possibleLinksListCount: (List FormNote) -> (List Int)
+
+possibleLinksListCount notes =
+  List.map Set.size (possibleLinksList notes)
+
+possibleLinksList: (List FormNote) -> (List (Set.Set NoteId))
+possibleLinksList notes =
+  List.map (\mappedNote -> getPossibleLinks mappedNote (removeFormNote mappedNote.id notes)) notes
+
+removeFormNote: NoteId -> (List FormNote) -> (List FormNote)
+removeFormNote noteId notes = List.filter (\note -> note.id /= noteId) notes
+
+getFormNotes: (List Note) -> (List Link) -> (List FormNote)
+getFormNotes notes links =
+  notes
+    |> List.filter (\note -> note.selected == Selected )
+    |> List.map (\note -> toFormNote notes note links)
+
+toFormNote: (List Note) -> Note -> (List Link) -> FormNote
+toFormNote notes note links =
+  FormNote note.id (getNoteIds notes note.id links) 
+
+getNoteIds: (List Note) -> NoteId -> (List Link) -> (List Int)
+getNoteIds notes noteId links =
+  List.filterMap (\link -> maybeGetNoteId notes noteId link) links
+
+uniqueNoteIds: (List Int) -> (List Int)
+uniqueNoteIds noteIds = Set.toList (Set.fromList noteIds)
+
+maybeGetNoteId: (List Note) -> NoteId -> Link -> (Maybe Int)
+maybeGetNoteId notes noteId link =
+  if link.source == noteId then 
+    Just link.target
+  else if link.target == noteId then 
+    Just link.source
+  else 
+    Nothing
