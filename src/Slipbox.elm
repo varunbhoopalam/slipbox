@@ -3,7 +3,7 @@ module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
-  , createLink, LinkFormData, LinkNoteChoice)
+  , createLink, LinkFormData, LinkNoteChoice, sourceSelected, targetSelected)
 
 import Force
 import Set
@@ -258,6 +258,16 @@ addLinkToSlipbox link notes links actions form =
       newLinks
       (addLinkToActions link actions)
       (removeSelections form notes links)
+
+sourceSelected: String -> Slipbox -> Slipbox
+sourceSelected source slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> Slipbox notes links actions (addSource source form)
+
+targetSelected: String -> Slipbox -> Slipbox
+targetSelected target slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> Slipbox notes links actions (addTarget target form)
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
@@ -581,6 +591,36 @@ removeSelections form notes links =
      TargetSelected _ -> noneSelectedHandler formNotes
      ReadyToSubmit _ -> noneSelectedHandler formNotes
 
+addSource: String -> LinkForm -> LinkForm
+addSource source form =
+  case String.toInt source of
+    Just intSource -> addSourceHandler intSource form
+    Nothing -> form
+
+addSourceHandler: Int -> LinkForm -> LinkForm
+addSourceHandler source form =
+  case form of
+    Hidden -> Hidden
+    NoSelections -> SourceSelected source
+    SourceSelected _ -> SourceSelected source
+    TargetSelected target -> ReadyToSubmit (Selections source target)
+    ReadyToSubmit prior -> ReadyToSubmit (Selections source prior.target)
+
+addTarget: String -> LinkForm -> LinkForm
+addTarget target form =
+  case String.toInt target of
+    Just intTarget -> addTargetHandler intTarget form
+    Nothing -> form
+
+addTargetHandler: Int -> LinkForm -> LinkForm
+addTargetHandler target form =
+  case form of
+    Hidden -> Hidden
+    NoSelections -> TargetSelected target
+    SourceSelected source -> ReadyToSubmit (Selections source target)
+    TargetSelected _ -> TargetSelected target
+    ReadyToSubmit prior -> ReadyToSubmit (Selections prior.source target)
+
 noneSelectedHandler: (List FormNote) -> LinkForm
 noneSelectedHandler notes =
   if canCreateLink notes then
@@ -649,21 +689,18 @@ getFormNotes: (List Note) -> (List Link) -> (List FormNote)
 getFormNotes notes links =
   notes
     |> List.filter (\note -> note.selected == Selected )
-    |> List.map (\note -> toFormNote notes note links)
+    |> List.map (\note -> toFormNote note links)
 
-toFormNote: (List Note) -> Note -> (List Link) -> FormNote
-toFormNote notes note links =
-  FormNote note.id (getNoteIds notes note.id links) 
+toFormNote: Note -> (List Link) -> FormNote
+toFormNote note links =
+  FormNote note.id (getNoteIds note.id links) 
 
-getNoteIds: (List Note) -> NoteId -> (List Link) -> (List Int)
-getNoteIds notes noteId links =
-  List.filterMap (\link -> maybeGetNoteId notes noteId link) links
+getNoteIds: NoteId -> (List Link) -> (List Int)
+getNoteIds noteId links =
+  List.filterMap (\link -> maybeGetNoteId noteId link) links
 
-uniqueNoteIds: (List Int) -> (List Int)
-uniqueNoteIds noteIds = Set.toList (Set.fromList noteIds)
-
-maybeGetNoteId: (List Note) -> NoteId -> Link -> (Maybe Int)
-maybeGetNoteId notes noteId link =
+maybeGetNoteId: NoteId -> Link -> (Maybe Int)
+maybeGetNoteId noteId link =
   if link.source == noteId then 
     Just link.target
   else if link.target == noteId then 
