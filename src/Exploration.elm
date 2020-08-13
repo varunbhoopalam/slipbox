@@ -8,10 +8,13 @@ import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
+import Debug exposing (log, toString)
+
 
 -- Modules
 import Viewport as V
 import Slipbox as S
+import LinkForm
 
 -- MAIN
 
@@ -238,7 +241,7 @@ handleIfPanningShift mouseEvent model =
 handlePanningStop: Model -> Model
 handlePanningStop model =
   case model of
-    Model slipbox search viewport form->
+    Model slipbox search viewport form ->
       Model slipbox search (V.stopPanning viewport) form
 
 handleZoomIn: Model -> Model
@@ -563,45 +566,41 @@ linkForm: S.Slipbox -> Html Msg
 linkForm slipbox =
   createLinkForm (S.getLinkFormData slipbox)
 
-createLinkForm: S.LinkFormData -> Html Msg
+createLinkForm: LinkForm.LinkFormData -> Html Msg
 createLinkForm formData =
   if formData.shown then
     createLinkFormHandler formData
   else
     div [] []
 
-createLinkFormHandler: S.LinkFormData -> Html Msg
+createLinkFormHandler: LinkForm.LinkFormData -> Html Msg
 createLinkFormHandler formData =
   div []
-    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected ] (optionHandler formData.sourceChosen formData.sourceChoices) 
-    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected ] (optionHandler formData.sourceChosen formData.targetChoices)
+    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected, value (valueHandler formData.sourceChosen)] (optionHandler formData.sourceChosen formData.sourceChoices) 
+    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected, value (valueHandler formData.targetChosen)] (optionHandler formData.targetChosen formData.targetChoices)
     , createLinkButton formData.canSubmit
     ]
+  
+valueHandler: LinkForm.Choice -> String
+valueHandler choice =
+  if choice.choiceMade then
+    String.fromInt choice.choiceValue
+  else
+    "noOption"
 
-optionHandler: S.Choice -> (List S.LinkNoteChoice) -> (List (Html Msg))
+optionHandler: LinkForm.Choice -> (List LinkForm.LinkNoteChoice) -> (List (Html Msg))
 optionHandler choice options =
   if choice.choiceMade then
-    optionWithChoiceHandler choice.choiceValue options
+    List.map toOption options
   else
     notChosenDefault :: List.map toOption options
 
 notChosenDefault: Html Msg
-notChosenDefault = option [Html.Attributes.disabled True, selected True, value "--select an option--"] [text "--select an option--"]
+notChosenDefault = option [Html.Attributes.disabled True, selected True, value "noOption"] [text "--select an option--"]
 
-toOption: S.LinkNoteChoice -> Html Msg
+toOption: LinkForm.LinkNoteChoice -> Html Msg
 toOption linkNoteChoice =
   option [value (String.fromInt linkNoteChoice.value)] [text linkNoteChoice.display]
-
-optionWithChoiceHandler: S.NoteId -> (List S.LinkNoteChoice) -> (List (Html Msg))
-optionWithChoiceHandler noteId options =
-  List.map (toOptionWithChoice noteId) options
-
-toOptionWithChoice: S.NoteId -> S.LinkNoteChoice -> Html Msg
-toOptionWithChoice noteId linkNoteChoice =
-  if noteId == linkNoteChoice.value then
-    option [value (String.fromInt linkNoteChoice.value), selected True] [text linkNoteChoice.display]
-  else
-    toOption linkNoteChoice
 
 createLinkButton: Bool -> Html Msg
 createLinkButton canSubmitLink =
