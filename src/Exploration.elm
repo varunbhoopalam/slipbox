@@ -8,13 +8,13 @@ import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2)
-import Debug exposing (log, toString)
 
 
 -- Modules
 import Viewport as V
 import Slipbox as S
 import LinkForm
+import Note
 
 -- MAIN
 
@@ -28,11 +28,11 @@ init : Model
 init =
   Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize initCreateNoteForm
 
-initNoteData : List S.NoteRecord
+initNoteData : List Note.NoteRecord
 initNoteData = 
-  [ S.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index"
-  , S.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index"
-  , S.NoteRecord 3 "Note 0" "Source 1" "note"]
+  [ Note.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index"
+  , Note.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index"
+  , Note.NoteRecord 3 "Note 0" "Source 1" "note"]
 
 initLinkData: List S.LinkRecord
 initLinkData =
@@ -42,9 +42,9 @@ initLinkData =
 initHistoryData: ((List S.CreateNoteRecord), (List S.CreateLinkRecord))
 initHistoryData =
   (
-    [ S.CreateNoteRecord 1 (S.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index")
-    , S.CreateNoteRecord 2 (S.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index")
-    , S.CreateNoteRecord 3 (S.NoteRecord 3 "Note 0" "Source 1" "note")
+    [ S.CreateNoteRecord 1 (Note.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index")
+    , S.CreateNoteRecord 2 (Note.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index")
+    , S.CreateNoteRecord 3 (Note.NoteRecord 3 "Note 0" "Source 1" "note")
     ]
     , [ S.CreateLinkRecord 4 (S.LinkRecord 1 3 1) ]
   )
@@ -122,7 +122,7 @@ updateNoteType noteType form =
 
 toNoteType: String -> NoteType
 toNoteType noteType =
-  if noteType == "Index" then
+  if noteType == "index" then
     Index
   else
     Regular
@@ -158,8 +158,8 @@ wipeAndHideForm form =
 noteTypeToString: NoteType -> String
 noteTypeToString noteType =
   case noteType of 
-    Index -> "Index"
-    Regular -> "Regular"
+    Index -> "index"
+    Regular -> "regular"
 
 makeNoteRecord: CreateNoteForm -> S.MakeNoteRecord
 makeNoteRecord form =
@@ -176,10 +176,10 @@ type Msg =
   PanningStop |
   ZoomIn |
   ZoomOut |
-  NoteSelect S.NoteId (Float, Float) |
-  MapNoteSelect S.NoteId |
-  NoteDismiss S.NoteId |
-  NoteHighlight S.NoteId |
+  NoteSelect Note.NoteId (Float, Float) |
+  MapNoteSelect Note.NoteId |
+  NoteDismiss Note.NoteId |
+  NoteHighlight Note.NoteId |
   NoteRemoveHighlights |
   ToggleCreateNoteForm |
   ContentInputCreateNoteForm String |
@@ -256,25 +256,25 @@ handleZoomOut model =
     Model slipbox search viewport form->
       Model slipbox search (V.zoomOut viewport) form
 
-handleNoteSelect: S.NoteId -> (Float, Float) -> Model -> Model
+handleNoteSelect: Note.NoteId -> (Float, Float) -> Model -> Model
 handleNoteSelect noteId coords model =
   case model of
     Model slipbox search viewport form ->
       Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport) form
 
-handleMapNoteSelect: S.NoteId -> Model -> Model
+handleMapNoteSelect: Note.NoteId -> Model -> Model
 handleMapNoteSelect noteId model =
   case model of
     Model slipbox search viewport form ->
       Model (S.selectNote noteId slipbox) search viewport form
 
-handleNoteDismiss: S.NoteId -> Model -> Model
+handleNoteDismiss: Note.NoteId -> Model -> Model
 handleNoteDismiss noteId model =
   case model of
     Model slipbox query viewport form ->
       Model (S.dismissNote noteId slipbox) query viewport form
 
-handleNoteHighlight: S.NoteId -> Model -> Model
+handleNoteHighlight: Note.NoteId -> Model -> Model
 handleNoteHighlight noteId model =
   case model of
     Model slipbox query viewport form ->
@@ -379,7 +379,7 @@ searchResults slipbox searchString =
 toResultPane: S.SearchResult -> Html Msg
 toResultPane sr =
   let 
-    backgroundColor = "background-color:" ++ sr.color ++ ";"
+    backgroundColor = "background-color:" ++ (noteColor sr.variant) ++ ";"
     styleString = "border: 1px solid black;margin-bottom: 16px;cursor:pointer;" ++ backgroundColor
   in
     div 
@@ -408,7 +408,7 @@ toSvgCircle note =
     [ cx (String.fromFloat note.x)
     , cy (String.fromFloat note.y) 
     , r "5"
-    , style ("Cursor:Pointer;" ++ "fill:" ++ note.color ++ ";")
+    , style ("Cursor:Pointer;" ++ "fill:" ++ (noteColor note.variant) ++ ";")
     , onClick (MapNoteSelect note.id) 
     ]
     (handleCircleAnimation note.shouldAnimate)
@@ -492,15 +492,15 @@ toDescription note =
       ] 
       [ Html.text note.content
       , Html.text note.source
-      , div [] (List.map toClickableLink note.links)
+      , div [] (List.map toLinkDiv note.links)
       ]
   ]
 
-toClickableLink: S.DescriptionLink -> Html Msg
-toClickableLink link =
+toLinkDiv: S.DescriptionLink -> Html Msg
+toLinkDiv link =
   div 
-    [ onClick (NoteSelect link.target (link.targetX, link.targetY))] 
-    [ Html.text (String.fromInt link.target)]
+    [ onClick (NoteSelect link.id (link.x, link.y))] 
+    [ Html.text (String.fromInt link.idInt)]
 
 historyView: S.Slipbox -> Html Msg
 historyView slipbox =
@@ -544,11 +544,11 @@ createNoteForm form =
 formOptions: Bool -> (List (Html Msg))
 formOptions indexOptionChosen =
   if indexOptionChosen then
-    [ option [selected True, value "Index"] [text "Index"]
+    [ option [selected True, value "index"] [text "Index"]
     , option [value "Regular"] [text "Regular"]
     ]
   else
-    [ option [value "Index"] [text "Index"]
+    [ option [value "index"] [text "Index"]
     , option [selected True, value "Regular"] [text "Regular"]
     ]
 
@@ -608,3 +608,10 @@ createLinkButton canSubmitLink =
     button [style "cursor:pointer;", onClick SubmitCreateLink] [text "Create Link"]
   else 
     button [style "background:gray;"] [text "Create Link"]
+
+noteColor: String -> String
+noteColor variant =
+  if variant == "index" then
+    "rgba(250, 190, 88, 1)"
+  else
+    "rgba(137, 196, 244, 1)"

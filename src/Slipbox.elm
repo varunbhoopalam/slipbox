@@ -1,33 +1,20 @@
-module Slipbox exposing (Slipbox, NoteRecord, LinkRecord, initialize, 
+module Slipbox exposing (Slipbox, LinkRecord, initialize, 
   selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
   getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
-  , DescriptionLink, NoteId, hoverNote, CreateNoteRecord, CreateLinkRecord
+  , DescriptionLink, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, sourceSelected, targetSelected, getLinkFormData)
 
-import Force
-import Set
+import Simulation
 import LinkForm
+import Note
 
 --Types
-type Slipbox = Slipbox (List Note) (List Link) (List Action) LinkForm.LinkForm
-
-type alias Note =
-  { id : NoteId
-  , content : String
-  , source : String
-  , noteType: NoteType
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  , selected : Selected
-  , hover : Hover
-  }
+type Slipbox = Slipbox (List Note.Note) (List Link) (List Action) LinkForm.LinkForm
 
 type alias Link = 
-  { source: NoteId
-  , target: NoteId
+  { source: Int
+  , target: Int
   , id: LinkId
   }
 
@@ -40,16 +27,16 @@ type alias HistoryId = Int
 type alias Undone = Bool
 
 type alias HistoryNote =
-  { id : NoteId
+  { id : Int
   , content : String
   , source : String
   , noteType: String
   }
 
 type alias HistoryLink =
-  { source: NoteId
-  , target: NoteId
-  , id: LinkId
+  { source: Int
+  , target: Int
+  , id: Int
   }
 
 type alias HistoryAction =
@@ -58,16 +45,6 @@ type alias HistoryAction =
   , summary : String
   }
 
-type Selected = 
-  Selected |
-  NotSelected
-
-type Hover =
-  Hover |
-  NotHover
-
-type alias NoteId = Int
-type NoteType = Regular | Index
 type alias LinkId = Int
 
 type alias LinkRecord =
@@ -81,13 +58,6 @@ type alias MakeLinkRecord =
   , target: Int
   }
 
-type alias NoteRecord = 
-  { id : Int
-  , content : String
-  , source : String
-  , noteType: String
-  }
-
 type alias MakeNoteRecord =
   { content : String
   , source : String
@@ -96,7 +66,7 @@ type alias MakeNoteRecord =
 
 type alias CreateNoteRecord =
   { id : Int
-  , action : NoteRecord
+  , action : Note.NoteRecord
   }
 
 type alias CreateLinkRecord =
@@ -105,33 +75,35 @@ type alias CreateLinkRecord =
   }
 
 type alias SearchResult = 
-  { id : NoteId
+  { id : Note.NoteId
+  , idInt: Int
   , x : Float
   , y : Float
-  , color : String
+  , variant : String
   , content : String
   }
 
 type alias GraphNote =
-  { id: NoteId
+  { id: Note.NoteId
+  , idInt: Int
   , x : Float
   , y : Float
-  , color : String 
+  , variant : String 
   , shouldAnimate : Bool
   }
 
 type alias GraphLink = 
-  { sourceId: NoteId
+  { sourceId: Int
   , sourceX: Float
   , sourceY: Float
-  , targetId: NoteId
+  , targetId: Int
   , targetX: Float
   , targetY: Float
   , id: LinkId
   }
 
 type alias DescriptionNote =
-  { id : NoteId
+  { id : Note.NoteId
   , x : Float
   , y : Float 
   , content : String
@@ -140,9 +112,10 @@ type alias DescriptionNote =
   }
 
 type alias DescriptionLink =
-  { target : NoteId
-  , targetX : Float
-  , targetY : Float
+  { id : Note.NoteId
+  , idInt : Int
+  , x : Float
+  , y : Float
   }
 
 -- Invariants
@@ -152,88 +125,88 @@ summaryLengthMin = 20
 -- Methods
 
 -- Returns Slipbox
-initialize: (List NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
+initialize: (List Note.NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
 initialize notes links (noteRecords, linkRecords) =
   let
     l =  initializeLinks links
   in
     Slipbox (initializeNotes notes l) l (initializeHistory (noteRecords, linkRecords)) LinkForm.initLinkForm
 
-selectNote: NoteId -> Slipbox -> Slipbox
+selectNote: Note.NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
   case slipbox of 
     Slipbox notes links actions form -> handleSelectNote noteId notes links actions form
 
-handleSelectNote: NoteId -> (List Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+handleSelectNote: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
 handleSelectNote noteId notes links actions form =
   let
-    newNotes = List.map (\note -> selectNoteById noteId note) notes
+    newNotes = List.map (selectNoteById noteId) notes
   in
     Slipbox newNotes links actions (LinkForm.selectionsChange form (getFormNotes newNotes links))
 
-dismissNote: NoteId -> Slipbox -> Slipbox
+dismissNote: Note.NoteId -> Slipbox -> Slipbox
 dismissNote noteId slipbox =
   case slipbox of 
     Slipbox notes links actions form -> handleDismissNote noteId notes links actions form
 
-handleDismissNote: NoteId -> (List Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+handleDismissNote: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
 handleDismissNote noteId notes links actions form =
   let
-    newNotes = List.map (\note -> unselectNoteById noteId note) notes
+    newNotes = List.map (unselectNoteById noteId) notes
   in 
     Slipbox newNotes links actions (LinkForm.selectionsChange form (getFormNotes newNotes links))
 
-hoverNote: NoteId -> Slipbox -> Slipbox
+hoverNote: Note.NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links history form-> Slipbox (List.map (\note -> hoverNoteById noteId note) notes) links history form
+    Slipbox notes links history form-> Slipbox (List.map (hoverNoteById noteId) notes) links history form
 
 stopHoverNote: Slipbox -> Slipbox
 stopHoverNote slipbox =
   case slipbox of 
-    Slipbox notes links history form -> Slipbox (List.map (\note -> {note | hover = NotHover}) notes) links history form
+    Slipbox notes links history form -> Slipbox (List.map Note.unHover notes) links history form
 
 createNote: MakeNoteRecord -> Slipbox -> Slipbox
 createNote note slipbox =
   case slipbox of
      Slipbox notes links actions form -> handleCreateNote note notes links actions form
 
-handleCreateNote: MakeNoteRecord -> (List Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+handleCreateNote: MakeNoteRecord -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
 handleCreateNote makeNoteRecord notes links actions form =
   let
     newNote = toNoteRecord makeNoteRecord notes
     newNoteList = addNoteToNotes newNote notes links
   in
-    Slipbox (List.sortWith noteSorterDesc newNoteList) links (addNoteToActions newNote actions) form
+    Slipbox (List.sortWith Note.sortDesc newNoteList) links (addNoteToActions newNote actions) form
 
 createLink: Slipbox -> Slipbox
 createLink slipbox =
   case slipbox of 
     Slipbox notes links actions form -> createLinkHandler (LinkForm.maybeProspectiveLink form) notes links actions
   
-createLinkHandler: (Maybe (Int, Int)) -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+createLinkHandler: (Maybe (Int, Int)) -> (List Note.Note) -> (List Link) -> (List Action) -> Slipbox
 createLinkHandler maybeTuple notes links actions =
   case maybeTuple of
     Just (source, target) -> createLinkHandlerFork (MakeLinkRecord source target) notes links actions
     Nothing -> removeSelectionsFork notes links actions
 
-createLinkHandlerFork: MakeLinkRecord -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+createLinkHandlerFork: MakeLinkRecord -> (List Note.Note) -> (List Link) -> (List Action) -> Slipbox
 createLinkHandlerFork makeLinkRecord notes links actions =
   case toMaybeLink makeLinkRecord links notes of
     Just link -> addLinkToSlipbox link notes links actions
     Nothing -> removeSelectionsFork notes links actions
 
-removeSelectionsFork: (List Note) -> (List Link) -> (List Action) -> Slipbox
+removeSelectionsFork: (List Note.Note) -> (List Link) -> (List Action) -> Slipbox
 removeSelectionsFork notes links actions =
   Slipbox notes links actions (LinkForm.removeSelections (getFormNotes notes links))
 
-addLinkToSlipbox: Link -> (List Note) -> (List Link) -> (List Action) -> Slipbox
+addLinkToSlipbox: Link -> (List Note.Note) -> (List Link) -> (List Action) -> Slipbox
 addLinkToSlipbox link notes links actions =
   let
     newLinks =  addLinkToLinks link links
   in
     Slipbox 
-      (sortNotes (initSimulation notes newLinks))
+      (initSimulation notes newLinks)
       newLinks
       (addLinkToActions link actions)
       (LinkForm.removeSelections (getFormNotes notes links))
@@ -250,18 +223,19 @@ targetSelected target slipbox =
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
-searchSlipbox searchString slipbox =
+searchSlipbox query slipbox =
   case slipbox of
      Slipbox notes _ _ _-> 
       notes
-        |> List.filter (\note -> String.contains searchString note.content)
+        |> List.filter (Note.search query)
+        |> List.map Note.extract
         |> List.map toSearchResult
   
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
   case slipbox of
     Slipbox notes links _ _ -> 
-      ( List.map toGraphNote notes
+      ( List.map toGraphNote (List.map Note.extract notes)
       , List.filterMap (\link -> toGraphLink link notes) links)
 
 getSelectedNotes: Slipbox -> (List DescriptionNote)
@@ -269,8 +243,8 @@ getSelectedNotes slipbox =
   case slipbox of 
     Slipbox notes links _ _ -> 
       notes
-       |> List.filter (\note -> note.selected == Selected )
-       |> List.map (\note -> toDescriptionNote notes note links)
+       |> List.filter Note.isSelected
+       |> List.map (toDescriptionNote notes links)
 
 getHistory: Slipbox -> (List HistoryAction)
 getHistory slipbox =
@@ -284,97 +258,69 @@ getLinkFormData slipbox =
       LinkForm.linkFormData (getFormNotes notes links) form
 
 -- Helpers
-initializeNotes: (List NoteRecord) -> (List Link) -> (List Note)
+initializeNotes: (List Note.NoteRecord) -> (List Link) -> (List Note.Note)
 initializeNotes notes links =
-  sortNotes (initSimulation (List.indexedMap initializePosition notes) links)
+  sortNotes (initSimulation (List.map Note.init notes) links)
 
-type UnsortedNotes = UnsortedNotes (List Note)
+sortNotes: (List Note.Note) -> (List Note.Note)
+sortNotes notes =
+  List.sortWith Note.sortDesc notes
 
-initSimulation: (List Note) -> (List Link) -> UnsortedNotes
+toSimulationRecord: Note.Extract -> Simulation.SimulationRecord
+toSimulationRecord extract =
+  Simulation.SimulationRecord extract.intId extract.x extract.y extract.vx extract.vy
+
+toLinkTuple: Link -> (Int, Int)
+toLinkTuple link =
+  (link.source, link.target)
+
+noteUpdateWrapper: (List Simulation.SimulationRecord) -> Note.Note -> Note.Note
+noteUpdateWrapper simRecords note =
+  let
+    extract = Note.extract note
+    maybeSimRecord = List.head (List.filter (\sr -> sr.id == extract.intId) simRecords)
+  in
+    case maybeSimRecord of
+      Just simRecord -> Note.update simRecord note
+      Nothing -> note
+
+initSimulation: (List Note.Note) -> (List Link) -> (List Note.Note)
 initSimulation notes links =
   let
-    state = 
-      Force.simulation 
-        [ Force.manyBodyStrength -10 (List.map (\n -> n.id) notes)
-        , Force.links (List.map (\l -> (l.source, l.target)) links)
-        , Force.center 0 0
-        ]
+    simRecords = Simulation.simulate 
+      (List.map toSimulationRecord (List.map Note.extract notes))
+      (List.map toLinkTuple links)
   in
-    UnsortedNotes (Force.computeSimulation state notes)
+    List.map (noteUpdateWrapper simRecords) notes
 
-sortNotes: UnsortedNotes -> (List Note)
-sortNotes unsortedNotes =
-  case unsortedNotes of
-    UnsortedNotes notes -> (List.sortWith noteSorterDesc notes)
-
-noteSorterDesc: (Note -> Note -> Order)
-noteSorterDesc noteA noteB =
-  case compare noteA.id noteB.id of
-       LT -> GT
-       EQ -> EQ
-       GT -> LT
-
-initializePosition: Int -> NoteRecord -> Note
-initializePosition index note =
-  let
-    positions = Force.entity index 1
-  in
-    Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy NotSelected NotHover
-
-createNewNote: Int -> NoteRecord -> Note
-createNewNote index note =
-  let
-    positions = Force.entity index 1
-  in
-    Note note.id note.content note.source (noteType note.noteType) positions.x positions.y positions.vx positions.vy Selected NotHover
-
-noteType: String -> NoteType
-noteType s =
-  if s == "index" then
-    Index
-  else
-    Regular
-
-selectNoteById: NoteId -> Note -> Note
+selectNoteById: Note.NoteId -> Note.Note -> Note.Note
 selectNoteById noteId note =
-  if  note.id == noteId then
-    {note | selected = Selected}
+  if Note.isNote noteId note then
+    Note.select note
   else
     note
 
-unselectNoteById: NoteId -> Note -> Note
+unselectNoteById: Note.NoteId -> Note.Note -> Note.Note
 unselectNoteById noteId note =
-  if  note.id == noteId then
-    {note | selected = NotSelected}
+  if Note.isNote noteId note then
+    Note.unSelect note
   else
     note
 
-hoverNoteById: NoteId -> Note -> Note
+hoverNoteById: Note.NoteId -> Note.Note -> Note.Note
 hoverNoteById noteId note =
-  if  note.id == noteId then
-    {note | hover = Hover}
+  if Note.isNote noteId note then
+    Note.hover note
   else
-    {note | hover = NotHover}
+    Note.unHover note
 
-noteColor: NoteType -> String
-noteColor notetype =
-  case notetype of
-    Regular -> "rgba(137, 196, 244, 1)"
-    Index -> "rgba(250, 190, 88, 1)"
+toSearchResult: Note.Extract -> SearchResult
+toSearchResult extract =
+  SearchResult extract.id extract.intId extract.x extract.y extract.variant extract.content
 
-shouldAnimateNoteCircle: Hover -> Bool
-shouldAnimateNoteCircle hover =
-  case hover of
-     Hover -> True
-     NotHover -> False
-
-toSearchResult: Note -> SearchResult
-toSearchResult pn =
-  SearchResult pn.id pn.x pn.y (noteColor pn.noteType) pn.content
-
-toGraphNote: Note -> GraphNote
-toGraphNote pn =
-  GraphNote pn.id pn.x pn.y (noteColor pn.noteType) (shouldAnimateNoteCircle pn.hover)
+toGraphNote: Note.Extract -> GraphNote
+toGraphNote extract =
+  GraphNote extract.id extract.intId extract.x extract.y extract.variant extract.selected.hover
 
 initializeLinks: (List LinkRecord) -> (List Link)
 initializeLinks linkRecords =
@@ -387,7 +333,7 @@ linkSorterDesc linkA linkB =
     EQ -> EQ
     GT -> LT
 
-toGraphLink: Link -> (List Note) -> (Maybe GraphLink)
+toGraphLink: Link -> (List Note.Note) -> (Maybe GraphLink)
 toGraphLink link notes =
   let
       source = findNote link.source notes
@@ -424,44 +370,45 @@ getHistoryId action =
     CreateNote id _ _ -> id
     CreateLink id _ _ -> id
     
-graphLinkBuilder: Note -> Note -> LinkId -> GraphLink
+graphLinkBuilder: Note.Note -> Note.Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
-  GraphLink source.id source.x source.y target.id target.x target.y id
+  let
+    sourceExtract = Note.extract source
+    targetExtract = Note.extract target
+  in
+  GraphLink sourceExtract.intId sourceExtract.x sourceExtract.y targetExtract.intId targetExtract.x targetExtract.y id
 
-toDescriptionNote: (List Note) -> Note -> (List Link) -> DescriptionNote
-toDescriptionNote notes note links =
-  DescriptionNote note.id note.x note.y note.content note.source (getDescriptionLinks notes note.id links)
+toDescriptionNote: (List Note.Note) -> (List Link) -> Note.Note -> DescriptionNote
+toDescriptionNote notes links note =
+  let
+    extract = Note.extract note
+  in
+    DescriptionNote extract.id extract.x extract.y extract.content extract.source []
 
-getDescriptionLinks: (List Note) -> NoteId -> (List Link) -> (List DescriptionLink)
-getDescriptionLinks notes noteId links =
-  List.map toDescriptionLink (uniqueLinkParts (getLinkParts notes noteId links))
+-- getDescriptionLinks: (List Note.Note) -> Note.NoteId -> (List Link) -> (List DescriptionLink)
+-- getDescriptionLinks notes noteId links =
+--   List.map toDescriptionLink (List.map Note.extract (getLinkedNotes notes noteId links))
 
-toDescriptionLink: (Int, Float, Float) -> DescriptionLink
-toDescriptionLink (noteId, x, y) =
-  DescriptionLink noteId x y
+-- toDescriptionLink: Note.Extract -> DescriptionLink
+-- toDescriptionLink extract =
+--   DescriptionLink extract.id extract.intId extract.x extract.y
 
-getLinkParts: (List Note) -> NoteId -> (List Link) -> (List (Int, Float, Float))
-getLinkParts notes noteId links =
-  List.filterMap (\link -> maybeGetDescriptionLinkParts notes noteId link) links
+-- getLinkedNotes: (List Note.Note) -> Note.NoteId -> (List Link) -> (List Note.Note)
+-- getLinkedNotes notes noteId links =
+--   List.filterMap (maybeNoteFromLink notes noteId) links
 
-uniqueLinkParts: (List (Int, Float, Float)) -> (List (Int, Float, Float))
-uniqueLinkParts linkParts = Set.toList (Set.fromList linkParts)
+-- maybeNoteFromLink: (List Note.Note) -> Note.NoteId -> Link -> (Maybe (Note.Note))
+-- maybeNoteFromLink notes noteId link =
+--   if link.source == noteId then 
+--     findNote link.target notes
+--   else if link.target == noteId then 
+--     findNote link.source notes
+--   else 
+--     Nothing
 
-maybeGetDescriptionLinkParts: (List Note) -> NoteId -> Link -> (Maybe (Int, Float, Float))
-maybeGetDescriptionLinkParts notes noteId link =
-  if link.source == noteId then 
-    Maybe.map toLinkParts (findNote link.target notes)
-  else if link.target == noteId then 
-    Maybe.map toLinkParts (findNote link.source notes)
-  else 
-    Nothing
-
-toLinkParts: Note -> (Int, Float, Float)
-toLinkParts note = (note.id, note.x, note.y)
-
-findNote: NoteId -> (List Note) -> (Maybe Note)
+findNote: Int -> (List Note.Note) -> (Maybe Note.Note)
 findNote noteId notes =
-  List.head (List.filter (\note -> note.id == noteId) notes)
+  List.head (List.filter (Note.isNoteInt noteId) notes)
 
 toHistoryAction: Action -> HistoryAction
 toHistoryAction action = 
@@ -484,21 +431,21 @@ createLinkSummary link =
   " from Source:" ++  String.fromInt link.source ++ 
   " to Target:" ++  String.fromInt link.target
 
-toNoteRecord: MakeNoteRecord -> (List Note) -> NoteRecord
+toNoteRecord: MakeNoteRecord -> (List Note.Note) -> Note.NoteRecord
 toNoteRecord note notes =
-  NoteRecord (getNextNoteId notes) note.content note.source note.noteType
+  Note.NoteRecord (getNextNoteId notes) note.content note.source note.noteType
 
-getNextNoteId: (List Note) -> Int
+getNextNoteId: (List Note.Note) -> Int
 getNextNoteId notes = 
   case List.head notes of
-    Just note -> note.id + 1
+    Just note -> Note.subsequentNoteId note
     Nothing -> 1
 
-addNoteToNotes: NoteRecord -> (List Note) -> (List Link) -> (List Note)
+addNoteToNotes: Note.NoteRecord -> (List Note.Note) -> (List Link) -> (List Note.Note)
 addNoteToNotes note notes links =
-  sortNotes (initSimulation ( createNewNote note.id note :: notes) links)
+  initSimulation ( Note.init note :: notes) links
 
-addNoteToActions : NoteRecord -> (List Action) -> (List Action)
+addNoteToActions : Note.NoteRecord -> (List Action) -> (List Action)
 addNoteToActions note actions =
   CreateNote (getNextHistoryId actions) False (toHistoryNote note) :: actions
 
@@ -511,7 +458,7 @@ getNextHistoryId actions =
         CreateLink historyId _ _ -> historyId + 1
     Nothing -> 1
 
-toHistoryNote: NoteRecord -> HistoryNote
+toHistoryNote: Note.NoteRecord -> HistoryNote
 toHistoryNote note =
   HistoryNote note.id note.content note.source note.noteType
 
@@ -527,7 +474,7 @@ toHistoryLink: Link -> HistoryLink
 toHistoryLink link =
   HistoryLink link.source link.target link.id
 
-toMaybeLink: MakeLinkRecord -> (List Link) -> (List Note) -> (Maybe Link)
+toMaybeLink: MakeLinkRecord -> (List Link) -> (List Note.Note) -> (Maybe Link)
 toMaybeLink makeLinkRecord links notes =
   let
       source = makeLinkRecord.source
@@ -539,13 +486,16 @@ toMaybeLink makeLinkRecord links notes =
   else 
     Nothing
 
-linkRecordIsValid: Int -> Int -> (List Note) -> Bool
+linkRecordIsValid: Int -> Int -> (List Note.Note) -> Bool
 linkRecordIsValid source target notes =
   noteExists source notes && noteExists target notes
 
-noteExists: Int -> (List Note) -> Bool
+noteExists: Int -> (List Note.Note) -> Bool
 noteExists noteId notes =
-  List.member noteId (List.map (\note -> note.id) notes)
+  let
+    extracts = List.map Note.extract notes
+  in
+  List.member noteId (List.map (\note -> note.intId) extracts)
 
 nextLinkId: (List Link) -> Int
 nextLinkId links =
@@ -556,27 +506,24 @@ nextLinkId links =
       Just link -> link.id + 1
       Nothing -> 1
 
-getFormNotes: (List Note) -> (List Link) -> (List LinkForm.FormNote)
+getFormNotes: (List Note.Note) -> (List Link) -> (List LinkForm.FormNote)
 getFormNotes notes links =
   notes
-    |> List.filter (\note -> note.selected == Selected )
+    |> List.filter Note.isSelected
     |> List.map (\note -> toFormNote note links)
 
-toFormNote: Note -> (List Link) -> LinkForm.FormNote
+toFormNote: Note.Note -> (List Link) -> LinkForm.FormNote
 toFormNote note links =
-  LinkForm.FormNote note.id (contentSummary note.content) (isIndex note.noteType) (getNoteIds note.id links)
+  let
+    extract = Note.extract note
+  in
+  LinkForm.FormNote extract.intId (contentSummary extract.content) (Note.isIndex note) (getNoteIds extract.intId links)
 
-isIndex: NoteType -> Bool
-isIndex nType =
-  case nType of
-     Index -> True
-     Regular -> False
-
-getNoteIds: NoteId -> (List Link) -> (List Int)
+getNoteIds: Int -> (List Link) -> (List Int)
 getNoteIds noteId links =
   List.filterMap (\link -> maybeGetNoteId noteId link) links
 
-maybeGetNoteId: NoteId -> Link -> (Maybe Int)
+maybeGetNoteId: Int -> Link -> (Maybe Int)
 maybeGetNoteId noteId link =
   if link.source == noteId then 
     Just link.target
