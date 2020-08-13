@@ -383,28 +383,29 @@ toDescriptionNote notes links note =
   let
     extract = Note.extract note
   in
-    DescriptionNote extract.id extract.x extract.y extract.content extract.source []
+    DescriptionNote extract.id extract.x extract.y extract.content extract.source 
+      (getDescriptionLinks notes extract.intId links)
 
--- getDescriptionLinks: (List Note.Note) -> Note.NoteId -> (List Link) -> (List DescriptionLink)
--- getDescriptionLinks notes noteId links =
---   List.map toDescriptionLink (List.map Note.extract (getLinkedNotes notes noteId links))
+getDescriptionLinks: (List Note.Note) -> Int -> (List Link) -> (List DescriptionLink)
+getDescriptionLinks notes noteId links =
+  List.map toDescriptionLink (List.map Note.extract (getLinkedNotes notes noteId links))
 
--- toDescriptionLink: Note.Extract -> DescriptionLink
--- toDescriptionLink extract =
---   DescriptionLink extract.id extract.intId extract.x extract.y
+toDescriptionLink: Note.Extract -> DescriptionLink
+toDescriptionLink extract =
+  DescriptionLink extract.id extract.intId extract.x extract.y
 
--- getLinkedNotes: (List Note.Note) -> Note.NoteId -> (List Link) -> (List Note.Note)
--- getLinkedNotes notes noteId links =
---   List.filterMap (maybeNoteFromLink notes noteId) links
+getLinkedNotes: (List Note.Note) -> Int -> (List Link) -> (List Note.Note)
+getLinkedNotes notes noteId links =
+  List.filterMap (maybeNoteFromLink notes noteId) links
 
--- maybeNoteFromLink: (List Note.Note) -> Note.NoteId -> Link -> (Maybe (Note.Note))
--- maybeNoteFromLink notes noteId link =
---   if link.source == noteId then 
---     findNote link.target notes
---   else if link.target == noteId then 
---     findNote link.source notes
---   else 
---     Nothing
+maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
+maybeNoteFromLink notes noteId link =
+  if link.source == noteId then 
+    findNote link.target notes
+  else if link.target == noteId then 
+    findNote link.source notes
+  else 
+    Nothing
 
 findNote: Int -> (List Note.Note) -> (Maybe Note.Note)
 findNote noteId notes =
