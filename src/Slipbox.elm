@@ -5,11 +5,12 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
-  , sourceUpdate)
+  , sourceUpdate, deleteNote)
 
 import Simulation
 import LinkForm
 import Note
+import Debug
 
 --Types
 type Slipbox = Slipbox (List Note.Note) (List Link) (List Action) LinkForm.LinkForm
@@ -23,7 +24,9 @@ type alias Link =
 type Action =
   CreateNote HistoryId Undone HistoryNote |
   CreateLink HistoryId Undone HistoryLink |
-  EditNote HistoryId Undone HistoryNote
+  EditNote HistoryId Undone HistoryEditNote |
+  DeleteNote HistoryId Undone HistoryNote |
+  DeleteLink HistoryId Undone HistoryLink
 
 type alias HistoryId = Int
 
@@ -33,7 +36,16 @@ type alias HistoryNote =
   { id : Int
   , content : String
   , source : String
-  , noteType: String
+  , variant: String
+  }
+
+type alias HistoryEditNote =
+  { id : Int
+  , formerContent: String
+  , currentContent: String
+  , formerSource: String
+  , currentSource: String
+  , variant: String
   }
 
 type alias HistoryLink =
@@ -181,7 +193,7 @@ handleCreateNote makeNoteRecord notes links actions form =
     newNote = toNoteRecord makeNoteRecord notes
     newNoteList = addNoteToNotes newNote notes links
   in
-    Slipbox (List.sortWith Note.sortDesc newNoteList) links (addNoteToActions newNote actions) form
+    Slipbox (sortNotes newNoteList) links (addNoteToActions newNote actions) form
 
 createLink: Slipbox -> Slipbox
 createLink slipbox =
@@ -280,6 +292,32 @@ sourceUpdate source noteId slipbox =
     Slipbox notes links actions form ->
       Slipbox (sourceUpdateById source noteId notes) links actions form 
 
+deleteNote: Note.NoteId -> Slipbox -> Slipbox
+deleteNote noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> deleteNoteHandler noteId notes links actions form  
+
+deleteNoteHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+deleteNoteHandler noteId notes links actions form =
+  case findNote noteId notes of
+    Just note -> deleteNoteFoundHandler note notes links actions form
+    Nothing -> Slipbox notes links actions form
+
+deleteNoteFoundHandler: Note.Note -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+deleteNoteFoundHandler note notes links actions form =
+  let
+    extract = Note.extract note
+    _ = Debug.log (Debug.toString extract) 1
+    associatedLinks = getLinksForNote extract.intId links
+    _ = Debug.log (Debug.toString associatedLinks) 2
+    newNotes = deleteNoteById extract.id notes
+    newLinks = removeAssociatedLinks (List.map (\link -> link.id) associatedLinks) links
+  in
+    Slipbox 
+      newNotes 
+      newLinks
+      (addDeleteNoteActionHandler extract associatedLinks actions) 
+      (LinkForm.selectionsChange form (getFormNotes notes links))
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
@@ -432,6 +470,8 @@ getHistoryId action =
     CreateNote id _ _ -> id
     CreateLink id _ _ -> id
     EditNote id _ _ -> id
+    DeleteNote id _ _ -> id
+    DeleteLink id _ _ -> id
     
 graphLinkBuilder: Note.Note -> Note.Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
@@ -467,6 +507,19 @@ getLinkedNotes: (List Note.Note) -> Int -> (List Link) -> (List Note.Note)
 getLinkedNotes notes noteId links =
   List.filterMap (maybeNoteFromLink notes noteId) links
 
+getLinksForNote: Int -> (List Link) -> (List Link)
+getLinksForNote noteId links =
+  List.filterMap (getMaybeLink noteId) links
+
+getMaybeLink: Int -> Link -> (Maybe Link)
+getMaybeLink noteId link =
+  if link.source == noteId then 
+    Just link
+  else if link.target == noteId then 
+    Just link
+  else 
+    Nothing
+
 maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
 maybeNoteFromLink notes noteId link =
   if link.source == noteId then 
@@ -490,16 +543,24 @@ toHistoryAction action =
     CreateNote id undone historyNote -> HistoryAction id undone (createNoteSummary historyNote)
     CreateLink id undone historyLink -> HistoryAction id undone (createLinkSummary historyLink)
     EditNote id undone historyNote -> HistoryAction id undone (editNoteSummary historyNote)
+    DeleteNote id undone historyNote -> HistoryAction id undone (deleteNoteSummary historyNote)
+    DeleteLink id undone historyLink -> HistoryAction id undone (deleteLinkSummary historyLink)
 
 createNoteSummary: HistoryNote -> String
 createNoteSummary note =
   "Create Note:" ++  String.fromInt note.id ++
   " with Content: " ++ contentSummary note.content
 
-editNoteSummary: HistoryNote -> String
+deleteNoteSummary: HistoryNote -> String
+deleteNoteSummary note =
+  "Delete Note:" ++  String.fromInt note.id ++
+  " with Content: " ++ contentSummary note.content
+
+editNoteSummary: HistoryEditNote -> String
 editNoteSummary note =
   "Edit Note:" ++  String.fromInt note.id ++
-  " with Content: " ++ contentSummary note.content
+  " with Content: " ++ contentSummary note.currentContent ++
+  " from Content: " ++ contentSummary note.formerContent
 
 contentSummary: String -> String
 contentSummary content = String.slice 0 summaryLengthMin content ++ "..."
@@ -508,6 +569,12 @@ contentSummary content = String.slice 0 summaryLengthMin content ++ "..."
 createLinkSummary: HistoryLink -> String
 createLinkSummary link =
   "Create Link:" ++  String.fromInt link.id ++ 
+  " from Source:" ++  String.fromInt link.source ++ 
+  " to Target:" ++  String.fromInt link.target
+
+deleteLinkSummary: HistoryLink -> String
+deleteLinkSummary link =
+  "Delete Link:" ++  String.fromInt link.id ++ 
   " from Source:" ++  String.fromInt link.source ++ 
   " to Target:" ++  String.fromInt link.target
 
@@ -534,12 +601,12 @@ addEditNoteToActions edits extract actions =
   EditNote 
     (getNextHistoryId actions) 
     False 
-    (toHistoryNote 
-      (Note.NoteRecord 
-        extract.intId 
-        edits.content 
-        edits.source
-        extract.variant)) :: actions
+    (toHistoryEditNote edits extract) :: actions
+
+toHistoryEditNote: Note.Edits -> Note.Extract -> HistoryEditNote
+toHistoryEditNote edits extract =
+  HistoryEditNote extract.intId extract.content edits.content extract.source edits.source extract.variant
+
 
 getNextHistoryId : (List Action) -> Int
 getNextHistoryId actions =
@@ -549,6 +616,8 @@ getNextHistoryId actions =
         CreateNote historyId _ _ -> historyId + 1
         CreateLink historyId _ _ -> historyId + 1
         EditNote historyId _ _ -> historyId + 1
+        DeleteNote historyId _ _ -> historyId + 1
+        DeleteLink historyId _ _ -> historyId + 1
     Nothing -> 1
 
 toHistoryNote: Note.NoteRecord -> HistoryNote
@@ -678,3 +747,42 @@ sourceUpdateForId source noteId note =
     Note.sourceUpdate source note
   else
     note
+
+deleteNoteById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+deleteNoteById noteId notes =
+  List.filterMap (deleteNoteForId noteId) notes
+
+deleteNoteForId: Note.NoteId -> Note.Note -> (Maybe Note.Note)
+deleteNoteForId noteId note =
+  if Note.isNote noteId note then
+    Nothing
+  else
+    Just note
+
+removeAssociatedLinks: (List LinkId) -> (List Link) -> (List Link)
+removeAssociatedLinks linkIds links =
+  let
+    _ = Debug.log (Debug.toString linkIds) 3
+    _ = Debug.log (Debug.toString links) 4
+    _ = Debug.log (Debug.toString (List.member 1 [])) 5
+  in
+    List.filter (\link -> not (List.member link.id linkIds)) links
+
+
+
+addDeleteNoteActionHandler: (Note.Extract) -> (List Link) -> (List Action) -> (List Action)
+addDeleteNoteActionHandler extract links actions =
+  let
+    latestHistoryId = getNextHistoryId actions
+    deleteLinkActions = List.indexedMap (\index link -> toDeleteLinkAction (latestHistoryId + 1 + index) link) links
+    actionsWithDeleteLink = List.sortWith actionSorterDesc (List.append deleteLinkActions actions)
+  in
+    toDeleteNoteAction (getNextHistoryId actionsWithDeleteLink) extract :: actionsWithDeleteLink
+    
+toDeleteLinkAction: Int -> Link -> Action
+toDeleteLinkAction historyId link =
+  DeleteLink historyId False (toHistoryLink link)
+
+toDeleteNoteAction: Int -> Note.Extract -> Action
+toDeleteNoteAction historyId extract =
+  DeleteNote historyId False (toHistoryNote (Note.NoteRecord extract.intId extract.content extract.source extract.variant))

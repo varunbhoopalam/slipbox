@@ -15,6 +15,7 @@ import Viewport as V
 import Slipbox as S
 import LinkForm
 import Note
+import Debug
 
 -- MAIN
 
@@ -192,8 +193,9 @@ type Msg =
   EditNote Note.NoteId |
   DiscardEdits Note.NoteId |
   SubmitEdits Note.NoteId |
-  ContentUpdate Note.NoteId String|
-  SourceUpdate Note.NoteId String
+  ContentUpdate Note.NoteId String |
+  SourceUpdate Note.NoteId String |
+  DeleteNote Note.NoteId
 
 update : Msg -> Model -> Model
 update msg model =
@@ -223,6 +225,7 @@ update msg model =
     SubmitEdits note -> handleSubmitEdits note model
     ContentUpdate note s -> handleContentUpdate s note model
     SourceUpdate note s -> handleSourceUpdate s note model
+    DeleteNote note -> handleDeleteNote note model
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -374,6 +377,12 @@ handleSourceUpdate source noteId model =
     Model slipbox query viewport form ->
       Model (S.sourceUpdate source noteId slipbox) query viewport form
 
+handleDeleteNote: Note.NoteId -> Model -> Model
+handleDeleteNote noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.deleteNote noteId slipbox) query viewport form
+
 -- VIEW
 view : Model -> Html Msg
 view model =
@@ -523,8 +532,7 @@ selectedNotes slipbox =
 toDescription: S.DescriptionNote -> Html Msg
 toDescription note =
   div [] [
-    button [onClick (NoteDismiss note.id)] [text "-"]
-    , editButton note
+    selectButtons note
     , div 
       [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
       , onClick (NoteSelect note.id (note.x, note.y))
@@ -534,15 +542,19 @@ toDescription note =
       [noteInfo note]
   ]
 
-editButton: S.DescriptionNote -> Html Msg
-editButton note =
+selectButtons: S.DescriptionNote -> Html Msg
+selectButtons note =
   if note.inEdit then
     div [] 
       [ button [onClick (SubmitEdits note.id)] [text "Save"]
       , button [onClick (DiscardEdits note.id)] [text "Discard"]
       ]
   else
-    button [onClick (EditNote note.id)] [text "Edit"]
+    div []
+      [ button [onClick (NoteDismiss note.id)] [text "Dismiss"]
+      , button [onClick (EditNote note.id)] [text "Edit"]
+      , button [onClick (DeleteNote note.id)] [text "Delete"]
+      ]
 
 noteInfo: S.DescriptionNote -> Html Msg
 noteInfo note =
