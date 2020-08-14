@@ -1,9 +1,11 @@
-module Slipbox exposing (Slipbox, LinkRecord, initialize, 
-  selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult,
-  getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
+module Slipbox exposing (Slipbox, LinkRecord, initialize
+  , selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult
+  , getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, hoverNote, CreateNoteRecord, CreateLinkRecord
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
-  , createLink, sourceSelected, targetSelected, getLinkFormData)
+  , createLink, sourceSelected, targetSelected, getLinkFormData
+  , startEditState, discardEdits, submitEdits, contentUpdate
+  , sourceUpdate)
 
 import Simulation
 import LinkForm
@@ -20,7 +22,8 @@ type alias Link =
 
 type Action =
   CreateNote HistoryId Undone HistoryNote |
-  CreateLink HistoryId Undone HistoryLink
+  CreateLink HistoryId Undone HistoryLink |
+  EditNote HistoryId Undone HistoryNote
 
 type alias HistoryId = Int
 
@@ -108,6 +111,7 @@ type alias DescriptionNote =
   , y : Float 
   , content : String
   , source : String 
+  , inEdit: Bool
   , links : (List DescriptionLink)
   }
 
@@ -220,6 +224,62 @@ targetSelected: String -> Slipbox -> Slipbox
 targetSelected target slipbox =
   case slipbox of
     Slipbox notes links actions form -> Slipbox notes links actions (LinkForm.addTarget target form)
+
+startEditState: Note.NoteId -> Slipbox -> Slipbox
+startEditState noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form ->
+      Slipbox (startEditStateById noteId notes) links actions form
+
+discardEdits: Note.NoteId -> Slipbox -> Slipbox
+discardEdits noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form ->
+      Slipbox (discardEditsById noteId notes) links actions form
+
+submitEdits: Note.NoteId -> Slipbox -> Slipbox
+submitEdits noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> submitEditsHandler noteId notes links actions form
+
+submitEditsHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+submitEditsHandler noteId notes links actions form =
+  case findNote noteId notes of
+    Just note -> submitEditsNoteFound note notes links actions form
+    Nothing -> Slipbox notes links actions form
+
+submitEditsNoteFound: Note.Note -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+submitEditsNoteFound note notes links actions form =
+  let
+    extract = Note.extract note
+  in
+    editHandler extract notes links actions form
+
+editHandler: Note.Extract -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+editHandler extract notes links actions form =
+  case extract.selected.edits of
+    Just edits -> editMadeHandler edits extract notes links actions form
+    Nothing -> Slipbox notes links actions form
+
+editMadeHandler: Note.Edits -> Note.Extract -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+editMadeHandler edits extract notes links actions form =
+  if wasEdited edits extract then
+    Slipbox (List.map (submitEditsById extract.id) notes) links (addEditNoteToActions edits extract actions) form
+  else
+    Slipbox notes links actions form
+
+contentUpdate: String -> Note.NoteId -> Slipbox -> Slipbox
+contentUpdate content noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form ->
+      Slipbox (contentUpdateById content noteId notes) links actions form 
+
+sourceUpdate: String -> Note.NoteId -> Slipbox -> Slipbox
+sourceUpdate source noteId slipbox =
+  case slipbox of
+    Slipbox notes links actions form ->
+      Slipbox (sourceUpdateById source noteId notes) links actions form 
+
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
@@ -336,8 +396,8 @@ linkSorterDesc linkA linkB =
 toGraphLink: Link -> (List Note.Note) -> (Maybe GraphLink)
 toGraphLink link notes =
   let
-      source = findNote link.source notes
-      target = findNote link.target notes
+      source = findNoteByInt link.source notes
+      target = findNoteByInt link.target notes
   in
     Maybe.map3 graphLinkBuilder source target (Just link.id)
 
@@ -352,6 +412,8 @@ createNoteAction note =
 createLinkAction: CreateLinkRecord -> Action
 createLinkAction link =
   CreateLink link.id False (Link link.action.source link.action.target link.action.id)
+
+
 
 actionSorterDesc: (Action -> Action -> Order)
 actionSorterDesc actionA actionB =
@@ -369,6 +431,7 @@ getHistoryId action =
   case action of 
     CreateNote id _ _ -> id
     CreateLink id _ _ -> id
+    EditNote id _ _ -> id
     
 graphLinkBuilder: Note.Note -> Note.Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
@@ -383,7 +446,13 @@ toDescriptionNote notes links note =
   let
     extract = Note.extract note
   in
-    DescriptionNote extract.id extract.x extract.y extract.content extract.source 
+    DescriptionNote 
+      extract.id 
+      extract.x 
+      extract.y 
+      extract.content 
+      extract.source 
+      extract.selected.inEdit
       (getDescriptionLinks notes extract.intId links)
 
 getDescriptionLinks: (List Note.Note) -> Int -> (List Link) -> (List DescriptionLink)
@@ -401,14 +470,18 @@ getLinkedNotes notes noteId links =
 maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
 maybeNoteFromLink notes noteId link =
   if link.source == noteId then 
-    findNote link.target notes
+    findNoteByInt link.target notes
   else if link.target == noteId then 
-    findNote link.source notes
+    findNoteByInt link.source notes
   else 
     Nothing
 
-findNote: Int -> (List Note.Note) -> (Maybe Note.Note)
+findNote: Note.NoteId -> (List Note.Note) -> (Maybe Note.Note)
 findNote noteId notes =
+  List.head (List.filter (Note.isNote noteId) notes)
+
+findNoteByInt: Int -> (List Note.Note) -> (Maybe Note.Note)
+findNoteByInt noteId notes =
   List.head (List.filter (Note.isNoteInt noteId) notes)
 
 toHistoryAction: Action -> HistoryAction
@@ -416,10 +489,16 @@ toHistoryAction action =
   case action of
     CreateNote id undone historyNote -> HistoryAction id undone (createNoteSummary historyNote)
     CreateLink id undone historyLink -> HistoryAction id undone (createLinkSummary historyLink)
+    EditNote id undone historyNote -> HistoryAction id undone (editNoteSummary historyNote)
 
 createNoteSummary: HistoryNote -> String
 createNoteSummary note =
   "Create Note:" ++  String.fromInt note.id ++
+  " with Content: " ++ contentSummary note.content
+
+editNoteSummary: HistoryNote -> String
+editNoteSummary note =
+  "Edit Note:" ++  String.fromInt note.id ++
   " with Content: " ++ contentSummary note.content
 
 contentSummary: String -> String
@@ -450,6 +529,18 @@ addNoteToActions : Note.NoteRecord -> (List Action) -> (List Action)
 addNoteToActions note actions =
   CreateNote (getNextHistoryId actions) False (toHistoryNote note) :: actions
 
+addEditNoteToActions: Note.Edits -> Note.Extract -> (List Action) -> (List Action)
+addEditNoteToActions edits extract actions =
+  EditNote 
+    (getNextHistoryId actions) 
+    False 
+    (toHistoryNote 
+      (Note.NoteRecord 
+        extract.intId 
+        edits.content 
+        edits.source
+        extract.variant)) :: actions
+
 getNextHistoryId : (List Action) -> Int
 getNextHistoryId actions =
   case List.head actions of
@@ -457,6 +548,7 @@ getNextHistoryId actions =
       case action of 
         CreateNote historyId _ _ -> historyId + 1
         CreateLink historyId _ _ -> historyId + 1
+        EditNote historyId _ _ -> historyId + 1
     Nothing -> 1
 
 toHistoryNote: Note.NoteRecord -> HistoryNote
@@ -532,3 +624,57 @@ maybeGetNoteId noteId link =
     Just link.source
   else 
     Nothing
+
+startEditStateById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+startEditStateById noteId notes =
+  List.map (editForId noteId) notes
+
+discardEditsById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+discardEditsById noteId notes =
+  List.map (discardEditForId noteId) notes
+
+editForId: Note.NoteId -> Note.Note -> Note.Note
+editForId noteId note =
+  if Note.isNote noteId note then
+    Note.startEditState note
+  else
+    note
+
+discardEditForId: Note.NoteId -> Note.Note -> Note.Note
+discardEditForId noteId note =
+  if Note.isNote noteId note then
+    Note.discardEdits note
+  else
+    note
+
+submitEditsById: Note.NoteId -> Note.Note -> Note.Note
+submitEditsById noteId note =
+  if Note.isNote noteId note then
+    Note.submitEdits note
+  else
+    note
+
+wasEdited: Note.Edits -> Note.Extract -> Bool
+wasEdited edits extract = extract.content /= edits.content || extract.source /= edits.source
+
+contentUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
+contentUpdateById content noteId notes =
+    List.map (contentUpdateForId content noteId) notes
+
+contentUpdateForId: String -> Note.NoteId -> Note.Note -> Note.Note
+contentUpdateForId content noteId note =
+  if Note.isNote noteId note then
+    Note.contentUpdate content note
+  else
+    note
+
+sourceUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
+sourceUpdateById source noteId notes =
+    List.map (sourceUpdateForId source noteId) notes
+
+sourceUpdateForId: String -> Note.NoteId -> Note.Note -> Note.Note
+sourceUpdateForId source noteId note =
+  if Note.isNote noteId note then
+    Note.sourceUpdate source note
+  else
+    note

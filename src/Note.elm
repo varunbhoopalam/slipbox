@@ -1,8 +1,10 @@
-module Note exposing (Note, NoteId, NoteRecord, Extract, SelectedExtract,  
+module Note exposing (Note, NoteId, NoteRecord, Extract, SelectedExtract, Edits,
   init, isNote, select, unSelect, 
   hover, unHover, subsequentNoteId, 
   sortDesc, extract, isSelected,
-  isIndex, search, update, isNoteInt)
+  isIndex, search, update, isNoteInt,
+  startEditState, discardEdits, submitEdits,
+  contentUpdate, sourceUpdate)
 
 import Simulation
 
@@ -61,6 +63,12 @@ type alias SelectedExtract =
   { selected: Bool
   , hover: Bool
   , inEdit: Bool
+  , edits: (Maybe Edits)
+  }
+
+type alias Edits =
+  { content: String
+  , source: String
   }
 
 -- Exposed Functions
@@ -146,6 +154,63 @@ update simRecord note =
   case note of
     Note content -> Note {content | x = simRecord.x , y = simRecord.y, vx = simRecord.vx, vy = simRecord.vy}
     Selected content sContent -> Selected {content | x = simRecord.x , y = simRecord.y, vx = simRecord.vx, vy = simRecord.vy} sContent
+
+startEditState: Note -> Note
+startEditState note =
+  case note of
+    Note _ -> note
+    Selected content sContent -> 
+      case sContent.editState of
+        InEdit _ -> note
+        NotInEdit -> 
+          Selected 
+            content 
+            { sContent | editState = 
+              InEdit (EditContent content.content content.source)
+            }
+
+discardEdits: Note -> Note
+discardEdits note =
+  case note of
+    Note _ -> note
+    Selected content sContent -> 
+      case sContent.editState of
+        InEdit _ ->           
+          Selected content { sContent | editState = NotInEdit }
+        NotInEdit -> note
+
+submitEdits: Note -> Note
+submitEdits note =
+  case note of
+    Note _ -> note
+    Selected content sContent -> 
+      case sContent.editState of
+        InEdit eContent ->           
+          Selected 
+            { content | content = eContent.content, source = eContent.source } 
+            { sContent | editState = NotInEdit }
+        NotInEdit -> note
+
+sourceUpdate: String -> Note -> Note
+sourceUpdate source note =
+  case note of
+    Note _ -> note
+    Selected content sContent -> 
+      case sContent.editState of
+        InEdit eContent-> 
+          Selected content {sContent | editState = InEdit {eContent | source = source}}
+        NotInEdit -> note
+
+contentUpdate: String -> Note -> Note
+contentUpdate newContent note =
+  case note of
+    Note _ -> note
+    Selected content sContent -> 
+      case sContent.editState of
+        InEdit eContent-> 
+          Selected content {sContent | editState = InEdit {eContent | content = newContent}}
+        NotInEdit -> note
+
 -- Helper
 
 getNoteIdComparable: Note -> Int
@@ -194,7 +259,7 @@ buildExtract content =
     extractNotSelectedBuilder
 
 extractNotSelectedBuilder: SelectedExtract 
-extractNotSelectedBuilder = SelectedExtract False False False
+extractNotSelectedBuilder = SelectedExtract False False False Nothing
 
 buildSelectedExtract: NoteContent -> SelectedContent -> Extract
 buildSelectedExtract content sContent =
@@ -203,14 +268,14 @@ buildSelectedExtract content sContent =
       Extract 
         content.id 
         (extractNoteId content.id) 
-        eContent.content 
-        eContent.source 
+        content.content 
+        content.source 
         (variantToString content.variant)
         content.x
         content.y
         content.vx
         content.vy
-        (SelectedExtract True sContent.hover True)
+        (SelectedExtract True sContent.hover True (Just (Edits eContent.content eContent.source)))
     NotInEdit ->
       Extract 
         content.id 
@@ -222,7 +287,7 @@ buildSelectedExtract content sContent =
         content.y
         content.vx
         content.vy
-        (SelectedExtract True sContent.hover False)
+        (SelectedExtract True sContent.hover False Nothing)
 
 -- NoteId
 type NoteId = NoteId Int

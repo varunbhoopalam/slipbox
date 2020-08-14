@@ -188,7 +188,12 @@ type Msg =
   SubmitCreateNoteForm |
   SubmitCreateLink |
   LinkFormSourceSelected String |
-  LinkFormTargetSelected String
+  LinkFormTargetSelected String |
+  EditNote Note.NoteId |
+  DiscardEdits Note.NoteId |
+  SubmitEdits Note.NoteId |
+  ContentUpdate Note.NoteId String|
+  SourceUpdate Note.NoteId String
 
 update : Msg -> Model -> Model
 update msg model =
@@ -213,6 +218,11 @@ update msg model =
     SubmitCreateLink -> handleSubmitCreateLink model
     LinkFormSourceSelected s -> handleLinkFormSourceSelected s model
     LinkFormTargetSelected s -> handleLinkFormTargetSelected s model 
+    EditNote note -> handleEditNote note model
+    DiscardEdits note -> handleDiscardEdits note model
+    SubmitEdits note -> handleSubmitEdits note model
+    ContentUpdate note s -> handleContentUpdate s note model
+    SourceUpdate note s -> handleSourceUpdate s note model
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -333,6 +343,36 @@ handleLinkFormTargetSelected target model =
   case model of 
     Model slipbox query viewport form ->
       Model (S.targetSelected target slipbox) query viewport form
+
+handleEditNote: Note.NoteId -> Model -> Model
+handleEditNote noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.startEditState noteId slipbox) query viewport form
+
+handleDiscardEdits: Note.NoteId -> Model -> Model
+handleDiscardEdits noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.discardEdits noteId slipbox) query viewport form
+
+handleSubmitEdits: Note.NoteId -> Model -> Model
+handleSubmitEdits noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.submitEdits noteId slipbox) query viewport form
+
+handleContentUpdate: String -> Note.NoteId -> Model -> Model
+handleContentUpdate content noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.contentUpdate content noteId slipbox) query viewport form
+
+handleSourceUpdate: String -> Note.NoteId -> Model -> Model
+handleSourceUpdate source noteId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.sourceUpdate source noteId slipbox) query viewport form
 
 -- VIEW
 view : Model -> Html Msg
@@ -484,17 +524,40 @@ toDescription: S.DescriptionNote -> Html Msg
 toDescription note =
   div [] [
     button [onClick (NoteDismiss note.id)] [text "-"]
+    , editButton note
     , div 
       [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
       , onClick (NoteSelect note.id (note.x, note.y))
       , onMouseEnter (NoteHighlight note.id)
       , onMouseLeave NoteRemoveHighlights
       ] 
-      [ Html.text note.content
-      , Html.text note.source
-      , div [] (List.map toLinkDiv note.links)
-      ]
+      [noteInfo note]
   ]
+
+editButton: S.DescriptionNote -> Html Msg
+editButton note =
+  if note.inEdit then
+    div [] 
+      [ button [onClick (SubmitEdits note.id)] [text "Save"]
+      , button [onClick (DiscardEdits note.id)] [text "Discard"]
+      ]
+  else
+    button [onClick (EditNote note.id)] [text "Edit"]
+
+noteInfo: S.DescriptionNote -> Html Msg
+noteInfo note =
+  if note.inEdit then
+    div [] 
+      [ textarea [onInput (ContentUpdate note.id), style "border: 1px solid black; padding: 16px;"] [Html.text note.content]
+      , input [onInput (SourceUpdate note.id), style "border: 1px solid black; padding: 16px;"] [Html.text note.source]
+      , div [style "border: 1px solid black; padding: 16px;"] (List.map toLinkDiv note.links)
+      ]
+  else
+    div [] 
+      [ div [style "border: 1px solid black; padding: 16px;"] [Html.text note.content]
+      , div [style "border: 1px solid black; padding: 16px;"] [Html.text note.source]
+      , div [style "border: 1px solid black; padding: 16px;"] (List.map toLinkDiv note.links)
+      ]
 
 toLinkDiv: S.DescriptionLink -> Html Msg
 toLinkDiv link =
