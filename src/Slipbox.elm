@@ -10,7 +10,7 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
 import Simulation
 import LinkForm
 import Note
-import Debug
+import Action
 
 --Types
 type Slipbox = Slipbox (List Note.Note) (List Link) (List Action) LinkForm.LinkForm
