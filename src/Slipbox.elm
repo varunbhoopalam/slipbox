@@ -5,7 +5,7 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , HistoryAction, getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
-  , sourceUpdate, deleteNote)
+  , sourceUpdate, deleteNote, deleteLink)
 
 import Simulation
 import LinkForm
@@ -132,6 +132,7 @@ type alias DescriptionLink =
   , idInt : Int
   , x : Float
   , y : Float
+  , linkId: Int
   }
 
 -- Invariants
@@ -307,17 +308,27 @@ deleteNoteFoundHandler: Note.Note -> (List Note.Note) -> (List Link) -> (List Ac
 deleteNoteFoundHandler note notes links actions form =
   let
     extract = Note.extract note
-    _ = Debug.log (Debug.toString extract) 1
     associatedLinks = getLinksForNote extract.intId links
-    _ = Debug.log (Debug.toString associatedLinks) 2
     newNotes = deleteNoteById extract.id notes
     newLinks = removeAssociatedLinks (List.map (\link -> link.id) associatedLinks) links
   in
     Slipbox 
-      newNotes 
+      (initSimulation newNotes newLinks)
       newLinks
       (addDeleteNoteActionHandler extract associatedLinks actions) 
       (LinkForm.selectionsChange form (getFormNotes notes links))
+
+deleteLink: Int -> Slipbox -> Slipbox
+deleteLink linkId slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> deleteLinkHandler linkId notes links actions form
+
+deleteLinkHandler: Int -> (List Note.Note) -> (List Link) -> (List Action) -> LinkForm.LinkForm -> Slipbox
+deleteLinkHandler linkId notes links actions form =
+  let
+    newLinks = (deleteLinkById linkId links)
+  in
+    Slipbox (initSimulation notes newLinks) newLinks actions (LinkForm.selectionsChange form (getFormNotes notes newLinks))
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
@@ -497,15 +508,33 @@ toDescriptionNote notes links note =
 
 getDescriptionLinks: (List Note.Note) -> Int -> (List Link) -> (List DescriptionLink)
 getDescriptionLinks notes noteId links =
-  List.map toDescriptionLink (List.map Note.extract (getLinkedNotes notes noteId links))
+  List.map toDescriptionLink (getLinkedNotes notes noteId links)
 
-toDescriptionLink: Note.Extract -> DescriptionLink
-toDescriptionLink extract =
-  DescriptionLink extract.id extract.intId extract.x extract.y
+toDescriptionLink: (Note.Note, Link) -> DescriptionLink
+toDescriptionLink (note, link) =
+  let
+    extract = Note.extract note
+  in
+    DescriptionLink extract.id extract.intId extract.x extract.y link.id
 
-getLinkedNotes: (List Note.Note) -> Int -> (List Link) -> (List Note.Note)
+getLinkedNotes: (List Note.Note) -> Int -> (List Link) -> (List (Note.Note, Link))
 getLinkedNotes notes noteId links =
-  List.filterMap (maybeNoteFromLink notes noteId) links
+  List.filterMap (\l -> linkWrapper (maybeNoteFromLink notes noteId l) l) links
+
+linkWrapper: (Maybe Note.Note) -> Link -> (Maybe (Note.Note, Link))
+linkWrapper maybeNote link =
+  case maybeNote of
+    Just note -> Just (note, link)
+    Nothing -> Nothing
+
+maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
+maybeNoteFromLink notes noteId link =
+  if link.source == noteId then 
+    findNoteByInt link.target notes
+  else if link.target == noteId then 
+    findNoteByInt link.source notes
+  else 
+    Nothing
 
 getLinksForNote: Int -> (List Link) -> (List Link)
 getLinksForNote noteId links =
@@ -517,15 +546,6 @@ getMaybeLink noteId link =
     Just link
   else if link.target == noteId then 
     Just link
-  else 
-    Nothing
-
-maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
-maybeNoteFromLink notes noteId link =
-  if link.source == noteId then 
-    findNoteByInt link.target notes
-  else if link.target == noteId then 
-    findNoteByInt link.source notes
   else 
     Nothing
 
@@ -758,6 +778,17 @@ deleteNoteForId noteId note =
     Nothing
   else
     Just note
+
+deleteLinkById: Int -> (List Link) -> (List Link)
+deleteLinkById linkId links =
+  List.filterMap (deleteLinkForId linkId) links
+
+deleteLinkForId: Int -> Link -> (Maybe Link)
+deleteLinkForId linkId link =
+  if linkId == link.id then
+    Nothing
+  else
+    Just link
 
 removeAssociatedLinks: (List LinkId) -> (List Link) -> (List Link)
 removeAssociatedLinks linkIds links =

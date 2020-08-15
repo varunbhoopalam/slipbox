@@ -195,7 +195,8 @@ type Msg =
   SubmitEdits Note.NoteId |
   ContentUpdate Note.NoteId String |
   SourceUpdate Note.NoteId String |
-  DeleteNote Note.NoteId
+  DeleteNote Note.NoteId |
+  DeleteLink Int
 
 update : Msg -> Model -> Model
 update msg model =
@@ -226,6 +227,7 @@ update msg model =
     ContentUpdate note s -> handleContentUpdate s note model
     SourceUpdate note s -> handleSourceUpdate s note model
     DeleteNote note -> handleDeleteNote note model
+    DeleteLink link -> handleDeleteLink link model
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -382,6 +384,12 @@ handleDeleteNote noteId model =
   case model of
     Model slipbox query viewport form ->
       Model (S.deleteNote noteId slipbox) query viewport form
+
+handleDeleteLink: Int -> Model -> Model
+handleDeleteLink linkId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.deleteLink linkId slipbox) query viewport form
 
 -- VIEW
 view : Model -> Html Msg
@@ -573,9 +581,10 @@ noteInfo note =
 
 toLinkDiv: S.DescriptionLink -> Html Msg
 toLinkDiv link =
-  div 
-    [ onClick (NoteSelect link.id (link.x, link.y))] 
-    [ Html.text (String.fromInt link.idInt)]
+  div [] 
+    [ div [ onClick (NoteSelect link.id (link.x, link.y))] [ Html.text (String.fromInt link.idInt)]
+    , button [onClick (DeleteLink link.linkId)] [text "Delete"]
+    ]
 
 historyView: S.Slipbox -> Html Msg
 historyView slipbox =
