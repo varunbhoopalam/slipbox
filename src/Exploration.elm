@@ -16,6 +16,7 @@ import Slipbox as S
 import LinkForm
 import Note
 import Debug
+import Action
 
 -- MAIN
 
@@ -590,7 +591,7 @@ historyView: S.Slipbox -> Html Msg
 historyView slipbox =
   div [style "padding: 16px; border: 4px solid black"] (List.map toHistoryPane (S.getHistory slipbox))
 
-toHistoryPane: S.HistoryAction -> Html Msg
+toHistoryPane: Action.Summary -> Html Msg
 toHistoryPane action =
   div 
     [style (historyTextColor action.undone)] 
