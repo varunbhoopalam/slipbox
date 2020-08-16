@@ -2,7 +2,7 @@ module Action exposing (Action, CreateNoteRecord, EditNoteRecord, DeleteNoteReco
   , CreateLinkRecord, DeleteLinkRecord, Summary
   , createNote, editNote, deleteNote, createLink, deleteLink, summary
   , undo, shouldUndo, redo, shouldRedo, shouldRemove
-  , subsequentActionId, sortDesc)
+  , subsequentActionId, sortDesc, save)
 
 
 -- Types
@@ -150,6 +150,15 @@ sortDesc actionA actionB =
        LT -> GT
        EQ -> EQ
        GT -> LT
+
+save: (Action -> Action)
+save action =
+  case action of
+    CreateNote actionId state record -> CreateNote actionId Saved record
+    EditNote actionId state record -> EditNote actionId Saved record 
+    DeleteNote actionId state record -> DeleteNote actionId Saved record 
+    CreateLink actionId state record -> CreateLink actionId Saved record 
+    DeleteLink actionId state record -> DeleteLink actionId Saved record
 
 -- Helpers
 defaultState: State

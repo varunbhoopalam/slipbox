@@ -420,8 +420,8 @@ toGraphLink link notes =
 actionsInit: ((List CreateNoteRecord), (List CreateLinkRecord)) -> (List Action.Action)
 actionsInit (noteRecords, linkRecords) =
   List.sortWith Action.sortDesc 
-    (List.map createNoteAction noteRecords ++ 
-      List.map createLinkAction linkRecords)
+    (List.map createNoteAction noteRecords ++ List.map createLinkAction linkRecords)
+    |> List.map Action.save
 
 createNoteAction: CreateNoteRecord -> Action.Action
 createNoteAction note =
