@@ -5,12 +5,13 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
-  , sourceUpdate, deleteNote, deleteLink)
+  , sourceUpdate, deleteNote, deleteLink, undo, redo)
 
 import Simulation
 import LinkForm
 import Note
 import Action
+import Debug
 
 --Types
 type Slipbox = Slipbox (List Note.Note) (List Link) (List Action.Action) LinkForm.LinkForm
@@ -109,31 +110,21 @@ initialize notes links (noteRecords, linkRecords) =
 selectNote: Note.NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> handleSelectNote noteId notes links actions form
-
-handleSelectNote: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-handleSelectNote noteId notes links actions form =
-  let
-    newNotes = List.map (selectNoteById noteId) notes
-  in
-    Slipbox newNotes links actions (LinkForm.selectionsChange form (getFormNotes newNotes links))
+    Slipbox notes links actions form -> 
+      Slipbox (selectById noteId notes) links actions 
+        (LinkForm.selectionsChange form (getFormNotes (selectById noteId notes) links))
 
 dismissNote: Note.NoteId -> Slipbox -> Slipbox
 dismissNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> handleDismissNote noteId notes links actions form
-
-handleDismissNote: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-handleDismissNote noteId notes links actions form =
-  let
-    newNotes = List.map (unselectNoteById noteId) notes
-  in 
-    Slipbox newNotes links actions (LinkForm.selectionsChange form (getFormNotes newNotes links))
+    Slipbox notes links actions form -> 
+      Slipbox (unSelectById noteId notes) links actions 
+      (LinkForm.selectionsChange form (getFormNotes (unSelectById noteId notes) links))
 
 hoverNote: Note.NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form-> Slipbox (List.map (hoverNoteById noteId) notes) links actions form
+    Slipbox notes links actions form-> Slipbox (List.map (hoverById noteId) notes) links actions form
 
 stopHoverNote: Slipbox -> Slipbox
 stopHoverNote slipbox =
@@ -177,7 +168,7 @@ removeSelectionsFork notes links actions =
 addLinkToSlipbox: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
 addLinkToSlipbox link notes links actions =
   let
-    newLinks =  addLinkToLinks link links
+    newLinks =  link :: links
   in
     Slipbox 
       (initSimulation notes newLinks)
@@ -234,7 +225,7 @@ editHandler extract notes links actions form =
 editMadeHandler: Note.Edits -> Note.Extract -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 editMadeHandler edits extract notes links actions form =
   if wasEdited edits extract then
-    Slipbox (List.map (submitEditsById extract.id) notes) links (addEditNoteToActions edits extract actions) form
+    Slipbox (submitEditsById extract.id notes) links (addEditNoteToActions edits extract actions) form
   else
     Slipbox notes links actions form
 
@@ -289,13 +280,72 @@ deleteLinkHandler linkId notes links actions form =
 deleteLinkFoundHandler: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 deleteLinkFoundHandler link notes links actions form =
   let
-    newLinks = (deleteLinkById link.id links)
+    newLinks = (removeLinkById link.id links)
   in
     Slipbox 
       (initSimulation notes newLinks) 
       newLinks 
       (addDeleteLink link actions)
       (LinkForm.selectionsChange form (getFormNotes notes newLinks))
+
+undo: Int -> Slipbox -> Slipbox
+undo actionId slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> undoHandler actionId notes links actions form
+
+undoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
+undoHandler actionId notes links actions form =
+  let
+    recordsToBeUndone = List.map Action.record_ (List.filter (Action.shouldUndo actionId) actions)
+    undoneSlipbox = List.foldr undoRecord (Slipbox notes links actions form) recordsToBeUndone
+    undoneActions = undoActionsById actionId actions
+    _ = Debug.log (Debug.toString recordsToBeUndone) 10000
+  in
+    case undoneSlipbox of
+      Slipbox notes_ links_ _ form_ -> Slipbox notes_ links_ undoneActions form_
+
+undoRecord: Action.Record_ -> Slipbox -> Slipbox
+undoRecord action slipbox =
+  case action of
+    Action.CreateNote_ record -> deleteNote (Note.toNoteId record.id) slipbox
+    Action.EditNote_ record -> 
+      slipbox
+        |> startEditState (Note.toNoteId record.id) 
+        |> contentUpdate record.formerContent (Note.toNoteId record.id) 
+        |> sourceUpdate record.formerSource (Note.toNoteId record.id)
+        |> submitEdits (Note.toNoteId record.id)
+    Action.DeleteNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
+    Action.CreateLink_ record -> deleteLink record.id slipbox
+    Action.DeleteLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
+
+redo: Int -> Slipbox -> Slipbox
+redo actionId slipbox =
+  case slipbox of
+    Slipbox notes links actions form -> redoHandler actionId notes links actions form
+
+redoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
+redoHandler actionId notes links actions form =
+  let
+    recordsToBeRedone = List.map Action.record_ (List.filter (Action.shouldRedo actionId) actions)
+    redoneSlipbox = List.foldr redoRecord (Slipbox notes links actions form) recordsToBeRedone
+    redoneActions = redoActionsById actionId actions
+  in
+    case redoneSlipbox of
+      Slipbox notes_ links_ _ form_ -> Slipbox notes_ links_ redoneActions form_
+
+redoRecord: Action.Record_ -> Slipbox -> Slipbox
+redoRecord action slipbox =
+  case action of
+    Action.CreateNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
+    Action.EditNote_ record -> 
+      slipbox
+        |> startEditState (Note.toNoteId record.id) 
+        |> contentUpdate record.currentContent (Note.toNoteId record.id) 
+        |> sourceUpdate record.currentSource (Note.toNoteId record.id)
+        |> submitEdits (Note.toNoteId record.id)
+    Action.DeleteNote_ record -> deleteNote (Note.toNoteId record.id) slipbox
+    Action.CreateLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
+    Action.DeleteLink_ record -> deleteLink record.id slipbox
 
 -- Publicly Exposed for View
 searchSlipbox: String -> Slipbox -> (List SearchResult)
@@ -368,27 +418,6 @@ initSimulation notes links =
       (List.map toLinkTuple links)
   in
     List.map (noteUpdateWrapper simRecords) notes
-
-selectNoteById: Note.NoteId -> Note.Note -> Note.Note
-selectNoteById noteId note =
-  if Note.isNote noteId note then
-    Note.select note
-  else
-    note
-
-unselectNoteById: Note.NoteId -> Note.Note -> Note.Note
-unselectNoteById noteId note =
-  if Note.isNote noteId note then
-    Note.unSelect note
-  else
-    note
-
-hoverNoteById: Note.NoteId -> Note.Note -> Note.Note
-hoverNoteById noteId note =
-  if Note.isNote noteId note then
-    Note.hover note
-  else
-    Note.unHover note
 
 toSearchResult: Note.Extract -> SearchResult
 toSearchResult extract =
@@ -549,10 +578,6 @@ nextActionId actions =
     Just action -> Action.subsequentActionId action
     Nothing -> 1
 
-addLinkToLinks: Link -> (List Link) -> (List Link)
-addLinkToLinks link links =
-  link :: links
-
 addLinkToActions: Link -> (List Action.Action) -> (List Action.Action)
 addLinkToActions link actions =
   let
@@ -621,102 +646,22 @@ maybeGetNoteId noteId link =
   else 
     Nothing
 
-startEditStateById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
-startEditStateById noteId notes =
-  List.map (editForId noteId) notes
-
-discardEditsById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
-discardEditsById noteId notes =
-  List.map (discardEditForId noteId) notes
-
-editForId: Note.NoteId -> Note.Note -> Note.Note
-editForId noteId note =
-  if Note.isNote noteId note then
-    Note.startEditState note
-  else
-    note
-
-discardEditForId: Note.NoteId -> Note.Note -> Note.Note
-discardEditForId noteId note =
-  if Note.isNote noteId note then
-    Note.discardEdits note
-  else
-    note
-
-submitEditsById: Note.NoteId -> Note.Note -> Note.Note
-submitEditsById noteId note =
-  if Note.isNote noteId note then
-    Note.submitEdits note
-  else
-    note
-
 wasEdited: Note.Edits -> Note.Extract -> Bool
 wasEdited edits extract = extract.content /= edits.content || extract.source /= edits.source
 
-contentUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
-contentUpdateById content noteId notes =
-    List.map (contentUpdateForId content noteId) notes
-
-contentUpdateForId: String -> Note.NoteId -> Note.Note -> Note.Note
-contentUpdateForId content noteId note =
-  if Note.isNote noteId note then
-    Note.contentUpdate content note
-  else
-    note
-
-sourceUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
-sourceUpdateById source noteId notes =
-    List.map (sourceUpdateForId source noteId) notes
-
-sourceUpdateForId: String -> Note.NoteId -> Note.Note -> Note.Note
-sourceUpdateForId source noteId note =
-  if Note.isNote noteId note then
-    Note.sourceUpdate source note
-  else
-    note
-
-deleteNoteById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
-deleteNoteById noteId notes =
-  List.filterMap (deleteNoteForId noteId) notes
-
-deleteNoteForId: Note.NoteId -> Note.Note -> (Maybe Note.Note)
-deleteNoteForId noteId note =
-  if Note.isNote noteId note then
-    Nothing
-  else
-    Just note
-
-deleteLinkById: Int -> (List Link) -> (List Link)
-deleteLinkById linkId links =
-  List.filterMap (deleteLinkForId linkId) links
-
-deleteLinkForId: Int -> Link -> (Maybe Link)
-deleteLinkForId linkId link =
-  if linkId == link.id then
-    Nothing
-  else
-    Just link
-
 removeAssociatedLinks: (List LinkId) -> (List Link) -> (List Link)
 removeAssociatedLinks linkIds links =
-  let
-    _ = Debug.log (Debug.toString linkIds) 3
-    _ = Debug.log (Debug.toString links) 4
-    _ = Debug.log (Debug.toString (List.member 1 [])) 5
-  in
-    List.filter (\link -> not (List.member link.id linkIds)) links
-
-
+  List.filter (\link -> not (List.member link.id linkIds)) links
 
 addDeleteNoteActionHandler: (Note.Extract) -> (List Link) -> (List Action.Action) -> (List Action.Action)
 addDeleteNoteActionHandler extract links actions =
   let
     newActions = List.filter (\a -> not (Action.shouldRemove a)) actions
-    latestActionId = nextActionId newActions
-    deleteLinkActions = List.indexedMap (\index link -> toDeleteLinkAction (latestActionId + 1 + index) link) links
-    actionsWithDeleteLink = List.sortWith Action.sortDesc (List.append deleteLinkActions newActions)
+    deleteNoteAction = toDeleteNoteAction (nextActionId newActions) extract
+    actionsWithDeleteNote = deleteNoteAction :: newActions
+    deleteLinkActions = List.indexedMap (\index link -> toDeleteLinkAction ((nextActionId actionsWithDeleteNote) + index) link) links
   in
-    toDeleteNoteAction (nextActionId actionsWithDeleteLink) extract :: actionsWithDeleteLink
+    List.sortWith Action.sortDesc (List.append deleteLinkActions actionsWithDeleteNote)
     
 toDeleteLinkAction: Int -> Link -> Action.Action
 toDeleteLinkAction historyId link =
@@ -728,7 +673,7 @@ toDeleteNoteAction historyId extract =
 
 findLink: LinkId -> (List Link) -> (Maybe Link)
 findLink linkId links =
-  List.head (List.filter (\l -> l.id == linkId) links)
+  List.head (List.filter (isLink linkId) links)
 
 addDeleteLink: Link -> (List Action.Action) -> (List Action.Action)
 addDeleteLink link actions =
@@ -738,3 +683,81 @@ addDeleteLink link actions =
     Action.deleteLink 
       (nextActionId newActions)
       (Action.DeleteLinkRecord link.id link.source link.target) :: newActions
+
+isLink: Int -> Link -> Bool
+isLink linkId link = linkId == link.id
+
+createNoteInternal: Note.NoteRecord -> Slipbox -> Slipbox
+createNoteInternal note slipbox =
+  case slipbox of 
+    Slipbox notes links actions form ->
+      Slipbox (sortNotes (addNoteToNotes note notes links)) links actions form
+
+createLinkInternal: Link -> Slipbox -> Slipbox
+createLinkInternal link slipbox =
+  case slipbox of
+    Slipbox notes links actions _ -> 
+      Slipbox 
+        (initSimulation notes (link :: links))
+        (link :: links)
+        actions
+        (LinkForm.removeSelections (getFormNotes notes links))
+
+-- Operate By ID
+doIfInstance: (b -> a -> Bool) -> (a -> a) -> b -> a -> a
+doIfInstance verified transform id instance =
+  if verified id instance then
+    transform instance
+  else 
+    instance
+
+removeLinkById: Int -> (List Link) -> (List Link)
+removeLinkById linkId links =
+  List.filter (\l -> not (isLink linkId l)) links
+
+deleteNoteById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+deleteNoteById noteId notes =
+  List.filter (\l -> not (Note.isNote noteId l)) notes
+
+undoActionsById: Int -> (List Action.Action) -> (List Action.Action)
+undoActionsById actionId actions = 
+  List.map (doIfInstance Action.shouldUndo Action.undo actionId) actions
+
+redoActionsById: Int -> (List Action.Action) -> (List Action.Action)
+redoActionsById actionId actions = 
+  List.map (doIfInstance Action.shouldRedo Action.redo actionId) actions
+
+sourceUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
+sourceUpdateById source noteId notes =
+    List.map (doIfInstance Note.isNote (Note.sourceUpdate source) noteId) notes
+
+contentUpdateById: String -> Note.NoteId -> (List Note.Note) -> (List Note.Note)
+contentUpdateById content noteId notes =
+    List.map (doIfInstance Note.isNote (Note.contentUpdate content) noteId) notes
+
+submitEditsById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+submitEditsById noteId notes =
+  List.map (doIfInstance Note.isNote Note.submitEdits noteId) notes
+
+discardEditsById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+discardEditsById noteId notes =
+  List.map (doIfInstance Note.isNote Note.discardEdits noteId) notes
+
+startEditStateById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+startEditStateById noteId notes =
+  List.map (doIfInstance Note.isNote Note.startEditState noteId) notes
+
+selectById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+selectById noteId notes =
+  List.map (doIfInstance Note.isNote Note.select noteId) notes
+
+unSelectById: Note.NoteId -> (List Note.Note) -> (List Note.Note)
+unSelectById noteId notes =
+  List.map (doIfInstance Note.isNote Note.unSelect noteId) notes
+
+hoverById: Note.NoteId -> Note.Note -> Note.Note
+hoverById noteId note =
+  if Note.isNote noteId note then
+    Note.hover note
+  else
+    Note.unHover note

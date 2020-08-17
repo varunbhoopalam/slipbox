@@ -4,7 +4,7 @@ module Note exposing (Note, NoteId, NoteRecord, Extract, SelectedExtract, Edits,
   sortDesc, extract, isSelected,
   isIndex, search, update, isNoteInt,
   startEditState, discardEdits, submitEdits,
-  contentUpdate, sourceUpdate)
+  contentUpdate, sourceUpdate, toNoteId)
 
 import Simulation
 
@@ -298,8 +298,7 @@ extractNoteId noteId =
     NoteId id -> id
 
 toNoteId: Int -> NoteId
-toNoteId i =
-  NoteId i
+toNoteId i = NoteId i
 
 equals: NoteId -> NoteId -> Bool
 equals noteIdA noteIdB =

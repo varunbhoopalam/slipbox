@@ -197,7 +197,9 @@ type Msg =
   ContentUpdate Note.NoteId String |
   SourceUpdate Note.NoteId String |
   DeleteNote Note.NoteId |
-  DeleteLink Int
+  DeleteLink Int |
+  Undo Int |
+  Redo Int
 
 update : Msg -> Model -> Model
 update msg model =
@@ -229,6 +231,8 @@ update msg model =
     SourceUpdate note s -> handleSourceUpdate s note model
     DeleteNote note -> handleDeleteNote note model
     DeleteLink link -> handleDeleteLink link model
+    Undo id -> handleUndo id model
+    Redo id -> handleRedo id model
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -392,6 +396,18 @@ handleDeleteLink linkId model =
     Model slipbox query viewport form ->
       Model (S.deleteLink linkId slipbox) query viewport form
 
+handleUndo: Int -> Model -> Model
+handleUndo actionId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.undo actionId slipbox) query viewport form
+
+handleRedo: Int -> Model -> Model
+handleRedo actionId model =
+  case model of
+    Model slipbox query viewport form ->
+      Model (S.redo actionId slipbox) query viewport form
+
 -- VIEW
 view : Model -> Html Msg
 view model =
@@ -458,7 +474,10 @@ noteNetwork slipbox viewport =
 
 graphElements: ((List S.GraphNote),(List S.GraphLink)) -> (List (Svg Msg))
 graphElements (notes, links) =
-  List.map toSvgCircle notes ++ List.map toSvgLine links
+  let
+    _ = Debug.log (Debug.toString links) 1
+  in
+    List.map toSvgCircle notes ++ List.map toSvgLine links
 
 toSvgCircle: S.GraphNote -> Svg Msg
 toSvgCircle note =
@@ -593,9 +612,20 @@ historyView slipbox =
 
 toHistoryPane: Action.Summary -> Html Msg
 toHistoryPane action =
-  div 
-    [style (historyTextColor action.undone)] 
-    [text action.summary]
+  div [style "padding: 16px; border: 1px solid black"] 
+    [ div [style (historyTextColor action.undone)] [text action.summary]
+    , actionInteraction action
+    ]
+
+actionInteraction: Action.Summary -> Html Msg
+actionInteraction action =
+  if action.saved then
+    div [] [text "Saved"]
+  else
+    if action.undone then
+      button [onClick (Redo action.id)] [text "redo"]
+    else
+      button [onClick (Undo action.id)] [text "undo"]
 
 historyTextColor: Bool -> String
 historyTextColor undone =

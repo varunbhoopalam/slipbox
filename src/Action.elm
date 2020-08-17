@@ -1,8 +1,8 @@
 module Action exposing (Action, CreateNoteRecord, EditNoteRecord, DeleteNoteRecord
-  , CreateLinkRecord, DeleteLinkRecord, Summary
+  , CreateLinkRecord, DeleteLinkRecord, Summary, Record_ (..)
   , createNote, editNote, deleteNote, createLink, deleteLink, summary
   , undo, shouldUndo, redo, shouldRedo, shouldRemove
-  , subsequentActionId, sortDesc, save)
+  , subsequentActionId, sortDesc, save, record_)
 
 
 -- Types
@@ -64,6 +64,13 @@ type alias Summary =
   , summary : String
   }
 
+type Record_ =
+  CreateNote_ CreateNoteRecord |
+  EditNote_ EditNoteRecord |
+  DeleteNote_ DeleteNoteRecord |
+  CreateLink_ CreateLinkRecord |
+  DeleteLink_ DeleteLinkRecord 
+
 -- Exposed Methods
 createNote: ActionId -> CreateNoteRecord -> Action
 createNote actionId note =
@@ -94,6 +101,15 @@ summary action =
     CreateLink actionId state record -> Summary actionId (isSaved state) (isUndone state) (createLinkSummary record) 
     DeleteLink actionId state record -> Summary actionId (isSaved state) (isUndone state) (deleteLinkSummary record)
 
+record_: Action -> Record_
+record_ action =
+  case action of
+    CreateNote actionId state record -> (CreateNote_ record)
+    EditNote actionId state record -> (EditNote_ record)
+    DeleteNote actionId state record -> (DeleteNote_ record)
+    CreateLink actionId state record -> (CreateLink_ record)
+    DeleteLink actionId state record -> (DeleteLink_ record)
+
 undo: Action -> Action
 undo action =
   case action of
@@ -105,7 +121,7 @@ undo action =
 
 shouldUndo: ActionId -> Action -> Bool
 shouldUndo givenId action = 
-  if ( givenId <= getActionId action ) then
+  if ( givenId >= getActionId action ) then
     case getState action of
       Saved -> False
       Temporary undone -> not undone
