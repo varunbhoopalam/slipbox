@@ -1,5 +1,5 @@
 module Slipbox exposing (Slipbox, LinkRecord, initialize
-  , selectNote, dismissNote, stopHoverNote, searchSlipbox, SearchResult
+  , selectNote, dismissNote, stopHoverNote, searchSlipbox
   , getGraphElements, GraphNote, GraphLink, getSelectedNotes, DescriptionNote
   , DescriptionLink, hoverNote, CreateNoteRecord, CreateLinkRecord
   , getHistory, createNote, MakeNoteRecord, MakeLinkRecord
@@ -49,15 +49,6 @@ type alias CreateNoteRecord =
 type alias CreateLinkRecord =
   { id : Int
   , action : LinkRecord
-  }
-
-type alias SearchResult = 
-  { id : Note.NoteId
-  , idInt: Int
-  , x : Float
-  , y : Float
-  , variant : String
-  , content : String
   }
 
 type alias GraphNote =
@@ -348,14 +339,13 @@ redoRecord action slipbox =
     Action.DeleteLink_ record -> deleteLink record.id slipbox
 
 -- Publicly Exposed for View
-searchSlipbox: String -> Slipbox -> (List SearchResult)
+searchSlipbox: String -> Slipbox -> (List Note.Extract)
 searchSlipbox query slipbox =
   case slipbox of
      Slipbox notes _ _ _-> 
       notes
         |> List.filter (Note.search query)
         |> List.map Note.extract
-        |> List.map toSearchResult
   
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
@@ -418,10 +408,6 @@ initSimulation notes links =
       (List.map toLinkTuple links)
   in
     List.map (noteUpdateWrapper simRecords) notes
-
-toSearchResult: Note.Extract -> SearchResult
-toSearchResult extract =
-  SearchResult extract.id extract.intId extract.x extract.y extract.variant extract.content
 
 toGraphNote: Note.Extract -> GraphNote
 toGraphNote extract =

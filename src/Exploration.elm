@@ -15,8 +15,12 @@ import Viewport as V
 import Slipbox as S
 import LinkForm
 import Note
-import Debug
 import Action
+import Element exposing (Element, el)
+import Element.Border as Border
+import Element.Input as Input
+import Element.Events as Events
+import Element.Background as Background
 
 -- MAIN
 
@@ -50,6 +54,36 @@ initHistoryData =
     ]
     , [ S.CreateLinkRecord 4 (S.LinkRecord 1 3 1) ]
   )
+
+getSearchText: Model -> String
+getSearchText model =
+  case model of
+    Model _ search _ _ -> getSearchString search
+
+getNotes: Model -> (List Note.Extract)
+getNotes model =
+  case model of
+    Model slipbox search _ _ -> S.searchSlipbox (getSearchString search) slipbox
+
+getActions: Model -> (List Action.Summary)
+getActions model =
+  case model of
+    Model slipbox _ _ _ -> S.getHistory slipbox
+
+getViewport: Model -> String
+getViewport model =
+  case model of
+    Model _ _ viewport _ -> V.getViewbox viewport
+
+getNotesAndLinks: Model -> ((List S.GraphNote),(List S.GraphLink))
+getNotesAndLinks model =
+  case model of
+    Model slipbox _ _ _ -> S.getGraphElements slipbox
+
+getPanningAttributes: Model -> V.PanningAttributes
+getPanningAttributes model =
+  case model of
+    Model _ _ viewport _ -> V.getPanningAttributes viewport
 
 -- SEARCH
 type Search = 
@@ -409,75 +443,105 @@ handleRedo actionId model =
       Model (S.redo actionId slipbox) query viewport form
 
 -- VIEW
+
 view : Model -> Html Msg
 view model =
-  case model of 
-    Model slipbox search viewport form->
-      div [style "padding: 16px; border: 4px solid black"] 
-        [ searchBox slipbox search
-        , noteNetwork slipbox viewport
-        , panningVisual viewport
-        , button [ onClick ZoomOut ] [ text "-" ]
-        , button [ onClick ZoomIn ] [ text "+" ]
-        , selectedNotes slipbox
-        , linkForm slipbox
-        , historyView slipbox
-        , handleCreateNoteForm form
-        ]
-
-searchBox : S.Slipbox -> Search -> Html Msg
-searchBox slipbox search =
-  if shouldShowSearch search then
-    searchBoxShown slipbox (getSearchString search)
-  else
-    questionButton
-
-questionButton: Html Msg
-questionButton = 
-  button [ onClick ToggleSearch ] [ text "S" ]
-
-searchBoxShown: S.Slipbox -> String -> Html Msg
-searchBoxShown slipbox searchString =
-  div [] 
-    [ input [placeholder "Find Note", value searchString, onInput UpdateSearch] []
-    , searchResults slipbox searchString
-    , questionButton
+  Element.layout [] <|
+    Element.row [Element.width Element.fill, Element.height Element.fill, Element.spacing 8] 
+    [ leftColumn model
+    , svgContainer model
+    , rightColumn
     ]
 
-searchResults: S.Slipbox -> String -> Html Msg
-searchResults slipbox searchString =
-  div 
-    [ style "border: 4px solid black; padding: 16px;"] 
-    (List.map toResultPane (S.searchSlipbox searchString slipbox))
+leftColumn: Model -> Element Msg
+leftColumn model =
+  Element.column [Element.alignLeft, Element.height Element.fill, Element.width (Element.fillPortion 1)]
+    [ search_ model
+    , history model
+    ]
 
-toResultPane: S.SearchResult -> Html Msg
-toResultPane sr =
-  let 
-    backgroundColor = "background-color:" ++ (noteColor sr.variant) ++ ";"
-    styleString = "border: 1px solid black;margin-bottom: 16px;cursor:pointer;" ++ backgroundColor
-  in
-    div 
-      [style styleString
-      , onClick (NoteSelect sr.id (sr.x, sr.y))
-      ] 
-      [text sr.content]
+search_: Model -> Element Msg
+search_ model = 
+  Element.column 
+    [ Element.height Element.fill
+    , Element.width Element.fill
+    , Element.padding 8
+    , Element.spacing 8
+    ] 
+    (searchBox (getSearchText model) :: (List.map toSearchNote (getNotes model)))
 
-noteNetwork: S.Slipbox -> V.Viewport -> Svg Msg
-noteNetwork slipbox viewport =
+searchBox: String -> Element Msg
+searchBox query =
+  Input.text []
+    { onChange = (\new -> UpdateSearch new)
+    , label = Input.labelAbove [] (Element.text "Search by (content|source)")
+    , placeholder = Nothing        
+    , text = query
+    }
+
+toSearchNote: Note.Extract -> Element Msg
+toSearchNote extract =
+  el 
+    [Events.onClick (NoteSelect extract.id (extract.x, extract.y))
+    , Element.pointer
+    , Element.width Element.fill
+    , Background.color (Element.rgb255 240 240 240)
+    ] 
+    (Element.text (extract.content))
+
+history: Model -> Element Msg
+history model = 
+  Element.column 
+    [ Element.height Element.fill
+    , Element.width Element.fill
+    , Element.padding 8
+    , Element.spacing 8
+    ] 
+    ((Element.text "Action History") :: (List.map toActionPane (getActions model)))
+
+toActionPane: Action.Summary -> Element Msg
+toActionPane action =
+  Element.row [Element.width Element.fill]
+    [ Element.text action.summary
+    , actionInput action
+    ] 
+
+actionInput: Action.Summary -> Element Msg
+actionInput action =
+  if action.saved then
+    el [Element.alignRight] (Element.text "saved")
+  else
+    if action.undone then
+      Input.button [Element.alignRight] { onPress = (Just (Redo action.id)), label = (Element.text "redo") }
+    else 
+      Input.button [Element.alignRight] { onPress = (Just (Undo action.id)), label = (Element.text "undo") }
+
+svgContainer: Model -> Element Msg
+svgContainer model =
+  el [Element.centerX, Element.height Element.fill, Element.width (Element.fillPortion 2)] 
+    (Element.html 
+      (div [] 
+        [ noteNetwork model
+        , panningVisual model
+        , button [ onClick ZoomOut ] [ text "-" ]
+        , button [ onClick ZoomIn ] [ text "+" ]
+        ]
+      )
+    )
+
+noteNetwork: Model -> Svg Msg
+noteNetwork model =
   svg
     [ width V.svgWidthString
     , height V.svgLengthString
-    , viewBox (V.getViewbox viewport)
+    , viewBox (getViewport model)
     , style "border: 4px solid black;"
     ]
-    (graphElements (S.getGraphElements slipbox))
+    ((graphElements (getNotesAndLinks model)))
 
 graphElements: ((List S.GraphNote),(List S.GraphLink)) -> (List (Svg Msg))
 graphElements (notes, links) =
-  let
-    _ = Debug.log (Debug.toString links) 1
-  in
-    List.map toSvgCircle notes ++ List.map toSvgLine links
+  List.map toSvgCircle notes ++ List.map toSvgLine links
 
 toSvgCircle: S.GraphNote -> Svg Msg
 toSvgCircle note =
@@ -511,9 +575,9 @@ toSvgLine link =
     ] 
     []
 
-panningVisual: V.Viewport -> Svg Msg
-panningVisual viewport =
-  panningSvg (V.getPanningAttributes viewport)
+panningVisual: Model -> Svg Msg
+panningVisual model =
+  panningSvg (getPanningAttributes model)
       
 panningSvg: V.PanningAttributes -> Svg Msg
 panningSvg attr =
@@ -540,7 +604,7 @@ offsetXDecoder: Decoder Int
 offsetXDecoder = field "offsetX" int
 
 offsetYDecoder: Decoder Int
-offsetYDecoder =field "offsetY" int
+offsetYDecoder = field "offsetY" int
 
 mouseEventDecoder: Decoder V.MouseEvent
 mouseEventDecoder = map2 V.MouseEvent offsetXDecoder offsetYDecoder
@@ -550,6 +614,30 @@ mouseMoveDecoder = map IfPanningShift mouseEventDecoder
 
 mouseDownDecoder: Decoder Msg
 mouseDownDecoder = map PanningStart mouseEventDecoder
+
+rightColumn: Element Msg
+rightColumn =
+  Element.column [Element.alignRight, Element.height Element.fill, Element.width (Element.fillPortion 1)]
+    [ createNote
+    , createLink
+    , selections
+    ]
+
+createNote: Element Msg
+createNote = el [Element.height (Element.fillPortion 2)] (Element.text "Create Note")
+
+createLink: Element Msg
+createLink = el [Element.height (Element.fillPortion 1)] (Element.text "Create Link")
+
+selections: Element Msg
+selections = el [Element.height (Element.fillPortion 5)] (Element.text "Selections")
+
+--        , noteNetwork slipbox viewport
+--        , panningVisual viewport
+--        , selectedNotes slipbox
+--        , linkForm slipbox
+--        , handleCreateNoteForm form
+--        ]
 
 selectedNotes: S.Slipbox -> Html Msg
 selectedNotes slipbox =
@@ -605,27 +693,6 @@ toLinkDiv link =
     [ div [ onClick (NoteSelect link.id (link.x, link.y))] [ Html.text (String.fromInt link.idInt)]
     , button [onClick (DeleteLink link.linkId)] [text "Delete"]
     ]
-
-historyView: S.Slipbox -> Html Msg
-historyView slipbox =
-  div [style "padding: 16px; border: 4px solid black"] (List.map toHistoryPane (S.getHistory slipbox))
-
-toHistoryPane: Action.Summary -> Html Msg
-toHistoryPane action =
-  div [style "padding: 16px; border: 1px solid black"] 
-    [ div [style (historyTextColor action.undone)] [text action.summary]
-    , actionInteraction action
-    ]
-
-actionInteraction: Action.Summary -> Html Msg
-actionInteraction action =
-  if action.saved then
-    div [] [text "Saved"]
-  else
-    if action.undone then
-      button [onClick (Redo action.id)] [text "redo"]
-    else
-      button [onClick (Undo action.id)] [text "undo"]
 
 historyTextColor: Bool -> String
 historyTextColor undone =
