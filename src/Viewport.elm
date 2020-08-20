@@ -102,7 +102,7 @@ edgeLenConstraint = 300
 
 initialize: Viewport
 initialize =
-  Resting (Viewbox -200 -200 400 400)
+  Resting (Viewbox -300 -300 600 600)
 
 centerOn: (Float, Float) -> Viewport -> Viewport
 centerOn coords viewport =
