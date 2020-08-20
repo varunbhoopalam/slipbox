@@ -343,9 +343,6 @@ handleMapNoteSelect noteId model =
 
 handleNoteDismiss: Note.NoteId -> Model -> Model
 handleNoteDismiss noteId model =
-  let
-    _ = Debug.log (Debug.toString noteId) 1
-  in
   case model of
     Model slipbox query viewport form ->
       Model (S.dismissNote noteId slipbox) query viewport form
@@ -709,17 +706,13 @@ submitLink canSubmitLink =
 
 selections: (List S.DescriptionNote) -> Element Msg
 selections notes = 
-  let
-    _ = Debug.log (Debug.toString notes) 10
-  in
   Element.column [Element.height (Element.fillPortion 5)] 
     (List.map toSelection notes)
 
 toSelection: S.DescriptionNote -> Element Msg
 toSelection note =
   Element.column 
-    [ Events.onClick (NoteSelect note.id (note.x, note.y))
-    , Events.onMouseEnter (NoteHighlight note.id)
+    [ Events.onMouseEnter (NoteHighlight note.id)
     , Events.onMouseLeave NoteRemoveHighlights
     , Element.spacing 8
     , Element.padding 8
@@ -750,7 +743,8 @@ inEditContent note =
 notInEditContent: S.DescriptionNote -> (List (Element Msg))
 notInEditContent note =
   [ Element.wrappedRow [Element.spacing 8, Element.padding 8] 
-    [ Input.button [Background.color blue] {onPress = (Just (NoteDismiss note.id)), label = (Element.text "Dismiss") }
+    [ Input.button [Background.color blue] {onPress = (Just (NoteSelect note.id (note.x, note.y))) , label = (Element.text "Find")}
+    , Input.button [Background.color blue] {onPress = (Just (NoteDismiss note.id)), label = (Element.text "Dismiss") }
     , Input.button [Background.color blue] {onPress = (Just (EditNote note.id)), label = (Element.text "Edit") }
     , Input.button [Background.color blue] {onPress = (Just (DeleteNote note.id)), label = (Element.text "Delete") }
     ]

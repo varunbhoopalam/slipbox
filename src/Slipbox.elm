@@ -110,7 +110,7 @@ dismissNote noteId slipbox =
   case slipbox of 
     Slipbox notes links actions form -> 
       Slipbox (unSelectById noteId notes) links actions 
-      (LinkForm.selectionsChange form (getFormNotes (unSelectById noteId notes) links))
+        (LinkForm.selectionsChange form (getFormNotes (unSelectById noteId notes) links))
 
 hoverNote: Note.NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
@@ -290,7 +290,6 @@ undoHandler actionId notes links actions form =
     recordsToBeUndone = List.map Action.record_ (List.filter (Action.shouldUndo actionId) actions)
     undoneSlipbox = List.foldr undoRecord (Slipbox notes links actions form) recordsToBeUndone
     undoneActions = undoActionsById actionId actions
-    _ = Debug.log (Debug.toString recordsToBeUndone) 10000
   in
     case undoneSlipbox of
       Slipbox notes_ links_ _ form_ -> Slipbox notes_ links_ undoneActions form_

@@ -7,6 +7,7 @@ module Note exposing (Note, NoteId, NoteRecord, Extract, SelectedExtract, Edits,
   contentUpdate, sourceUpdate, toNoteId)
 
 import Simulation
+import Debug
 
 type Note = 
   Note NoteContent |
