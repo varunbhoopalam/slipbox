@@ -22,6 +22,9 @@ import Element.Input as Input
 import Element.Events as Events
 import Element.Background as Background
 
+import Debug
+
+
 -- MAIN
 
 main =
@@ -65,6 +68,11 @@ getNotes model =
   case model of
     Model slipbox search _ _ -> S.searchSlipbox (getSearchString search) slipbox
 
+getSelectedNotes: Model -> (List S.DescriptionNote)
+getSelectedNotes model =
+  case model of
+    Model slipbox _ _ _ -> S.getSelectedNotes slipbox
+
 getActions: Model -> (List Action.Summary)
 getActions model =
   case model of
@@ -84,6 +92,16 @@ getPanningAttributes: Model -> V.PanningAttributes
 getPanningAttributes model =
   case model of
     Model _ _ viewport _ -> V.getPanningAttributes viewport
+
+getNoteFormData: Model -> CreateForm
+getNoteFormData model =
+  case model of 
+    Model _ _ _ form -> getCreateFormData form
+
+getLinkFormData: Model -> LinkForm.LinkFormData
+getLinkFormData model =
+  case model of
+    Model slipbox _ _ _ -> S.getLinkFormData slipbox
 
 -- SEARCH
 type Search = 
@@ -185,10 +203,10 @@ isIndex noteType =
     Index -> True
     Regular -> False
 
-wipeAndHideForm: CreateNoteForm -> CreateNoteForm
-wipeAndHideForm form =
+wipeForm: CreateNoteForm -> CreateNoteForm
+wipeForm form =
   case form of
-    ShowForm _ _ _ -> HideForm "" "" Regular
+    ShowForm _ _ _ -> ShowForm "" "" Regular
     HideForm _ _ _ -> form
 
 noteTypeToString: NoteType -> String
@@ -222,7 +240,7 @@ type Msg =
   SourceInputCreateNoteForm String |
   ChangeNoteTypeCreateNoteForm String |
   SubmitCreateNoteForm |
-  SubmitCreateLink |
+  SubmitLink |
   LinkFormSourceSelected String |
   LinkFormTargetSelected String |
   EditNote Note.NoteId |
@@ -255,7 +273,7 @@ update msg model =
     SourceInputCreateNoteForm s -> handleSourceInputCreateNoteForm s model
     ChangeNoteTypeCreateNoteForm s -> handleChangeNoteTypeCreateNoteForm s model 
     SubmitCreateNoteForm -> handleSubmitCreateNoteForm model
-    SubmitCreateLink -> handleSubmitCreateLink model
+    SubmitLink -> handleSubmitLink model
     LinkFormSourceSelected s -> handleLinkFormSourceSelected s model
     LinkFormTargetSelected s -> handleLinkFormTargetSelected s model 
     EditNote note -> handleEditNote note model
@@ -322,8 +340,12 @@ handleMapNoteSelect noteId model =
     Model slipbox search viewport form ->
       Model (S.selectNote noteId slipbox) search viewport form
 
+
 handleNoteDismiss: Note.NoteId -> Model -> Model
 handleNoteDismiss noteId model =
+  let
+    _ = Debug.log (Debug.toString noteId) 1
+  in
   case model of
     Model slipbox query viewport form ->
       Model (S.dismissNote noteId slipbox) query viewport form
@@ -368,10 +390,10 @@ handleSubmitCreateNoteForm: Model -> Model
 handleSubmitCreateNoteForm model =
   case model of 
     Model slipbox query viewport form ->
-      Model (S.createNote (makeNoteRecord form) slipbox) query viewport (wipeAndHideForm form)
+      Model (S.createNote (makeNoteRecord form) slipbox) query viewport (wipeForm form)
 
-handleSubmitCreateLink: Model -> Model
-handleSubmitCreateLink model =
+handleSubmitLink: Model -> Model
+handleSubmitLink model =
   case model of 
     Model slipbox query viewport form ->
       Model (S.createLink slipbox) query viewport form
@@ -450,7 +472,7 @@ view model =
     Element.row [Element.width Element.fill, Element.height Element.fill, Element.spacing 8] 
     [ leftColumn model
     , svgContainer model
-    , rightColumn
+    , rightColumn model
     ]
 
 leftColumn: Model -> Element Msg
@@ -554,6 +576,13 @@ toSvgCircle note =
     ]
     (handleCircleAnimation note.shouldAnimate)
 
+noteColor: String -> String
+noteColor variant =
+  if variant == "index" then
+    "rgba(250, 190, 88, 1)"
+  else
+    "rgba(137, 196, 244, 1)"
+
 handleCircleAnimation: Bool -> (List (Svg Msg))
 handleCircleAnimation shouldAnimate =
   if shouldAnimate then
@@ -600,6 +629,144 @@ panningSvg attr =
         []
     ]
 
+rightColumn: Model -> Element Msg
+rightColumn model =
+  Element.column [Element.alignRight, Element.height Element.fill, Element.width (Element.fillPortion 1)]
+    [ createNoteForm (getNoteFormData model)
+    , createLink (getLinkFormData model)
+    , selections (getSelectedNotes model)
+    ]
+
+createNoteForm: CreateForm -> Element Msg
+createNoteForm form = 
+  Element.column 
+    [Element.height (Element.fillPortion 2), Element.padding 8, Element.spacing 8, Element.width (Element.fill |> Element.maximum 300)] 
+    [ contentInput ContentInputCreateNoteForm form.content
+    , sourceInput SourceInputCreateNoteForm form.source
+    , Input.radioRow [] { onChange = ChangeNoteTypeCreateNoteForm
+      , selected = Just (boolToVal form.isIndex)
+      , label = Input.labelAbove [] (Element.text "Variant")
+      , options =
+        [ Input.option "index" (Element.text "Index")
+        , Input.option "regular" (Element.text "Regular")]}
+    , submitNote form.canSubmit
+    ]
+
+contentInput: (String -> Msg) -> String -> Element Msg
+contentInput message text =
+  Input.multiline [Element.width (Element.fill |> Element.maximum 300)] { onChange = (\inp -> (message inp))
+    , text = text
+    , placeholder = Just (Input.placeholder [] (Element.text "Write the note content here!"))
+    , label = Input.labelLeft [] (Element.text "Content")
+    , spellcheck = False}
+
+sourceInput: (String -> Msg) -> String -> Element Msg
+sourceInput message text =
+  Input.text [Element.width (Element.fill |> Element.maximum 300)] { onChange = (\inp -> (message inp))
+    , text = text
+    , placeholder = Just (Input.placeholder [] (Element.text "Write the note source here!"))
+    , label = Input.labelLeft [] (Element.text "Source")}
+
+boolToVal: Bool -> String
+boolToVal ind =
+  if ind then
+    "index"
+  else
+    "regular"
+
+submitNote: Bool -> Element Msg
+submitNote canSubmitNote = 
+  if canSubmitNote then
+    Input.button [] {onPress = Just SubmitCreateNoteForm, label = (Element.text "Create Note")}
+  else
+    Input.button [] {onPress = Nothing, label = (Element.text "Create Note")}
+
+createLink: LinkForm.LinkFormData -> Element Msg
+createLink form = 
+  Element.column 
+    [Element.height (Element.fillPortion 1)] 
+    [ Input.radioRow [] { onChange = LinkFormSourceSelected
+      , selected = form.sourceChosen
+      , label = Input.labelAbove [] (Element.text "Source")
+      , options = (List.map toOption form.sourceChoices) }
+    , Input.radioRow [] { onChange = LinkFormTargetSelected
+      , selected = form.targetChosen
+      , label = Input.labelAbove [] (Element.text "Target")
+      , options = (List.map toOption form.targetChoices) }
+    , submitLink form.canSubmit
+    ]
+
+toOption: LinkForm.LinkNoteChoice -> (Input.Option String Msg)
+toOption linkNoteChoice =
+  Input.option linkNoteChoice.value (Element.text linkNoteChoice.display)
+
+submitLink: Bool -> Element Msg
+submitLink canSubmitLink = 
+  if canSubmitLink then
+    Input.button [] {onPress = Just SubmitLink, label = (Element.text "Create Link")}
+  else
+    Input.button [] {onPress = Nothing, label = (Element.text "Create Link")}
+
+selections: (List S.DescriptionNote) -> Element Msg
+selections notes = 
+  let
+    _ = Debug.log (Debug.toString notes) 10
+  in
+  Element.column [Element.height (Element.fillPortion 5)] 
+    (List.map toSelection notes)
+
+toSelection: S.DescriptionNote -> Element Msg
+toSelection note =
+  Element.column 
+    [ Events.onClick (NoteSelect note.id (note.x, note.y))
+    , Events.onMouseEnter (NoteHighlight note.id)
+    , Events.onMouseLeave NoteRemoveHighlights
+    , Element.spacing 8
+    , Element.padding 8
+    ] 
+    (selectionContent note)
+
+selectionContent: S.DescriptionNote -> (List (Element Msg))
+selectionContent note =
+  if note.inEdit then
+    inEditContent note
+  else 
+    notInEditContent note
+
+blue =
+    Element.rgb255 238 238 238
+
+inEditContent: S.DescriptionNote -> (List (Element Msg))
+inEditContent note =
+  [ Element.wrappedRow [Element.spacing 8, Element.padding 8] 
+    [ Input.button [Background.color blue] {onPress = (Just (SubmitEdits note.id)), label = (Element.text "Save") }
+    , Input.button [Background.color blue] {onPress = (Just (DiscardEdits note.id)), label = (Element.text "Discard") }
+    ]
+  , contentInput (ContentUpdate note.id) note.content
+  , sourceInput (SourceUpdate note.id) note.source
+  , Element.wrappedRow [] (List.map toLink note.links)
+  ]
+
+notInEditContent: S.DescriptionNote -> (List (Element Msg))
+notInEditContent note =
+  [ Element.wrappedRow [Element.spacing 8, Element.padding 8] 
+    [ Input.button [Background.color blue] {onPress = (Just (NoteDismiss note.id)), label = (Element.text "Dismiss") }
+    , Input.button [Background.color blue] {onPress = (Just (EditNote note.id)), label = (Element.text "Edit") }
+    , Input.button [Background.color blue] {onPress = (Just (DeleteNote note.id)), label = (Element.text "Delete") }
+    ]
+  , (Element.text note.content)
+  , (Element.text note.source)
+  , Element.wrappedRow [] (List.map toLink note.links)
+  ]
+
+toLink: S.DescriptionLink -> Element Msg
+toLink link =
+  Element.row [] 
+    [ el [ Events.onClick (NoteSelect link.id (link.x, link.y))] (Element.text (String.fromInt link.idInt))
+    , Input.button [] {onPress = (Just (DeleteLink link.linkId)), label = (Element.text "Delete") }
+    ]
+
+-- JSON Decoder
 offsetXDecoder: Decoder Int
 offsetXDecoder = field "offsetX" int
 
@@ -614,186 +781,3 @@ mouseMoveDecoder = map IfPanningShift mouseEventDecoder
 
 mouseDownDecoder: Decoder Msg
 mouseDownDecoder = map PanningStart mouseEventDecoder
-
-rightColumn: Element Msg
-rightColumn =
-  Element.column [Element.alignRight, Element.height Element.fill, Element.width (Element.fillPortion 1)]
-    [ createNote
-    , createLink
-    , selections
-    ]
-
-createNote: Element Msg
-createNote = el [Element.height (Element.fillPortion 2)] (Element.text "Create Note")
-
-createLink: Element Msg
-createLink = el [Element.height (Element.fillPortion 1)] (Element.text "Create Link")
-
-selections: Element Msg
-selections = el [Element.height (Element.fillPortion 5)] (Element.text "Selections")
-
---        , noteNetwork slipbox viewport
---        , panningVisual viewport
---        , selectedNotes slipbox
---        , linkForm slipbox
---        , handleCreateNoteForm form
---        ]
-
-selectedNotes: S.Slipbox -> Html Msg
-selectedNotes slipbox =
-  div 
-    [style "border: 4px solid black; padding: 16px;"] 
-    (List.map toDescription (S.getSelectedNotes slipbox))
-
-toDescription: S.DescriptionNote -> Html Msg
-toDescription note =
-  div [] [
-    selectButtons note
-    , div 
-      [ style "border: 1px solid black;margin-bottom: 16px;cursor:pointer;"
-      , onClick (NoteSelect note.id (note.x, note.y))
-      , onMouseEnter (NoteHighlight note.id)
-      , onMouseLeave NoteRemoveHighlights
-      ] 
-      [noteInfo note]
-  ]
-
-selectButtons: S.DescriptionNote -> Html Msg
-selectButtons note =
-  if note.inEdit then
-    div [] 
-      [ button [onClick (SubmitEdits note.id)] [text "Save"]
-      , button [onClick (DiscardEdits note.id)] [text "Discard"]
-      ]
-  else
-    div []
-      [ button [onClick (NoteDismiss note.id)] [text "Dismiss"]
-      , button [onClick (EditNote note.id)] [text "Edit"]
-      , button [onClick (DeleteNote note.id)] [text "Delete"]
-      ]
-
-noteInfo: S.DescriptionNote -> Html Msg
-noteInfo note =
-  if note.inEdit then
-    div [] 
-      [ textarea [onInput (ContentUpdate note.id), style "border: 1px solid black; padding: 16px;"] [Html.text note.content]
-      , input [onInput (SourceUpdate note.id), style "border: 1px solid black; padding: 16px;"] [Html.text note.source]
-      , div [style "border: 1px solid black; padding: 16px;"] (List.map toLinkDiv note.links)
-      ]
-  else
-    div [] 
-      [ div [style "border: 1px solid black; padding: 16px;"] [Html.text note.content]
-      , div [style "border: 1px solid black; padding: 16px;"] [Html.text note.source]
-      , div [style "border: 1px solid black; padding: 16px;"] (List.map toLinkDiv note.links)
-      ]
-
-toLinkDiv: S.DescriptionLink -> Html Msg
-toLinkDiv link =
-  div [] 
-    [ div [ onClick (NoteSelect link.id (link.x, link.y))] [ Html.text (String.fromInt link.idInt)]
-    , button [onClick (DeleteLink link.linkId)] [text "Delete"]
-    ]
-
-historyTextColor: Bool -> String
-historyTextColor undone =
-  if undone then
-    "color:gray;"
-  else
-    "color:black;"
-
-handleCreateNoteForm: CreateNoteForm -> Html Msg
-handleCreateNoteForm form =
-  let
-    formData = getCreateFormData form
-  in
-    if formData.shown then
-      createNoteForm formData
-    else
-      createFormButton
-
-createNoteForm: CreateForm -> Html Msg
-createNoteForm form =
-  div [] 
-  [ div [style "padding: 16px; border: 4px solid black"]
-    [ textarea [onInput ContentInputCreateNoteForm] [text form.content]
-    , input [onInput SourceInputCreateNoteForm] [text form.source]
-    , select [onInput ChangeNoteTypeCreateNoteForm] (formOptions form.isIndex)
-    , submitFormButton form.canSubmit
-    ]
-  , createFormButton
-  ]
-
-formOptions: Bool -> (List (Html Msg))
-formOptions indexOptionChosen =
-  if indexOptionChosen then
-    [ option [selected True, value "index"] [text "Index"]
-    , option [value "Regular"] [text "Regular"]
-    ]
-  else
-    [ option [value "index"] [text "Index"]
-    , option [selected True, value "Regular"] [text "Regular"]
-    ]
-
-createFormButton: Html Msg
-createFormButton = button [onClick ToggleCreateNoteForm] [text "+"] 
-
-submitFormButton: Bool -> Html Msg
-submitFormButton canSubmitNote = 
-  if canSubmitNote then
-    button [onClick SubmitCreateNoteForm, style "cursor:pointer;"] [text "Create Note"]
-  else
-    button [] [text "Create Note"]
-
-linkForm: S.Slipbox -> Html Msg
-linkForm slipbox =
-  createLinkForm (S.getLinkFormData slipbox)
-
-createLinkForm: LinkForm.LinkFormData -> Html Msg
-createLinkForm formData =
-  if formData.shown then
-    createLinkFormHandler formData
-  else
-    div [] []
-
-createLinkFormHandler: LinkForm.LinkFormData -> Html Msg
-createLinkFormHandler formData =
-  div []
-    [ select [Html.Attributes.name "Source", onInput LinkFormSourceSelected, value (valueHandler formData.sourceChosen)] (optionHandler formData.sourceChosen formData.sourceChoices) 
-    , select [Html.Attributes.name "Target", onInput LinkFormTargetSelected, value (valueHandler formData.targetChosen)] (optionHandler formData.targetChosen formData.targetChoices)
-    , createLinkButton formData.canSubmit
-    ]
-  
-valueHandler: LinkForm.Choice -> String
-valueHandler choice =
-  if choice.choiceMade then
-    String.fromInt choice.choiceValue
-  else
-    "noOption"
-
-optionHandler: LinkForm.Choice -> (List LinkForm.LinkNoteChoice) -> (List (Html Msg))
-optionHandler choice options =
-  if choice.choiceMade then
-    List.map toOption options
-  else
-    notChosenDefault :: List.map toOption options
-
-notChosenDefault: Html Msg
-notChosenDefault = option [Html.Attributes.disabled True, selected True, value "noOption"] [text "--select an option--"]
-
-toOption: LinkForm.LinkNoteChoice -> Html Msg
-toOption linkNoteChoice =
-  option [value (String.fromInt linkNoteChoice.value)] [text linkNoteChoice.display]
-
-createLinkButton: Bool -> Html Msg
-createLinkButton canSubmitLink =
-  if canSubmitLink then
-    button [style "cursor:pointer;", onClick SubmitCreateLink] [text "Create Link"]
-  else 
-    button [style "background:gray;"] [text "Create Link"]
-
-noteColor: String -> String
-noteColor variant =
-  if variant == "index" then
-    "rgba(250, 190, 88, 1)"
-  else
-    "rgba(137, 196, 244, 1)"

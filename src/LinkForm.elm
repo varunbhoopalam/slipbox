@@ -1,6 +1,6 @@
 module LinkForm exposing (LinkForm, linkFormData, selectionsChange,
   removeSelections, addSource, addTarget, initLinkForm, maybeProspectiveLink,
-  LinkFormData, FormNote, Choice, LinkNoteChoice, linkProspectExists)
+  LinkFormData, FormNote, LinkNoteChoice, linkProspectExists)
 
 import Set
 import List
@@ -23,19 +23,14 @@ type alias FormNote =
 type alias LinkFormData =
   { shown: Bool
   , sourceChoices: (List LinkNoteChoice)
-  , sourceChosen: Choice
+  , sourceChosen: (Maybe String)
   , targetChoices: (List LinkNoteChoice)
-  , targetChosen: Choice
+  , targetChosen: (Maybe String)
   , canSubmit: Bool
   }
 
-type alias Choice = 
-  { choiceMade: Bool
-  , choiceValue: Int
-  }
-
 type alias LinkNoteChoice =
-  { value: Int
+  { value: String
   , display: String
   }
 
@@ -175,10 +170,7 @@ addTargetHandler target form =
     ReadyToSubmit (priorSourceId, _ ) -> ReadyToSubmit (priorSourceId, target)
 
 hiddenLinkFormData: LinkFormData
-hiddenLinkFormData = LinkFormData False [] noChoice [] noChoice False
-
-noChoice: Choice
-noChoice = Choice False -1
+hiddenLinkFormData = LinkFormData False [] Nothing [] Nothing False
 
 allChoices: (List FormNote) -> (List LinkNoteChoice)
 allChoices notes = List.map toLinkNoteChoice (List.filter (canCreateLink notes) notes)
@@ -188,11 +180,11 @@ buildLinkFormData notes =
   let
     linkNoteChoices = allChoices notes
   in 
-    LinkFormData True linkNoteChoices noChoice linkNoteChoices noChoice False
+    LinkFormData True linkNoteChoices Nothing linkNoteChoices Nothing False
 
 toLinkNoteChoice: FormNote -> LinkNoteChoice
 toLinkNoteChoice note =
-  LinkNoteChoice note.id note.summary
+  LinkNoteChoice (String.fromInt note.id) note.summary
 
 sourceSelectedLinkFormDataHandler: Int -> (List FormNote) -> LinkFormData
 sourceSelectedLinkFormDataHandler noteId notes =
@@ -204,9 +196,9 @@ sourceSelectedLinkFormDataHandler noteId notes =
       LinkFormData 
         True 
         (allChoices notes) 
-        (Choice True noteId) 
+        (Just (String.fromInt noteId))
         (List.map toLinkNoteChoice (getLinkProspectNotes note notes))
-        noChoice 
+        Nothing 
         False
     Nothing -> hiddenLinkFormData
 
@@ -220,9 +212,9 @@ targetSelectedLinkFormDataHandler noteId notes =
       LinkFormData 
         True 
         (List.map toLinkNoteChoice (getLinkProspectNotes note notes))
-        noChoice 
+        Nothing 
         (allChoices notes) 
-        (Choice True noteId) 
+        (Just (String.fromInt noteId))
         False
     Nothing -> hiddenLinkFormData
 
@@ -244,9 +236,9 @@ linkFormDataBothChoices source target notes =
   LinkFormData 
     True 
     (allChoices notes) 
-    (Choice True source.id) 
+    (Just (String.fromInt source.id))
     (allChoices notes) 
-    (Choice True target.id) 
+    (Just (String.fromInt target.id))
     True
 
 boolConversion: Bool -> Int -> Int
