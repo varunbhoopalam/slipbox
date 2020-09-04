@@ -36,13 +36,13 @@ type alias PanningAttributes =
 -- CONSTANTS
 
 svgWidth: Int
-svgWidth = 900
+svgWidth = 700
 
 svgWidthString: String
 svgWidthString = String.fromInt svgWidth
 
 svgLength: Int
-svgLength = 900
+svgLength = 700
 
 svgLengthString: String
 svgLengthString = String.fromInt svgLength

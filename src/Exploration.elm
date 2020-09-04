@@ -7,8 +7,9 @@ import Html.Events exposing (onInput, onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
-import Json.Decode exposing (Decoder, int, map, field, map2)
-
+import Json.Decode exposing (Decoder, int, map, field, map2, list, string, dict, map4, map3, map6, map5)
+import Http
+import Debug
 
 -- Modules
 import Viewport as V
@@ -22,41 +23,107 @@ import Element.Input as Input
 import Element.Events as Events
 import Element.Background as Background
 
-import Debug
-
-
 -- MAIN
 
 main =
-  Browser.sandbox { init = init, update = update, view = view }
+  Browser.element { init = init, update = update, subscriptions = subscriptions, view = view }
 
 -- MODEL
 type Model = Model S.Slipbox Search V.Viewport CreateNoteForm
 
-init : Model
-init =
-  Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize initCreateNoteForm
+init : () -> (Model, Cmd Msg)
+init _ =
+  ( Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize initCreateNoteForm
+  , Http.get
+      { url = "http://localhost:5000/"
+      , expect = Http.expectJson GetSlipbox slipboxDecoder
+      }
+  )
+
+type alias SlipboxResponse = 
+  { notes: (List Note.NoteRecord)
+  , links: (List S.LinkRecord)
+  , actions: S.ActionResponse
+  }
+
+slipboxDecoder : Decoder SlipboxResponse
+slipboxDecoder =
+  map3 SlipboxResponse
+    notesDecoder
+    linksDecoder
+    actionsDecoder
+
+notesDecoder: Decoder (List Note.NoteRecord)
+notesDecoder =
+  field "notes" (list noteRecordDecoder)
+
+linksDecoder: Decoder (List S.LinkRecord)
+linksDecoder =
+  field "links" (list linkRecordDecoder)
+
+actionsDecoder: Decoder S.ActionResponse
+actionsDecoder =
+  field "actions" actionResponseDecoder
+
+actionResponseDecoder: Decoder S.ActionResponse
+actionResponseDecoder =
+  map5 S.ActionResponse
+    (field "create_note" (list createNoteRecordDecoder))
+    (field "edit_note" (list editNoteRecordWrapperDecoder))
+    (field "delete_note" (list createNoteRecordDecoder))
+    (field "create_link" (list createLinkRecordDecoder))
+    (field "delete_link" (list createLinkRecordDecoder))
+
+noteRecordDecoder: Decoder Note.NoteRecord
+noteRecordDecoder =
+  map4 Note.NoteRecord
+    (field "id_" int)
+    (field "content" string)
+    (field "source" string)
+    (field "variant" string)
+
+linkRecordDecoder: Decoder S.LinkRecord
+linkRecordDecoder = 
+  map3 S.LinkRecord
+    (field "id_" int)
+    (field "source" int)
+    (field "target" int)
+
+createNoteRecordDecoder: Decoder S.CreateNoteRecord
+createNoteRecordDecoder =
+  map2 S.CreateNoteRecord
+    (field "action_id" int)
+    noteRecordDecoder
+
+editNoteRecordDecoder: Decoder Action.EditNoteRecord
+editNoteRecordDecoder =
+  map6 Action.EditNoteRecord
+    (field "id_" int)
+    (field "old_content" string)
+    (field "new_content" string)
+    (field "old_source" string)
+    (field "new_source" string)
+    (field "variant" string)
+
+editNoteRecordWrapperDecoder: Decoder S.EditNoteRecordWrapper
+editNoteRecordWrapperDecoder =
+  map2 S.EditNoteRecordWrapper
+    (field "action_id" int)
+    editNoteRecordDecoder
+
+createLinkRecordDecoder: Decoder S.CreateLinkRecord
+createLinkRecordDecoder =
+  map2 S.CreateLinkRecord
+    (field "action_id" int)
+    linkRecordDecoder
 
 initNoteData : List Note.NoteRecord
-initNoteData = 
-  [ Note.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index"
-  , Note.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index"
-  , Note.NoteRecord 3 "Note 0" "Source 1" "note"]
-
+initNoteData = []
 initLinkData: List S.LinkRecord
-initLinkData =
-  [ S.LinkRecord 1 3 1
-  ]
-
-initHistoryData: ((List S.CreateNoteRecord), (List S.CreateLinkRecord))
+initLinkData = []
+initHistoryData: S.ActionResponse
 initHistoryData =
-  (
-    [ S.CreateNoteRecord 1 (Note.NoteRecord 1 "What is the Elm langauge?" "Source 1" "index")
-    , S.CreateNoteRecord 2 (Note.NoteRecord 2 "Why does some food taste better than others?" "Source 2" "index")
-    , S.CreateNoteRecord 3 (Note.NoteRecord 3 "Note 0" "Source 1" "note")
-    ]
-    , [ S.CreateLinkRecord 4 (S.LinkRecord 1 3 1) ]
-  )
+  S.ActionResponse [] [] [] [] []
 
 getSearchText: Model -> String
 getSearchText model =
@@ -251,40 +318,42 @@ type Msg =
   DeleteNote Note.NoteId |
   DeleteLink Int |
   Undo Int |
-  Redo Int
+  Redo Int |
+  GetSlipbox (Result Http.Error SlipboxResponse)
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of 
-    ToggleSearch -> handleToggleSearch model
-    UpdateSearch query -> handleUpdateSearch query model
-    PanningStart mouseEvent -> handlePanningStart mouseEvent model
-    IfPanningShift mouseEvent -> handleIfPanningShift mouseEvent model
-    PanningStop -> handlePanningStop model
-    ZoomIn -> handleZoomIn model
-    ZoomOut -> handleZoomOut model
-    NoteSelect note coords -> handleNoteSelect note coords model
-    MapNoteSelect note -> handleMapNoteSelect note model
-    NoteDismiss note -> handleNoteDismiss note model
-    NoteHighlight note -> handleNoteHighlight note model
-    NoteRemoveHighlights -> handleNoteRemoveHighlights model
-    ToggleCreateNoteForm -> handleToggleCreateNoteForm model
-    ContentInputCreateNoteForm s -> handleContentInputCreateNoteForm s model
-    SourceInputCreateNoteForm s -> handleSourceInputCreateNoteForm s model
-    ChangeNoteTypeCreateNoteForm s -> handleChangeNoteTypeCreateNoteForm s model 
-    SubmitCreateNoteForm -> handleSubmitCreateNoteForm model
-    SubmitLink -> handleSubmitLink model
-    LinkFormSourceSelected s -> handleLinkFormSourceSelected s model
-    LinkFormTargetSelected s -> handleLinkFormTargetSelected s model 
-    EditNote note -> handleEditNote note model
-    DiscardEdits note -> handleDiscardEdits note model
-    SubmitEdits note -> handleSubmitEdits note model
-    ContentUpdate note s -> handleContentUpdate s note model
-    SourceUpdate note s -> handleSourceUpdate s note model
-    DeleteNote note -> handleDeleteNote note model
-    DeleteLink link -> handleDeleteLink link model
-    Undo id -> handleUndo id model
-    Redo id -> handleRedo id model
+    ToggleSearch -> (handleToggleSearch model, Cmd.none)
+    UpdateSearch query -> (handleUpdateSearch query model, Cmd.none)
+    PanningStart mouseEvent -> (handlePanningStart mouseEvent model, Cmd.none)
+    IfPanningShift mouseEvent -> (handleIfPanningShift mouseEvent model, Cmd.none)
+    PanningStop -> (handlePanningStop model, Cmd.none)
+    ZoomIn -> (handleZoomIn model, Cmd.none)
+    ZoomOut -> (handleZoomOut model, Cmd.none)
+    NoteSelect note coords -> (handleNoteSelect note coords model, Cmd.none)
+    MapNoteSelect note -> (handleMapNoteSelect note model, Cmd.none)
+    NoteDismiss note -> (handleNoteDismiss note model, Cmd.none)
+    NoteHighlight note -> (handleNoteHighlight note model, Cmd.none)
+    NoteRemoveHighlights -> (handleNoteRemoveHighlights model, Cmd.none)
+    ToggleCreateNoteForm -> (handleToggleCreateNoteForm model, Cmd.none)
+    ContentInputCreateNoteForm s -> (handleContentInputCreateNoteForm s model, Cmd.none)
+    SourceInputCreateNoteForm s -> (handleSourceInputCreateNoteForm s model, Cmd.none)
+    ChangeNoteTypeCreateNoteForm s -> (handleChangeNoteTypeCreateNoteForm s model, Cmd.none)
+    SubmitCreateNoteForm -> (handleSubmitCreateNoteForm model, Cmd.none)
+    SubmitLink -> (handleSubmitLink model, Cmd.none)
+    LinkFormSourceSelected s -> (handleLinkFormSourceSelected s model, Cmd.none)
+    LinkFormTargetSelected s -> (handleLinkFormTargetSelected s model, Cmd.none)
+    EditNote note -> (handleEditNote note model, Cmd.none)
+    DiscardEdits note -> (handleDiscardEdits note model, Cmd.none)
+    SubmitEdits note -> (handleSubmitEdits note model, Cmd.none)
+    ContentUpdate note s -> (handleContentUpdate s note model, Cmd.none)
+    SourceUpdate note s -> (handleSourceUpdate s note model, Cmd.none)
+    DeleteNote note -> (handleDeleteNote note model, Cmd.none)
+    DeleteLink link -> (handleDeleteLink link model, Cmd.none)
+    Undo id -> (handleUndo id model, Cmd.none)
+    Redo id -> (handleRedo id model, Cmd.none)
+    GetSlipbox response -> (handleGetSlipbox response model, Cmd.none)
 
 handleToggleSearch: Model -> Model
 handleToggleSearch model =
@@ -461,6 +530,20 @@ handleRedo actionId model =
     Model slipbox query viewport form ->
       Model (S.redo actionId slipbox) query viewport form
 
+handleGetSlipbox: (Result Http.Error SlipboxResponse) -> Model -> Model
+handleGetSlipbox result model =
+  case result of
+    Ok response ->
+      case model of
+        Model _ _ _ _ -> Model (S.initialize response.notes response.links response.actions) (Shown "") V.initialize initCreateNoteForm
+    Err _ -> model
+
+
+-- SUBSCRIPTIONS
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.none
 -- VIEW
 
 view : Model -> Html Msg

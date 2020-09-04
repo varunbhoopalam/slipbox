@@ -5,7 +5,8 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , getHistory, createNote, MakeNoteRecord, MakeLinkRecord
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
-  , sourceUpdate, deleteNote, deleteLink, undo, redo)
+  , sourceUpdate, deleteNote, deleteLink, undo, redo, ActionResponse
+  , EditNoteRecordWrapper)
 
 import Simulation
 import LinkForm
@@ -88,15 +89,27 @@ type alias DescriptionLink =
   , linkId: Int
   }
 
+type alias EditNoteRecordWrapper = 
+  { id: Int
+  , action: Action.EditNoteRecord
+  }
+type alias ActionResponse =
+  { create_note: (List CreateNoteRecord)
+  , edit_note: (List EditNoteRecordWrapper)
+  , delete_note: (List CreateNoteRecord)
+  , create_link: (List CreateLinkRecord)
+  , delete_link: (List CreateLinkRecord)
+  }
+
 -- Methods
 
 -- Returns Slipbox
-initialize: (List Note.NoteRecord) -> (List LinkRecord) -> ((List CreateNoteRecord), (List CreateLinkRecord)) -> Slipbox
-initialize notes links (noteRecords, linkRecords) =
+initialize: (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Slipbox
+initialize notes links response =
   let
     l =  initializeLinks links
   in
-    Slipbox (initializeNotes notes l) l (actionsInit (noteRecords, linkRecords)) LinkForm.initLinkForm
+    Slipbox (initializeNotes notes l) l (actionsInit response) LinkForm.initLinkForm
 
 selectNote: Note.NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
@@ -271,7 +284,7 @@ deleteLinkHandler linkId notes links actions form =
 deleteLinkFoundHandler: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 deleteLinkFoundHandler link notes links actions form =
   let
-    newLinks = (removeLinkById link.id links)
+    newLinks = removeLinkById link.id links
   in
     Slipbox 
       (initSimulation notes newLinks) 
@@ -431,10 +444,15 @@ toGraphLink link notes =
   in
     Maybe.map3 graphLinkBuilder source target (Just link.id)
 
-actionsInit: ((List CreateNoteRecord), (List CreateLinkRecord)) -> (List Action.Action)
-actionsInit (noteRecords, linkRecords) =
+actionsInit: ActionResponse -> (List Action.Action)
+actionsInit response =
   List.sortWith Action.sortDesc 
-    (List.map createNoteAction noteRecords ++ List.map createLinkAction linkRecords)
+    (List.map createNoteAction response.create_note 
+    ++ List.map (\n -> Action.editNote n.id n.action) response.edit_note
+    ++ List.map deleteNoteAction response.delete_note
+    ++ List.map (\n -> Action.createLink n.id n.action) response.create_link
+    ++ List.map (\n -> Action.deleteLink n.id n.action) response.delete_link
+    )
     |> List.map Action.save
 
 createNoteAction: CreateNoteRecord -> Action.Action
@@ -442,10 +460,10 @@ createNoteAction note =
   Action.createNote note.id 
     (Action.CreateNoteRecord note.action.id note.action.content note.action.source note.action.noteType)
 
-createLinkAction: CreateLinkRecord -> Action.Action
-createLinkAction link =
-  Action.createLink link.id 
-    (Action.CreateLinkRecord link.action.id link.action.source link.action.target)
+deleteNoteAction: CreateNoteRecord -> Action.Action
+deleteNoteAction note =
+  Action.deleteNote note.id 
+    (Action.CreateNoteRecord note.action.id note.action.content note.action.source note.action.noteType)
     
 graphLinkBuilder: Note.Note -> Note.Note -> LinkId -> GraphLink
 graphLinkBuilder source target id =
@@ -642,9 +660,9 @@ addDeleteNoteActionHandler: (Note.Extract) -> (List Link) -> (List Action.Action
 addDeleteNoteActionHandler extract links actions =
   let
     newActions = List.filter (\a -> not (Action.shouldRemove a)) actions
-    deleteNoteAction = toDeleteNoteAction (nextActionId newActions) extract
-    actionsWithDeleteNote = deleteNoteAction :: newActions
-    deleteLinkActions = List.indexedMap (\index link -> toDeleteLinkAction ((nextActionId actionsWithDeleteNote) + index) link) links
+    deleteNoteActionn = toDeleteNoteAction (nextActionId newActions) extract
+    actionsWithDeleteNote = deleteNoteActionn :: newActions
+    deleteLinkActions = List.indexedMap (\index link -> toDeleteLinkAction (nextActionId actionsWithDeleteNote + index) link) links
   in
     List.sortWith Action.sortDesc (List.append deleteLinkActions actionsWithDeleteNote)
     
