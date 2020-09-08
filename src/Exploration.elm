@@ -20,6 +20,7 @@ import Element exposing (Element, el)
 import Element.Input as Input
 import Element.Events as Events
 import Element.Background as Background
+import Input as I
 
 -- MAIN
 
@@ -27,11 +28,11 @@ main =
   Browser.element { init = init, update = update, subscriptions = subscriptions, view = view }
 
 -- MODEL
-type Model = Model S.Slipbox Search V.Viewport CreateNoteForm
+type Model = Model S.Slipbox I.Input V.Viewport CreateNoteForm
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( Model (S.initialize initNoteData initLinkData initHistoryData) (Shown "") V.initialize initCreateNoteForm
+  ( Model (S.initialize initNoteData initLinkData initHistoryData) I.init V.initialize initCreateNoteForm
   , Http.get
       { url = "http://localhost:5000/"
       , expect = Http.expectJson GetSlipbox slipboxDecoder
@@ -48,12 +49,12 @@ initHistoryData = S.ActionResponse [] [] [] [] []
 getSearchText: Model -> String
 getSearchText model =
   case model of
-    Model _ search _ _ -> getSearchString search
+    Model _ search _ _ -> I.get search
 
 getNotes: Model -> (List Note.Extract)
 getNotes model =
   case model of
-    Model slipbox search _ _ -> S.searchSlipbox (getSearchString search) slipbox
+    Model slipbox search _ _ -> S.searchSlipbox (I.get search) slipbox
 
 getSelectedNotes: Model -> (List S.DescriptionNote)
 getSelectedNotes model =
@@ -89,37 +90,6 @@ getLinkFormData: Model -> LinkForm.LinkFormData
 getLinkFormData model =
   case model of
     Model slipbox _ _ _ -> S.getLinkFormData slipbox
-
--- SEARCH
-type Search = 
-  Shown Query |
-  Hidden Query
-
-type alias Query = String
-
-toggle: Search -> Search
-toggle search =
-  case search of
-    Shown query -> Hidden query
-    Hidden query -> Shown query
-
-updateSearch: String -> Search -> Search
-updateSearch query search =
-  case search of
-    Shown _ -> Shown query
-    Hidden _ -> Hidden query
-
-shouldShowSearch: Search -> Bool
-shouldShowSearch search =
-  case search of
-    Shown _ -> True
-    Hidden _ -> False
-
-getSearchString: Search -> String
-getSearchString search =
-  case search of 
-    Shown str -> str
-    Hidden str -> str
 
 -- CreateNoteForm
 
@@ -210,7 +180,6 @@ makeNoteRecord form =
 
 -- UPDATE
 type Msg = 
-  ToggleSearch |
   UpdateSearch String |
   PanningStart V.MouseEvent |
   IfPanningShift V.MouseEvent |
@@ -244,7 +213,6 @@ type Msg =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of 
-    ToggleSearch -> (handleToggleSearch model, Cmd.none)
     UpdateSearch query -> (handleUpdateSearch query model, Cmd.none)
     PanningStart mouseEvent -> (handlePanningStart mouseEvent model, Cmd.none)
     IfPanningShift mouseEvent -> (handleIfPanningShift mouseEvent model, Cmd.none)
@@ -275,17 +243,11 @@ update msg model =
     Redo id -> (handleRedo id model, Cmd.none)
     GetSlipbox response -> (handleGetSlipbox response model, Cmd.none)
 
-handleToggleSearch: Model -> Model
-handleToggleSearch model =
-  case model of 
-    Model slipbox search viewport form ->
-      Model slipbox (toggle search) viewport form
-
 handleUpdateSearch: String -> Model -> Model
 handleUpdateSearch query model =
   case model of 
     Model slipbox search viewport form ->
-      Model slipbox (updateSearch query search) viewport form
+      Model slipbox (I.update query search) viewport form
   
 handlePanningStart: V.MouseEvent -> Model -> Model
 handlePanningStart mouseEvent model =
@@ -455,7 +417,7 @@ handleGetSlipbox result model =
   case result of
     Ok response ->
       case model of
-        Model _ _ _ _ -> Model (S.initialize response.notes response.links response.actions) (Shown "") V.initialize initCreateNoteForm
+        Model _ _ _ _ -> Model (S.initialize response.notes response.links response.actions) I.init V.initialize initCreateNoteForm
     Err _ -> model
 
 
