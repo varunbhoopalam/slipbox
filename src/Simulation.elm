@@ -1,6 +1,7 @@
 module Simulation exposing (SimulationRecord, init, simulate)
 
 import Force
+import Debug
 
 type alias SimulationRecord =
   { id: Int
@@ -19,12 +20,13 @@ init id =
 
 simulate: (List SimulationRecord) -> (List (Int, Int)) -> (List SimulationRecord)
 simulate records links =
-  List.map toSimulationRecord (Force.computeSimulation (stateBuilder records links) records)
+  -- List.map toSimulationRecord (Force.computeSimulation (stateBuilder records links) records)
+  List.map toSimulationRecord (Tuple.second (Force.tick (stateBuilder records links) records))
 
 stateBuilder: (List SimulationRecord) -> (List (Int, Int)) -> Force.State Int
 stateBuilder records links =
   Force.simulation 
-        [ Force.manyBodyStrength -10 (List.map (\n -> n.id) records)
+        [ Force.manyBodyStrength -30 (List.map (\n -> n.id) records)
         , Force.links links
         , Force.center 0 0
         ]

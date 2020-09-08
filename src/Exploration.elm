@@ -118,7 +118,9 @@ createLinkRecordDecoder =
     linkRecordDecoder
 
 initNoteData : List Note.NoteRecord
-initNoteData = []
+initNoteData = 
+  [ Note.NoteRecord 0 "afewfffffffffffffffffffffffffffffff afeef aewfhwoeifhoiwafh iweh  kjsahfkew nealw fffffffffffffffff fffffffffffffff fffff" "23rwr" "regular"
+  ]
 initLinkData: List S.LinkRecord
 initLinkData = []
 initHistoryData: S.ActionResponse
@@ -570,12 +572,12 @@ search_ model =
     , Element.padding 8
     , Element.spacing 8
     ] 
-    (searchBox (getSearchText model) :: (List.map toSearchNote (getNotes model)))
+    (searchBox (getSearchText model) :: List.map toSearchNote (getNotes model))
 
 searchBox: String -> Element Msg
 searchBox query =
   Input.text []
-    { onChange = (\new -> UpdateSearch new)
+    { onChange = \new -> UpdateSearch new
     , label = Input.labelAbove [] (Element.text "Search by (content|source)")
     , placeholder = Nothing        
     , text = query
@@ -583,13 +585,14 @@ searchBox query =
 
 toSearchNote: Note.Extract -> Element Msg
 toSearchNote extract =
-  el 
+  Element.paragraph 
     [Events.onClick (NoteSelect extract.id (extract.x, extract.y))
     , Element.pointer
     , Element.width Element.fill
     , Background.color (Element.rgb255 240 240 240)
     ] 
-    (Element.text (extract.content))
+    [ Element.text extract.content
+    ]
 
 history: Model -> Element Msg
 history model = 
@@ -599,7 +602,7 @@ history model =
     , Element.padding 8
     , Element.spacing 8
     ] 
-    ((Element.text "Action History") :: (List.map toActionPane (getActions model)))
+    (Element.text "Action History" :: List.map toActionPane (getActions model))
 
 toActionPane: Action.Summary -> Element Msg
 toActionPane action =
@@ -614,9 +617,9 @@ actionInput action =
     el [Element.alignRight] (Element.text "saved")
   else
     if action.undone then
-      Input.button [Element.alignRight] { onPress = (Just (Redo action.id)), label = (Element.text "redo") }
+      Input.button [Element.alignRight] { onPress = Just (Redo action.id), label = Element.text "redo" }
     else 
-      Input.button [Element.alignRight] { onPress = (Just (Undo action.id)), label = (Element.text "undo") }
+      Input.button [Element.alignRight] { onPress = Just (Undo action.id), label = Element.text "undo" }
 
 svgContainer: Model -> Element Msg
 svgContainer model =
@@ -783,9 +786,9 @@ toOption linkNoteChoice =
 submitLink: Bool -> Element Msg
 submitLink canSubmitLink = 
   if canSubmitLink then
-    Input.button [] {onPress = Just SubmitLink, label = (Element.text "Create Link")}
+    Input.button [] {onPress = Just SubmitLink, label = Element.text "Create Link"}
   else
-    Input.button [] {onPress = Nothing, label = (Element.text "Create Link")}
+    Input.button [] {onPress = Nothing, label = Element.text "Create Link"}
 
 selections: (List S.DescriptionNote) -> Element Msg
 selections notes = 
@@ -809,14 +812,13 @@ selectionContent note =
   else 
     notInEditContent note
 
-blue =
-    Element.rgb255 238 238 238
+blue = Element.rgb255 238 238 238
 
 inEditContent: S.DescriptionNote -> (List (Element Msg))
 inEditContent note =
   [ Element.wrappedRow [Element.spacing 8, Element.padding 8] 
-    [ Input.button [Background.color blue] {onPress = (Just (SubmitEdits note.id)), label = (Element.text "Save") }
-    , Input.button [Background.color blue] {onPress = (Just (DiscardEdits note.id)), label = (Element.text "Discard") }
+    [ Input.button [Background.color blue] {onPress = Just (SubmitEdits note.id), label = Element.text "Save" }
+    , Input.button [Background.color blue] {onPress = Just (DiscardEdits note.id), label = Element.text "Discard" }
     ]
   , contentInput (ContentUpdate note.id) note.content
   , sourceInput (SourceUpdate note.id) note.source
