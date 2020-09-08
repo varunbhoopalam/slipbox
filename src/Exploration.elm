@@ -1,15 +1,14 @@
 module Exploration exposing (..)
 
 import Browser
-import Html exposing (Html, div, input, text, button, textarea, option, select)
-import Html.Attributes exposing (placeholder, value, selected)
-import Html.Events exposing (onInput, onClick, onMouseLeave, onMouseEnter)
+import Html exposing (Html, div, text, button, option)
+import Html.Attributes exposing (placeholder)
+import Html.Events exposing (onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
-import Json.Decode exposing (Decoder, int, map, field, map2, list, string, dict, map4, map3, map6, map5)
+import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5)
 import Http
-import Debug
 
 -- Modules
 import Viewport as V
@@ -18,7 +17,6 @@ import LinkForm
 import Note
 import Action
 import Element exposing (Element, el)
-import Element.Border as Border
 import Element.Input as Input
 import Element.Events as Events
 import Element.Background as Background
@@ -40,92 +38,12 @@ init _ =
       }
   )
 
-type alias SlipboxResponse = 
-  { notes: (List Note.NoteRecord)
-  , links: (List S.LinkRecord)
-  , actions: S.ActionResponse
-  }
-
-slipboxDecoder : Decoder SlipboxResponse
-slipboxDecoder =
-  map3 SlipboxResponse
-    notesDecoder
-    linksDecoder
-    actionsDecoder
-
-notesDecoder: Decoder (List Note.NoteRecord)
-notesDecoder =
-  field "notes" (list noteRecordDecoder)
-
-linksDecoder: Decoder (List S.LinkRecord)
-linksDecoder =
-  field "links" (list linkRecordDecoder)
-
-actionsDecoder: Decoder S.ActionResponse
-actionsDecoder =
-  field "actions" actionResponseDecoder
-
-actionResponseDecoder: Decoder S.ActionResponse
-actionResponseDecoder =
-  map5 S.ActionResponse
-    (field "create_note" (list createNoteRecordDecoder))
-    (field "edit_note" (list editNoteRecordWrapperDecoder))
-    (field "delete_note" (list createNoteRecordDecoder))
-    (field "create_link" (list createLinkRecordDecoder))
-    (field "delete_link" (list createLinkRecordDecoder))
-
-noteRecordDecoder: Decoder Note.NoteRecord
-noteRecordDecoder =
-  map4 Note.NoteRecord
-    (field "id_" int)
-    (field "content" string)
-    (field "source" string)
-    (field "variant" string)
-
-linkRecordDecoder: Decoder S.LinkRecord
-linkRecordDecoder = 
-  map3 S.LinkRecord
-    (field "id_" int)
-    (field "source" int)
-    (field "target" int)
-
-createNoteRecordDecoder: Decoder S.CreateNoteRecord
-createNoteRecordDecoder =
-  map2 S.CreateNoteRecord
-    (field "action_id" int)
-    noteRecordDecoder
-
-editNoteRecordDecoder: Decoder Action.EditNoteRecord
-editNoteRecordDecoder =
-  map6 Action.EditNoteRecord
-    (field "id_" int)
-    (field "old_content" string)
-    (field "new_content" string)
-    (field "old_source" string)
-    (field "new_source" string)
-    (field "variant" string)
-
-editNoteRecordWrapperDecoder: Decoder S.EditNoteRecordWrapper
-editNoteRecordWrapperDecoder =
-  map2 S.EditNoteRecordWrapper
-    (field "action_id" int)
-    editNoteRecordDecoder
-
-createLinkRecordDecoder: Decoder S.CreateLinkRecord
-createLinkRecordDecoder =
-  map2 S.CreateLinkRecord
-    (field "action_id" int)
-    linkRecordDecoder
-
 initNoteData : List Note.NoteRecord
-initNoteData = 
-  [ Note.NoteRecord 0 "afewfffffffffffffffffffffffffffffff afeef aewfhwoeifhoiwafh iweh  kjsahfkew nealw fffffffffffffffff fffffffffffffff fffff" "23rwr" "regular"
-  ]
+initNoteData = []
 initLinkData: List S.LinkRecord
 initLinkData = []
 initHistoryData: S.ActionResponse
-initHistoryData =
-  S.ActionResponse [] [] [] [] []
+initHistoryData = S.ActionResponse [] [] [] [] []
 
 getSearchText: Model -> String
 getSearchText model =
@@ -654,7 +572,7 @@ toSvgCircle note =
     [ cx (String.fromFloat note.x)
     , cy (String.fromFloat note.y) 
     , r "5"
-    , style ("Cursor:Pointer;" ++ "fill:" ++ (noteColor note.variant) ++ ";")
+    , style ("Cursor:Pointer;" ++ "fill:" ++ noteColor note.variant ++ ";")
     , onClick (MapNoteSelect note.id) 
     ]
     (handleCircleAnimation note.shouldAnimate)
@@ -845,7 +763,84 @@ toLink link =
     , Input.button [] {onPress = (Just (DeleteLink link.linkId)), label = (Element.text "Delete") }
     ]
 
--- JSON Decoder
+-- DECODER
+
+type alias SlipboxResponse = 
+  { notes: (List Note.NoteRecord)
+  , links: (List S.LinkRecord)
+  , actions: S.ActionResponse
+  }
+
+slipboxDecoder : Decoder SlipboxResponse
+slipboxDecoder =
+  map3 SlipboxResponse
+    notesDecoder
+    linksDecoder
+    actionsDecoder
+
+notesDecoder: Decoder (List Note.NoteRecord)
+notesDecoder =
+  field "notes" (list noteRecordDecoder)
+
+linksDecoder: Decoder (List S.LinkRecord)
+linksDecoder =
+  field "links" (list linkRecordDecoder)
+
+actionsDecoder: Decoder S.ActionResponse
+actionsDecoder =
+  field "actions" actionResponseDecoder
+
+actionResponseDecoder: Decoder S.ActionResponse
+actionResponseDecoder =
+  map5 S.ActionResponse
+    (field "create_note" (list createNoteRecordDecoder))
+    (field "edit_note" (list editNoteRecordWrapperDecoder))
+    (field "delete_note" (list createNoteRecordDecoder))
+    (field "create_link" (list createLinkRecordDecoder))
+    (field "delete_link" (list createLinkRecordDecoder))
+
+noteRecordDecoder: Decoder Note.NoteRecord
+noteRecordDecoder =
+  map4 Note.NoteRecord
+    (field "id_" int)
+    (field "content" string)
+    (field "source" string)
+    (field "variant" string)
+
+linkRecordDecoder: Decoder S.LinkRecord
+linkRecordDecoder = 
+  map3 S.LinkRecord
+    (field "id_" int)
+    (field "source" int)
+    (field "target" int)
+
+createNoteRecordDecoder: Decoder S.CreateNoteRecord
+createNoteRecordDecoder =
+  map2 S.CreateNoteRecord
+    (field "action_id" int)
+    noteRecordDecoder
+
+editNoteRecordDecoder: Decoder Action.EditNoteRecord
+editNoteRecordDecoder =
+  map6 Action.EditNoteRecord
+    (field "id_" int)
+    (field "old_content" string)
+    (field "new_content" string)
+    (field "old_source" string)
+    (field "new_source" string)
+    (field "variant" string)
+
+editNoteRecordWrapperDecoder: Decoder S.EditNoteRecordWrapper
+editNoteRecordWrapperDecoder =
+  map2 S.EditNoteRecordWrapper
+    (field "action_id" int)
+    editNoteRecordDecoder
+
+createLinkRecordDecoder: Decoder S.CreateLinkRecord
+createLinkRecordDecoder =
+  map2 S.CreateLinkRecord
+    (field "action_id" int)
+    linkRecordDecoder
 offsetXDecoder: Decoder Int
 offsetXDecoder = field "offsetX" int
 
