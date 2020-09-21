@@ -447,10 +447,11 @@ leftColumn model =
 search_: Model -> Element Msg
 search_ model = 
   Element.column 
-    [ Element.height Element.fill
+    [ Element.height (Element.maximum 300 Element.fill)
     , Element.width Element.fill
     , Element.padding 8
     , Element.spacing 8
+    , Element.scrollbars
     ] 
     (searchBox (getSearchText model) :: List.map toSearchNote (getNotes model))
 
