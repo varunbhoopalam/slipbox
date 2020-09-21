@@ -453,7 +453,13 @@ search_ model =
     , Element.spacing 8
     ] 
     [searchBox (getSearchText model)
-    , Element.column [Element.height (Element.maximum 500 Element.fill), Element.scrollbars] (List.map toSearchNote (getNotes model))
+    , Element.column 
+      [Element.height (Element.maximum 500 Element.fill)
+      , Element.scrollbars
+      , Element.padding 8
+      , Element.spacing 8
+      ] 
+      (List.map toSearchNote (getNotes model))
     ]
 
 searchBox: String -> Element Msg
