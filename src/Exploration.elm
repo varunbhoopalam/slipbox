@@ -9,6 +9,7 @@ import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5)
 import Http
+import Debug
 
 -- Modules
 import Viewport as V
@@ -424,7 +425,7 @@ handleGetSlipbox result model =
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
   Sub.none
 -- VIEW
 
@@ -534,6 +535,10 @@ noteNetwork model =
 
 graphElements: ((List S.GraphNote),(List S.GraphLink)) -> (List (Svg Msg))
 graphElements (notes, links) =
+  let
+    _ = Debug.log (Debug.toString notes) 1
+    _ = Debug.log (Debug.toString links) 2
+  in
   List.map toSvgCircle notes ++ List.map toSvgLine links
 
 toSvgCircle: S.GraphNote -> Svg Msg
@@ -780,9 +785,10 @@ noteRecordDecoder =
 linkRecordDecoder: Decoder S.LinkRecord
 linkRecordDecoder = 
   map3 S.LinkRecord
-    (field "id_" int)
     (field "source" int)
     (field "target" int)
+    (field "id_" int)
+
 
 createNoteRecordDecoder: Decoder S.CreateNoteRecord
 createNoteRecordDecoder =
