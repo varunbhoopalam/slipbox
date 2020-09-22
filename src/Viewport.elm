@@ -36,13 +36,13 @@ type alias PanningAttributes =
 -- CONSTANTS
 
 svgWidth: Int
-svgWidth = 700
+svgWidth = 900
 
 svgWidthString: String
 svgWidthString = String.fromInt svgWidth
 
 svgLength: Int
-svgLength = 700
+svgLength = 900
 
 svgLengthString: String
 svgLengthString = String.fromInt svgLength
@@ -102,7 +102,7 @@ edgeLenConstraint = 300
 
 initialize: Viewport
 initialize =
-  Resting (Viewbox -300 -300 600 600)
+  Resting (Viewbox (negate (svgWidth // 2)) (negate (svgLength // 2)) svgLength svgWidth)
 
 centerOn: (Float, Float) -> Viewport -> Viewport
 centerOn coords viewport =
