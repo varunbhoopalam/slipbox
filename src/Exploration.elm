@@ -21,6 +21,7 @@ import Element exposing (Element, el)
 import Element.Input as Input
 import Element.Events as Events
 import Element.Background as Background
+import Element.Font as Font
 import Input as I
 
 -- MAIN
@@ -535,10 +536,6 @@ noteNetwork model =
 
 graphElements: ((List S.GraphNote),(List S.GraphLink)) -> (List (Svg Msg))
 graphElements (notes, links) =
-  let
-    _ = Debug.log (Debug.toString notes) 1
-    _ = Debug.log (Debug.toString links) 2
-  in
   List.map toSvgCircle notes ++ List.map toSvgLine links
 
 toSvgCircle: S.GraphNote -> Svg Msg
@@ -607,7 +604,12 @@ panningSvg attr =
 
 rightColumn: Model -> Element Msg
 rightColumn model =
-  Element.column [Element.alignRight, Element.height Element.fill, Element.width (Element.fillPortion 1)]
+  Element.column 
+    [ Element.alignRight
+    , Element.height Element.fill
+    , Element.width (Element.fillPortion 1)
+    , Element.spacing 8
+    ]
     [ createNoteForm (getNoteFormData model)
     , createLink (getLinkFormData model)
     , selections (getSelectedNotes model)
@@ -616,7 +618,7 @@ rightColumn model =
 createNoteForm: CreateForm -> Element Msg
 createNoteForm form = 
   Element.column 
-    [Element.height (Element.fillPortion 2), Element.padding 8, Element.spacing 8, Element.width (Element.fill |> Element.maximum 300)] 
+    [Element.height (Element.maximum 200 Element.fill), Element.padding 8, Element.spacing 8, Element.width (Element.fill |> Element.maximum 300)] 
     [ contentInput ContentInputCreateNoteForm form.content
     , sourceInput SourceInputCreateNoteForm form.source
     , Input.radioRow [] { onChange = ChangeNoteTypeCreateNoteForm
@@ -653,28 +655,33 @@ boolToVal ind =
 submitNote: Bool -> Element Msg
 submitNote canSubmitNote = 
   if canSubmitNote then
-    Input.button [] {onPress = Just SubmitCreateNoteForm, label = (Element.text "Create Note")}
+    Input.button [] {onPress = Just SubmitCreateNoteForm, label = Element.text "Create Note"}
   else
-    Input.button [] {onPress = Nothing, label = (Element.text "Create Note")}
+    Input.button [] {onPress = Nothing, label = Element.text "Create Note"}
 
 createLink: LinkForm.LinkFormData -> Element Msg
 createLink form = 
-  Element.column 
-    [Element.height (Element.fillPortion 1)] 
-    [ Input.radioRow [] { onChange = LinkFormSourceSelected
+  Element.column [Element.height (Element.maximum 200 Element.fill)] 
+  [ Element.column 
+    [ Element.height Element.fill
+    , Element.scrollbars
+    , Font.size 10
+    ] 
+    [ Input.radio [] { onChange = LinkFormSourceSelected
       , selected = form.sourceChosen
       , label = Input.labelAbove [] (Element.text "Source")
-      , options = (List.map toOption form.sourceChoices) }
-    , Input.radioRow [] { onChange = LinkFormTargetSelected
+      , options = List.map toOption form.sourceChoices }
+    , Input.radio [] { onChange = LinkFormTargetSelected
       , selected = form.targetChosen
       , label = Input.labelAbove [] (Element.text "Target")
-      , options = (List.map toOption form.targetChoices) }
-    , submitLink form.canSubmit
+      , options = List.map toOption form.targetChoices }
     ]
+  , submitLink form.canSubmit
+  ]
 
 toOption: LinkForm.LinkNoteChoice -> (Input.Option String Msg)
 toOption linkNoteChoice =
-  Input.option linkNoteChoice.value (Element.text linkNoteChoice.display)
+  Input.option linkNoteChoice.value (Element.paragraph [] [Element.text linkNoteChoice.display])
 
 submitLink: Bool -> Element Msg
 submitLink canSubmitLink = 
@@ -685,8 +692,15 @@ submitLink canSubmitLink =
 
 selections: (List S.DescriptionNote) -> Element Msg
 selections notes = 
-  Element.column [Element.height (Element.fillPortion 5)] 
-    (List.map toSelection notes)
+  Element.column [Element.height (Element.maximum 500 Element.fill)]
+  [ el [Font.size 30] (Element.text "Selections")
+  , Element.column 
+      [ Element.spacing 8
+      , Element.scrollbars
+      , Element.height Element.fill
+      ]
+      (List.map toSelection notes)
+  ]
 
 toSelection: S.DescriptionNote -> Element Msg
 toSelection note =
@@ -695,6 +709,8 @@ toSelection note =
     , Events.onMouseLeave NoteRemoveHighlights
     , Element.spacing 8
     , Element.padding 8
+    , Element.pointer
+    , Background.color (Element.rgb255 240 240 240)
     ] 
     (selectionContent note)
 
@@ -715,19 +731,19 @@ inEditContent note =
     ]
   , contentInput (ContentUpdate note.id) note.content
   , sourceInput (SourceUpdate note.id) note.source
-  , Element.wrappedRow [] (List.map toLink note.links)
+  , Element.wrappedRow [Element.width Element.fill] (List.map toLink note.links)
   ]
 
 notInEditContent: S.DescriptionNote -> (List (Element Msg))
 notInEditContent note =
   [ Element.wrappedRow [Element.spacing 8, Element.padding 8] 
-    [ Input.button [Background.color blue] {onPress = (Just (NoteSelect note.id (note.x, note.y))) , label = (Element.text "Find")}
-    , Input.button [Background.color blue] {onPress = (Just (NoteDismiss note.id)), label = (Element.text "Dismiss") }
-    , Input.button [Background.color blue] {onPress = (Just (EditNote note.id)), label = (Element.text "Edit") }
-    , Input.button [Background.color blue] {onPress = (Just (DeleteNote note.id)), label = (Element.text "Delete") }
+    [ Input.button [Background.color blue] {onPress = Just (NoteSelect note.id (note.x, note.y)) , label = Element.text "Find" }
+    , Input.button [Background.color blue] {onPress = Just (NoteDismiss note.id), label = Element.text "Dismiss" }
+    , Input.button [Background.color blue] {onPress = Just (EditNote note.id), label = Element.text "Edit" }
+    , Input.button [Background.color blue] {onPress = Just (DeleteNote note.id), label = Element.text "Delete" }
     ]
-  , (Element.text note.content)
-  , (Element.text note.source)
+  , Element.paragraph [] [Element.text note.content]
+  , Element.paragraph [] [Element.text note.source]
   , Element.wrappedRow [] (List.map toLink note.links)
   ]
 
@@ -735,7 +751,7 @@ toLink: S.DescriptionLink -> Element Msg
 toLink link =
   Element.row [] 
     [ el [ Events.onClick (NoteSelect link.id (link.x, link.y))] (Element.text (String.fromInt link.idInt))
-    , Input.button [] {onPress = (Just (DeleteLink link.linkId)), label = (Element.text "Delete") }
+    , Input.button [] {onPress = Just (DeleteLink link.linkId), label = Element.text "Delete" }
     ]
 
 -- DECODER
