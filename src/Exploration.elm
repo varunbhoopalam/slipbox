@@ -10,6 +10,9 @@ import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5)
 import Http
 import Debug
+import Task
+import Time
+import Browser.Events as BE
 
 -- Modules
 import Viewport as V
@@ -92,6 +95,11 @@ getLinkFormData: Model -> LinkForm.LinkFormData
 getLinkFormData model =
   case model of
     Model slipbox _ _ _ -> S.getLinkFormData slipbox
+
+getSlipbox: Model -> S.Slipbox
+getSlipbox model =
+  case model of
+    Model slipbox _ _ _ -> slipbox
 
 -- CreateNoteForm
 
@@ -210,7 +218,8 @@ type Msg =
   DeleteLink Int |
   Undo Int |
   Redo Int |
-  GetSlipbox (Result Http.Error SlipboxResponse)
+  GetSlipbox (Result Http.Error SlipboxResponse) |
+  Tick Time.Posix
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -244,6 +253,7 @@ update msg model =
     Undo id -> (handleUndo id model, Cmd.none)
     Redo id -> (handleRedo id model, Cmd.none)
     GetSlipbox response -> (handleGetSlipbox response model, Cmd.none)
+    Tick _ -> (handleTick model, Cmd.none)
 
 handleUpdateSearch: String -> Model -> Model
 handleUpdateSearch query model =
@@ -419,15 +429,34 @@ handleGetSlipbox result model =
   case result of
     Ok response ->
       case model of
-        Model _ _ _ _ -> Model (S.initialize response.notes response.links response.actions) I.init V.initialize initCreateNoteForm
+        Model _ _ _ _ -> handleGetSlipbox_ response
     Err _ -> model
 
+handleGetSlipbox_: SlipboxResponse -> Model
+handleGetSlipbox_ response = 
+  let
+    slipbox = S.initialize response.notes response.links response.actions
+  in
+    Model slipbox I.init V.initialize initCreateNoteForm
+
+handleTick: Model -> Model
+handleTick model =
+  case model of 
+    Model slipbox query viewport form -> handleTick_ slipbox query viewport form
+
+handleTick_: S.Slipbox -> I.Input -> V.Viewport -> CreateNoteForm -> Model
+handleTick_ slipbox query viewport form =
+  if S.isCompleted slipbox then
+    Model slipbox query viewport form
+  else
+    Model (S.tick slipbox) query viewport form
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-  Sub.none
+subscriptions model =
+  BE.onAnimationFrame Tick
+
 -- VIEW
 
 view : Model -> Html Msg

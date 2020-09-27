@@ -6,7 +6,7 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
   , sourceUpdate, deleteNote, deleteLink, undo, redo, ActionResponse
-  , EditNoteRecordWrapper)
+  , EditNoteRecordWrapper, isCompleted, tick)
 
 import Simulation
 import LinkForm
@@ -15,7 +15,7 @@ import Action
 import Debug
 
 --Types
-type Slipbox = Slipbox (List Note.Note) (List Link) (List Action.Action) LinkForm.LinkForm
+type Slipbox = Slipbox (List Note.Note) (List Link) (List Action.Action) LinkForm.LinkForm (Simulation.State Int)
 
 type alias Link = 
   { source: Int
@@ -108,204 +108,213 @@ initialize: (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Sli
 initialize notes links response =
   let
     l =  initializeLinks links
+    (state, newNotes) = initializeNotes notes l
   in
-    Slipbox (initializeNotes notes l) l (actionsInit response) LinkForm.initLinkForm
+    Slipbox newNotes l (actionsInit response) LinkForm.initLinkForm state
 
 selectNote: Note.NoteId -> Slipbox -> Slipbox
 selectNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> 
+    Slipbox notes links actions form state-> 
       Slipbox (selectById noteId notes) links actions 
-        (LinkForm.selectionsChange form (getFormNotes (selectById noteId notes) links))
+        (LinkForm.selectionsChange form (getFormNotes (selectById noteId notes) links)) state
 
 dismissNote: Note.NoteId -> Slipbox -> Slipbox
 dismissNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> 
+    Slipbox notes links actions form state -> 
       Slipbox (unSelectById noteId notes) links actions 
         (LinkForm.selectionsChange form (getFormNotes (unSelectById noteId notes) links))
+        state
 
 hoverNote: Note.NoteId -> Slipbox -> Slipbox
 hoverNote noteId slipbox =
   case slipbox of 
-    Slipbox notes links actions form-> Slipbox (List.map (hoverById noteId) notes) links actions form
+    Slipbox notes links actions form state -> Slipbox (List.map (hoverById noteId) notes) links actions form state
 
 stopHoverNote: Slipbox -> Slipbox
 stopHoverNote slipbox =
   case slipbox of 
-    Slipbox notes links history form -> Slipbox (List.map Note.unHover notes) links history form
+    Slipbox notes links history form state -> Slipbox (List.map Note.unHover notes) links history form state
 
 createNote: MakeNoteRecord -> Slipbox -> Slipbox
 createNote note slipbox =
   case slipbox of
-     Slipbox notes links actions form -> handleCreateNote note notes links actions form
+     Slipbox notes links actions form _ -> handleCreateNote note notes links actions form
 
 handleCreateNote: MakeNoteRecord -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 handleCreateNote makeNoteRecord notes links actions form =
   let
     newNote = toNoteRecord makeNoteRecord notes
-    newNoteList = addNoteToNotes newNote notes links
+    (state, newNotes) = addNoteToNotes newNote notes links
   in
-    Slipbox (sortNotes newNoteList) links (addNoteToActions newNote actions) form
+    Slipbox (sortNotes newNotes) links (addNoteToActions newNote actions) form state
 
 createLink: Slipbox -> Slipbox
 createLink slipbox =
   case slipbox of 
-    Slipbox notes links actions form -> createLinkHandler (LinkForm.maybeProspectiveLink form) notes links actions
+    Slipbox notes links actions form state -> createLinkHandler (LinkForm.maybeProspectiveLink form) notes links actions state
   
-createLinkHandler: (Maybe (Int, Int)) -> (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
-createLinkHandler maybeTuple notes links actions =
+createLinkHandler: (Maybe (Int, Int)) -> (List Note.Note) -> (List Link) -> (List Action.Action) -> (Simulation.State Int) -> Slipbox
+createLinkHandler maybeTuple notes links actions state =
   case maybeTuple of
-    Just (source, target) -> createLinkHandlerFork (MakeLinkRecord source target) notes links actions
-    Nothing -> removeSelectionsFork notes links actions
+    Just (source, target) -> createLinkHandlerFork (MakeLinkRecord source target) notes links actions state
+    Nothing -> removeSelectionsFork notes links actions state
 
-createLinkHandlerFork: MakeLinkRecord -> (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
-createLinkHandlerFork makeLinkRecord notes links actions =
+createLinkHandlerFork: MakeLinkRecord -> (List Note.Note) -> (List Link) -> (List Action.Action) -> (Simulation.State Int) -> Slipbox
+createLinkHandlerFork makeLinkRecord notes links actions state =
   case toMaybeLink makeLinkRecord links notes of
     Just link -> addLinkToSlipbox link notes links actions
-    Nothing -> removeSelectionsFork notes links actions
+    Nothing -> removeSelectionsFork notes links actions state
 
-removeSelectionsFork: (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
-removeSelectionsFork notes links actions =
-  Slipbox notes links actions (LinkForm.removeSelections (getFormNotes notes links))
+removeSelectionsFork: (List Note.Note) -> (List Link) -> (List Action.Action) -> (Simulation.State Int)-> Slipbox
+removeSelectionsFork notes links actions state =
+  Slipbox notes links actions (LinkForm.removeSelections (getFormNotes notes links)) state
 
 addLinkToSlipbox: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
 addLinkToSlipbox link notes links actions =
   let
     newLinks =  link :: links
+    (state, newNotes) = initSimulation notes newLinks
   in
     Slipbox 
-      (initSimulation notes newLinks)
+      newNotes
       newLinks
       (addLinkToActions link actions)
       (LinkForm.removeSelections (getFormNotes notes links))
+      state
 
 sourceSelected: String -> Slipbox -> Slipbox
 sourceSelected source slipbox =
   case slipbox of
-    Slipbox notes links actions form -> Slipbox notes links actions (LinkForm.addSource source form)
+    Slipbox notes links actions form state -> Slipbox notes links actions (LinkForm.addSource source form) state
 
 targetSelected: String -> Slipbox -> Slipbox
 targetSelected target slipbox =
   case slipbox of
-    Slipbox notes links actions form -> Slipbox notes links actions (LinkForm.addTarget target form)
+    Slipbox notes links actions form state -> Slipbox notes links actions (LinkForm.addTarget target form) state
 
 startEditState: Note.NoteId -> Slipbox -> Slipbox
 startEditState noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form ->
-      Slipbox (startEditStateById noteId notes) links actions form
+    Slipbox notes links actions form state ->
+      Slipbox (startEditStateById noteId notes) links actions form state
 
 discardEdits: Note.NoteId -> Slipbox -> Slipbox
 discardEdits noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form ->
-      Slipbox (discardEditsById noteId notes) links actions form
+    Slipbox notes links actions form state ->
+      Slipbox (discardEditsById noteId notes) links actions form state 
 
 submitEdits: Note.NoteId -> Slipbox -> Slipbox
 submitEdits noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form -> submitEditsHandler noteId notes links actions form
+    Slipbox notes links actions form state -> submitEditsHandler noteId notes links actions form state
 
-submitEditsHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-submitEditsHandler noteId notes links actions form =
+submitEditsHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+submitEditsHandler noteId notes links actions form state =
   case findNote noteId notes of
-    Just note -> submitEditsNoteFound note notes links actions form
-    Nothing -> Slipbox notes links actions form
+    Just note -> submitEditsNoteFound note notes links actions form state
+    Nothing -> Slipbox notes links actions form state
 
-submitEditsNoteFound: Note.Note -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-submitEditsNoteFound note notes links actions form =
+submitEditsNoteFound: Note.Note -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+submitEditsNoteFound note notes links actions form state =
   let
     extract = Note.extract note
   in
-    editHandler extract notes links actions form
+    editHandler extract notes links actions form state
 
-editHandler: Note.Extract -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-editHandler extract notes links actions form =
+editHandler: Note.Extract -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+editHandler extract notes links actions form state =
   case extract.selected.edits of
-    Just edits -> editMadeHandler edits extract notes links actions form
-    Nothing -> Slipbox notes links actions form
+    Just edits -> editMadeHandler edits extract notes links actions form state
+    Nothing -> Slipbox notes links actions form state
 
-editMadeHandler: Note.Edits -> Note.Extract -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-editMadeHandler edits extract notes links actions form =
+editMadeHandler: Note.Edits -> Note.Extract -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+editMadeHandler edits extract notes links actions form state =
   if wasEdited edits extract then
-    Slipbox (submitEditsById extract.id notes) links (addEditNoteToActions edits extract actions) form
+    Slipbox (submitEditsById extract.id notes) links (addEditNoteToActions edits extract actions) form state
   else
-    Slipbox notes links actions form
+    Slipbox notes links actions form state
 
 contentUpdate: String -> Note.NoteId -> Slipbox -> Slipbox
 contentUpdate content noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form ->
-      Slipbox (contentUpdateById content noteId notes) links actions form 
+    Slipbox notes links actions form state ->
+      Slipbox (contentUpdateById content noteId notes) links actions form state 
 
 sourceUpdate: String -> Note.NoteId -> Slipbox -> Slipbox
 sourceUpdate source noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form ->
-      Slipbox (sourceUpdateById source noteId notes) links actions form 
+    Slipbox notes links actions form state ->
+      Slipbox (sourceUpdateById source noteId notes) links actions form state 
 
 deleteNote: Note.NoteId -> Slipbox -> Slipbox
 deleteNote noteId slipbox =
   case slipbox of
-    Slipbox notes links actions form -> deleteNoteHandler noteId notes links actions form  
+    Slipbox notes links actions form state -> deleteNoteHandler noteId notes links actions form state  
 
-deleteNoteHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-deleteNoteHandler noteId notes links actions form =
+deleteNoteHandler: Note.NoteId -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+deleteNoteHandler noteId notes links actions form state =
   case findNote noteId notes of
     Just note -> deleteNoteFoundHandler note notes links actions form
-    Nothing -> Slipbox notes links actions form
+    Nothing -> Slipbox notes links actions form state
 
 deleteNoteFoundHandler: Note.Note -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 deleteNoteFoundHandler note notes links actions form =
   let
     extract = Note.extract note
     associatedLinks = getLinksForNote extract.intId links
-    newNotes = deleteNoteById extract.id notes
+    notesAfterNoteRemoval = deleteNoteById extract.id notes
     newLinks = removeAssociatedLinks (List.map (\link -> link.id) associatedLinks) links
+    (state, newNotes) = initSimulation notesAfterNoteRemoval newLinks
+    
   in
     Slipbox 
-      (initSimulation newNotes newLinks)
+      newNotes
       newLinks
       (addDeleteNoteActionHandler extract associatedLinks actions) 
       (LinkForm.selectionsChange form (getFormNotes notes links))
+      state
 
 deleteLink: Int -> Slipbox -> Slipbox
 deleteLink linkId slipbox =
   case slipbox of
-    Slipbox notes links actions form -> deleteLinkHandler linkId notes links actions form
+    Slipbox notes links actions form state -> deleteLinkHandler linkId notes links actions form state
 
-deleteLinkHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-deleteLinkHandler linkId notes links actions form =
+deleteLinkHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+deleteLinkHandler linkId notes links actions form state =
   case findLink linkId links of
     Just link -> deleteLinkFoundHandler link notes links actions form
-    Nothing -> Slipbox notes links actions form
+    Nothing -> Slipbox notes links actions form state
 
 deleteLinkFoundHandler: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
 deleteLinkFoundHandler link notes links actions form =
   let
     newLinks = removeLinkById link.id links
+    (state, newNotes) = initSimulation notes newLinks
   in
     Slipbox 
-      (initSimulation notes newLinks) 
+      newNotes
       newLinks 
       (addDeleteLink link actions)
       (LinkForm.selectionsChange form (getFormNotes notes newLinks))
+      state
 
 undo: Int -> Slipbox -> Slipbox
 undo actionId slipbox =
   case slipbox of
-    Slipbox notes links actions form -> undoHandler actionId notes links actions form
+    Slipbox notes links actions form state -> undoHandler actionId notes links actions form state
 
-undoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-undoHandler actionId notes links actions form =
+undoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+undoHandler actionId notes links actions form state =
   let
     recordsToBeUndone = List.map Action.record_ (List.filter (Action.shouldUndo actionId) actions)
-    undoneSlipbox = List.foldr undoRecord (Slipbox notes links actions form) recordsToBeUndone
+    undoneSlipbox = List.foldr undoRecord (Slipbox notes links actions form state) recordsToBeUndone
     undoneActions = undoActionsById actionId actions
   in
     case undoneSlipbox of
-      Slipbox notes_ links_ _ form_ -> Slipbox notes_ links_ undoneActions form_
+      Slipbox notes_ links_ _ form_ state_ -> Slipbox notes_ links_ undoneActions form_ state_
 
 undoRecord: Action.Record_ -> Slipbox -> Slipbox
 undoRecord action slipbox =
@@ -324,17 +333,17 @@ undoRecord action slipbox =
 redo: Int -> Slipbox -> Slipbox
 redo actionId slipbox =
   case slipbox of
-    Slipbox notes links actions form -> redoHandler actionId notes links actions form
+    Slipbox notes links actions form state -> redoHandler actionId notes links actions form state
 
-redoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
-redoHandler actionId notes links actions form =
+redoHandler: Int -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> (Simulation.State Int) -> Slipbox
+redoHandler actionId notes links actions form state =
   let
     recordsToBeRedone = List.map Action.record_ (List.filter (Action.shouldRedo actionId) actions)
-    redoneSlipbox = List.foldr redoRecord (Slipbox notes links actions form) recordsToBeRedone
+    redoneSlipbox = List.foldr redoRecord (Slipbox notes links actions form state) recordsToBeRedone
     redoneActions = redoActionsById actionId actions
   in
     case redoneSlipbox of
-      Slipbox notes_ links_ _ form_ -> Slipbox notes_ links_ redoneActions form_
+      Slipbox notes_ links_ _ form_ state_ -> Slipbox notes_ links_ redoneActions form_ state_
 
 redoRecord: Action.Record_ -> Slipbox -> Slipbox
 redoRecord action slipbox =
@@ -350,11 +359,24 @@ redoRecord action slipbox =
     Action.CreateLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
     Action.DeleteLink_ record -> deleteLink record.id slipbox
 
--- Publicly Exposed for View
+tick: Slipbox -> Slipbox
+tick slipbox =
+  case slipbox of
+     Slipbox notes links actions form state -> tickHandler notes links actions form state
+
+tickHandler: (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Simulation.State Int -> Slipbox
+tickHandler notes links actions form state =
+  let
+    (newState, simRecords) = Simulation.tick state (List.map toSimulationRecord (List.map Note.extract notes))
+  in
+    Slipbox (List.map (noteUpdateWrapper simRecords) notes) links actions form newState
+  
+
+-- Publicly Exposed Doesn't Return Slipbox
 searchSlipbox: String -> Slipbox -> (List Note.Extract)
 searchSlipbox query slipbox =
   case slipbox of
-     Slipbox notes _ _ _-> 
+     Slipbox notes _ _ _ _-> 
       notes
         |> List.filter (Note.search query)
         |> List.map Note.extract
@@ -362,14 +384,14 @@ searchSlipbox query slipbox =
 getGraphElements: Slipbox -> ((List GraphNote), (List GraphLink))
 getGraphElements slipbox =
   case slipbox of
-    Slipbox notes links _ _ -> 
+    Slipbox notes links _ _ _ -> 
       ( List.map toGraphNote (List.map Note.extract notes)
       , List.filterMap (\link -> toGraphLink link notes) links)
 
 getSelectedNotes: Slipbox -> (List DescriptionNote)
 getSelectedNotes slipbox =
   case slipbox of 
-    Slipbox notes links _ _ -> 
+    Slipbox notes links _ _ _ -> 
       notes
        |> List.filter Note.isSelected
        |> List.map (toDescriptionNote notes links)
@@ -377,18 +399,26 @@ getSelectedNotes slipbox =
 getHistory: Slipbox -> (List Action.Summary)
 getHistory slipbox =
   case slipbox of
-    Slipbox _ _ actions _ -> List.map Action.summary actions
+    Slipbox _ _ actions _ _ -> List.map Action.summary actions
 
 getLinkFormData: Slipbox -> LinkForm.LinkFormData
 getLinkFormData slipbox =
   case slipbox of
-    Slipbox notes links _ form -> 
+    Slipbox notes links _ form _ -> 
       LinkForm.linkFormData (getFormNotes notes links) form
 
+isCompleted: Slipbox -> Bool
+isCompleted slipbox =
+  case slipbox of
+    Slipbox _ _ _ _ state -> Simulation.isCompleted state
+
 -- Helpers
-initializeNotes: (List Note.NoteRecord) -> (List Link) -> (List Note.Note)
+initializeNotes: (List Note.NoteRecord) -> (List Link) -> (Simulation.State Int, (List Note.Note))
 initializeNotes notes links =
-  sortNotes (initSimulation (List.map Note.init notes) links)
+  let
+    (state, newNotes) = initSimulation (List.map Note.init notes) links
+  in
+    (state, sortNotes newNotes)
 
 sortNotes: (List Note.Note) -> (List Note.Note)
 sortNotes notes =
@@ -412,14 +442,14 @@ noteUpdateWrapper simRecords note =
       Just simRecord -> Note.update simRecord note
       Nothing -> note
 
-initSimulation: (List Note.Note) -> (List Link) -> (List Note.Note)
+initSimulation: (List Note.Note) -> (List Link) -> (Simulation.State Int, (List Note.Note))
 initSimulation notes links =
   let
-    simRecords = Simulation.simulate 
+    (state, simRecords) = Simulation.simulate 
       (List.map toSimulationRecord (List.map Note.extract notes))
       (List.map toLinkTuple links)
   in
-    List.map (noteUpdateWrapper simRecords) notes
+    (state, List.map (noteUpdateWrapper simRecords) notes)
 
 toGraphNote: Note.Extract -> GraphNote
 toGraphNote extract =
@@ -504,9 +534,10 @@ getLinkedNotes notes noteId links =
 
 linkWrapper: (Maybe Note.Note) -> Link -> (Maybe (Note.Note, Link))
 linkWrapper maybeNote link =
-  case maybeNote of
-    Just note -> Just (note, link)
-    Nothing -> Nothing
+  Maybe.map2 toNoteLinkTuple maybeNote (Just link) 
+
+toNoteLinkTuple: Note.Note -> Link -> (Note.Note, Link)
+toNoteLinkTuple note link = (note, link)
 
 maybeNoteFromLink: (List Note.Note) -> Int -> Link -> (Maybe (Note.Note))
 maybeNoteFromLink notes noteId link =
@@ -548,7 +579,7 @@ getNextNoteId notes =
     Just note -> Note.subsequentNoteId note
     Nothing -> 1
 
-addNoteToNotes: Note.NoteRecord -> (List Note.Note) -> (List Link) -> (List Note.Note)
+addNoteToNotes: Note.NoteRecord -> (List Note.Note) -> (List Link) -> (Simulation.State Int, (List Note.Note))
 addNoteToNotes note notes links =
   initSimulation ( Note.init note :: notes) links
 
@@ -693,18 +724,28 @@ isLink linkId link = linkId == link.id
 createNoteInternal: Note.NoteRecord -> Slipbox -> Slipbox
 createNoteInternal note slipbox =
   case slipbox of 
-    Slipbox notes links actions form ->
-      Slipbox (sortNotes (addNoteToNotes note notes links)) links actions form
+    Slipbox notes links actions form _ -> createNoteInternal_ note notes links actions form
+
+createNoteInternal_: Note.NoteRecord -> (List Note.Note) -> (List Link) -> (List Action.Action) -> LinkForm.LinkForm -> Slipbox
+createNoteInternal_ note notes links actions form =
+  let
+    (state, newNotes) = addNoteToNotes note notes links
+  in
+    Slipbox newNotes links actions form state
+
 
 createLinkInternal: Link -> Slipbox -> Slipbox
 createLinkInternal link slipbox =
   case slipbox of
-    Slipbox notes links actions _ -> 
-      Slipbox 
-        (initSimulation notes (link :: links))
-        (link :: links)
-        actions
-        (LinkForm.removeSelections (getFormNotes notes links))
+    Slipbox notes links actions _ _ -> createLinkInternal_ link notes links actions
+
+createLinkInternal_: Link -> (List Note.Note) -> (List Link) -> (List Action.Action) -> Slipbox
+createLinkInternal_ link notes links actions =
+  let
+    newLinks = link :: links
+    (state, newNotes) = initSimulation notes newLinks
+  in
+    Slipbox newNotes newLinks actions (LinkForm.removeSelections (getFormNotes newNotes newLinks)) state
 
 -- Operate By ID
 doIfInstance: (b -> a -> Bool) -> (a -> a) -> b -> a -> a
