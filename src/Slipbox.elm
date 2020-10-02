@@ -301,7 +301,7 @@ undoRecord action slipbox =
         |> contentUpdate record.formerContent (Note.toNoteId record.id) 
         |> sourceUpdate record.formerSource (Note.toNoteId record.id)
         |> submitEdits (Note.toNoteId record.id)
-    Action.DeleteNote_ record -> createNote (MakeNoteRecord record.content record.source record.variant) slipbox
+    Action.DeleteNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
     Action.CreateLink_ record -> deleteLink record.id slipbox
     Action.DeleteLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
 
@@ -319,8 +319,7 @@ redo actionId slipbox =
 redoRecord: Action.Record_ -> Slipbox -> Slipbox
 redoRecord action slipbox =
   case action of
-    Action.CreateNote_ record -> 
-      createNote (MakeNoteRecord record.content record.source record.variant) slipbox
+    Action.CreateNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
     Action.EditNote_ record -> 
       slipbox
         |> startEditState (Note.toNoteId record.id) 
@@ -700,6 +699,18 @@ createLinkInternal: Link -> Slipbox -> Slipbox
 createLinkInternal link slipbox =
   case slipbox of
     Slipbox content -> createLink_ link content
+
+createNoteInternal: Note.NoteRecord -> Slipbox -> Slipbox
+createNoteInternal note slipbox =
+  case slipbox of
+    Slipbox content -> 
+      let
+        (state, newNotes) = addNoteToNotes note content.notes content.links
+      in
+        Slipbox 
+          { content | notes = sortNotes newNotes
+          , state = state
+          }
 
 removeSelections: Content -> Slipbox
 removeSelections content =

@@ -40,7 +40,7 @@ isCompleted state =
 stateBuilder: (List SimulationRecord) -> (List (Int, Int)) -> Force.State Int
 stateBuilder records links =
   Force.simulation
-        [ Force.manyBodyStrength -5 (List.map (\n -> n.id) records)
+        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) records)
         , Force.links links
         , Force.center 0 0
         ]

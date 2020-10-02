@@ -10,7 +10,6 @@ import Svg.Events exposing (on, onMouseUp, onMouseOut)
 import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5)
 import Http
 import Debug
-import Task
 import Time
 import Browser.Events as BE
 
@@ -292,10 +291,10 @@ handleZoomOut model =
       Model slipbox search (V.zoomOut viewport) form
 
 handleNoteSelect: Note.NoteId -> (Float, Float) -> Model -> Model
-handleNoteSelect noteId coords model =
+handleNoteSelect noteId _ model =
   case model of
     Model slipbox search viewport form ->
-      Model (S.selectNote noteId slipbox) search (V.centerOn coords viewport) form
+      Model (S.selectNote noteId slipbox) search viewport form
 
 handleMapNoteSelect: Note.NoteId -> Model -> Model
 handleMapNoteSelect noteId model =
