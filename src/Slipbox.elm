@@ -593,14 +593,25 @@ toDescriptionNote notes links note =
   let
     extract = Note.extract note
   in
-    DescriptionNote 
-      extract.id 
-      extract.x 
-      extract.y 
-      extract.content 
-      extract.source 
-      extract.selected.inEdit
-      (getDescriptionLinks notes extract.intId links)
+    case extract.selected.edits of
+      Just edits ->
+        DescriptionNote 
+          extract.id 
+          extract.x 
+          extract.y 
+          edits.content 
+          edits.source 
+          extract.selected.inEdit
+          (getDescriptionLinks notes extract.intId links)
+      Nothing ->
+        DescriptionNote 
+          extract.id 
+          extract.x 
+          extract.y 
+          extract.content 
+          extract.source 
+          extract.selected.inEdit
+          (getDescriptionLinks notes extract.intId links)
 
 getDescriptionLinks: (List Note.Note) -> Int -> (List Link) -> (List DescriptionLink)
 getDescriptionLinks notes noteId links =
