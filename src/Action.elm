@@ -2,7 +2,9 @@ module Action exposing (Action, CreateNoteRecord, EditNoteRecord, DeleteNoteReco
   , CreateLinkRecord, DeleteLinkRecord, Summary, Record_ (..)
   , createNote, editNote, deleteNote, createLink, deleteLink, summary
   , undo, shouldUndo, redo, shouldRedo, shouldRemove
-  , subsequentActionId, sortDesc, save, record_)
+  , subsequentActionId, sortDesc, save, record_
+  , SaveRequestNote, SaveRequestNoteEdit, SaveRequestLink, extract
+  , SaveRequestRecord (..), actionIsSaved)
 
 
 -- Types
@@ -71,6 +73,39 @@ type Record_ =
   CreateLink_ CreateLinkRecord |
   DeleteLink_ DeleteLinkRecord 
 
+type alias SaveRequestNote = 
+  { action_id: Int
+  , id_: Int
+  , content: String
+  , source: String
+  , variant: String
+  }
+
+type alias SaveRequestNoteEdit = 
+  { action_id: Int
+  , id_: Int
+  , new_content: String
+  , old_content: String
+  , new_source: String
+  , old_source: String
+  , variant: String
+  }
+
+type alias SaveRequestLink =
+  { action_id: Int
+  , id_: Int
+  , source: Int
+  , target: Int
+  }
+
+type SaveRequestRecord =
+  CreateNoteSave SaveRequestNote |
+  EditNoteSave SaveRequestNoteEdit |
+  DeleteNoteSave SaveRequestNote |
+  CreateLinkSave SaveRequestLink |
+  DeleteLinkSave SaveRequestLink |
+  AlreadySaved
+
 -- Exposed Methods
 createNote: ActionId -> CreateNoteRecord -> Action
 createNote actionId note =
@@ -104,11 +139,33 @@ summary action =
 record_: Action -> Record_
 record_ action =
   case action of
-    CreateNote actionId state record -> (CreateNote_ record)
-    EditNote actionId state record -> (EditNote_ record)
-    DeleteNote actionId state record -> (DeleteNote_ record)
-    CreateLink actionId state record -> (CreateLink_ record)
-    DeleteLink actionId state record -> (DeleteLink_ record)
+    CreateNote _ _ record -> (CreateNote_ record)
+    EditNote _ _ record -> (EditNote_ record)
+    DeleteNote _ _ record -> (DeleteNote_ record)
+    CreateLink _ _ record -> (CreateLink_ record)
+    DeleteLink _ _ record -> (DeleteLink_ record)
+
+extract: Action -> SaveRequestRecord
+extract action =
+  if getState action |> isSaved then
+    AlreadySaved
+  else
+    case action of
+      CreateNote actionId _ record -> 
+        SaveRequestNote actionId record.id record.content record.source record.variant
+        |> CreateNoteSave 
+      EditNote actionId _ record -> 
+        SaveRequestNoteEdit actionId record.id record.currentContent record.formerContent record.currentSource record.formerSource record.variant
+        |> EditNoteSave
+      DeleteNote actionId _ record ->
+        SaveRequestNote actionId record.id record.content record.source record.variant
+        |> DeleteNoteSave 
+      CreateLink actionId _ record -> 
+        SaveRequestLink actionId record.id record.source record.target
+        |> CreateLinkSave
+      DeleteLink actionId _ record -> 
+        SaveRequestLink actionId record.id record.source record.target
+        |> DeleteLinkSave
 
 undo: Action -> Action
 undo action =
@@ -121,7 +178,7 @@ undo action =
 
 shouldUndo: ActionId -> Action -> Bool
 shouldUndo givenId action = 
-  if ( givenId >= getActionId action ) then
+  if  givenId >= getActionId action  then
     case getState action of
       Saved -> False
       Temporary undone -> not undone
@@ -139,7 +196,7 @@ redo action =
 
 shouldRedo: ActionId -> Action -> Bool
 shouldRedo givenId action = 
-  if ( givenId >= getActionId action ) then
+  if  givenId >= getActionId action  then
     case getState action of
       Saved -> False
       Temporary undone -> undone
@@ -170,11 +227,15 @@ sortDesc actionA actionB =
 save: (Action -> Action)
 save action =
   case action of
-    CreateNote actionId state record -> CreateNote actionId Saved record
-    EditNote actionId state record -> EditNote actionId Saved record 
-    DeleteNote actionId state record -> DeleteNote actionId Saved record 
-    CreateLink actionId state record -> CreateLink actionId Saved record 
-    DeleteLink actionId state record -> DeleteLink actionId Saved record
+    CreateNote actionId _ record -> CreateNote actionId Saved record
+    EditNote actionId _ record -> EditNote actionId Saved record 
+    DeleteNote actionId _ record -> DeleteNote actionId Saved record 
+    CreateLink actionId _ record -> CreateLink actionId Saved record 
+    DeleteLink actionId _ record -> DeleteLink actionId Saved record
+
+actionIsSaved: Action -> Bool
+actionIsSaved action =
+  getState action |> isSaved
 
 -- Helpers
 defaultState: State

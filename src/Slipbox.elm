@@ -6,13 +6,15 @@ module Slipbox exposing (Slipbox, LinkRecord, initialize
   , createLink, sourceSelected, targetSelected, getLinkFormData
   , startEditState, discardEdits, submitEdits, contentUpdate
   , sourceUpdate, deleteNote, deleteLink, undo, redo, ActionResponse
-  , EditNoteRecordWrapper, isCompleted, tick)
+  , EditNoteRecordWrapper, isCompleted, tick, buildSaveRequest
+  , save, canSave)
 
 import Simulation
 import LinkForm
 import Note
 import Action
 import Debug
+import Json.Encode as Encode
 
 --Types
 type Slipbox = Slipbox Content
@@ -344,6 +346,11 @@ tick slipbox =
           , state = newState
           }
 
+save: Slipbox -> Slipbox
+save slipbox =
+  case slipbox of
+    Slipbox content -> Slipbox {content | actions = List.map Action.save content.actions}
+
 -- Publicly Exposed Doesn't Return Slipbox
 searchSlipbox: String -> Slipbox -> (List Note.Extract)
 searchSlipbox query slipbox =
@@ -384,7 +391,113 @@ isCompleted slipbox =
   case slipbox of
     Slipbox content -> Simulation.isCompleted content.state
 
+buildSaveRequest: Slipbox -> Encode.Value
+buildSaveRequest slipbox =
+  case slipbox of
+    Slipbox content -> toSaveRequest content.actions
+
+canSave: Slipbox -> Bool
+canSave slipbox =
+  case slipbox of 
+    Slipbox content -> 
+      let
+        unsavedActions = List.filter (\a -> Action.actionIsSaved a |> not) content.actions 
+      in
+        List.length unsavedActions > 0
+
 -- Helpers
+
+toSaveRequest: (List Action.Action) -> Encode.Value
+toSaveRequest actions =
+  Encode.object 
+    [ ("create_note", List.filterMap getIfCreate actions |> Encode.list saveRequestNoteToValue)
+    , ("edit_note", List.filterMap getIfEdit actions |> Encode.list saveRequestNoteEditToValue)
+    , ("delete_note", List.filterMap getIfDelete actions |> Encode.list saveRequestNoteToValue)
+    , ("create_link", List.filterMap getIfCreateLink actions |> Encode.list saveRequestLinkToValue)
+    , ("delete_link", List.filterMap getIfDeleteLink actions |> Encode.list saveRequestLinkToValue)
+    ]
+
+saveRequestNoteToValue: Action.SaveRequestNote -> Encode.Value
+saveRequestNoteToValue record =
+  Encode.object
+    [ ("action_id", Encode.int record.action_id)
+    , ("id_", Encode.int record.id_)
+    , ("content", Encode.string record.content)
+    , ("source", Encode.string record.source)
+    , ("variant", Encode.string record.variant)
+    ]
+
+saveRequestNoteEditToValue: Action.SaveRequestNoteEdit -> Encode.Value
+saveRequestNoteEditToValue record =
+  Encode.object
+    [ ("action_id", Encode.int record.action_id)
+    , ("id_", Encode.int record.id_)
+    , ("new_content", Encode.string record.new_content)
+    , ("old_content", Encode.string record.old_content)
+    , ("new_source", Encode.string record.new_source)
+    , ("old_source", Encode.string record.old_source)
+    , ("variant", Encode.string record.variant)
+    ]
+
+saveRequestLinkToValue: Action.SaveRequestLink -> Encode.Value
+saveRequestLinkToValue record =
+  Encode.object
+    [ ("action_id", Encode.int record.action_id)
+    , ("id_", Encode.int record.id_)
+    , ("source", Encode.int record.source)
+    , ("target", Encode.int record.target)
+    ]
+
+getIfCreate: Action.Action -> (Maybe Action.SaveRequestNote)
+getIfCreate action =
+  case Action.extract action of
+     Action.CreateNoteSave record -> Just record
+     Action.EditNoteSave _ -> Nothing
+     Action.DeleteNoteSave _ -> Nothing
+     Action.CreateLinkSave _ -> Nothing
+     Action.DeleteLinkSave _ -> Nothing
+     Action.AlreadySaved -> Nothing
+
+getIfEdit: Action.Action -> (Maybe Action.SaveRequestNoteEdit)
+getIfEdit action =
+  case Action.extract action of
+     Action.CreateNoteSave _ -> Nothing
+     Action.EditNoteSave record -> Just record
+     Action.DeleteNoteSave _ -> Nothing
+     Action.CreateLinkSave _ -> Nothing
+     Action.DeleteLinkSave _ -> Nothing
+     Action.AlreadySaved -> Nothing
+
+getIfDelete: Action.Action -> (Maybe Action.SaveRequestNote)
+getIfDelete action =
+  case Action.extract action of
+     Action.CreateNoteSave _ -> Nothing
+     Action.EditNoteSave _ -> Nothing
+     Action.DeleteNoteSave record -> Just record
+     Action.CreateLinkSave _ -> Nothing
+     Action.DeleteLinkSave _ -> Nothing
+     Action.AlreadySaved -> Nothing
+
+getIfCreateLink: Action.Action -> (Maybe Action.SaveRequestLink)
+getIfCreateLink action =
+  case Action.extract action of
+     Action.CreateNoteSave _ -> Nothing
+     Action.EditNoteSave _ -> Nothing
+     Action.DeleteNoteSave _ -> Nothing
+     Action.CreateLinkSave record -> Just record
+     Action.DeleteLinkSave _ -> Nothing
+     Action.AlreadySaved -> Nothing
+
+getIfDeleteLink: Action.Action -> (Maybe Action.SaveRequestLink)
+getIfDeleteLink action =
+  case Action.extract action of
+     Action.CreateNoteSave _ -> Nothing
+     Action.EditNoteSave _ -> Nothing
+     Action.DeleteNoteSave _ -> Nothing
+     Action.CreateLinkSave _ -> Nothing
+     Action.DeleteLinkSave record -> Just record
+     Action.AlreadySaved -> Nothing
+
 initializeNotes: (List Note.NoteRecord) -> (List Link) -> (Simulation.State Int, (List Note.Note))
 initializeNotes notes links =
   let

@@ -7,11 +7,12 @@ import Html.Events exposing (onClick, onMouseLeave, onMouseEnter)
 import Svg exposing (Svg, svg, circle, line, rect, animate)
 import Svg.Attributes exposing (width, height, viewBox, cx, cy, r, x1, y1, x2, y2, style, transform, attributeName, dur, values, repeatCount)
 import Svg.Events exposing (on, onMouseUp, onMouseOut)
-import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5)
+import Json.Decode exposing (Decoder, int, map, field, map2, list, string, map4, map3, map6, map5, succeed)
 import Http
 import Debug
 import Time
 import Browser.Events as BE
+import Json.Encode as Encode
 
 -- Modules
 import Viewport as V
@@ -99,6 +100,11 @@ getSlipbox: Model -> S.Slipbox
 getSlipbox model =
   case model of
     Model slipbox _ _ _ -> slipbox
+
+canSave: Model -> Bool
+canSave model =
+  case model of 
+    Model slipbox _ _ _ -> S.canSave slipbox
 
 -- CreateNoteForm
 
@@ -218,7 +224,9 @@ type Msg =
   Undo Int |
   Redo Int |
   GetSlipbox (Result Http.Error SlipboxResponse) |
-  Tick Time.Posix
+  Tick Time.Posix |
+  Save |
+  SaveResponse (Result Http.Error Int)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -253,6 +261,16 @@ update msg model =
     Redo id -> (handleRedo id model, Cmd.none)
     GetSlipbox response -> (handleGetSlipbox response model, Cmd.none)
     Tick _ -> (handleTick model, Cmd.none)
+    Save -> (model,  postSave model)
+    SaveResponse response -> (handleSaveResponse response model, Cmd.none)
+
+postSave: Model -> Cmd Msg
+postSave model =
+  Http.post 
+    { url = "http://localhost:5000/"
+    , body = getSlipbox model |> S.buildSaveRequest |> Http.jsonBody
+    , expect = Http.expectJson SaveResponse (succeed 42)
+    }
 
 handleUpdateSearch: String -> Model -> Model
 handleUpdateSearch query model =
@@ -450,6 +468,14 @@ handleTick_ slipbox query viewport form =
   else
     Model (S.tick slipbox) query viewport form
 
+handleSaveResponse: (Result Http.Error Int) -> Model -> Model
+handleSaveResponse result model =
+  case result of
+    Ok _ ->
+      case model of
+        Model slipbox query viewport form -> Model (S.save slipbox) query viewport form
+    Err _ -> model
+
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
@@ -638,10 +664,18 @@ rightColumn model =
     , Element.width (Element.fillPortion 1)
     , Element.spacing 8
     ]
-    [ createNoteForm (getNoteFormData model)
+    [ save (canSave model)
+    , createNoteForm (getNoteFormData model)
     , createLink (getLinkFormData model)
     , selections (getSelectedNotes model)
     ]
+
+save: Bool -> Element Msg
+save ableToSave =
+  if ableToSave then
+    Input.button [Background.color blue] {onPress = Just Save, label = Element.text "Save" }
+  else
+    Element.text "Cant Save Yet!"
 
 createNoteForm: CreateForm -> Element Msg
 createNoteForm form = 
