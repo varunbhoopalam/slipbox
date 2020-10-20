@@ -14,7 +14,7 @@ Then you should be able to run `elm reactor` on the command line to run the proj
 ### To do
 
 I want to try releasing this to the public by December 1st, 2020. To do that I think I need to do the following:
-- Self hosted source summary solution integrated into UI/SPA - 10/25 in progress
+- Hosted by us source summary solution integrated into UI/SPA - 10/25 in progress
 - Refactor the User Experience to be
   - SPA
   - Responsive Design to include Mobile
