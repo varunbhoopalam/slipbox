@@ -11,6 +11,12 @@ https://guide.elm-lang.org/install/elm.html
 
 Then you should be able to run `elm reactor` on the command line to run the project and access it at localhost:8000
 
+### To run locally 
+
+elm make src/Main.elm
+
+Then either open the index.html file or run the file with http-server
+
 ### To do
 
 I want to try releasing this to the public by December 1st, 2020. To do that I think I need to do the following:
