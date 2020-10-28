@@ -15,7 +15,7 @@ Then you should be able to run `elm reactor` on the command line to run the proj
 
 elm make src/Main.elm
 
-Then either open the index.html file or run the file with http-server
+http-server --proxy http://localhost:8080?
 
 ### To do
 
