@@ -111,22 +111,23 @@ itemsView content =
 -- How do I add an item between all items in a list?
 -- Is list the correct data structure here?
 
-toItemView: Slipbox.Slipbox -> Item.Item -> Element Msg
-toItemView slipbox item =
+toItemView: Content -> Item.Item -> Element Msg
+toItemView content item =
   case item of
-     Item.Note listId note -> itemNoteView listId note slipbox
-     Item.NewNote listId note -> newNoteView listId note slipbox
-     Item.ConfirmDismissNewNote listId note -> confirmDismissNewNote listId note slipbox
-     Item.EditingNote listId originalNote noteWithEdits -> editingNoteView listId originalNote noteWithEdits slipbox
-     Item.ConfirmDeleteNote listId note -> confirmDeleteNoteView listId note slipbox
-     -- Invariant for AddingLinkToNote and LinkChosen: If Note is deleted from slipbox need to make sure these states are still valid
+     Item.Note listId note -> itemNoteView listId note content.slipbox
+     Item.NewNote listId note -> newNoteView listId note content.slipbox
+     Item.ConfirmDismissNewNote listId note -> confirmDismissNewNote listId note content.slipbox
+     Item.EditingNote listId originalNote noteWithEdits -> editingNoteView listId originalNote noteWithEdits content.slipbox
+     Item.ConfirmDeleteNote listId note -> confirmDeleteNoteView listId note content.slipbox
+     -- Invariant for AddingLinkToNote and LinkChosen: If Note is deleted from content.slipbox need to make sure these states are still valid
      -- If they are not valid either remove note from item list or move it back to Note state depending on what happened
-     Item.AddingLinkToNote listId search note -> addingLinkToNoteView listId search note slipbox
-     Item.LinkChosen listId search note noteToLink -> linkChosenView listId search note noteToLink slipbox
-     Item.Source lsitId source ->
-     Item.NewSource ->
-     Item.EditingSource -> 
-     Item.ConfirmDeleteSource ->
+     Item.AddingLinkToNote listId search note -> addingLinkToNoteView listId search note content.slipbox
+     Item.LinkChosen listId search note noteToLink -> linkChosenView listId search note noteToLink content.slipbox
+     Item.Source listId source -> itemSourceView listId source content.timezone content.slipbox
+     Item.NewSource listId source -> newSourceView listId source
+     Item.ConfirmDismissNewSource listId source -> confirmDismissNewSourceView listId source
+     Item.EditingSource listId originalSource sourceWithEdits -> editingSourceView listId source content.slipbox
+     Item.ConfirmDeleteSource -> confirmDeleteSourceView listId source content.timezone content.slipbox
 
 itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
 itemNoteView listId note slipbox =
@@ -173,15 +174,15 @@ toLinkedNoteView noteId note =
     , removeLinkButton noteId <| Note.getId note
     ]
 
-newNoteView: Int -> Item.NewNoteContent -> Element Msg
-newNoteView listId note =
+newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
+newNoteView listId note slipbox=
   Element.column
     []
     [ dismissButton listId
-    , contentEdit listId <| Item.getContent note
-    , sourceEdit listId <| Item.getSource note <| Slipbox.getExistingSourceTitles slipbox
-    , chooseVariant listId <| Item.getVariant note
-    , chooseSaveButton listId <| Item.noteIsValidToSave note -- Will give clickable save button if note is valid to save
+    , contentEdit listId note.content
+    , sourceChoiceEdit listId note.source <| Slipbox.getExistingSourceTitles slipbox
+    , chooseVariant listId note.variant
+    , chooseSaveButton listId note.canSave
     ]
 
 confirmDismissNewNoteView: Int -> Item.NewNoteContent -> Element Msg
@@ -193,9 +194,9 @@ confirmDismissNewNoteView listId note =
       [ confirmDismissNewNoteButton listId
       , cancelDismissNewNoteButton listId
       ] 
-    , contentView <| Item.getContent note
-    , sourceView <| Item.getSource note
-    , chooseVariant <| Item.getVariant note
+    , contentView note.content
+    , sourceView note.source
+    , chooseVariant note.variant
     , saveButtonNotClickable
     ]
 
@@ -220,7 +221,7 @@ editingNoteView listId _ noteWithEdits slipbox =
       , cancelButton listId
       ]
     , contentEdit listId <| Note.getContent noteWithEdits
-    , sourceEdit listId <| Note.getSource noteWithEdits <| Slipbox.getExistingSourceTitles slipbox
+    , sourceChoiceEdit listId <| Note.getSource noteWithEdits <| Slipbox.getExistingSourceTitles slipbox
     , chooseVariant listId <| Note.getVariant noteWithEdits
     , Element.row
       []
@@ -304,6 +305,92 @@ linkChosenView listId search note noteToLink slipbox =
     , Element.column
       []
       [ searchBar search listId
-      , Element.el [Element.scrollbarsY] <| List.map (toNoteDetail listId) <| Slipbox.getNotesThatCanLinkToNote note slipbox
+      , Element.column 
+        [Element.scrollbarsY] 
+        <| List.map (toNoteDetail listId) 
+          <| Slipbox.getNotesThatCanLinkToNote note slipbox
       ]
+    ]
+
+itemSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
+itemSourceView listId source timezone slipbox =
+  ElmUI.column 
+    []
+    [ dismissButton listId
+    , titleView <| Source.getTitle source
+    , authorView <| Source.getAuthor source
+    , createdTimeView timezone <| Source.getCreated source
+    , updatedTime timezone <| Source.getUpdated source
+    , editButton listId
+    , deleteButton listId
+    , contentView <| Source.getContent source 
+    , Element.column
+      [Element.scrollbarsY] 
+      <| List.map (toLinkedNoteViewNoButtons listId) 
+        <| Slipbox.getNotesAssociatedToSource source slipbox
+    ]
+
+-- Invariant: An edit to a source should not break a link between a source and a note
+newSourceView: Int -> Item.NewSourceContent -> Element Msg
+newSourceView listId source =
+  ElmUI.column 
+    []
+    [ dismissButton listId
+    , editTitleView listId source.getTitle
+    , editAuthorView listId source.getAuthor
+    , editContentView listId source.getContent 
+    , chooseSaveButton listId source.isValidToSave
+    ]
+
+confirmDismissNewSourceView : Int -> Item.NewSourceContent -> Element Msg
+confirmDismissNewSourceView listId source =
+  ElmUI.column 
+    []
+    [ Element.row 
+      []
+      [ confirmDismissNewNoteButton listId
+      , cancelDismissNewNoteButton listId
+      ] 
+    , titleView source.title
+    , authorView source.author
+    , contentView source.content 
+    , saveButtonNotClickable
+    ]
+
+editingSourceView: Int -> Source.Source -> Slipbox -> Element Msg
+editingSourceView listId source slipbox =
+  ElmUI.column 
+    []
+    [ Element.row 
+      []
+      [ saveButton listId
+      , cancelButton listId
+      ]
+    , editTitleView listId <| Source.getTitle source
+    , editAuthorView listId <| Source.getAuthor source
+    , editContentView listId <| Source.getContent source 
+    , Element.column
+      [Element.scrollbarsY] 
+      <| List.map (toLinkedNoteViewNoButtons listId) 
+        <| Slipbox.getNotesAssociatedToSource source slipbox
+    ]
+
+confirmDeleteSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
+confirmDeleteSourceView listId source timezone slipbox =
+  ElmUI.column 
+    []
+    [ Element.row 
+      []
+      [ confirmDeleteButton listId
+      , cancelButton listId
+      ]
+    , titleView <| Source.getTitle source
+    , authorView <| Source.getAuthor source
+    , createdTimeView timezone <| Source.getCreated source
+    , updatedTime timezone <| Source.getUpdated source
+    , contentView <| Source.getContent source 
+    , Element.column
+      [Element.scrollbarsY] 
+      <| List.map (toLinkedNoteViewNoButtons listId) 
+        <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
