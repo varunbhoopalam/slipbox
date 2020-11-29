@@ -6,6 +6,7 @@ import Svg exposing (Svg)
 import Html exposing (Html)
 import Svg.Attributes
 import Svg.Events
+import Input
 
 -- MAIN
 main =
@@ -18,7 +19,7 @@ init = {}
 -- MODEL
 type alias Model = 
   { slipbox: Slipbox
-  , search: Maybe String
+  , search: Input.Input
   , viewport: Viewport
   }
 
@@ -39,10 +40,10 @@ subscriptions model =
 -- VIEW
 view: Model -> Html Msg
 view model =
-  Element.layout [Element.width Element.fill] <| view_ model
+  Element.layout [Element.width Element.fill] <| exploreTabView model
 
-view_: Model -> Element Msg
-view_ model = Element.column 
+exploreTabView: Model -> Element Msg
+exploreTabView model = Element.column 
   [ Element.width Element.fill, Element.height Element.fill]
   [ toolbar
   , graph <| Slipbox.getNotesAndLinks model.search model.slipbox
@@ -61,7 +62,7 @@ toolbar searchString = Element.el
 search: Maybe String -> Element Msg
 search searchString = Element.Input.text
   [Element.width Element.fill] 
-  { onChange = (\s -> Msg)
+  { onChange = (\s -> UpdateInput s)
   , text = searchString
   , placeholder = Nothing
   , label = Element.Input.labelLeft [] <| Element.text "search"
@@ -91,22 +92,19 @@ graph_ (notes, links) viewport =
     graphLinks = List.map toGraphLink links  
   in
     Svg.svg 
-      [ Svg.Attributes.width Viewport.getWidth viewport
-      , Svg.Attributes.height Viewport.getHeight viewport
+      [ Svg.Attributes.width <| Viewport.getWidth viewport
+      , Svg.Attributes.height <| Viewport.getHeight viewport
       , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
       ]
 
 toGraphNote: Note.Note -> Svg Msg
 toGraphNote note =
   let
-    id = Note.getId note
-    x = Note.getX note
-    y = Note.getY note
     variant = Note.getVariant note
   in
     case Note.getGraphState note of
       Note.Expanded width height -> 
-        Svg.g []
+        Svg.g [Svg.Attributes.transform <| Note.getTransform note]
         [ Svg.rect
             [ Svg.Attributes.width width
             , Svg.Attributes.height height
@@ -128,8 +126,8 @@ toGraphNote note =
         ]
       Note.Compressed radius ->
         Svg.circle 
-          [ Svg.Attributes.cx <| String.fromFloat <| Note.getX note
-          , Svg.Attributes.cy <| String.fromFloat <| Note.getY note
+          [ Svg.Attributes.cx <| Note.getX note
+          , Svg.Attributes.cy <| Note.getY note
           , Svg.Attributes.r <| String.fromInt radius
           , Svg.Attributes.fill <| noteColor variant
           , Svg.Attributes.cursor "Pointer"
@@ -140,10 +138,10 @@ toGraphNote note =
 toGraphLink: Link.Link -> Svg Msg
 toGraphLink link =
   Svg.line 
-    [ Svg.Attributes.x1 <| String.fromFloat <| Link.getSourceX link
-    , Svg.Attributes.y1 <| String.fromFloat <| Link.getSourceY link
-    , Svg.Attribtes.x2 <| String.fromFloat <| Link.getTargetX link
-    , Svg.Attributes.y2 <| String.fromFloat <| Link.getTargetY link
+    [ Svg.Attributes.x1 <| Link.getSourceX link
+    , Svg.Attributes.y1 <| Link.getSourceY link
+    , Svg.Attribtes.x2 <| Link.getTargetX link
+    , Svg.Attributes.y2 <| Link.getTargetY link
     , Svg.Attributes.stroke "rgb(0,0,0)"
     , Svg.Attributes.strokeWidth "2"
     ] 

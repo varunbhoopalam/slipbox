@@ -104,11 +104,15 @@ view model =
   Element.layout [Element.width Element.fill] <| view_ model
 
 view_: Model -> Element Msg
-view_ model = Element.column 
-  [ Element.width Element.fill, Element.height Element.fill]
-  [ toolbar model.search
-  , sourceTable model.sort model.timezone <| getAndSortSources model.search model.slipbox model.sort
-  ]
+view_ model = 
+  Element.column 
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    ]
+    [ toolbar model.search
+    , sourceTable model.sort model.timezone 
+      <| getAndSortSources model.search model.slipbox model.sort
+    ]
 
 getAndSortSources: Maybe String -> Slipbox.Slipbox -> Sort -> (List Source.Source)
 getAndSortSources maybeSearch slipbox sort =

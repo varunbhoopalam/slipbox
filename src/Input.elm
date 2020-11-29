@@ -7,8 +7,10 @@ init = Input ""
 
 update: String -> Input -> Input
 update query search =
-  case search of Input _ -> Input query
+  case search of 
+    Input _ -> Input query
 
 get: Input -> String
 get search =
-  case search of Input str -> str
+  case search of 
+    Input str -> str

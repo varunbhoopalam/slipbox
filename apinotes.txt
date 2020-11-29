@@ -1,0 +1,49 @@
+Let's gather the information on what APIs/Modules are needed to build!
+
+Slipbox
+getNotesAndLinks: (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
+getNotes: (Maybe String) -> Slipbox -> (List Note.Note)
+getSources: (Maybe String) -> Slipbox -> (List Source.Source)
+getItems: Slipbox -> (List Item.Item)
+getLinkedNotes: Note.Note -> Slipbox -> Slipbox
+getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
+getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
+createNote: Slipbox -> Slipbox                --Is there a better name for this? addCreateNoteFormToTable?
+createSource: Slipbox -> Slipbox 
+compressNote: Note.Note -> Slipbox -> Slipbox
+openNote: Note.Note -> Slipbox -> Slipbox
+expandNote: Note.Note -> Slipbox -> Slipbox
+
+Note
+getId: Note -> Int
+getX: Note -> String
+getY: Note -> String
+getVariant: Note -> Note.Variant
+getGraphState: Note -> Note.GraphState
+getContent: Note -> String
+getTransform: Note -> String
+getSource: Note -> String
+
+Link
+getSourceX: Link -> String
+getSourceY: Link -> String
+getTargetX: Link -> String
+getTargetY: Link -> String
+
+Item
+Item(..)
+
+Source
+sorter: Sort -> (Source.Source -> Source.Source -> Order)
+Source.getId: Source -> Int
+Source.getTitle: Source -> String
+Source.getAuthor: Source -> String
+Source.getCreated: Source -> Int
+Source.getUpdated: Source -> Int
+Source.getContent: Source -> String
+
+Viewport
+initialize: BrowserWidth -> BrowserHeight -> Viewport
+getWidth: Viewport -> String
+getHeight: Viewport -> String
+getViewbox: Viewport -> String

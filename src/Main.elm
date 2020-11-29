@@ -35,7 +35,8 @@ type alias Content =
 
 -- TAB
 type Tab = 
-  Notes Filter Search Viewport NotesInView |
+  Explore Search Viewport
+  Notes Search |
   Sources Search Sort |
   History |
   Setup
@@ -48,20 +49,44 @@ init _ _ _ =
 
 -- UPDATE
 type Msg
-  = SourceMsg SourceSummary.Msg
-  | LinkClicked Browser.UrlRequest
+  = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
+  | ExploreTabUpdateInput String
+  | CreateNote
+  | CompressNote Note.Note
+  | OpenNote Note.Note
+  | ExpandNote Note.Note
+  | CreateSource
+  | NoteTabUpdateInput String
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
   case message of
-    SourceMsg msg ->
-      case model.page of
-        Source source -> SourceSummary.update msg source |> sourceStep model
-        _ -> ( model, Cmd.none) 
-    -- TODO
+
     LinkClicked _ -> (model, Cmd.none)
+
     UrlChanged _ -> (model, Cmd.none)
+
+    ExploreTabUpdateInput input -> 
+      case model.tab of
+        Explore _ viewport -> ({ model | tab = Explore input viewport }, Cmd.none)
+        _ -> (model, Cmd.none)
+
+    ExploreTabUpdateInput input -> 
+      case model.tab of
+        Notes _ -> ({ model | tab = Notes input }, Cmd.none)
+        _ -> (model, Cmd.none)
+
+    CreateNote -> ({ model | slipbox = Slipbox.createNote model.slipbox }, Cmd.none)
+
+    CompressNote note -> ({ model | slipbox = Slipbox.compressNote note model.slipbox }, Cmd.none)
+
+    OpenNote note -> ({ model | slipbox = Slipbox.openNote note model.slipbox }, Cmd.none)
+
+    ExpandNote note -> ({ model | slipbox = Slipbox.expandNote note model.slipbox }, Cmd.none)
+
+    CreateSource -> ({ model | slipbox = Slipbox.createSource model.slipbox }, Cmd.none)
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -91,14 +116,20 @@ sessionView content =
   Element.layout 
     [] 
     <| Element.column 
-      []
+      [] 
       [ tabView content
       , itemsView content
       ]
 
 -- TAB
 tabView: Content -> Element Msg
-tabView content = []
+tabView content = 
+  case content.tab of
+    Explore search viewport -> exploreTabView search viewport content.slipbox
+    Notes search -> noteTabView search content.slipbox
+    Sources search ->
+    History ->
+    Setup ->
 
 -- ITEMS
 itemsView: Content -> Element Msg
@@ -180,7 +211,7 @@ newNoteView listId note slipbox=
     []
     [ dismissButton listId
     , contentEdit listId note.content
-    , sourceChoiceEdit listId note.source <| Slipbox.getExistingSourceTitles slipbox
+    , sourceChoiceEdit listId note.source <| Slipbox.getSources Nothing slipbox
     , chooseVariant listId note.variant
     , chooseSaveButton listId note.canSave
     ]
@@ -221,7 +252,7 @@ editingNoteView listId _ noteWithEdits slipbox =
       , cancelButton listId
       ]
     , contentEdit listId <| Note.getContent noteWithEdits
-    , sourceChoiceEdit listId <| Note.getSource noteWithEdits <| Slipbox.getExistingSourceTitles slipbox
+    , sourceChoiceEdit listId <| Note.getSource noteWithEdits <| Slipbox.getSources Nothing slipbox
     , chooseVariant listId <| Note.getVariant noteWithEdits
     , Element.row
       []
@@ -336,9 +367,9 @@ newSourceView listId source =
   ElmUI.column 
     []
     [ dismissButton listId
-    , editTitleView listId source.getTitle
-    , editAuthorView listId source.getAuthor
-    , editContentView listId source.getContent 
+    , editTitleView listId source.title
+    , editAuthorView listId source.author
+    , editContentView listId source.content 
     , chooseSaveButton listId source.isValidToSave
     ]
 
@@ -394,3 +425,161 @@ confirmDeleteSourceView listId source timezone slipbox =
       <| List.map (toLinkedNoteViewNoButtons listId) 
         <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
+
+-- EXPLORE TAB
+exploreTabView: String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
+exploreTabView input viewport slipbox = Element.column 
+  [ Element.width Element.fill, Element.height Element.fill]
+  [ toolbar input (\s -> ExploreTabUpdateInput s) Note
+  , graph <| Slipbox.getNotesAndLinks input slipbox
+  ]
+
+-- TODO: Viewport actions
+graph: Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
+graph viewport (notes, links) =
+  Element.el [Element.height Element.fill, Element.width Element.fill] 
+    <| Element.html 
+      <| Svg.svg 
+        [ Svg.Attributes.width <| Viewport.getWidth viewport
+        , Svg.Attributes.height <| Viewport.getHeight viewport
+        , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
+        ]
+        <| List.map toGraphNote notes :: List.map toGraphLink links
+
+toGraphNote: Note.Note -> Svg Msg
+toGraphNote note =
+  let
+    variant = Note.getVariant note
+  in
+    case Note.getGraphState note of
+      Note.Expanded width height -> 
+        Svg.g [Svg.Attributes.transform <| Note.getTransform note]
+        [ Svg.rect
+            [ Svg.Attributes.width width
+            , Svg.Attributes.height height
+            ]
+        , Svg.foreignObject []
+          <| Element.layout [Element.width Element.fill, Element.height Element.fill] 
+            <| Element.column [Element.width Element.fill, Element.height Element.fill]
+              [ Element.Input.button [Element.alignRight]
+                { onPress = Just <| CompressNote note
+                , label = Element.text "X"
+                }
+              , Element.Input.button []
+                { onPress = Just <| OpenNote note
+                , label = Element.paragraph 
+                  [ Element.scrollbarY ] 
+                  [ Element.text <| Note.getContent note ] 
+                }
+              ]
+        ]
+      Note.Compressed radius ->
+        Svg.circle 
+          [ Svg.Attributes.cx <| Note.getX note
+          , Svg.Attributes.cy <| Note.getY note
+          , Svg.Attributes.r <| String.fromInt radius
+          , Svg.Attributes.fill <| noteColor variant
+          , Svg.Attributes.cursor "Pointer"
+          , Svg.Events.onClick <| Just <| ExpandNote note
+          ]
+          []
+
+toGraphLink: Link.Link -> Svg Msg
+toGraphLink link =
+  Svg.line 
+    [ Svg.Attributes.x1 <| Link.getSourceX link
+    , Svg.Attributes.y1 <| Link.getSourceY link
+    , Svg.Attribtes.x2 <| Link.getTargetX link
+    , Svg.Attributes.y2 <| Link.getTargetY link
+    , Svg.Attributes.stroke "rgb(0,0,0)"
+    , Svg.Attributes.strokeWidth "2"
+    ] 
+    []
+
+-- NOTE TAB
+noteTabView: String -> Slipbox -> Html Msg
+noteTabView search slipbox = 
+  Element.layout [Element.width Element.fill]
+    <| Element.column [Element.width Element.fill, Element.height Element.fill]
+      [ toolbar search  (\s -> NoteTabUpdateInput s) Note
+      , notesView <| Slipbox.getNotes (toMaybeSearch search) slipbox
+      ]
+
+notesView: (List Note.Note) -> Element Msg
+notesView notes = 
+  Element.column 
+    [ Element.width Element.fill
+    , Element.height <| Element.px 500
+    , Element.scrollbarY
+    ] 
+    <| List.map toNoteDetail notes
+
+toNoteDetail: Note.Note -> Element Msg
+toNoteDetail note = 
+  Element.el 
+    [ Element.paddingXY 8 0, Element.spacing 8
+    , Element.Border.solid, Element.Border.color gray
+    , Element.Border.width 4 
+    ] 
+    Element.Input.button [] 
+      { onPress = Just <| OpenNote note
+      , label = Element.column [] 
+        [ Element.paragraph [] [ Element.text <| Note.getContent note]
+        , Element.text <| "Source: " ++ (Note.getSource note)
+        ]
+      }
+
+-- VIEW UTILITIES
+gray = Element.rgb255 238 238 238
+thistle = Element.rgb255 216 191 216
+indianred = Element.rgb255 205 92 92
+noteColor: Note.Variant -> String
+noteColor variant =
+  case variant of
+    Note.Index -> "rgba(250, 190, 88, 1)"
+    Note.Regular -> "rgba(137, 196, 244, 1)"
+
+-- TOOLBAR
+toolbar: String -> (a -> Msg a) -> Create -> Element Msg
+toolbar input onChange create = 
+  Element.el 
+    [Element.width Element.fill, Element.height <| Element.px 50]
+    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
+      [ searchInput input onChange
+      , createButton create
+      ]
+
+searchInput: String -> (a -> Msg a) -> Element Msg
+searchInput input onChange = Element.Input.text
+  [Element.width Element.fill] 
+  { onChange = onChange
+  , text = input
+  , placeholder = Nothing
+  , label = Element.Input.labelLeft [] <| Element.text "search"
+  }
+
+type Create = Note | Source
+
+getCreateLabel: Create -> Element Msg
+getCreateLabel create =
+  case create of
+    Note -> Element.text "Create Note"
+    Source -> Element.text "Create Source"
+
+getCreateOnPress: Create -> Maybe Msg
+getCreateOnPress create =
+  case create of 
+    Note -> Just CreateNote
+    Source -> Just CreateSource
+
+createButton: Create -> Element Msg
+createButton create = 
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = getCreateOnPress create
+    , label = getCreateLabel create
+    }
