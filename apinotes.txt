@@ -13,6 +13,11 @@ createSource: Slipbox -> Slipbox
 compressNote: Note.Note -> Slipbox -> Slipbox
 openNote: Note.Note -> Slipbox -> Slipbox
 expandNote: Note.Note -> Slipbox -> Slipbox
+editItem: Int -> Slipbox -> Slipbox
+deleteItem: Int -> Slipbox -> Slipbox
+dismissItem: Int -> Slipbox -> Slipbox
+addLink: Int -> Slipbox -> Slipbox
+removeLink: Note.Note -> Note.Note -> Slipbox -> Slipbox
 
 Note
 getId: Note -> Int
@@ -42,8 +47,16 @@ Source.getCreated: Source -> Int
 Source.getUpdated: Source -> Int
 Source.getContent: Source -> String
 
+Sort (..) -- Unsure if this belongs on it's own or inside of source
+
 Viewport
 initialize: BrowserWidth -> BrowserHeight -> Viewport
 getWidth: Viewport -> String
 getHeight: Viewport -> String
 getViewbox: Viewport -> String
+getOuterPanningFrameWidth: Viewport -> String
+getOuterPanningFrameHeight: Viewport -> String
+getInnerPanningFrameWidth: Viewport -> String
+getInnerPanningFrameHeight: Viewport -> String
+getInnerPanningFrameStyle: Viewport -> String
+getInnerPanningFrameTransform: Viewport -> String

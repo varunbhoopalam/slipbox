@@ -35,9 +35,9 @@ type alias Content =
 
 -- TAB
 type Tab = 
-  Explore Search Viewport
-  Notes Search |
-  Sources Search Sort |
+  Explore String Viewport
+  Notes String |
+  Sources String Sort |
   History |
   Setup
 
@@ -58,7 +58,17 @@ type Msg
   | ExpandNote Note.Note
   | CreateSource
   | NoteTabUpdateInput String
-
+  | SourceTabUpdateInput String
+  | OpenSource Source.Source
+  | ToggleSortAuthor
+  | ToggleSortTitle
+  | ToggleSortCreated
+  | ToggleSortUpdated
+  | EditItem Int
+  | DeleteItem Int
+  | DismissItem Int
+  | AddLink Int
+  | RemoveLink Note.Note Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -77,6 +87,11 @@ update message model =
       case model.tab of
         Notes _ -> ({ model | tab = Notes input }, Cmd.none)
         _ -> (model, Cmd.none)
+    
+    SourceTabUpdateInput input -> 
+      case model.tab of 
+        Sources _ sort -> ({ model | tab = Sources input sort }, Cmd.none)
+        _ -> (model, Cmd.none)
 
     CreateNote -> ({ model | slipbox = Slipbox.createNote model.slipbox }, Cmd.none)
 
@@ -87,6 +102,50 @@ update message model =
     ExpandNote note -> ({ model | slipbox = Slipbox.expandNote note model.slipbox }, Cmd.none)
 
     CreateSource -> ({ model | slipbox = Slipbox.createSource model.slipbox }, Cmd.none)
+
+    OpenSource source -> ({ model | slipbox = Slipbox.openSource source model.slipbox }, Cmd.none)
+
+    ToggleSortAuthor ->      
+      case model.tab of 
+        Sources input sort -> 
+          case sort of
+             Sort.Author direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
+             _ -> ({ model | tab = Sources input Sort.author }, Cmd.none)
+        _ -> (model, Cmd.none)
+
+    ToggleSortTitle ->      
+      case model.tab of 
+        Sources input sort -> 
+          case sort of
+             Sort.Title direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
+             _ -> ({ model | tab = Sources input Sort.title }, Cmd.none)
+        _ -> (model, Cmd.none)
+
+    ToggleSortCreated ->      
+      case model.tab of 
+        Sources input sort -> 
+          case sort of
+             Sort.Created direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
+             _ -> ({ model | tab = Sources input Sort.created }, Cmd.none)
+        _ -> (model, Cmd.none)
+
+    ToggleSortUpdated ->      
+      case model.tab of 
+        Sources input sort -> 
+          case sort of
+             Sort.Updated direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
+             _ -> ({ model | tab = Sources input Sort.updated }, Cmd.none)
+        _ -> (model, Cmd.none)
+    
+    EditItem itemId -> ({ model | slipbox = Slipbox.editItem itemId model.slipbox }, Cmd.none)
+
+    DeleteItem itemId -> ({ model | slipbox = Slipbox.deleteItem itemId model.slipbox }, Cmd.none)
+
+    DismissItem itemId -> ({ model | slipbox = Slipbox.dismissItem itemId model.slipbox }, Cmd.none)
+
+    AddLink itemId -> ({ model | slipbox = Slipbox.addLink itemId model.slipbox }, Cmd.none)
+
+    RemoveLink openNote linkedNote -> ({ model | slipbox = Slipbox.removeLink openNote linkedNote model.slipbox }, Cmd.none)
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -125,9 +184,9 @@ sessionView content =
 tabView: Content -> Element Msg
 tabView content = 
   case content.tab of
-    Explore search viewport -> exploreTabView search viewport content.slipbox
-    Notes search -> noteTabView search content.slipbox
-    Sources search ->
+    Explore input viewport -> exploreTabView input viewport content.slipbox
+    Notes input -> noteTabView input content.slipbox
+    Sources input sort -> sourceTabView input sort content.timezone content.slipbox
     History ->
     Setup ->
 
@@ -139,8 +198,10 @@ itemsView content =
   in
     Element.column 
       []
--- How do I add an item between all items in a list?
--- Is list the correct data structure here?
+      items
+-- TODO: add div between each item that on hover shows buttons to create an item
+-- TODO: figure out if it's necessary to have this same div but always visible either at
+  -- beginning or end of item list
 
 toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
@@ -171,39 +232,63 @@ itemNoteView listId note slipbox =
       , deleteButton listId
       , dismissButton listId
       ]
-    , variantView <| Note.getVariant note
     , contentView <| Note.getContent note
     , sourceView <| Note.getSource note
+    , variantView <| Note.getVariant note
     , Element.row
       []
       [ linkedNotesHeader 
-      , addLinkButton listId note slipbox
+      , handleAddLinkButton listId note slipbox
       ]
     , Element.column
       []
-      <| List.map (toLinkedNoteView (Note.getId note)) <| Slipbox.getLinkedNotes note slipbox
+      <| List.map (toLinkedNoteView note <| Slipbox.getLinkedNotes note slipbox
     ]
 
-addLinkButton: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
-addLinkButton listId note slipbox =
+handleAddLinkButton: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
+handleAddLinkButton listId note slipbox =
   if Slipbox.noteCanLinkToOtherNotes note slipbox then
-    addLinkButton_ listId
+    addLinkButton listId
   else 
     cannotAddLink 
+
+addLinkButton: Int -> Element Msg
+addLinkButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| AddLink itemId
+    , label = Element.text "Add Link"
+    }
 
 cannotAddLink: Element Msg
 cannotAddLink = Element.text "No notes to make a valid link to."
 
-toLinkedNoteView: Int -> Note.Note -> Element Msg
-toLinkedNoteView noteId note =
+toLinkedNoteView: Note.Note -> Note.Note -> Element Msg
+toLinkedNoteView openNote linkedNote =
   Element.column
     []
-    [ idHeader <| Note.getId note
-    , variantView <| Note.getVariant note
-    , contentView <| Note.getContent note
-    , sourceView <| Note.getSouce note
-    , removeLinkButton noteId <| Note.getId note
+    [ idHeader <| Note.getId linkedNote
+    , contentView <| Note.getContent linkedNote
+    , sourceView <| Note.getSouce linkedNote
+    , variantView <| Note.getVariant linkedNote
+    , removeLinkButton openNote linkedNote
     ]
+
+removeLinkButton: Note.Note -> Note.Note -> Element Msg
+removeLinkButton openNote linkedNote  =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| RemoveLink openNote linkedNote
+    , label = Element.text "Remove Link"
+    }
 
 newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
 newNoteView listId note slipbox=
@@ -430,11 +515,19 @@ confirmDeleteSourceView listId source timezone slipbox =
 exploreTabView: String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
 exploreTabView input viewport slipbox = Element.column 
   [ Element.width Element.fill, Element.height Element.fill]
-  [ toolbar input (\s -> ExploreTabUpdateInput s) Note
+  [ exploreTabToolbar input
   , graph <| Slipbox.getNotesAndLinks input slipbox
   ]
 
--- TODO: Viewport actions
+exploreTabToolbar: String -> Element Msg
+exploreTabToolbar input = 
+  Element.el 
+    [Element.width Element.fill, Element.height <| Element.px 50]
+    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
+      [ searchInput input (\s -> ExploreTabUpdateInput s)
+      , createNoteButton
+      ]
+
 graph: Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
 graph viewport (notes, links) =
   Element.el [Element.height Element.fill, Element.width Element.fill] 
@@ -444,7 +537,9 @@ graph viewport (notes, links) =
         , Svg.Attributes.height <| Viewport.getHeight viewport
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         ]
-        <| List.map toGraphNote notes :: List.map toGraphLink links
+        <| List.map toGraphNote notes 
+          :: List.map toGraphLink links
+          :: panningFrame viewport
 
 toGraphNote: Note.Note -> Svg Msg
 toGraphNote note =
@@ -496,13 +591,44 @@ toGraphLink link =
     ] 
     []
 
+panningFrame: Viewport.Viewport -> Svg Msg
+panningFrame viewport =
+  Svg.g
+    [] 
+    [ Svg.rect
+      [ Svg.Attributes.width <| Viewport.getOuterPanningFrameWidth viewport
+      , Svg.Attributes.height <| Viewport.getOuterPanningFrameHeight viewport
+      , style "border: 2px solid black;"
+      ] 
+      []
+    , Svg.rect 
+      [ Svg.Attributes.width <| Viewport.getInnerPanningFrameWidth viewport
+      , Svg.Attributes.height <| Viewport.getInnerPanningFrameHeight viewport
+      , Svg.Attributes.style <| Viewport.getInnerPanningFrameStyle viewport
+      , Svg.Attributes.transform <| Viewport.getInnerPanningFrameTransform viewport
+      , Svg.Events.on "mousemove" mouseMoveDecoder
+      , Svg.Events.on "mousedown" mouseDownDecoder
+      , Svg.Events.onMouseUp PanningStop
+      , Svg.Events.on "wheel" wheelDecoder
+      ] 
+      []
+    ]
+
 -- NOTE TAB
-noteTabView: String -> Slipbox -> Html Msg
+noteTabView: String -> Slipbox -> Element Msg
 noteTabView search slipbox = 
-  Element.layout [Element.width Element.fill]
-    <| Element.column [Element.width Element.fill, Element.height Element.fill]
-      [ toolbar search  (\s -> NoteTabUpdateInput s) Note
-      , notesView <| Slipbox.getNotes (toMaybeSearch search) slipbox
+  Element.column [Element.width Element.fill, Element.height Element.fill]
+    [ noteTabToolbar search
+    , notesView <| Slipbox.getNotes (toMaybeSearch search) slipbox
+    ]
+
+noteTabToolbar: String -> Element Msg
+noteTabToolbar input = 
+  Element.el 
+    [Element.width Element.fill, Element.height <| Element.px 50]
+    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
+      [ searchInput input (\s -> NoteTabUpdateInput s)
+      , createNoteButton
       ]
 
 notesView: (List Note.Note) -> Element Msg
@@ -529,6 +655,98 @@ toNoteDetail note =
         ]
       }
 
+-- SOURCE TAB
+sourceTabView: String -> Sort -> Time.Zone -> Slipbox.Slipbox -> Element Msg
+sourceTabView input sort timezone slipbox = 
+  Element.column 
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    ]
+    [ sourceTabToolbar model.search
+    , sourceTable model.sort model.timezone 
+      <| List.sortWith (chooseSorter sort) 
+        <| Slipbox.getSources input slipbox
+    ]
+
+sourceTabToolbar: String -> Element Msg
+sourceTabToolbar input = Element.el 
+  [ Element.width Element.fill
+  , Element.height <| Element.px 50
+  ]
+  <| Element.row 
+    [ Element.width Element.fill
+    , Element.paddingXY 8 0
+    , Element.spacing 8
+    ] 
+    [ searchInput input (\s -> SourceTabUpdateInput)
+    , createSourceButton
+    ]
+
+type alias SourceRow =
+  { source: Source.Source
+  , title: String
+  , author: String
+  , created: Int
+  , updated: Int
+  }
+
+toSourceRow: Source.Source -> SourceRow
+toSourceRow source =
+  SourceRow 
+    source
+    (Source.getTitle source)
+    (Source.getAuthor source)
+    (Source.getCreated source)
+    (Source.getUpdated source)
+
+sourcesTable: Sort -> Time.Zone -> (List Source.Source) -> Element Msg
+sourcesTable sort timezone sources =
+  Element.table []
+    { data = List.map toSourceRow sources
+    , columns = 
+      [ { header = Element.Input.button [] 
+          { onPress = Just ToggleSortAuthor 
+          , label = getTitleLabel sort 
+          }
+        , width = Element.fill
+        , view = \row -> Element.Input.button [] 
+          { onPress = Just <| OpenSource row.source
+          , label = Element.text row.author 
+          }
+        }
+      , { header = Element.Input.button [] 
+          { onPress = Just ToggleSortTitle
+          , label = getAuthorLabel sort 
+          }
+        , width = Element.fill
+        , view = \row -> Element.Input.button [] 
+          { onPress = Just <| OpenSource row.source
+          , label = Element.text row.title 
+          }
+        }
+      , { header = Element.Input.button [] 
+          { onPress = Just ToggleSortCreated
+          , label = getCreatedLabel sort 
+          }
+        , width = Element.fill
+        , view = \row -> Element.Input.button [] 
+          { onPress = Just <| OpenSource row.source
+          , label = Element.text <| timestamp timezone row.created
+          }
+        }
+      , { header = Element.Input.button [] 
+          { onPress = Just ToggleSortUpdated
+          , label = getUpdatedLabel sort 
+          }
+        , width = Element.fill
+        , view = \row -> Element.Input.button [] 
+          { onPress = Just <| OpenSource row.source
+          , label = Element.text <| timestamp timezone row.updated 
+          }
+        }
+      ]
+    }
+
 -- VIEW UTILITIES
 gray = Element.rgb255 238 238 238
 thistle = Element.rgb255 216 191 216
@@ -539,16 +757,6 @@ noteColor variant =
     Note.Index -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
 
--- TOOLBAR
-toolbar: String -> (a -> Msg a) -> Create -> Element Msg
-toolbar input onChange create = 
-  Element.el 
-    [Element.width Element.fill, Element.height <| Element.px 50]
-    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
-      [ searchInput input onChange
-      , createButton create
-      ]
-
 searchInput: String -> (a -> Msg a) -> Element Msg
 searchInput input onChange = Element.Input.text
   [Element.width Element.fill] 
@@ -558,28 +766,61 @@ searchInput input onChange = Element.Input.text
   , label = Element.Input.labelLeft [] <| Element.text "search"
   }
 
-type Create = Note | Source
-
-getCreateLabel: Create -> Element Msg
-getCreateLabel create =
-  case create of
-    Note -> Element.text "Create Note"
-    Source -> Element.text "Create Source"
-
-getCreateOnPress: Create -> Maybe Msg
-getCreateOnPress create =
-  case create of 
-    Note -> Just CreateNote
-    Source -> Just CreateSource
-
-createButton: Create -> Element Msg
-createButton create = 
+createNoteButton: Element Msg
+createNoteButton = 
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = getCreateOnPress create
-    , label = getCreateLabel create
+    { onPress = Just CreateNote
+    , label = Element.text "Create Note"
+    }
+
+createSourceButton: Element Msg
+createSourceButton = Element.Input.button
+  [ Element.Background.color indianred
+  , Element.mouseOver
+      [ Element.Background.color thistle ]
+  , Element.width Element.fill
+  ]
+  { onPress = Just CreateSource
+  , label = Element.text "Create Source"
+  }
+
+editButton: Int -> Element Msg
+editButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| EditItem itemId
+    , label = Element.text "Edit"
+    }
+
+deleteButton: Int -> Element Msg
+deleteButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| DeleteItem itemId
+    , label = Element.text "Delete"
+    }
+
+dismissButton: Int -> Element Msg
+dismissButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| DismissItem itemId
+    , label = Element.text "X"
     }
