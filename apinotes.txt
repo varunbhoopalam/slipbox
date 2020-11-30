@@ -9,33 +9,34 @@ getLinkedNotes: Note.Note -> Slipbox -> Slipbox
 getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
 compressNote: Note.Note -> Slipbox -> Slipbox
-openNote: Note.Note -> Slipbox -> Slipbox
 expandNote: Note.Note -> Slipbox -> Slipbox
 
 -- Slipbox Item api
-createNote: Slipbox -> Slipbox
-createSource: Slipbox -> Slipbox 
-editItem: Int -> Slipbox -> Slipbox
-deleteItem: Int -> Slipbox -> Slipbox
-dismissItem: Int -> Slipbox -> Slipbox
-addLink: Int -> Slipbox -> Slipbox
-removeLink: Note.Note -> Note.Note -> Slipbox -> Slipbox
-updateNoteContent: Int -> String -> Slipbox -> Slipbox
-updateNoteSource: Int -> String -> Slipbox -> Slipbox
-updateNoteVariant: Int -> Note.Variant -> Slipbox -> Slipbox
-submitItem: Int -> Slipbox -> Slipbox
-confirmDismissItem: Int -> Slipbox -> Slipbox
-doNotDismissItem: Int -> Slipbox -> Slipbox
-cancelItemAction: Int -> Slipbox -> Slipbox
-confirmDeleteItem: Int -> Slipbox -> Slipbox
-noteChosenToLink: Int -> Note.Note -> Slipbox -> Slipbox
-updateSourceTitle: Int -> String -> Slipbox -> Slipbox
-updateSourceAuthor: Int -> String -> Slipbox -> Slipbox
 
---Thoughts
--- There are a lot of itemActions. Can probably refactor those out into fewer actions that do more.
--- For example, submitItem could probably be used in more situations
--- Could figure out ways to homogenize the update actions
+  -- Adds/Removes to/from item list
+  openNote: Note.Note -> Slipbox -> Slipbox
+  openSource: Source.Source -> Slipbox -> Slipbox
+  createNote: Slipbox -> Slipbox
+  createSource: Slipbox -> Slipbox
+  dismissItem: Int -> Slipbox -> Slipbox 
+  confirmDeleteItem: Int -> Slipbox -> Slipbox
+
+  -- Changes an items state
+  editItem: Int -> Slipbox -> Slipbox
+  deleteItem: Int -> Slipbox -> Slipbox
+  addLink: Int -> Slipbox -> Slipbox
+  removeLink: Int -> Note.Note -> Slipbox -> Slipbox
+  submitItem: Int -> Slipbox -> Slipbox
+  cancelItem: Int -> Slipbox -> Slipbox
+
+  -- Updated an items internals
+  updateItem: Int -> Item.UpdateAction -> Slipbox -> Slipbox
+  type UpdateAction = 
+    Content String | Source String | 
+    Variant Note.Variant | Title String | 
+    Author String | AddLink Note.Note 
+
+Item
 
 
 Note
@@ -53,9 +54,6 @@ getSourceX: Link -> String
 getSourceY: Link -> String
 getTargetX: Link -> String
 getTargetY: Link -> String
-
-Item
-Item(..)
 
 Source
 sorter: Sort -> (Source.Source -> Source.Source -> Order)

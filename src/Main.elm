@@ -241,18 +241,16 @@ toItemView content item =
   case item of
      Item.Note itemId note -> itemNoteView itemId note content.slipbox
      Item.NewNote itemId note -> newNoteView itemId note content.slipbox
-     Item.ConfirmDismissNewNote itemId note -> confirmDismissNewNote itemId note content.slipbox
+     Item.ConfirmDiscardNewNoteForm itemId note -> confirmDiscardNewNoteFormView itemId note content.slipbox
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
      Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
-     -- Invariant for AddingLinkToNote and LinkChosen: If Note is deleted from content.slipbox need to make sure these states are still valid
-     -- If they are not valid either remove note from item list or move it back to Note state depending on what happened
-     Item.AddingLinkToNote itemId search note -> addingLinkToNoteView itemId search note content.slipbox
-     Item.LinkChosen itemId search note noteToLink -> linkChosenView itemId search note noteToLink content.slipbox
+     Item.AddingLinkToNoteForm itemId search note maybeNote -> addingLinkToNoteView itemId search note maybeNote content.slipbox
      Item.Source itemId source -> itemSourceView itemId source content.timezone content.slipbox
      Item.NewSource itemId source -> newSourceView itemId source
-     Item.ConfirmDismissNewSource itemId source -> confirmDismissNewSourceView itemId source
+     Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
      Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.timezone content.slipbox
+     Item.ConfirmRemoveLink
 
 itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
 itemNoteView itemId note slipbox =
@@ -327,15 +325,15 @@ newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
 newNoteView itemId note slipbox =
   Element.column
     []
-    [ dismissButton itemId
-    , contentInput itemId note.content
+    [ contentInput itemId note.content
     , sourceInput itemId note.source <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons itemId note.variant
+    , cancelButton itemId
     , chooseSubmitButton itemId note.canSubmit
     ]
 
-confirmDismissNewNoteView: Int -> Item.NewNoteContent -> Element Msg
-confirmDismissNewNoteView itemId note =
+confirmDiscardNewNoteFormView: Int -> Item.NewNoteContent -> Element Msg
+confirmDiscardNewNoteFormView itemId note =
   Element.column
     []
     [ Element.row 
@@ -401,8 +399,17 @@ confirmDeleteNoteView itemId note slipbox =
       <| List.map (toLinkedNoteViewNoButtons (Note.getId)) <| Slipbox.getLinkedNotes note slipbox
     ]
 
-addingLinkToNoteView: Int -> String -> Note.Note -> Slipbox.Slipbox -> Element Msg
-addingLinkToNoteView itemId search note slipbox =
+addingLinkToNoteView: Int -> String -> Note.Note -> (Maybe Note.Note) -> Slipbox.Slipbox -> Element Msg
+addingLinkToNoteView itemId search note maybeNote slipbox =
+  let
+      choice = 
+        case maybeNote of 
+          Just chosenNoteToLink ->
+            [submitButton itemId, noteRepresentation chosenNoteToLink ]
+          Nothing -> 
+            [ Element.text "Select note to add link to from below" ]
+
+  in
   Element.column
     []
     [ Element.row
@@ -412,9 +419,7 @@ addingLinkToNoteView itemId search note slipbox =
       ]
     , Element.row
       []
-      [ noteRepresentation note
-      , Element.text "Select note to add link to from below"
-      ]
+      [ noteRepresentation note ] :: choice
     , Element.column
       []
       [ searchBar search itemId
@@ -436,31 +441,6 @@ toNoteDetail itemId note =
         , Element.text <| "Source: " ++ (Note.getSource note)
         ]
       }
-
-linkChosenView: Int -> String -> Note.Note -> Note.Note -> Slipbox.Slipbox -> Element Msg
-linkChosenView itemId search note noteToLink slipbox =
-  Element.column
-    []
-    [ Element.row
-      []
-      [ Element.text "Adding Link"
-      , cancelButton itemId
-      , submitButton itemId
-      ]
-    , Element.row
-      []
-      [ noteRepresentation note
-      , noteRepresentation noteToLink
-      ]
-    , Element.column
-      []
-      [ searchBar search itemId
-      , Element.column 
-        [Element.scrollbarsY] 
-        <| List.map (toNoteDetail itemId) 
-          <| Slipbox.getNotesThatCanLinkToNote note slipbox
-      ]
-    ]
 
 itemSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
 itemSourceView itemId source timezone slipbox =
@@ -485,15 +465,15 @@ newSourceView: Int -> Item.NewSourceContent -> Element Msg
 newSourceView itemId source =
   ElmUI.column 
     []
-    [ dismissButton itemId
-    , titleInput itemId source.title
+    [ titleInput itemId source.title
     , authorInput itemId source.author
     , contentInput itemId source.content 
+    , cancelButton itemId
     , chooseSubmitButton itemId source.canSubmit
     ]
 
-confirmDismissNewSourceView : Int -> Item.NewSourceContent -> Element Msg
-confirmDismissNewSourceView itemId source =
+confirmDiscardNewSourceFormView : Int -> Item.NewSourceContent -> Element Msg
+confirmDiscardNewSourceFormView itemId source =
   ElmUI.column 
     []
     [ Element.row 
