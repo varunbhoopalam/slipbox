@@ -68,9 +68,17 @@ type Msg
   | DismissItem Int
   | AddLink Int
   | RemoveLink Note.Note Note.Note
+  | NoteChosenToLink Int Note.Note
   | UpdateNoteContent Int String
   | UpdateNoteSource Int String
   | UpdateNoteVariant Int Variant
+  | SubmitItem Int
+  | ConfirmDismissItem Int
+  | DoNotDismissItem Int
+  | CancelItemAction Int
+  | ConfirmDeleteItem Int
+  | UpdateSourceTitle Int String
+  | UpdateSourceAuthor Int String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -131,7 +139,7 @@ update message model =
              _ -> ({ model | tab = Sources input Sort.created }, Cmd.none)
         _ -> (model, Cmd.none)
 
-    ToggleSortUpdated ->      
+    ToggleSortUpdated ->
       case model.tab of 
         Sources input sort -> 
           case sort of
@@ -149,11 +157,28 @@ update message model =
 
     RemoveLink openNote linkedNote -> ({ model | slipbox = Slipbox.removeLink openNote linkedNote model.slipbox }, Cmd.none)
 
+    NoteChosenToLink itemId noteChosen -> ({ model | slipbox = Slipbox.noteChosenToLink itemId noteChosen model.slipbox }, Cmd.none)
+
     UpdateNoteContent itemId input -> ({ model | slipbox = Slipbox.updateNoteContent itemId input model.slipbox }, Cmd.none)
 
     UpdateNoteSource itemId input -> ({ model | slipbox = Slipbox.updateNoteSource itemId input model.slipbox }, Cmd.none)
 
     UpdateNoteVariant itemId variant -> ({ model | slipbox = Slipbox.updateNoteVariant itemId variant model.slipbox }, Cmd.none)
+
+    SubmitItem itemId -> ({ model | slipbox = Slipbox.submitItem itemId model.slipbox }, Cmd.none)
+
+    ConfirmDismissItem itemId -> ({ model | slipbox = Slipbox.confirmDismissItem itemId model.slipbox }, Cmd.none)
+  | 
+    DoNotDismissItem itemId -> ({ model | slipbox = Slipbox.doNotDismissItem itemId model.slipbox }, Cmd.none)
+
+    CancelItemAction itemId -> ({ model | slipbox = Slipbox.cancelItemAction itemId model.slipbox }, Cmd.none)
+
+    ConfirmDeleteItem itemId -> ({ model | slipbox = Slipbox.confirmDeleteItem itemId model.slipbox }, Cmd.none)
+
+    UpdateSourceTitle itemId input -> ({ model | slipbox = Slipbox.updateSourceTitle itemId input model.slipbox }, Cmd.none)
+    
+    UpdateSourceAuthor itemId input -> ({ model | slipbox = Slipbox.updateSourceAuthor itemId input model.slipbox }, Cmd.none)
+
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -214,31 +239,31 @@ itemsView content =
 toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   case item of
-     Item.Note listId note -> itemNoteView listId note content.slipbox
-     Item.NewNote listId note -> newNoteView listId note content.slipbox
-     Item.ConfirmDismissNewNote listId note -> confirmDismissNewNote listId note content.slipbox
-     Item.EditingNote listId originalNote noteWithEdits -> editingNoteView listId originalNote noteWithEdits content.slipbox
-     Item.ConfirmDeleteNote listId note -> confirmDeleteNoteView listId note content.slipbox
+     Item.Note itemId note -> itemNoteView itemId note content.slipbox
+     Item.NewNote itemId note -> newNoteView itemId note content.slipbox
+     Item.ConfirmDismissNewNote itemId note -> confirmDismissNewNote itemId note content.slipbox
+     Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
+     Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
      -- Invariant for AddingLinkToNote and LinkChosen: If Note is deleted from content.slipbox need to make sure these states are still valid
      -- If they are not valid either remove note from item list or move it back to Note state depending on what happened
-     Item.AddingLinkToNote listId search note -> addingLinkToNoteView listId search note content.slipbox
-     Item.LinkChosen listId search note noteToLink -> linkChosenView listId search note noteToLink content.slipbox
-     Item.Source listId source -> itemSourceView listId source content.timezone content.slipbox
-     Item.NewSource listId source -> newSourceView listId source
-     Item.ConfirmDismissNewSource listId source -> confirmDismissNewSourceView listId source
-     Item.EditingSource listId originalSource sourceWithEdits -> editingSourceView listId source content.slipbox
-     Item.ConfirmDeleteSource -> confirmDeleteSourceView listId source content.timezone content.slipbox
+     Item.AddingLinkToNote itemId search note -> addingLinkToNoteView itemId search note content.slipbox
+     Item.LinkChosen itemId search note noteToLink -> linkChosenView itemId search note noteToLink content.slipbox
+     Item.Source itemId source -> itemSourceView itemId source content.timezone content.slipbox
+     Item.NewSource itemId source -> newSourceView itemId source
+     Item.ConfirmDismissNewSource itemId source -> confirmDismissNewSourceView itemId source
+     Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
+     Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.timezone content.slipbox
 
 itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
-itemNoteView listId note slipbox =
+itemNoteView itemId note slipbox =
   Element.column
     []
     [ Element.row 
       []
       [ idHeader Note.getId note
-      , editButton listId
-      , deleteButton listId
-      , dismissButton listId
+      , editButton itemId
+      , deleteButton itemId
+      , dismissButton itemId
       ]
     , contentView <| Note.getContent note
     , sourceView <| Note.getSource note
@@ -246,7 +271,7 @@ itemNoteView listId note slipbox =
     , Element.row
       []
       [ linkedNotesHeader 
-      , handleAddLinkButton listId note slipbox
+      , handleAddLinkButton itemId note slipbox
       ]
     , Element.column
       []
@@ -254,9 +279,9 @@ itemNoteView listId note slipbox =
     ]
 
 handleAddLinkButton: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
-handleAddLinkButton listId note slipbox =
+handleAddLinkButton itemId note slipbox =
   if Slipbox.noteCanLinkToOtherNotes note slipbox then
-    addLinkButton listId
+    addLinkButton itemId
   else 
     cannotAddLink 
 
@@ -299,24 +324,24 @@ removeLinkButton openNote linkedNote  =
     }
 
 newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
-newNoteView listId note slipbox =
+newNoteView itemId note slipbox =
   Element.column
     []
-    [ dismissButton listId
-    , contentInput listId note.content
-    , sourceInput listId note.source <| Slipbox.getSources Nothing slipbox
-    , chooseVariantButtons listId note.variant
-    , chooseSaveButton listId note.canSave
+    [ dismissButton itemId
+    , contentInput itemId note.content
+    , sourceInput itemId note.source <| Slipbox.getSources Nothing slipbox
+    , chooseVariantButtons itemId note.variant
+    , chooseSubmitButton itemId note.canSubmit
     ]
 
 confirmDismissNewNoteView: Int -> Item.NewNoteContent -> Element Msg
-confirmDismissNewNoteView listId note =
+confirmDismissNewNoteView itemId note =
   Element.column
     []
     [ Element.row 
       []
-      [ confirmDismissNewNoteButton listId
-      , cancelDismissNewNoteButton listId
+      [ confirmDismissButton itemId
+      , doNotDismissButton itemId
       ] 
     , contentView note.content
     , sourceView note.source
@@ -335,18 +360,18 @@ toLinkedNoteViewNoButtons noteId note =
     ]
 
 editingNoteView: Int -> Note.Note -> Note.Note -> Slipbox.Slipbox -> Element Msg
-editingNoteView listId _ noteWithEdits slipbox =
+editingNoteView itemId _ noteWithEdits slipbox =
   Element.column
     []
     [ Element.row 
       []
       [ idHeader <| Note.getId noteWithEdits
-      , saveButton listId
-      , cancelButton listId
+      , submitButton itemId
+      , cancelButton itemId
       ]
-    , contentEdit listId <| Note.getContent noteWithEdits
-    , sourceChoiceEdit listId <| Note.getSource noteWithEdits <| Slipbox.getSources Nothing slipbox
-    , chooseVariant listId <| Note.getVariant noteWithEdits
+    , contentInput itemId <| Note.getContent noteWithEdits
+    , sourceInput itemId (Note.getSource noteWithEdits) <| Slipbox.getSources Nothing slipbox
+    , chooseVariantButtons itemId <| Note.getVariant noteWithEdits
     , Element.row
       []
       [ linkedNotesHeader ]
@@ -356,14 +381,14 @@ editingNoteView listId _ noteWithEdits slipbox =
     ]
 
 confirmDeleteNoteView: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
-confirmDeleteNoteView listId note slipbox =
+confirmDeleteNoteView itemId note slipbox =
   Element.column
     []
     [ Element.row 
       []
       [ idHeader <| Note.getId note
-      , confirmDeleteButton listId
-      , cancelButton listId
+      , confirmDeleteButton itemId
+      , cancelButton itemId
       ]
     , contentView <|Note.getContent note
     , sourceView <|Note.getSource note
@@ -377,13 +402,13 @@ confirmDeleteNoteView listId note slipbox =
     ]
 
 addingLinkToNoteView: Int -> String -> Note.Note -> Slipbox.Slipbox -> Element Msg
-addingLinkToNoteView listId search note slipbox =
+addingLinkToNoteView itemId search note slipbox =
   Element.column
     []
     [ Element.row
       []
       [ Element.text "Adding Link"
-      , cancelButton listId
+      , cancelButton itemId
       ]
     , Element.row
       []
@@ -392,34 +417,35 @@ addingLinkToNoteView listId search note slipbox =
       ]
     , Element.column
       []
-      [ searchBar search listId
-      , Element.el [Element.scrollbarsY] <| List.map (toNoteDetail listId) <| Slipbox.getNotesThatCanLinkToNote note slipbox
+      [ searchBar search itemId
+      , Element.el [Element.scrollbarsY] <| List.map (toNoteDetail itemId) <| Slipbox.getNotesThatCanLinkToNote note slipbox
       ]
     ]
 
 toNoteDetail: Int -> Note.Note -> Element Msg
-toNoteDetail listId note =
+toNoteDetail itemId note =
   Element.el 
     [ Element.paddingXY 8 0, Element.spacing 8
     , Element.Border.solid, Element.Border.color gray
     , Element.Border.width 4 
     ] 
     Element.Input.button [] 
-      {onPress = Nothing, label = Element.column [] 
+      { onPress = Just <| NoteChosenToLink itemId note
+      , label = Element.column [] 
         [ Element.paragraph [] [ Element.text <| Note.getContent note]
         , Element.text <| "Source: " ++ (Note.getSource note)
         ]
       }
 
 linkChosenView: Int -> String -> Note.Note -> Note.Note -> Slipbox.Slipbox -> Element Msg
-linkChosenView listId search note noteToLink slipbox =
+linkChosenView itemId search note noteToLink slipbox =
   Element.column
     []
     [ Element.row
       []
       [ Element.text "Adding Link"
-      , cancelButton listId
-      , createLinkButton listId
+      , cancelButton itemId
+      , submitButton itemId
       ]
     , Element.row
       []
@@ -428,52 +454,52 @@ linkChosenView listId search note noteToLink slipbox =
       ]
     , Element.column
       []
-      [ searchBar search listId
+      [ searchBar search itemId
       , Element.column 
         [Element.scrollbarsY] 
-        <| List.map (toNoteDetail listId) 
+        <| List.map (toNoteDetail itemId) 
           <| Slipbox.getNotesThatCanLinkToNote note slipbox
       ]
     ]
 
 itemSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
-itemSourceView listId source timezone slipbox =
+itemSourceView itemId source timezone slipbox =
   ElmUI.column 
     []
-    [ dismissButton listId
+    [ dismissButton itemId
     , titleView <| Source.getTitle source
     , authorView <| Source.getAuthor source
     , createdTimeView timezone <| Source.getCreated source
     , updatedTime timezone <| Source.getUpdated source
-    , editButton listId
-    , deleteButton listId
+    , editButton itemId
+    , deleteButton itemId
     , contentView <| Source.getContent source 
     , Element.column
       [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons listId) 
+      <| List.map (toLinkedNoteViewNoButtons itemId) 
         <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
 -- Invariant: An edit to a source should not break a link between a source and a note
 newSourceView: Int -> Item.NewSourceContent -> Element Msg
-newSourceView listId source =
+newSourceView itemId source =
   ElmUI.column 
     []
-    [ dismissButton listId
-    , editTitleView listId source.title
-    , editAuthorView listId source.author
-    , editContentView listId source.content 
-    , chooseSaveButton listId source.isValidToSave
+    [ dismissButton itemId
+    , titleInput itemId source.title
+    , authorInput itemId source.author
+    , contentInput itemId source.content 
+    , chooseSubmitButton itemId source.canSubmit
     ]
 
 confirmDismissNewSourceView : Int -> Item.NewSourceContent -> Element Msg
-confirmDismissNewSourceView listId source =
+confirmDismissNewSourceView itemId source =
   ElmUI.column 
     []
     [ Element.row 
       []
-      [ confirmDismissNewNoteButton listId
-      , cancelDismissNewNoteButton listId
+      [ confirmDismissButton itemId
+      , doNotDismissButton itemId
       ] 
     , titleView source.title
     , authorView source.author
@@ -482,31 +508,31 @@ confirmDismissNewSourceView listId source =
     ]
 
 editingSourceView: Int -> Source.Source -> Slipbox -> Element Msg
-editingSourceView listId source slipbox =
+editingSourceView itemId source slipbox =
   ElmUI.column 
     []
     [ Element.row 
       []
-      [ saveButton listId
-      , cancelButton listId
+      [ saveButton itemId
+      , cancelButton itemId
       ]
-    , editTitleView listId <| Source.getTitle source
-    , editAuthorView listId <| Source.getAuthor source
-    , editContentView listId <| Source.getContent source 
+    , titleInput itemId <| Source.getTitle source
+    , authorInput itemId <| Source.getAuthor source
+    , contentInput itemId <| Source.getContent source 
     , Element.column
       [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons listId) 
+      <| List.map (toLinkedNoteViewNoButtons itemId) 
         <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
 confirmDeleteSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
-confirmDeleteSourceView listId source timezone slipbox =
+confirmDeleteSourceView itemId source timezone slipbox =
   ElmUI.column 
     []
     [ Element.row 
       []
-      [ confirmDeleteButton listId
-      , cancelButton listId
+      [ confirmDeleteButton itemId
+      , cancelButton itemId
       ]
     , titleView <| Source.getTitle source
     , authorView <| Source.getAuthor source
@@ -515,7 +541,7 @@ confirmDeleteSourceView listId source timezone slipbox =
     , contentView <| Source.getContent source 
     , Element.column
       [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons listId) 
+      <| List.map (toLinkedNoteViewNoButtons itemId) 
         <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
@@ -848,7 +874,7 @@ sourceInput: Int -> String -> (List String) -> Element Msg
 sourceInput itemId input suggestions =
   let
     sourceInputid = "Source: " ++ (String.fromInt itemId)
-    datalistId = "Sources: " ++ (String.fromInt itemId)
+    dataitemId = "Sources: " ++ (String.fromInt itemId)
   in
     Element.html
       <| Html.div
@@ -857,7 +883,7 @@ sourceInput itemId input suggestions =
           [ Html.Attributes.for sourceInputid ]
           [ Html.text "Label:" ]
         , Html.input
-          [ Html.Attributes.list datalistId 
+          [ Html.Attributes.list dataitemId 
           , Html.Attributes.name sourceInputid
           , Html.Attributes.id sourceInputid 
           , Html.Attributes.value input
@@ -865,7 +891,7 @@ sourceInput itemId input suggestions =
           ]
           []
         , Html.datalist 
-          [ Html.Attributes.id datalistId ]
+          [ Html.Attributes.id dataitemId ]
           <| List.map toHtmlOption suggestions
         ]
 
@@ -874,12 +900,12 @@ toHtmlOption value =
   Html.option [ Html.Attributes.value value ] []
 
 chooseVariantButtons: Int -> Note.Variant -> Element Msg
-chooseVariantButtons listId variant =
+chooseVariantButtons itemId variant =
   Element.Input.radioRow
     [ Element.Border.rounded 6
     , Element.Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = rgb255 0xE0 0xE0 0xE0 } 
     ]
-    { onChange = (\v -> UpdateNoteVariant listId v)
+    { onChange = (\v -> UpdateNoteVariant itemId v)
     , selected = Just variant
     , label = Input.labelLeft [] <| text "Choose Note Variant"
     , options =
@@ -927,3 +953,92 @@ variantButton variant =
       , Background.color <| color
       ]
       <| Element.el [ Element.centerX, Element.centerY ] <| Element.text text
+
+chooseSubmitButton : Int -> Bool -> Element Msg
+chooseSubmitButton itemId canSubmit =
+  if canSubmit then
+    submitButon itemId
+  else
+    Element.text "Cannot Submit Yet!"
+
+submitButton : Int -> Element Msg
+submitButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| SubmitItem itemId
+    , label = Element.text "Submit"
+    }
+
+confirmDismissButton : Int -> Element Msg
+confirmDismissButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| ConfirmDismissItem itemId
+    , label = Element.text "Confirm Dismiss"
+    }
+
+doNotDismissButton : Int -> Element Msg
+doNotDismissButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| DoNotDismissItem itemId
+    , label = Element.text "Do Not Dismiss"
+    }
+
+cancelButton : Int -> Element Msg
+cancelButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| CancelItemAction itemId
+    , label = Element.text "Cancel"
+    }
+
+confirmDeleteButton : Int -> Element Msg
+confirmDeleteButton itemId =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just <| ConfirmDeleteItem itemId
+    , label = Element.text "Confirm Delete Note"
+    }
+
+titleInput: Int -> String -> Element Msg
+titleInput itemId input =
+  Element.Input.multiline
+    []
+    { onChange : (\s -> UpdateSourceTitle itemId s)
+    , text : input
+    , placeholder : Nothing
+    , label : Element.labelAbove [] <| Element.text "Title"
+    , spellcheck : True
+    }
+
+authorInput: Int -> String -> Element Msg
+authorInput itemId input =
+  Element.Input.multiline
+    []
+    { onChange : (\s -> UpdateSourceAuthor itemId s)
+    , text : input
+    , placeholder : Nothing
+    , label : Element.labelAbove [] <| Element.text "Author"
+    , spellcheck : True
+    }

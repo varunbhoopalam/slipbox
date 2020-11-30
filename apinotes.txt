@@ -8,11 +8,13 @@ getItems: Slipbox -> (List Item.Item)
 getLinkedNotes: Note.Note -> Slipbox -> Slipbox
 getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
-createNote: Slipbox -> Slipbox                --Is there a better name for this? addCreateNoteFormToTable?
-createSource: Slipbox -> Slipbox 
 compressNote: Note.Note -> Slipbox -> Slipbox
 openNote: Note.Note -> Slipbox -> Slipbox
 expandNote: Note.Note -> Slipbox -> Slipbox
+
+-- Slipbox Item api
+createNote: Slipbox -> Slipbox
+createSource: Slipbox -> Slipbox 
 editItem: Int -> Slipbox -> Slipbox
 deleteItem: Int -> Slipbox -> Slipbox
 dismissItem: Int -> Slipbox -> Slipbox
@@ -21,6 +23,20 @@ removeLink: Note.Note -> Note.Note -> Slipbox -> Slipbox
 updateNoteContent: Int -> String -> Slipbox -> Slipbox
 updateNoteSource: Int -> String -> Slipbox -> Slipbox
 updateNoteVariant: Int -> Note.Variant -> Slipbox -> Slipbox
+submitItem: Int -> Slipbox -> Slipbox
+confirmDismissItem: Int -> Slipbox -> Slipbox
+doNotDismissItem: Int -> Slipbox -> Slipbox
+cancelItemAction: Int -> Slipbox -> Slipbox
+confirmDeleteItem: Int -> Slipbox -> Slipbox
+noteChosenToLink: Int -> Note.Note -> Slipbox -> Slipbox
+updateSourceTitle: Int -> String -> Slipbox -> Slipbox
+updateSourceAuthor: Int -> String -> Slipbox -> Slipbox
+
+--Thoughts
+-- There are a lot of itemActions. Can probably refactor those out into fewer actions that do more.
+-- For example, submitItem could probably be used in more situations
+-- Could figure out ways to homogenize the update actions
+
 
 Note
 getId: Note -> Int
