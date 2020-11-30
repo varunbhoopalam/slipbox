@@ -1,10 +1,9 @@
 module Main exposing (..)
 
-import Browser as Browser
-import Browser.Navigation as Nav
-import SourceSummary as SourceSummary
-import Html as Html
-import Element as ElmUI
+import Browser
+import Browser.Navigation
+import Html
+import Element
 
 -- MAIN
 main =
@@ -69,6 +68,9 @@ type Msg
   | DismissItem Int
   | AddLink Int
   | RemoveLink Note.Note Note.Note
+  | UpdateNoteContent Int String
+  | UpdateNoteSource Int String
+  | UpdateNoteVariant Int Variant
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -146,6 +148,12 @@ update message model =
     AddLink itemId -> ({ model | slipbox = Slipbox.addLink itemId model.slipbox }, Cmd.none)
 
     RemoveLink openNote linkedNote -> ({ model | slipbox = Slipbox.removeLink openNote linkedNote model.slipbox }, Cmd.none)
+
+    UpdateNoteContent itemId input -> ({ model | slipbox = Slipbox.updateNoteContent itemId input model.slipbox }, Cmd.none)
+
+    UpdateNoteSource itemId input -> ({ model | slipbox = Slipbox.updateNoteSource itemId input model.slipbox }, Cmd.none)
+
+    UpdateNoteVariant itemId variant -> ({ model | slipbox = Slipbox.updateNoteVariant itemId variant model.slipbox }, Cmd.none)
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -291,13 +299,13 @@ removeLinkButton openNote linkedNote  =
     }
 
 newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
-newNoteView listId note slipbox=
+newNoteView listId note slipbox =
   Element.column
     []
     [ dismissButton listId
-    , contentEdit listId note.content
-    , sourceChoiceEdit listId note.source <| Slipbox.getSources Nothing slipbox
-    , chooseVariant listId note.variant
+    , contentInput listId note.content
+    , sourceInput listId note.source <| Slipbox.getSources Nothing slipbox
+    , chooseVariantButtons listId note.variant
     , chooseSaveButton listId note.canSave
     ]
 
@@ -824,3 +832,98 @@ dismissButton itemId =
     { onPress = Just <| DismissItem itemId
     , label = Element.text "X"
     }
+
+contentInput: Int -> String -> Element Msg
+contentInput itemId input =
+  Element.Input.multiline
+    []
+    { onChange : (\s -> UpdateNoteContent itemId s)
+    , text : input
+    , placeholder : Nothing
+    , label : Element.labelAbove [] <| Element.text "Content"
+    , spellcheck : True
+    }
+
+sourceInput: Int -> String -> (List String) -> Element Msg
+sourceInput itemId input suggestions =
+  let
+    sourceInputid = "Source: " ++ (String.fromInt itemId)
+    datalistId = "Sources: " ++ (String.fromInt itemId)
+  in
+    Element.html
+      <| Html.div
+        []
+        [ Html.label 
+          [ Html.Attributes.for sourceInputid ]
+          [ Html.text "Label:" ]
+        , Html.input
+          [ Html.Attributes.list datalistId 
+          , Html.Attributes.name sourceInputid
+          , Html.Attributes.id sourceInputid 
+          , Html.Attributes.value input
+          , Html.Events.onInput (\s -> UpdateNoteSource itemId s)
+          ]
+          []
+        , Html.datalist 
+          [ Html.Attributes.id datalistId ]
+          <| List.map toHtmlOption suggestions
+        ]
+
+toHtmlOption: String -> Html Msg
+toHtmlOption value =
+  Html.option [ Html.Attributes.value value ] []
+
+chooseVariantButtons: Int -> Note.Variant -> Element Msg
+chooseVariantButtons listId variant =
+  Element.Input.radioRow
+    [ Element.Border.rounded 6
+    , Element.Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = rgb255 0xE0 0xE0 0xE0 } 
+    ]
+    { onChange = (\v -> UpdateNoteVariant listId v)
+    , selected = Just variant
+    , label = Input.labelLeft [] <| text "Choose Note Variant"
+    , options =
+      [ Input.option Note.Index <| variantButton Note.Index
+      , Input.option Note.Regular <| variantButton Note.Regular
+      ]
+    }
+
+variantButton: Note.Variant -> Element Msg
+variantButton variant =
+  let
+    borders =
+      case variant of
+        Note.Index ->
+          { left = 2, right = 2, top = 2, bottom = 2 }
+        Note.Regular ->
+          { left = 0, right = 2, top = 2, bottom = 2 }
+    corners =
+      case variant of
+        Index ->
+          { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
+        Regular ->
+    text =
+      case variant of
+        Index -> "Index"
+        Regular -> "Regular"
+    color =
+      case variant of
+        Index -> 
+          if Note.Index == variant then
+            Element.rgb255 114 159 207
+          else
+            Element.rgb255 0xFF 0xFF 0xFF
+        Regular -> 
+          if Note.Regular == variant then
+            Element.rgb255 114 159 207
+          else
+            Element.rgb255 0xFF 0xFF 0xFF
+  in
+    Element.el
+      [ paddingEach { left = 20, right = 20, top = 10, bottom = 10 }
+      , Border.roundEach { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
+      , Border.widthEach { left = 2, right = 2, top = 2, bottom = 2 }
+      , Border.color <| Element.rgb255 0xC0 0xC0 0xC0
+      , Background.color <| color
+      ]
+      <| Element.el [ Element.centerX, Element.centerY ] <| Element.text text

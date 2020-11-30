@@ -18,6 +18,9 @@ deleteItem: Int -> Slipbox -> Slipbox
 dismissItem: Int -> Slipbox -> Slipbox
 addLink: Int -> Slipbox -> Slipbox
 removeLink: Note.Note -> Note.Note -> Slipbox -> Slipbox
+updateNoteContent: Int -> String -> Slipbox -> Slipbox
+updateNoteSource: Int -> String -> Slipbox -> Slipbox
+updateNoteVariant: Int -> Note.Variant -> Slipbox -> Slipbox
 
 Note
 getId: Note -> Int
