@@ -1,40 +1,48 @@
 Let's gather the information on what APIs/Modules are needed to build!
 
-Slipbox
-getNotesAndLinks: (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
-getNotes: (Maybe String) -> Slipbox -> (List Note.Note)
-getSources: (Maybe String) -> Slipbox -> (List Source.Source)
-getItems: Slipbox -> (List Item.Item)
-getLinkedNotes: Note.Note -> Slipbox -> (List Note.Note)
-getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
-getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
-compressNote: Note.Note -> Slipbox -> Slipbox
-expandNote: Note.Note -> Slipbox -> Slipbox
+  -- Slipbox
+  getNotesAndLinks: (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
+  getNotes: (Maybe String) -> Slipbox -> (List Note.Note)
+  getSources: (Maybe String) -> Slipbox -> (List Source.Source)
+  getItems: Slipbox -> (List Item.Item)
+  getLinkedNotes: Note.Note -> Slipbox -> (List Note.Note)
+  getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
+  getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
+  compressNote: Note.Note -> Slipbox -> Slipbox
+  expandNote: Note.Note -> Slipbox -> Slipbox
 
 -- Slipbox Item api
 
   -- Adds/Removes to/from item list
   openNote: Note.Note -> Slipbox -> Slipbox
   openSource: Source.Source -> Slipbox -> Slipbox
-  createNote: Slipbox -> Slipbox
-  createSource: Slipbox -> Slipbox
+  newNoteForm: Slipbox -> Slipbox
+  newSourceForm: Slipbox -> Slipbox
   dismissItem: Int -> Slipbox -> Slipbox 
-  deleteItem: Int -> Slipbox -> Slipbox
+  
+  -- Changes item state and slipbox state
+  deleteNote: Int -> Slipbox -> Slipbox
+  deleteSource: Int -> Slipbox -> Slipbox
+  createNote: Int -> Slipbox -> Slipbox
+  createSource: Int -> Slipbox -> Slipbox
+  submitNoteEdits: Int -> Slipbox -> Slipbox
+  submitSourceEdits: Int -> Slipbox -> Slipbox
+  createLink: Int -> Slipbox -> Slipbox
+  deleteLink: Int -> Slipbox -> Slipbox
 
-  -- Changes an items state
-  editItem: Int -> Slipbox -> Slipbox
-  promptConfirmDeleteItem: Int -> Slipbox -> Slipbox
-  addLink: Int -> Slipbox -> Slipbox
-  removeLink: Int -> Note.Note -> Slipbox -> Slipbox
-  submitItem: Int -> Slipbox -> Slipbox
-  cancelItem: Int -> Slipbox -> Slipbox
-
-  -- Updated an items internals
+  -- Updated an Item's State
   updateItem: Int -> Item.UpdateAction -> Slipbox -> Slipbox
   type UpdateAction = 
     Content String | Source String | 
     Variant Note.Variant | Title String | 
-    Author String | AddLink Note.Note 
+    Author String | AddLink Note.Note |
+    Edit | PromptConfirmDelete | AddLinkForm |
+    PromptConfirmRemoveLink Note.Note | Cancel
+  
+  -- Misc
+  undo
+  redo 
+  tick
 
 Item
 type Item = 
