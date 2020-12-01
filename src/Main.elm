@@ -250,7 +250,7 @@ toItemView content item =
      Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
      Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.timezone content.slipbox
-     Item.ConfirmRemoveLink
+     Item.ConfirmRemoveLink itemId note linkedNote ->
 
 itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
 itemNoteView itemId note slipbox =
