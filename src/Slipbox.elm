@@ -308,216 +308,111 @@ updateItem : Item.Item -> Item.UpdateAction -> Slipbox -> Slipbox
 updateItem item updateAction slipbox =
   let
       content = getContent slipbox
+      update = \updatedItem -> Slipbox 
+        { content | items = List.map (conditionalUpdate updatedItem (Item.is item)) content.items}
   in
   case updateAction of
     Item.Content input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
-          let
-              updatedItem = Item.EditingNote itemId originalNote 
-                <| Note.updateContent input noteWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-
+          update <| Item.EditingNote itemId originalNote 
+            <| Note.updateContent input noteWithEdits
         Item.EditingSource itemId originalSource sourceWithEdits ->
-          let
-              updatedItem = Item.EditingSource itemId originalSource 
-                <| Source.updateContent input sourceWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items}
-        
+          update <| Item.EditingSource itemId originalSource
+            <| Source.updateContent input sourceWithEdits
         _ -> slipbox
-            
+
     Item.Source input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
-          let
-              updatedItem = Item.EditingNote itemId originalNote 
-                <| Note.updateSource input noteWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-
+          update Item.EditingNote itemId originalNote 
+            <| Note.updateSource input noteWithEdits
         _ -> slipbox
-
 
     Item.Variant input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
-          let
-              updatedItem = Item.EditingNote itemId originalNote 
-                <| Note.updateVariant input noteWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-
+          update <|Item.EditingNote itemId originalNote 
+            <| Note.updateVariant input noteWithEdits
         _ -> slipbox
-
 
     Item.Title input ->
       case item of
         Item.EditingSource itemId originalSource sourceWithEdits ->
-          let
-              updatedItem = Item.EditingSource itemId originalSource 
-                <| Source.updateTitle input sourceWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-        
+          update <| Item.EditingSource itemId originalSource 
+            <| Source.updateTitle input sourceWithEdits
         _ -> slipbox
 
 
     Item.Author input ->
       case item of
         Item.EditingSource itemId originalSource sourceWithEdits ->
-          let
-              updatedItem = Item.EditingSource itemId originalSource 
-                <| Source.updateAuthor input sourceWithEdits
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-              
+          update <| Item.EditingSource itemId originalSource 
+            <| Source.updateAuthor input sourceWithEdits
       _ -> slipbox
 
     Item.Search input ->
       case item of 
         Item.AddingLinkToNoteForm itemId _ note maybeNote ->
-          let
-              updatedItem = Item.AddingLinkToNoteForm itemId input note maybeNote
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-            Slipbox { content | items = List.map lambda content.items }
-
+          update <| Item.AddingLinkToNoteForm itemId input note maybeNote
         _ -> slipbox
 
     Item.AddLink noteToBeAdded ->
       case item of 
         Item.AddingLinkToNoteForm itemId search note _ ->
-          let
-              updatedItem = Item.AddingLinkToNoteForm itemId search note <| Just noteToBeAdded
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-            Slipbox { content | items = List.map lambda content.items }
-
+          update <| Item.AddingLinkToNoteForm itemId search note <| Just noteToBeAdded
         _ -> slipbox
 
     Item.Edit ->
       case item of
         Item.Note itemId note ->
-          let
-              updatedItem = Item.EditingNote itemId note note 
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-
+          update <| Item.EditingNote itemId note note
         Item.Source itemId source ->
-          let
-              updatedItem = Item.EditingSource itemId source source
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items}
-        
+          update <| Item.EditingSource itemId source source
         _ -> slipbox
             
     Item.PromptConfirmDelete ->
         Item.Note itemId note ->
-          let
-              updatedItem = Item.ConfirmDeleteNote itemId note 
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-          
+          update <| Item.ConfirmDeleteNote itemId note
         Item.Source itemId source ->
-          let
-              updatedItem = Item.ConfirmDeleteSource itemId source
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items}
-        
+          update <| Item.ConfirmDeleteSource itemId source
         _ -> slipbox
+
     Item.AddLinkForm ->
       case item of 
         Item.Note itemId note ->
-          let
-              updatedItem = Item.AddingLinkToNoteForm itemId note Nothing
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.AddingLinkToNoteForm itemId note Nothing
         _ -> slipbox
+    
     Item.PromptConfirmRemoveLink linkedNote link ->
       case item of 
         Item.Note itemId note ->
-          let
-              updatedItem = Item.ConfirmDeleteLink itemId note linkedNote link
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.ConfirmDeleteLink itemId note linkedNote link
         _ -> slipbox
+    
     Item.Cancel ->
       case item of
-        Item.NewNote itemId note -> 
-          let
-              updatedItem = Item.ConfirmDiscardNewNoteForm itemId note
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+        Item.NewNote itemId note ->
+          update <| Item.ConfirmDiscardNewNoteForm itemId note 
         Item.ConfirmDiscardNewNoteForm itemId note ->
-          let
-              updatedItem = Item.NewNote itemId note
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.NewNote itemId note
         Item.EditingNote itemId originalNote noteWithEdits ->
-          let
-              updatedItem = Item.Note itemId originalNote
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.Note itemId originalNote
         Item.ConfirmDeleteNote itemId note ->
-          let
-              updatedItem = Item.Note itemId note
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.Note itemId note
         Item.AddingLinkToNoteForm itemId search note maybeNote ->
-          let
-              updatedItem = Item.Note itemId note
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.Note itemId note
         Item.NewSource itemId source ->
-          let
-              updatedItem = Item.ConfirmDiscardNewSourceForm itemId source
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          update <| Item.ConfirmDiscardNewSourceForm itemId source
         Item.ConfirmDiscardNewSourceForm itemId source ->
-          let
-              updatedItem = Item.NewSource itemId source
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          updated <| Item.NewSource itemId source
         Item.EditingSource itemId originalSource sourceWithEdits ->
-          let
-              updatedItem = Item.Source itemId originalSource
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          updated <| Item.Source itemId originalSource
         Item.ConfirmDeleteSource itemId source ->
-          let
-              updatedItem = Item.Source itemId source
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
+          updated <| Item.Source itemId source
         Item.ConfirmDeleteLink itemId note linkedNote link ->
-          let
-              updatedItem = Item.Note itemId note
-              lambda = conditionalUpdate updatedItem <| Item.is item
-          in
-          Slipbox { content | items = List.map lambda content.items }
-          --\lambda -> Slipbox { content | items = List.map lambda content.items}
+          updated <| Item.Note itemId note
+        _ -> slipbox
 
 -- TODO
 -- undo: Int -> Slipbox -> Slipbox
