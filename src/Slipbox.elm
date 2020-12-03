@@ -46,6 +46,7 @@ getContent slipbox =
 
 -- Returns Slipbox
 
+-- TODO
 initialize : (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Slipbox
 -- initialize notes links response =
 --   let
@@ -101,189 +102,376 @@ getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource source slipbox =
   List.filter ( Note.isAssociated source ) <| notes <| getContent slipbox
 
-compressNote: Note.Note -> Slipbox -> Slipbox
-expandNote: Note.Note -> Slipbox -> Slipbox
-openNote: Note.Note -> Slipbox -> Slipbox
-openSource: Source.Source -> Slipbox -> Slipbox
-newNoteForm: Slipbox -> Slipbox
-newSourceForm: Slipbox -> Slipbox
-dismissItem: Int -> Slipbox -> Slipbox
-deleteNote: Int -> Slipbox -> Slipbox
-  -- let
-  --   extract = Note.extract note
-  --   associatedLinks = getLinksForNote extract.intId content.links
-  --   notesAfterNoteRemoval = deleteNoteById extract.id content.notes
-  --   newLinks = removeAssociatedLinks (List.map (\link -> link.id) associatedLinks) content.links
-  --   (newState, newNotes) = initSimulation notesAfterNoteRemoval newLinks
-  -- in
-  --   Slipbox 
-  --     {content | notes = newNotes
-  --     , links = newLinks
-  --     , actions = addDeleteNoteActionHandler extract associatedLinks content.actions
-  --     , form = getFormNotes newNotes newLinks |> LinkForm.selectionsChange content.form
-  --     , state = newState
-  --     }
-deleteSource: Int -> Slipbox -> Slipbox
-createNote: Int -> Slipbox -> Slipbox
-  -- case slipbox of
-  --   Slipbox content -> 
-  --     let
-  --       newNote = toNoteRecord note content.notes
-  --       (state, newNotes) = addNoteToNotes newNote content.notes content.links
-  --     in
-  --       Slipbox 
-  --         { content | notes = sortNotes newNotes
-  --         , actions = addNoteToActions newNote content.actions
-  --         , state = state
-  --         }
-createSource: Int -> Slipbox -> Slipbox
-submitNoteEdits: Int -> Slipbox -> Slipbox
-submitSourceEdits: Int -> Slipbox -> Slipbox
-createLink: Int -> Slipbox -> Slipbox
-  -- case slipbox of 
-  --   Slipbox content -> 
-  --     case (LinkForm.maybeProspectiveLink content.form) of
-  --       Just (source, target) ->
-  --         case toMaybeLink (MakeLinkRecord source target) content.links content.notes of
-  --           Just link -> createLink_ link content
-  --           Nothing -> removeSelections content
-  --       Nothing -> removeSelections content    
-deleteLink: Int -> Slipbox -> Slipbox
-  -- let
-  --   newLinks = removeLinkById link.id content.links
-  --   (newState, newNotes) = initSimulation content.notes newLinks
-  -- in
-  --   Slipbox 
-  --     {content | notes = newNotes
-  --     , links = newLinks 
-  --     , actions = addDeleteLink link content.actions
-  --     , form = getFormNotes newNotes newLinks |> LinkForm.selectionsChange content.form
-  --     , state = newState
-  --     }
-updateItem: Int -> Item.UpdateAction -> Slipbox -> Slipbox
-undo: Int -> Slipbox -> Slipbox
--- undo actionId slipbox =
---   case slipbox of
---     Slipbox content -> 
---       let
---         recordsToBeUndone = List.filter (Action.shouldUndo actionId) content.actions |> List.map Action.record_
---         undoneActions = undoActionsById actionId content.actions
---       in
---         case List.foldr undoRecord slipbox recordsToBeUndone of
---           Slipbox content_ -> Slipbox {content_ | actions = undoneActions}
-redo: Int -> Slipbox -> Slipbox
--- redo actionId slipbox =
---   case slipbox of
---     Slipbox content -> 
---       let
---         recordsToBeRedone = List.map Action.record_ (List.filter (Action.shouldRedo actionId) content.actions)
---         redoneActions = redoActionsById actionId content.actions
---       in
---         case List.foldr redoRecord slipbox recordsToBeRedone of
---           Slipbox content_ -> Slipbox {content_ | actions = redoneActions }
-tick: Slipbox -> Slipbox
--- tick slipbox =
---   case slipbox of
---      Slipbox content -> 
---       let
---         (newState, simRecords) = List.map Note.extract content.notes
---           |> List.map toSimulationRecord
---           |> Simulation.tick content.state
---       in
---         Slipbox 
---           {content | notes = List.map (noteUpdateWrapper simRecords) content.notes
---           , state = newState
---           }
-save: Slipbox -> Slipbox
--- save slipbox =
---   case slipbox of
---     Slipbox content -> Slipbox {content | actions = List.map Action.save content.actions}
-getHistory: Slipbox -> (List Action.Summary)
--- getHistory slipbox =
---   case slipbox of
---     Slipbox content -> List.map Action.summary content.actions
-simulationIsCompleted: Slipbox -> Bool
--- isCompleted slipbox =
---   case slipbox of
---     Slipbox content -> Simulation.isCompleted content.state
+compressNote : Note.Note -> Slipbox -> Slipbox
+compressNote note slipbox =
+  let
+      content = getContent slipbox
+      conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
+  in
+  Slipbox { content | notes = List.map conditionallyCompressNote content.notes}
+
+expandNote : Note.Note -> Slipbox -> Slipbox
+expandNote note slipbox =
+  let
+      content = getContent slipbox
+      conditionallyExpandNote = \n -> if Note.is note n then Note.expand n else n
+  in
+  Slipbox { content | notes = List.map conditionallyExpandNote content.notes}
+
+openNote : (Maybe Item.Item) -> Note.Note -> Slipbox -> Slipbox
+openNote maybeItem note slipbox =
+  let
+      content = getContent slipbox
+      newItem = Item.Note Item.generateId note
+      
+  in
+  case maybeItem of
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items}
+     Nothing -> Slipbox { content | items = newItem :: content.items }
+
+openSource : (Maybe Item.Item) -> Source.Source -> Slipbox -> Slipbox
+openSource maybeItem source slipbox =
+  let
+      content = getContent slipbox
+      newItem = Item.Source Item.generateId note
+      
+  in
+  case maybeItem of
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items}
+     Nothing -> Slipbox { content | items = newItem :: content.items }
+
+newNoteForm : (Maybe Item.Item) -> Slipbox -> Slipbox
+newNoteForm maybeItem slipbox =
+  let
+      content = getContent slipbox      
+  in
+  case maybeItem of
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newNoteForm) [] content.items}
+     Nothing -> Slipbox { content | items = Item.newNoteForm :: content.items }
+
+newSourceForm : (Maybe Item.Item) -> Slipbox -> Slipbox
+newSourceForm maybeItem slipbox =
+  let
+      content = getContent slipbox      
+  in
+  case maybeItem of
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newSourceForm) [] content.items}
+     Nothing -> Slipbox { content | items = Item.newSourceForm :: content.items }
+
+dismissItem : Item.Item -> Slipbox -> Slipbox
+dismissItem item slipbox =
+  let
+      content = getContent slipbox
+  in
+  Slipbox { content | items = List.filter (Item.is item) content.items}
+
+deleteNote : Item.Item -> Slipbox -> Slipbox
+deleteNote item slipbox =
+  case item of
+    Item.ConfirmDeleteNote itemId note ->
+      let
+          content = getContent slipbox
+          links = List.filter (Link.isAssociated note) content.links
+          (state, notes) = Simulation.step link (List.filter (Note.is note) content.notes) content.state
+          deletedLinkActions = 
+            List.foldr (Action.deleteLink content.actions 
+            <| List.filter (not <| Link.isAssociated note) content.links
+          deletedNoteAction = Action.deleteNote note 
+            <| List.concat deletedLinkActions content.actions
+      in
+      Slipbox 
+        { content | notes = notes
+        , links = links
+        , actions = List.concat deletedNoteAction deletedLinkActions content.actions
+        , items = List.map (deleteNoteItemStateChange note) <| List.filter (Item.is item) content.items
+        , state = state
+        }
+     _ -> slipbox
+
+deleteSource : Item.Item -> Slipbox -> Slipbox
+deleteSource item slipbox =
+  case item of
+    Item.ConfirmDeleteSource itemId source ->
+      let
+          content = getContent slipbox
+      in
+      Slipbox 
+        { content | sources = List.filter (Source.is source) content.sources
+        , actions = (Action.deleteSource source content.actions) :: content.actions
+        , items = List.filter (Item.is item) content.items
+        }
+     _ -> slipbox
+
+createNote : Item.Item -> Slipbox -> Slipbox
+createNote item slipbox =
+  case item of
+    Item.NewNote itemId noteContent ->
+      let
+          content = getContent slipbox
+          note = Note.create noteContent -- Is it easy to generate an id for a note. Do I need the context of all other existing notes to do so?
+          (state, notes) = Simulation.step content.links (note :: content.notes) content.state
+      in
+      Slipbox
+        { content | notes = notes
+        , actions = (Action.createNote note content.actions) :: content.actions
+        , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+        , state = state
+        }
+    _ -> Slipbox
+
+createSource : Item.Item -> Slipbox -> Slipbox
+createSource item slipbox =
+  case item of
+    Item.NewSource itemId sourceContent ->
+      let
+          content = getContent slipbox
+          source = Source.createSource sourceContent
+      in
+      Slipbox
+        { content | sources = source :: content.sources
+        , actions = (Action.createSource source content.actions) :: content.actions
+        , items = List.map (\i -> if Item.is item i then Item.source source else i) content.items
+        }
+    _ -> slipbox
+
+submitNoteEdits : Item.Item -> Slipbox -> Slipbox
+submitNoteEdits item slipbox =
+  case item of
+    Item.EditingNote itemId originalNote editingNote ->
+      let
+          content = getContent slipbox
+          noteUpdateLambda = \n -> if Note.is n editingNote then Note.update n editingNote else n 
+      in
+      Slipbox 
+        { content | notes = List.map noteUpdateLambda content.notes
+        , actions = (Action.editNote originalNote editingNote content.actions) :: content.actions
+        , items = List.map (\i -> if Item.is item i then Item.note editingNote else i) content.items
+        }
+    _ -> slipbox
+      
+-- TODO: Implement Migrate note sources to new source title if this is wanted behavior
+submitSourceEdits : Item.Item -> Slipbox -> Slipbox
+submitSourceEdits item slipbox =
+  case item of
+    Item.EditingSource itemId originalSource sourceWithEdits ->
+      let
+          content = getContent slipbox
+          sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then Source.update s sourceWithEdits else s 
+      in
+      Slipbox 
+        { content | sources = List.map sourceUpdateLambda content.sources
+        , actions = (Action.editSource originalSource editingsourceWithEdits content.actions) :: content.actions
+        , items = List.map (\i -> if Item.is item i then Item.source sourceWithEdits else i) content.items
+        }
+    _ -> slipbox
+
+createLink : Item.Item -> Slipbox -> Slipbox
+createLink item slipbox =
+  case item of
+    AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
+      case maybeNoteToBeLinked of
+        Just noteToBeLinked ->
+          let
+              content = getContent slipbox
+              link = Link.create note noteToBeLinked
+              links = link :: content.links
+              (state, notes) = Simulation.step links content.notes content.state
+          in
+          Slipbox
+            { content | notes = notes
+            , links = links
+            , actions = Action.createLink link |> List.concat content.actions
+            , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+            , state = state
+            }
+        _ -> slipbox
+    _ -> slipbox
+
+deleteLink : Item.Item -> Slipbox -> Slipbox
+deleteLink item slipbox =
+  case item of
+    Item.ConfirmDeleteLink itemId note linkedNote link ->
+      let
+          content = getContent slipbox
+          links = List.filter (Link.is link) content.links
+          (state, notes) = Simulation.step links content.notes content.state
+      in
+      Slipbox 
+        { content | notes = notes
+        , links = links
+        , actions = (Action.deleteLink link content.actions) :: content.actions
+        , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+        }
+    _ -> slipbox
+
+updateItem : Item.Item -> Item.UpdateAction -> Slipbox -> Slipbox
+updateItem item updateAction slipbox =
+  let
+      content = getContent slipbox
+  in
+  case updateAction of
+    Item.Content input ->
+      case item of
+        Item.EditingNote itemId originalNote noteWithEdits ->
+          let
+              updatedItem = Item.EditingNote itemId originalNote 
+                <| Note.updateContent input noteWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+
+        Item.EditingSource itemId originalSource sourceWithEdits ->
+          let
+              updatedItem = Item.EditingSource itemId originalSource 
+                <| Source.updateContent input sourceWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items}
+        
+        _ -> slipbox
+            
+    Item.Source input ->
+      case item of
+        Item.EditingNote itemId originalNote noteWithEdits ->
+          let
+              updatedItem = Item.EditingNote itemId originalNote 
+                <| Note.updateSource input noteWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+
+        _ -> slipbox
+
+
+    Item.Variant input ->
+      case item of
+        Item.EditingNote itemId originalNote noteWithEdits ->
+          let
+              updatedItem = Item.EditingNote itemId originalNote 
+                <| Note.updateVariant input noteWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+
+        _ -> slipbox
+
+
+    Item.Title input ->
+      case item of
+        Item.EditingSource itemId originalSource sourceWithEdits ->
+          let
+              updatedItem = Item.EditingSource itemId originalSource 
+                <| Source.updateTitle input sourceWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        
+        _ -> slipbox
+
+
+    Item.Author input ->
+      case item of
+        Item.EditingSource itemId originalSource sourceWithEdits ->
+          let
+              updatedItem = Item.EditingSource itemId originalSource 
+                <| Source.updateAuthor input sourceWithEdits
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+              
+      _ -> slipbox
+
+    Item.Search input ->
+      case item of 
+        Item.AddingLinkToNoteForm itemId _ note maybeNote ->
+          let
+              updatedItem = Item.AddingLinkToNoteForm itemId input note maybeNote
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+            Slipbox { content | items = List.map lambda content.items }
+
+        _ -> slipbox
+
+    Item.AddLink noteToBeAdded ->
+      case item of 
+        Item.AddingLinkToNoteForm itemId search note _ ->
+          let
+              updatedItem = Item.AddingLinkToNoteForm itemId search note <| Just noteToBeAdded
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+            Slipbox { content | items = List.map lambda content.items }
+
+        _ -> slipbox
+
+    Item.Edit ->
+      case item of
+        Item.Note itemId note ->
+          let
+              updatedItem = Item.EditingNote itemId note note 
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+
+        Item.Source itemId source ->
+          let
+              updatedItem = Item.EditingSource itemId source source
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items}
+        
+        _ -> slipbox
+            
+    Item.PromptConfirmDelete ->
+        Item.Note itemId note ->
+          let
+              updatedItem = Item.ConfirmDeleteNote itemId note 
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+          
+        Item.Source itemId source ->
+          let
+              updatedItem = Item.ConfirmDeleteSource itemId source
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items}
+        
+        _ -> slipbox
+    Item.AddLinkForm ->
+    Item.PromptConfirmRemoveLink Note.Note ->
+    Item.Cancel ->
+
+-- TODO
+-- undo: Int -> Slipbox -> Slipbox
+-- TODO
+-- redo: Int -> Slipbox -> Slipbox
+-- TODO
+-- tick: Slipbox -> Slipbox
+-- TODO
+-- save: Slipbox -> Slipbox
+-- TODO
+-- getHistory: Slipbox -> (List Action.Summary)
+-- TODO
+-- simulationIsCompleted: Slipbox -> Bool
 
 -- Helper Functions
-undoRecord: Action.Record_ -> Slipbox -> Slipbox
-undoRecord action slipbox =
-  case action of
-    Action.CreateNote_ record -> deleteNote (Note.toNoteId record.id) slipbox
-    Action.EditNote_ record -> 
-      slipbox
-        |> startEditState (Note.toNoteId record.id) 
-        |> contentUpdate record.formerContent (Note.toNoteId record.id) 
-        |> sourceUpdate record.formerSource (Note.toNoteId record.id)
-        |> submitEdits (Note.toNoteId record.id)
-    Action.DeleteNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
-    Action.CreateLink_ record -> deleteLink record.id slipbox
-    Action.DeleteLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
+buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
+buildItemList itemToMatch itemToAdd =
+  \item list -> if Item.is item itemToMatch then List.concat [item, itemToAdd] list else item :: list
 
+deleteNoteItemStateChange : Note.Note -> Item.Item -> Item.Item
+deleteNoteItemStateChange deletedNote item =
+  case item of
+    Item.AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
+      case maybeNoteToBeLinked of
+        Just noteToBeLinked -> 
+          if Note.is noteToBeLinked deletedNote then
+            Item.AddingLinkToNoteForm itemId search note Nothing
+          else 
+            item
+        _ -> item   
+    _ -> item
 
-redoRecord: Action.Record_ -> Slipbox -> Slipbox
-redoRecord action slipbox =
-  case action of
-    Action.CreateNote_ record -> createNoteInternal (Note.NoteRecord record.id record.content record.source record.variant) slipbox
-    Action.EditNote_ record -> 
-      slipbox
-        |> startEditState (Note.toNoteId record.id) 
-        |> contentUpdate record.currentContent (Note.toNoteId record.id) 
-        |> sourceUpdate record.currentSource (Note.toNoteId record.id)
-        |> submitEdits (Note.toNoteId record.id)
-    Action.DeleteNote_ record -> deleteNote (Note.toNoteId record.id) slipbox
-    Action.CreateLink_ record -> createLinkInternal (Link record.source record.target record.id) slipbox
-    Action.DeleteLink_ record -> deleteLink record.id slipbox
-
-sortNotes: (List Note.Note) -> (List Note.Note)
-sortNotes notes =
-  List.sortWith Note.sortDesc notes
-
-toSimulationRecord: Note.Extract -> Simulation.SimulationRecord
-toSimulationRecord extract =
-  Simulation.SimulationRecord extract.intId extract.x extract.y extract.vx extract.vy
-
-toLinkTuple: Link -> (Int, Int)
-toLinkTuple link =
-  (link.source, link.target)
-
-initSimulation: (List Note.Note) -> (List Link) -> (Simulation.State Int, (List Note.Note))
-initSimulation notes links =
-  let
-    (state, simRecords) = Simulation.simulate 
-      (List.map toSimulationRecord (List.map Note.extract notes))
-      (List.map toLinkTuple links)
-  in
-    (state, List.map (noteUpdateWrapper simRecords) notes)
-
-createLinkInternal: Link -> Slipbox -> Slipbox
-createLinkInternal link slipbox =
-  case slipbox of
-    Slipbox content -> createLink_ link content
-
-createNoteInternal: Note.NoteRecord -> Slipbox -> Slipbox
-createNoteInternal note slipbox =
-  case slipbox of
-    Slipbox content -> 
-      let
-        (state, newNotes) = addNoteToNotes note content.notes content.links
-      in
-        Slipbox 
-          { content | notes = sortNotes newNotes
-          , state = state
-          }
-
-createLink_: Link -> Content -> Slipbox
-createLink_ link content =
-  let
-    newLinks =  link :: content.links
-    (newState, newNotes) = initSimulation content.notes newLinks
-  in
-    Slipbox 
-      {content | notes = newNotes
-      , links = newLinks
-      , actions = addLinkToActions link content.actions
-      , form = getFormNotes newNotes newLinks |> LinkForm.removeSelections
-      , state = newState}  
+conditionalUpdate : a -> (a -> Bool) -> (a -> a)
+conditionalUpdate updatedItem itemIdentifier =
+  (\i -> if itemIdentifier i then updatedItem else i)
