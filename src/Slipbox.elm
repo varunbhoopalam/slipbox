@@ -122,7 +122,7 @@ openNote : (Maybe Item.Item) -> Note.Note -> Slipbox -> Slipbox
 openNote maybeItem note slipbox =
   let
       content = getContent slipbox
-      newItem = Item.Note Item.generateId note
+      newItem = Item.note note
       
   in
   case maybeItem of
@@ -133,7 +133,7 @@ openSource : (Maybe Item.Item) -> Source.Source -> Slipbox -> Slipbox
 openSource maybeItem source slipbox =
   let
       content = getContent slipbox
-      newItem = Item.Source Item.generateId note
+      newItem = Item.source source
       
   in
   case maybeItem of
@@ -146,8 +146,8 @@ newNoteForm maybeItem slipbox =
       content = getContent slipbox      
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newNoteForm) [] content.items}
-     Nothing -> Slipbox { content | items = Item.newNoteForm :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newNote) [] content.items}
+     Nothing -> Slipbox { content | items = Item.newNote :: content.items }
 
 newSourceForm : (Maybe Item.Item) -> Slipbox -> Slipbox
 newSourceForm maybeItem slipbox =
@@ -155,8 +155,8 @@ newSourceForm maybeItem slipbox =
       content = getContent slipbox      
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newSourceForm) [] content.items}
-     Nothing -> Slipbox { content | items = Item.newSourceForm :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newSource) [] content.items}
+     Nothing -> Slipbox { content | items = Item.newSource :: content.items }
 
 dismissItem : Item.Item -> Slipbox -> Slipbox
 dismissItem item slipbox =
@@ -214,7 +214,7 @@ createNote item slipbox =
       Slipbox
         { content | notes = notes
         , actions = (Action.createNote note content.actions) :: content.actions
-        , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+        , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
         , state = state
         }
     _ -> Slipbox
@@ -230,7 +230,7 @@ createSource item slipbox =
       Slipbox
         { content | sources = source :: content.sources
         , actions = (Action.createSource source content.actions) :: content.actions
-        , items = List.map (\i -> if Item.is item i then Item.source source else i) content.items
+        , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
         }
     _ -> slipbox
 
@@ -245,7 +245,7 @@ submitNoteEdits item slipbox =
       Slipbox 
         { content | notes = List.map noteUpdateLambda content.notes
         , actions = (Action.editNote originalNote editingNote content.actions) :: content.actions
-        , items = List.map (\i -> if Item.is item i then Item.note editingNote else i) content.items
+        , items = List.map (\i -> if Item.is item i then Item.Note itemId editingNote else i) content.items
         }
     _ -> slipbox
       
@@ -261,7 +261,7 @@ submitSourceEdits item slipbox =
       Slipbox 
         { content | sources = List.map sourceUpdateLambda content.sources
         , actions = (Action.editSource originalSource editingsourceWithEdits content.actions) :: content.actions
-        , items = List.map (\i -> if Item.is item i then Item.source sourceWithEdits else i) content.items
+        , items = List.map (\i -> if Item.is item i then Item.Source itemId sourceWithEdits else i) content.items
         }
     _ -> slipbox
 
@@ -281,7 +281,7 @@ createLink item slipbox =
             { content | notes = notes
             , links = links
             , actions = Action.createLink link |> List.concat content.actions
-            , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
             , state = state
             }
         _ -> slipbox
@@ -300,7 +300,7 @@ deleteLink item slipbox =
         { content | notes = notes
         , links = links
         , actions = (Action.deleteLink link content.actions) :: content.actions
-        , items = List.map (\i -> if Item.is item i then Item.note note else i) content.items
+        , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
         }
     _ -> slipbox
 

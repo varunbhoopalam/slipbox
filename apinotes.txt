@@ -1,67 +1,37 @@
 Let's gather the information on what APIs/Modules are needed to build!
 
-  -- Slipbox
-  getNotesAndLinks: (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
-  getNotes: (Maybe String) -> Slipbox -> (List Note.Note)
-  getSources: (Maybe String) -> Slipbox -> (List Source.Source)
-  getItems: Slipbox -> (List Item.Item)
-  getLinkedNotes: Note.Note -> Slipbox -> (List Note.Note)
-  getNotesThatCanLinkToNote: Note.Note -> Slipbox -> (List Note.Note)
-  getNotesAssociatedToSource: Source.Source -> Slipbox -> (List Note.Note)
-  compressNote: Note.Note -> Slipbox -> Slipbox
-  expandNote: Note.Note -> Slipbox -> Slipbox
+-- SLIPBOX IMPLEMENTED
 
--- Slipbox Item api
-
-  -- Adds/Removes to/from item list
-  openNote: Note.Note -> Slipbox -> Slipbox
-  openSource: Source.Source -> Slipbox -> Slipbox
-  newNoteForm: Slipbox -> Slipbox
-  newSourceForm: Slipbox -> Slipbox
-  dismissItem: Int -> Slipbox -> Slipbox 
-  
-  -- Changes item state and slipbox state
-  deleteNote: Int -> Slipbox -> Slipbox
-  deleteSource: Int -> Slipbox -> Slipbox
-  createNote: Int -> Slipbox -> Slipbox
-  createSource: Int -> Slipbox -> Slipbox
-  submitNoteEdits: Int -> Slipbox -> Slipbox
-  submitSourceEdits: Int -> Slipbox -> Slipbox
-  createLink: Int -> Slipbox -> Slipbox
-  deleteLink: Int -> Slipbox -> Slipbox
-
-  -- Updated an Item's State
-  updateItem: Int -> Item.UpdateAction -> Slipbox -> Slipbox
+-- ITEM
   type UpdateAction = 
     Content String | Source String | 
     Variant Note.Variant | Title String | 
     Author String | AddLink Note.Note |
     Edit | PromptConfirmDelete | AddLinkForm |
     PromptConfirmRemoveLink Note.Note | Cancel
-  
-  -- Misc
-  undo
-  redo 
-  tick
+  type Item = 
+    Note
+    Source
+    NewNote
+    NewSource
+    EditingNote
+    EditingSource
+    AddingLinkToNoteForm
+    ConfirmDiscardNewNoteForm
+    ConfirmDiscardNewSourceForm
+    ConfirmDeleteNote
+    ConfirmDeleteSource
+    ConfirmRemoveLink
 
-Item
-type Item = 
-Note
-Source
+  -- API
+  module Item exposing 
+    ( Item(..), note
+    , source, newNote
+    , newSource, is
+    , UpdateAction(..)
+    )
 
-NewNote
-NewSource
-EditingNote
-EditingSource
-AddingLinkToNoteForm
-
-ConfirmDiscardNewNoteForm
-ConfirmDiscardNewSourceForm
-ConfirmDeleteNote
-ConfirmDeleteSource
-ConfirmRemoveLink
-
-Note
+-- NOTE
 getId: Note -> Int
 getX: Note -> String
 getY: Note -> String
