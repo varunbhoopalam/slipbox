@@ -438,8 +438,86 @@ updateItem item updateAction slipbox =
         
         _ -> slipbox
     Item.AddLinkForm ->
-    Item.PromptConfirmRemoveLink Note.Note ->
+      case item of 
+        Item.Note itemId note ->
+          let
+              updatedItem = Item.AddingLinkToNoteForm itemId note Nothing
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        _ -> slipbox
+    Item.PromptConfirmRemoveLink linkedNote link ->
+      case item of 
+        Item.Note itemId note ->
+          let
+              updatedItem = Item.ConfirmDeleteLink itemId note linkedNote link
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        _ -> slipbox
     Item.Cancel ->
+      case item of
+        Item.NewNote itemId note -> 
+          let
+              updatedItem = Item.ConfirmDiscardNewNoteForm itemId note
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.ConfirmDiscardNewNoteForm itemId note ->
+          let
+              updatedItem = Item.NewNote itemId note
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.EditingNote itemId originalNote noteWithEdits ->
+          let
+              updatedItem = Item.Note itemId originalNote
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.ConfirmDeleteNote itemId note ->
+          let
+              updatedItem = Item.Note itemId note
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.AddingLinkToNoteForm itemId search note maybeNote ->
+          let
+              updatedItem = Item.Note itemId note
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.NewSource itemId source ->
+          let
+              updatedItem = Item.ConfirmDiscardNewSourceForm itemId source
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.ConfirmDiscardNewSourceForm itemId source ->
+          let
+              updatedItem = Item.NewSource itemId source
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.EditingSource itemId originalSource sourceWithEdits ->
+          let
+              updatedItem = Item.Source itemId originalSource
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.ConfirmDeleteSource itemId source ->
+          let
+              updatedItem = Item.Source itemId source
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+        Item.ConfirmDeleteLink itemId note linkedNote link ->
+          let
+              updatedItem = Item.Note itemId note
+              lambda = conditionalUpdate updatedItem <| Item.is item
+          in
+          Slipbox { content | items = List.map lambda content.items }
+          --\lambda -> Slipbox { content | items = List.map lambda content.items}
 
 -- TODO
 -- undo: Int -> Slipbox -> Slipbox
