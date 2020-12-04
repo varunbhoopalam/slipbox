@@ -26,6 +26,8 @@ import Link
 import Action
 import Item
 import Source
+import IdGenerator
+import IdGenerator exposing (IdGenerator)
 
 --Types
 type Slipbox = Slipbox Content
@@ -37,6 +39,7 @@ type alias Content =
   , items: List Item.Item
   , sources: List Source.Source
   , state: Simulation.State Int
+  , idGenerator: IdGenerator.IdGenerator
   }
 
 getContent : Slipbox -> Content
@@ -126,45 +129,54 @@ expandNote note slipbox =
   in
   Slipbox { content | notes = notes, state = state}
 
+-- TODO: Edge case what if note is already open and inside of items?
 openNote : (Maybe Item.Item) -> Note.Note -> Slipbox -> Slipbox
 openNote maybeItem note slipbox =
   let
       content = getContent slipbox
-      newItem = Item.note note
+      ( newItem, idGenerator ) = Item.openNote content.idGenerator note
       
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items}
-     Nothing -> Slipbox { content | items = newItem :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
+      , idGenerator = idGenerator
+      }
+     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
 
+-- TODO: Edge case what if source is already open and inside of items?
 openSource : (Maybe Item.Item) -> Source.Source -> Slipbox -> Slipbox
 openSource maybeItem source slipbox =
   let
       content = getContent slipbox
-      newItem = Item.source source
+      ( newItem, idGenerator ) = Item.openSource content.idGenerator source
       
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items}
-     Nothing -> Slipbox { content | items = newItem :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
+      , idGenerator = idGenerator }
+     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
 
 newNoteForm : (Maybe Item.Item) -> Slipbox -> Slipbox
 newNoteForm maybeItem slipbox =
   let
-      content = getContent slipbox      
+      content = getContent slipbox
+      ( newItem, idGenerator ) = Item.newNote content.idGenerator
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newNote) [] content.items}
-     Nothing -> Slipbox { content | items = Item.newNote :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
+      , idGenerator = idGenerator }
+     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
 
 newSourceForm : (Maybe Item.Item) -> Slipbox -> Slipbox
 newSourceForm maybeItem slipbox =
   let
-      content = getContent slipbox      
+      content = getContent slipbox
+      ( newItem, idGenerator ) = Item.newSource content.idGenerator    
   in
   case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch Item.newSource) [] content.items}
-     Nothing -> Slipbox { content | items = Item.newSource :: content.items }
+     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
+      , idGenerator = idGenerator }
+     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
 
 dismissItem : Item.Item -> Slipbox -> Slipbox
 dismissItem item slipbox =
@@ -216,7 +228,7 @@ createNote item slipbox =
     Item.NewNote itemId noteContent ->
       let
           content = getContent slipbox
-          note = Note.create noteContent -- Is it easy to generate an id for a note. Do I need the context of all other existing notes to do so?
+          (note, idGenerator) = Note.create slipbox.idGenerator noteContent
           (state, notes) = Simulation.step content.links (note :: content.notes) content.state
       in
       Slipbox
@@ -224,6 +236,7 @@ createNote item slipbox =
         , actions = (Action.createNote note content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
         , state = state
+        , idGenerator = idGenerator
         }
     _ -> Slipbox
 
@@ -281,7 +294,7 @@ createLink item slipbox =
         Just noteToBeLinked ->
           let
               content = getContent slipbox
-              link = Link.create note noteToBeLinked
+              (idGenerator, link) = Link.create slipbox.idGenerator note noteToBeLinked
               links = link :: content.links
               (state, notes) = Simulation.step links content.notes content.state
           in
@@ -291,6 +304,7 @@ createLink item slipbox =
             , actions = Action.createLink link |> List.concat content.actions
             , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
             , state = state
+            , idGenerator = idGenerator
             }
         _ -> slipbox
     _ -> slipbox

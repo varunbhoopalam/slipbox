@@ -4,15 +4,13 @@ Let's gather the information on what APIs/Modules are needed to build!
 
 -- ITEM IMPLEMENTED
 
--- NOTE
+-- NOTE IMPLEMENTED
 
-Link
-getSourceX: Link -> String
-getSourceY: Link -> String
-getTargetX: Link -> String
-getTargetY: Link -> String
+-- LINK IMPLEMENTED
 
-Source
+-- IDGENERATOR IMPLEMENTED
+
+-- SOURCE
 sorter: Sort -> (Source.Source -> Source.Source -> Order)
 Source.getId: Source -> Int
 Source.getTitle: Source -> String

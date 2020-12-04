@@ -552,7 +552,7 @@ graph viewport (notes, links) =
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         ]
         <| List.map toGraphNote notes 
-          :: List.map toGraphLink links
+          :: List.filterMap (toGraphLink notes) links
           :: panningFrame viewport
 
 toGraphNote: Note.Note -> Svg Msg
@@ -593,17 +593,22 @@ toGraphNote note =
           ]
           []
 
-toGraphLink: Link.Link -> Svg Msg
-toGraphLink link =
+toGraphLink: (List Note.Note) -> Link.Link -> (Maybe Svg Msg)
+toGraphLink link notes =
+  Maybe.map2 svgLine (getSource link notes) (getTarget link notes)
+
+svgLine : Note.Note -> Note.Note -> Svg Msg 
+svgLine note1 note2 =
   Svg.line 
-    [ Svg.Attributes.x1 <| Link.getSourceX link
-    , Svg.Attributes.y1 <| Link.getSourceY link
-    , Svg.Attribtes.x2 <| Link.getTargetX link
-    , Svg.Attributes.y2 <| Link.getTargetY link
+    [ Svg.Attributes.x1 <| String.fromFloat <| Note.getX note1
+    , Svg.Attributes.y1 <| String.fromFloat <| Note.getY note1
+    , Svg.Attribtes.x2 <| String.fromFloat <| Note.getX note2
+    , Svg.Attributes.y2 <| String.fromFloat <| Note.getY note2
     , Svg.Attributes.stroke "rgb(0,0,0)"
     , Svg.Attributes.strokeWidth "2"
     ] 
     []
+  
 
 panningFrame: Viewport.Viewport -> Svg Msg
 panningFrame viewport =

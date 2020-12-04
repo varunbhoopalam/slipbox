@@ -11,6 +11,8 @@ module Note exposing
   , updateSource, updateVariant
   , GraphState, Variant
   )
+import IdGenerator
+import IdGenerator exposing (IdGenerator)
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -111,15 +113,21 @@ expand note =
   in
   Note { info | graphState = Expanded }
 
-create : NoteRecord -> Note
-create record =
-  Note <| Info
-    generateId
+create : IdGenerator.IdGenerator -> NoteRecord -> ( Note, IdGenerator.IdGenerator)
+create generator record =
+  let
+      (id, idGenerator) = IdGenerator.generateId generator
+  in
+  
+  ( Note <| Info
+    id
     record.content
     record.source
     record.variant
     Compressed
     0 0 0 0
+  , idGenerator
+  )
 
 updateContent : String -> Note -> Note
 updateContent content =
@@ -166,8 +174,8 @@ updateVariant variant =
 linkBelongsToNotes : Note -> Note -> Link.Link -> Bool
 linkBelongsToNotes note1 note2 link=
   let
-      linkSourceId = Link.getSource link
-      linkTargetId = Link.getTarget link
+      linkSourceId = Link.getSourceId link
+      linkTargetId = Link.getTargetId link
       note1Id = getId note1
       note2Id = getId note2
   in

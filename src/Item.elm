@@ -8,6 +8,8 @@ module Item exposing
 
 import Note
 import Source
+import IdGenerator
+import IdGenerator exposing (IdGenerator)
 
 type Item 
   = Note ItemId Note.Note
@@ -38,21 +40,33 @@ type alias NewSourceContent =
   , canSubmit : Bool
   }
 
-openNote : Note.Note -> Item
-openNote note =
-  Note generateId note
+openNote : IdGenerator.IdGenerator -> Note.Note -> ( Item, IdGenerator.IdGenerator)
+openNote generator note =
+  let
+      ( id, idGenerator ) = IdGenerator.generateId generator
+  in
+  ( Note id note, idGenerator )
   
-openSource : Source.Source -> Item
-openSource source =
-  Source generateId source
+openSource : IdGenerator.IdGenerator -> Source.Source -> ( Item, IdGenerator.IdGenerator)
+openSource generator source =
+  let
+      ( id, idGenerator ) = IdGenerator.generateId generator
+  in
+  ( Source id source, idGenerator )
 
-newNote : NewNoteContent -> Item
-newNote note =
-  NewNote generateId note
+newNote : IdGenerator.IdGenerator -> NewNoteContent -> ( Item, IdGenerator.IdGenerator)
+newNote generator note =
+  let
+      ( id, idGenerator ) = IdGenerator.generateId generator
+  in
+  ( NewNote id note, idGenerator )
 
-newSource : NewSourceContent -> Item
-newSource source =
-  NewSource generateId source
+newSource : IdGenerator.IdGenerator -> NewSourceContent -> ( Item, IdGenerator.IdGenerator)
+newSource generator source =
+  let
+      ( id, idGenerator ) = IdGenerator.generateId generator
+  in
+  ( NewSource id source, idGenerator )
 
 is : Item.Item -> Item.Item -> Bool
 is item1 item2 =
