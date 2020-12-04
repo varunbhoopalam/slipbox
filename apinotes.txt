@@ -3,43 +3,31 @@ Let's gather the information on what APIs/Modules are needed to build!
 -- SLIPBOX IMPLEMENTED
 
 -- ITEM
-  type UpdateAction = 
-    Content String | Source String | 
-    Variant Note.Variant | Title String | 
-    Author String | AddLink Note.Note |
-    Edit | PromptConfirmDelete | AddLinkForm |
-    PromptConfirmRemoveLink Note.Note | Cancel
-  type Item = 
-    Note
-    Source
-    NewNote
-    NewSource
-    EditingNote
-    EditingSource
-    AddingLinkToNoteForm
-    ConfirmDiscardNewNoteForm
-    ConfirmDiscardNewSourceForm
-    ConfirmDeleteNote
-    ConfirmDeleteSource
-    ConfirmRemoveLink
-
-  -- API
-  module Item exposing 
-    ( Item(..), note
-    , source, newNote
-    , newSource, is
-    , UpdateAction(..)
-    )
 
 -- NOTE
-getId: Note -> Int
-getX: Note -> String
-getY: Note -> String
-getVariant: Note -> Note.Variant
-getGraphState: Note -> Note.GraphState
-getContent: Note -> String
-getTransform: Note -> String
-getSource: Note -> String
+  module Note exposing 
+    (
+      
+    )
+  getId: Note -> Int
+  getX: Note -> String
+  getY: Note -> String
+  getVariant: Note -> Note.Variant
+  getGraphState: Note -> Note.GraphState
+  getContent: Note -> String
+  getTransform: Note -> String
+  getSource: Note -> String
+  contains: String -> Bool
+  isLinked: (List Link.Link) -> Note -> Bool
+  canLink: (List Link.Link) -> Note -> Bool
+  isAssociated: Source.Source -> Note -> Bool
+  is: Note -> Note -> Bool
+  compress: Note -> Note
+  expand: Note -> Note
+  create: NoteContent -> Note
+  updateContent: String -> Note -> Note
+  updateSource: String -> Note -> Note
+  updateVariant: Variant -> Note -> Note
 
 Link
 getSourceX: Link -> String

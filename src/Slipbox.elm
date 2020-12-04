@@ -240,7 +240,7 @@ submitNoteEdits item slipbox =
     Item.EditingNote itemId originalNote editingNote ->
       let
           content = getContent slipbox
-          noteUpdateLambda = \n -> if Note.is n editingNote then Note.update n editingNote else n 
+          noteUpdateLambda = \n -> if Note.is n editingNote then updateNoteEdits n editingNote else n 
       in
       Slipbox 
         { content | notes = List.map noteUpdateLambda content.notes
@@ -448,3 +448,14 @@ deleteNoteItemStateChange deletedNote item =
 conditionalUpdate : a -> (a -> Bool) -> (a -> a)
 conditionalUpdate updatedItem itemIdentifier =
   (\i -> if itemIdentifier i then updatedItem else i)
+
+updateNoteEdits : Note.Note -> Note.Note -> Note.Note
+updateNoteEdits originalNote noteWithEdits =  
+  let
+      updatedContent = Note.getContent noteWithEdits
+      updatedSource = Note.getSource noteWithEdits
+      updatedVariant = Note.getVariant noteWithEdits
+  in
+  Note.updateContent updatedContent
+    <| Note.updateSource updatedSource
+      <| Note.updateVariant updatedVariant originalNote
