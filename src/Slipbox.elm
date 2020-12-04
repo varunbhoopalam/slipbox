@@ -107,16 +107,24 @@ compressNote note slipbox =
   let
       content = getContent slipbox
       conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
+      (state, notes) = Simulation.step 
+        content.links 
+        (List.map conditionallyCompressNote content.notes) 
+        content.state
   in
-  Slipbox { content | notes = List.map conditionallyCompressNote content.notes}
+  Slipbox { content | notes = notes, state = state}
 
 expandNote : Note.Note -> Slipbox -> Slipbox
 expandNote note slipbox =
   let
       content = getContent slipbox
       conditionallyExpandNote = \n -> if Note.is note n then Note.expand n else n
+      (state, notes) = Simulation.step 
+        content.links 
+        (List.map conditionallyExpandNote content.notes) 
+        content.state
   in
-  Slipbox { content | notes = List.map conditionallyExpandNote content.notes}
+  Slipbox { content | notes = notes, state = state}
 
 openNote : (Maybe Item.Item) -> Note.Note -> Slipbox -> Slipbox
 openNote maybeItem note slipbox =
@@ -172,7 +180,7 @@ deleteNote item slipbox =
       let
           content = getContent slipbox
           links = List.filter (Link.isAssociated note) content.links
-          (state, notes) = Simulation.step link (List.filter (Note.is note) content.notes) content.state
+          (state, notes) = Simulation.step links (List.filter (Note.is note) content.notes) content.state
           deletedLinkActions = 
             List.foldr (Action.deleteLink content.actions 
             <| List.filter (not <| Link.isAssociated note) content.links

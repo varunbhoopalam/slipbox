@@ -2,32 +2,9 @@ Let's gather the information on what APIs/Modules are needed to build!
 
 -- SLIPBOX IMPLEMENTED
 
--- ITEM
+-- ITEM IMPLEMENTED
 
 -- NOTE
-  module Note exposing 
-    (
-      
-    )
-  getId: Note -> Int
-  getX: Note -> String
-  getY: Note -> String
-  getVariant: Note -> Note.Variant
-  getGraphState: Note -> Note.GraphState
-  getContent: Note -> String
-  getTransform: Note -> String
-  getSource: Note -> String
-  contains: String -> Bool
-  isLinked: (List Link.Link) -> Note -> Bool
-  canLink: (List Link.Link) -> Note -> Bool
-  isAssociated: Source.Source -> Note -> Bool
-  is: Note -> Note -> Bool
-  compress: Note -> Note
-  expand: Note -> Note
-  create: NoteContent -> Note
-  updateContent: String -> Note -> Note
-  updateSource: String -> Note -> Note
-  updateVariant: Variant -> Note -> Note
 
 Link
 getSourceX: Link -> String
@@ -44,8 +21,6 @@ Source.getCreated: Source -> Int
 Source.getUpdated: Source -> Int
 Source.getContent: Source -> String
 
-Sort (..) -- Unsure if this belongs on it's own or inside of source
-
 Viewport
 initialize: BrowserWidth -> BrowserHeight -> Viewport
 getWidth: Viewport -> String
@@ -57,3 +32,5 @@ getInnerPanningFrameWidth: Viewport -> String
 getInnerPanningFrameHeight: Viewport -> String
 getInnerPanningFrameStyle: Viewport -> String
 getInnerPanningFrameTransform: Viewport -> String
+
+-- SIMULATION

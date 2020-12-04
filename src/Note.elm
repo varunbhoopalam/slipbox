@@ -31,8 +31,7 @@ type alias NoteId = Int
 type Variant = Regular | Index
 type GraphState = Compressed | Expanded
 type alias NoteRecord = 
-  { id : Int
-  , content : String
+  { content : String
   , source : String
   , noteType: String
   }
@@ -68,21 +67,81 @@ getTransform note =
       y = String.fromFloat info.y
   in
   String.concat [ "translate(", x, " ", y, ")" ]
-getSource: Note -> String
-contains: String -> Bool
-isLinked: (List Link.Link) -> Note -> Bool
-canLink: (List Link.Link) -> Note -> Bool
-isAssociated: Source.Source -> Note -> Bool
-is: Note -> Note -> Bool
+
+getSource : Note -> String
+getSource note =
+  source <| getInfo note
+
+contains : String -> Note -> Bool
+contains string note =
+  let
+      info = getInfo note
+      contains = \s -> String.contains (String.toLower string) <| String.toLower s
+  in
+  contains info.content || contains info.source
+  
+isLinked : (List Link.Link) -> Note -> Note -> Bool
+isLinked links note1 note2 =
+  linkBelongsToNotes note1 note2 |> List.any links
+
+canLink : (List Link.Link) -> Note -> Note -> Bool
+canLink links note1 note2 =
+  not <| isLinked note1 note2
+  && ( getVariant note1 == Regular || getVariant note2 == Regular )
+
+isAssociated : Source.Source -> Note -> Bool
+isAssociated source note =
+  Source.getTitle source == Note.getSource note
+
+is : Note -> Note -> Bool
 is note1 note2 =
   (getId note1) == (getId note2)
 
-  compress: Note -> Note
-  expand: Note -> Note
-  create: NoteContent -> Note
-  updateContent: String -> Note -> Note
-  updateSource: String -> Note -> Note
-  updateVariant: Variant -> Note -> Note
+compress : Note -> Note
+compress note =
+  let
+      info = getInfo note
+  in
+  Note { info | graphState = Compressed }
+
+expand : Note -> Note
+expand note =
+  let
+      info = getInfo note
+  in
+  Note { info | graphState = Expanded }
+
+create : NoteRecord -> Note
+create record =
+  Note <| Info
+    generateId
+    record.content
+    record.source
+    record.variant
+    Compressed
+    0 0 0 0
+
+updateContent : String -> Note -> Note
+updateContent content =
+  let
+      info = getInfo note
+  in
+  Note { info | content = content }
+
+updateSource : String -> Note -> Note
+updateSource source =
+  let
+      info = getInfo note
+  in
+  Note { info | source = source }
+
+updateVariant : Variant -> Note -> Note
+updateVariant variant =
+  let
+      info = getInfo note
+  in
+  Note { info | variant = variant }
+
 -- TODO
 -- init: NoteRecord -> Note
 -- init record =
@@ -102,3 +161,15 @@ is note1 note2 =
 --        LT -> GT
 --        EQ -> EQ
 --        GT -> LT
+
+-- Helper
+linkBelongsToNotes : Note -> Note -> Link.Link -> Bool
+linkBelongsToNotes note1 note2 link=
+  let
+      linkSourceId = Link.getSource link
+      linkTargetId = Link.getTarget link
+      note1Id = getId note1
+      note2Id = getId note2
+  in
+  (linkSourceId == note1Id && linkTargetId == note2Id)
+  || (linkSourceId == note2Id && linkTargetId == note1Id)
