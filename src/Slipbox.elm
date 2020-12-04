@@ -277,7 +277,7 @@ submitSourceEdits item slipbox =
     Item.EditingSource itemId originalSource sourceWithEdits ->
       let
           content = getContent slipbox
-          sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then Source.update s sourceWithEdits else s 
+          sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s 
       in
       Slipbox 
         { content | sources = List.map sourceUpdateLambda content.sources
@@ -481,3 +481,14 @@ updateNoteEdits originalNote noteWithEdits =
   Note.updateContent updatedContent
     <| Note.updateSource updatedSource
       <| Note.updateVariant updatedVariant originalNote
+
+updateSourceEdits : Source.Source -> Source.Source -> Source.Source
+updateSourceEdits originalSource sourceWithEdits =  
+  let
+      updatedTitle = Source.getTitle sourceWithEdits
+      updatedAuthor = Source.getAuthor sourceWithEdits
+      updatedContent = Source.getContent sourceWithEdits
+  in
+  Source.updateTitle updatedTitle
+    <| Source.updateAuthor updatedAuthor
+      <| Source.updateContent updatedContent originalSource

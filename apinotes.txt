@@ -11,13 +11,7 @@ Let's gather the information on what APIs/Modules are needed to build!
 -- IDGENERATOR IMPLEMENTED
 
 -- SOURCE
-sorter: Sort -> (Source.Source -> Source.Source -> Order)
-Source.getId: Source -> Int
-Source.getTitle: Source -> String
-Source.getAuthor: Source -> String
-Source.getCreated: Source -> Int
-Source.getUpdated: Source -> Int
-Source.getContent: Source -> String
+
 
 Viewport
 initialize: BrowserWidth -> BrowserHeight -> Viewport
