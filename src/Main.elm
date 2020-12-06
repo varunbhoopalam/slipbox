@@ -28,7 +28,6 @@ type alias Model =
 type alias Content = 
   { tab: Tab
   , slipbox: Slipbox
-  , timezone: Timezone
   , device: Device
   }
 
@@ -36,7 +35,7 @@ type alias Content =
 type Tab = 
   Explore String Viewport
   Notes String |
-  Sources String Sort |
+  Sources String |
   History |
   Setup
 
@@ -59,10 +58,6 @@ type Msg
   | NoteTabUpdateInput String
   | SourceTabUpdateInput String
   | OpenSource Source.Source
-  | ToggleSortAuthor
-  | ToggleSortTitle
-  | ToggleSortCreated
-  | ToggleSortUpdated
   | EditItem Int
   | DeleteItem Int
   | DismissItem Int
@@ -114,38 +109,6 @@ update message model =
     CreateSource -> ({ model | slipbox = Slipbox.createSource model.slipbox }, Cmd.none)
 
     OpenSource source -> ({ model | slipbox = Slipbox.openSource source model.slipbox }, Cmd.none)
-
-    ToggleSortAuthor ->      
-      case model.tab of 
-        Sources input sort -> 
-          case sort of
-             Sort.Author direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
-             _ -> ({ model | tab = Sources input Sort.author }, Cmd.none)
-        _ -> (model, Cmd.none)
-
-    ToggleSortTitle ->      
-      case model.tab of 
-        Sources input sort -> 
-          case sort of
-             Sort.Title direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
-             _ -> ({ model | tab = Sources input Sort.title }, Cmd.none)
-        _ -> (model, Cmd.none)
-
-    ToggleSortCreated ->      
-      case model.tab of 
-        Sources input sort -> 
-          case sort of
-             Sort.Created direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
-             _ -> ({ model | tab = Sources input Sort.created }, Cmd.none)
-        _ -> (model, Cmd.none)
-
-    ToggleSortUpdated ->
-      case model.tab of 
-        Sources input sort -> 
-          case sort of
-             Sort.Updated direction -> ({ model | tab = Sources input <| Sort.toggle direction }, Cmd.none)
-             _ -> ({ model | tab = Sources input Sort.updated }, Cmd.none)
-        _ -> (model, Cmd.none)
     
     EditItem itemId -> ({ model | slipbox = Slipbox.editItem itemId model.slipbox }, Cmd.none)
 
@@ -219,7 +182,7 @@ tabView content =
   case content.tab of
     Explore input viewport -> exploreTabView input viewport content.slipbox
     Notes input -> noteTabView input content.slipbox
-    Sources input sort -> sourceTabView input sort content.timezone content.slipbox
+    Sources input sort -> sourceTabView input sort content.slipbox
     History ->
     Setup ->
 
@@ -245,11 +208,11 @@ toItemView content item =
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
      Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
      Item.AddingLinkToNoteForm itemId search note maybeNote -> addingLinkToNoteView itemId search note maybeNote content.slipbox
-     Item.Source itemId source -> itemSourceView itemId source content.timezone content.slipbox
+     Item.Source itemId source -> itemSourceView itemId source content.slipbox
      Item.NewSource itemId source -> newSourceView itemId source
      Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
-     Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.timezone content.slipbox
+     Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.slipbox
      Item.ConfirmDeleteLink itemId note linkedNote link ->
 
 itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
@@ -442,15 +405,13 @@ toNoteDetail itemId note =
         ]
       }
 
-itemSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
-itemSourceView itemId source timezone slipbox =
+itemSourceView: Int -> Source.Source -> Slipbox -> Element Msg
+itemSourceView itemId source slipbox =
   ElmUI.column 
     []
     [ dismissButton itemId
     , titleView <| Source.getTitle source
     , authorView <| Source.getAuthor source
-    , createdTimeView timezone <| Source.getCreated source
-    , updatedTime timezone <| Source.getUpdated source
     , editButton itemId
     , deleteButton itemId
     , contentView <| Source.getContent source 
@@ -505,8 +466,8 @@ editingSourceView itemId source slipbox =
         <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
-confirmDeleteSourceView: Int -> Source.Source -> Time.Zone -> Slipbox -> Element Msg
-confirmDeleteSourceView itemId source timezone slipbox =
+confirmDeleteSourceView: Int -> Source.Source -> Slipbox -> Element Msg
+confirmDeleteSourceView itemId source slipbox =
   ElmUI.column 
     []
     [ Element.row 
@@ -516,8 +477,6 @@ confirmDeleteSourceView itemId source timezone slipbox =
       ]
     , titleView <| Source.getTitle source
     , authorView <| Source.getAuthor source
-    , createdTimeView timezone <| Source.getCreated source
-    , updatedTime timezone <| Source.getUpdated source
     , contentView <| Source.getContent source 
     , Element.column
       [Element.scrollbarsY] 
@@ -675,16 +634,16 @@ toNoteDetail note =
       }
 
 -- SOURCE TAB
-sourceTabView: String -> Sort -> Time.Zone -> Slipbox.Slipbox -> Element Msg
-sourceTabView input sort timezone slipbox = 
+sourceTabView: String -> Slipbox.Slipbox -> Element Msg
+sourceTabView input sort slipbox = 
   Element.column 
     [ Element.width Element.fill
     , Element.height Element.fill
     ]
     [ sourceTabToolbar model.search
-    , sourceTable model.sort model.timezone 
-      <| List.sortWith (chooseSorter sort) 
-        <| Slipbox.getSources input slipbox
+    , Element.column 
+      [ Element.scrollbarY ]
+      List.map toSource <| Slipbox.getSources input slipbox
     ]
 
 sourceTabToolbar: String -> Element Msg
@@ -701,70 +660,9 @@ sourceTabToolbar input = Element.el
     , createSourceButton
     ]
 
-type alias SourceRow =
-  { source: Source.Source
-  , title: String
-  , author: String
-  , created: Int
-  , updated: Int
-  }
-
-toSourceRow: Source.Source -> SourceRow
-toSourceRow source =
-  SourceRow 
-    source
-    (Source.getTitle source)
-    (Source.getAuthor source)
-    (Source.getCreated source)
-    (Source.getUpdated source)
-
-sourcesTable: Sort -> Time.Zone -> (List Source.Source) -> Element Msg
-sourcesTable sort timezone sources =
-  Element.table []
-    { data = List.map toSourceRow sources
-    , columns = 
-      [ { header = Element.Input.button [] 
-          { onPress = Just ToggleSortAuthor 
-          , label = getTitleLabel sort 
-          }
-        , width = Element.fill
-        , view = \row -> Element.Input.button [] 
-          { onPress = Just <| OpenSource row.source
-          , label = Element.text row.author 
-          }
-        }
-      , { header = Element.Input.button [] 
-          { onPress = Just ToggleSortTitle
-          , label = getAuthorLabel sort 
-          }
-        , width = Element.fill
-        , view = \row -> Element.Input.button [] 
-          { onPress = Just <| OpenSource row.source
-          , label = Element.text row.title 
-          }
-        }
-      , { header = Element.Input.button [] 
-          { onPress = Just ToggleSortCreated
-          , label = getCreatedLabel sort 
-          }
-        , width = Element.fill
-        , view = \row -> Element.Input.button [] 
-          { onPress = Just <| OpenSource row.source
-          , label = Element.text <| timestamp timezone row.created
-          }
-        }
-      , { header = Element.Input.button [] 
-          { onPress = Just ToggleSortUpdated
-          , label = getUpdatedLabel sort 
-          }
-        , width = Element.fill
-        , view = \row -> Element.Input.button [] 
-          { onPress = Just <| OpenSource row.source
-          , label = Element.text <| timestamp timezone row.updated 
-          }
-        }
-      ]
-    }
+-- TODO
+toSource : Source.Source -> Element Msg
+toSource source = Element.text "todo"
 
 -- VIEW UTILITIES
 gray = Element.rgb255 238 238 238

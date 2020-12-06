@@ -10,8 +10,7 @@ Let's gather the information on what APIs/Modules are needed to build!
 
 -- IDGENERATOR IMPLEMENTED
 
--- SOURCE
-
+-- SOURCE IMPLEMENTED
 
 Viewport
 initialize: BrowserWidth -> BrowserHeight -> Viewport
