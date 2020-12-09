@@ -11,6 +11,7 @@ import Svg.Attributes
 import Element
 import Json.Decode
 import Viewport
+import Browser.Dom
 
 -- MAIN
 main =
@@ -26,16 +27,20 @@ main =
 -- MODEL
 
 type alias Model =
-  Setup |
-  Parsing |
-  FailureToParse |
-  Session Content
+  { state: State 
+  , deviceViewport: ( Int, Int )
+  }
+
+type State 
+  = Setup 
+  | Parsing 
+  | FailureToParse 
+  | Session Content
 
 -- CONTENT
 type alias Content = 
   { tab: Tab
   , slipbox: Slipbox
-  , device: Device
   }
 
 -- TAB
@@ -50,7 +55,12 @@ type Tab =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ _ _ =
-  ( Setup, Cmd.none)
+  ( Setup
+  , Cmd.batch [ getViewport ]
+  )
+
+getViewport: Cmd Msg
+getViewport = Task.perform GotViewport Browser.Dom.getViewport
 
 -- UPDATE
 type Msg
@@ -85,11 +95,13 @@ type Msg
   | MoveView Viewport.MouseEvent
   | StopMoveView
   | ZoomView Viewport.WheelEvent
+  | GotViewport Browser.Dom.Viewport
+  | GotWindowResize ( Int, Int )
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
   case message of
-
+    
     LinkClicked _ -> (model, Cmd.none)
 
     UrlChanged _ -> (model, Cmd.none)
@@ -179,14 +191,38 @@ update message model =
           , Cmd.none)
         _ -> model
     
+    GotViewport viewport -> 
+      ( handleWindowInfo 
+        ( round viewport.viewport.width
+        , round viewport.viewport.height
+        ) 
+        model
+      , Cmd.none
+      )
 
+    GotWindowResize windowInfo -> (handleWindowInfo windowInfo model, Cmd.none)
+    
 
+handleWindowInfo: ( Int, Int ) -> Model -> Model
+handleWindowInfo windowInfo model = 
+  case model.state of
+    Session content ->
+      case content.tab of
+        Explore input viewport ->
+          { model | deviceViewport = windowInfo
+          , { content | tab = Explore input 
+            <| Viewport.updateSvgContainerDimensions windowInfo viewport
+            }
+          }
+        _ -> { model | deviceViewport = windowInfo }
+      _ -> { model | deviceViewport = windowInfo }
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
 subscriptions model =
-  Sub.none
-
+  Sub.batch
+    [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
+    ]
 -- Steps
 sourceStep: Model -> (SourceSummary.Model, Cmd SourceSummary.Msg) -> (Model, Cmd Msg)
 sourceStep model (summaryModel, sourceMsg) =
@@ -197,27 +233,27 @@ sourceStep model (summaryModel, sourceMsg) =
 
 view: Model -> Browser.Document Msg
 view model =
-  case model of
+  case model.state of
     Setup -> {title = "TODO", body = []}
     Parsing -> {title = "TODO", body = []}
     FailureToParse -> {title = "TODO", body = []}
-    Session content -> {title = "MySlipbox", body = [ sessionView content ]}
+    Session content -> {title = "MySlipbox", body = [ sessionView model.deviceViewport content ]}
 
-sessionView: Content -> Html Msg
-sessionView content =
+sessionView: ( Int, Int ) -> Content -> Html Msg
+sessionView deviceViewport content =
   Element.layout 
     [] 
     <| Element.column 
       [] 
-      [ tabView content
+      [ tabView deviceViewport content
       , itemsView content
       ]
 
 -- TAB
-tabView: Content -> Element Msg
-tabView content = 
+tabView: ( Int, Int ) -> Content -> Element Msg
+tabView deviceViewport content = 
   case content.tab of
-    Explore input viewport -> exploreTabView input viewport content.slipbox
+    Explore input viewport -> exploreTabView deviceViewport input viewport content.slipbox
     Notes input -> noteTabView input content.slipbox
     Sources input sort -> sourceTabView input sort content.slipbox
     History ->
@@ -522,11 +558,11 @@ confirmDeleteSourceView itemId source slipbox =
     ]
 
 -- EXPLORE TAB
-exploreTabView: String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
-exploreTabView input viewport slipbox = Element.column 
+exploreTabView: ( Int, Int ) -> String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
+exploreTabView deviceViewport input viewport slipbox = Element.column 
   [ Element.width Element.fill, Element.height Element.fill]
   [ exploreTabToolbar input
-  , graph <| Slipbox.getNotesAndLinks input slipbox
+  , graph deviceViewport viewport <| Slipbox.getNotesAndLinks input slipbox
   ]
 
 exploreTabToolbar: String -> Element Msg
@@ -538,11 +574,11 @@ exploreTabToolbar input =
       , createNoteButton
       ]
 
-graph : Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
-graph viewport elements =
+graph : ( Int, Int ) -> Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
+graph deviceViewport viewport elements =
   Element.el [Element.height Element.fill, Element.width Element.fill] 
     <| Element.html 
-      <| Html.div (graphWrapperAttributes viewport) <| graph_ viewport elements
+      <| Html.div (graphWrapperAttributes viewport) <| graph_ deviceViewport viewport elements
 
 graphWrapperAttributes : Viewport.Viewport -> ( List Html.Attributes Msg )
 graphWrapperAttributes viewport =
@@ -552,21 +588,21 @@ graphWrapperAttributes viewport =
     Viewort.Stationary ->
       []
 
-graph_ : Viewport -> ((List Note.Note, List Link.Link)) -> Svg Msg
-graph_ viewport (notes, links) =
+graph_ : ( Int, Int ) -> Viewport -> ((List Note.Note, List Link.Link)) -> Svg Msg
+graph_ deviceViewport viewport (notes, links) =
   Svg.svg (graphAttributes viewport) <| List.map toGraphNote notes 
     :: List.filterMap (toGraphLink notes) links 
     :: panningFrame viewport notes
 
-graphAttributes : Viewport -> (List Svg.Attribute Msg)
-graphAttributes viewport =
+graphAttributes : ( Int, Int ) -> Viewport -> (List Svg.Attribute Msg)
+graphAttributes ( width, height ) viewport =
   let
       mouseEventDecoder = map2 Viewport.MouseEvent (field "offsetX" int) (field "offsetY" int)
   in
   case Viewport.getState viewport of
     Viewport.Moving -> 
-      [ Svg.Attributes.width <| Viewport.getSvgContainerWidth viewport
-        , Svg.Attributes.height <| Viewport.getSvgContainerHeight viewport
+      [ Svg.Attributes.width <| width
+        , Svg.Attributes.height <| height
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView

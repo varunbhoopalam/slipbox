@@ -1,6 +1,5 @@
 module Viewport exposing 
   ( Viewport, initialize
-  , getWidth, getHeight
   , getViewbox
   , getPanningAttributes
   , PanningAttributes
@@ -20,7 +19,6 @@ getInfo viewport =
 type alias Info = 
   { state : State
   , viewbox : Viewbox
-  , svgContainer : SvgContainer
   }
 type State = Moving MouseEvent | Stationary
 type alias Viewbox = 
@@ -29,22 +27,12 @@ type alias Viewbox =
   , width: Int
   , height: Int
   }
-type alias SvgContainer = { width : Int, height : Int }
 
-initialize : SvgContainer -> Viewport
-initialize container =
+initialize : ( Int, Int ) -> Viewport
+initialize dimensions =
   Viewport <| Info
     Stationary
-    (initializeViewbox container)
-    container
-
-getSvgContainerWidth : Viewport -> String
-getSvgContainerWidth viewport =
-  String.fromInt <| width <| svgContainer <| getInfo viewport
-
-getSvgContainerHeight : Viewport -> String
-getSvgContainerHeight viewport =
-  String.fromInt <| height <| svgContainer <| getInfo viewport
+    (initializeViewbox dimensions)
 
 getViewbox : Viewport -> String
 getViewbox viewport =
@@ -138,17 +126,15 @@ stopMove viewport =
 -- TODO
 -- changeZoom : WheelEvent -> ( List Note.Note ) -> Viewport -> Viewport
 
-updateSvgContainerDimensions : SvgContainer -> Viewport -> Viewport
-updateSvgContainerDimensions svgContainer viewport =
-  let
-      info = getInfo viewport
-  in
-  Viewport { info | svgContainer = svgContainer }
+-- TODO
+-- updateSvgContainerDimensions : ( Int, Int ) -> Viewport -> Viewport
+-- updateSvgContainerDimensions ( width, Height ) viewport =
+
 
 -- HELPER
-initializeViewbox : SvgContainer -> Viewbox
-initializeViewbox container =
- Viewbox (negate (container.width // 2)) (negate (container.height // 2)) container.width container.height
+initializeViewbox : ( Int, Int ) -> Viewbox
+initializeViewbox ( width, height ) =
+ Viewbox (negate (width // 2)) (negate (height // 2)) width height
 
 type alias PositionExtremes =
   { minX : Double
