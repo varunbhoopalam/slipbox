@@ -12,16 +12,6 @@ Let's gather the information on what APIs/Modules are needed to build!
 
 -- SOURCE IMPLEMENTED
 
-Viewport
-initialize: BrowserWidth -> BrowserHeight -> Viewport
-getWidth: Viewport -> String
-getHeight: Viewport -> String
-getViewbox: Viewport -> String
-getOuterPanningFrameWidth: Viewport -> String
-getOuterPanningFrameHeight: Viewport -> String
-getInnerPanningFrameWidth: Viewport -> String
-getInnerPanningFrameHeight: Viewport -> String
-getInnerPanningFrameStyle: Viewport -> String
-getInnerPanningFrameTransform: Viewport -> String
+-- VIEWPORT IMPLEMENTED
 
 -- SIMULATION

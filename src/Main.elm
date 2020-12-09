@@ -3,7 +3,14 @@ module Main exposing (..)
 import Browser
 import Browser.Navigation
 import Html
+import Html.Events
+import Html.Attributes
+import Svg
+import Svg.Events
+import Svg.Attributes
 import Element
+import Json.Decode
+import Viewport
 
 -- MAIN
 main =
@@ -74,6 +81,10 @@ type Msg
   | ConfirmDeleteItem Int
   | UpdateSourceTitle Int String
   | UpdateSourceAuthor Int String
+  | StartMoveView Viewport.MouseEvent
+  | MoveView Viewport.MouseEvent
+  | StopMoveView
+  | ZoomView Viewport.WheelEvent
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -142,13 +153,39 @@ update message model =
     
     UpdateSourceAuthor itemId input -> ({ model | slipbox = Slipbox.updateSourceAuthor itemId input model.slipbox }, Cmd.none)
 
+    StartMoveView mouseEvent -> 
+      case model.tab of 
+        Explore -> ({ model | tab = Explore input (Viewport.startMove mouseEvent viewport) }, Cmd.none)
+        _ -> model
+    
+    MoveView mouseEvent ->
+      case model.tab of 
+        Explore -> 
+          ({ model | tab = Explore input 
+            <| Viewport.move mouseEvent ( Slipbox.getNotes Nothing model.slipbox ) viewport }
+          , Cmd.none)
+        _ -> model
+    
+    StopMoveView ->
+      case model.tab of 
+        Explore -> ({ model | tab = Explore input (Viewport.stopMove viewport) }, Cmd.none)
+        _ -> model
+
+    ZoomView wheelEvent ->
+      case model.tab of 
+        Explore -> 
+          ({ model | tab = Explore input 
+            <| Viewport.changeZoom wheelEvent ( Slipbox.getNotes Nothing model.slipbox ) viewport }
+          , Cmd.none)
+        _ -> model
+    
+
+
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
 subscriptions model =
-  case model.page of 
-    NotFound -> Sub.none
-    Source source -> Sub.map SourceMsg (SourceSummary.subscriptions source)
+  Sub.none
 
 -- Steps
 sourceStep: Model -> (SourceSummary.Model, Cmd SourceSummary.Msg) -> (Model, Cmd Msg)
@@ -501,18 +538,46 @@ exploreTabToolbar input =
       , createNoteButton
       ]
 
-graph: Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
-graph viewport (notes, links) =
+graph : Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
+graph viewport elements =
   Element.el [Element.height Element.fill, Element.width Element.fill] 
     <| Element.html 
-      <| Svg.svg 
-        [ Svg.Attributes.width <| Viewport.getWidth viewport
-        , Svg.Attributes.height <| Viewport.getHeight viewport
+      <| Html.div (graphWrapperAttributes viewport) <| graph_ viewport elements
+
+graphWrapperAttributes : Viewport.Viewport -> ( List Html.Attributes Msg )
+graphWrapperAttributes viewport =
+  case Viewport.getState viewport of
+    Viewport.Moving ->
+      [ Html.Events.onMouseEnter StopMoveView ]
+    Viewort.Stationary ->
+      []
+
+graph_ : Viewport -> ((List Note.Note, List Link.Link)) -> Svg Msg
+graph_ viewport (notes, links) =
+  Svg.svg (graphAttributes viewport) <| List.map toGraphNote notes 
+    :: List.filterMap (toGraphLink notes) links 
+    :: panningFrame viewport notes
+
+graphAttributes : Viewport -> (List Svg.Attribute Msg)
+graphAttributes viewport =
+  let
+      mouseEventDecoder = map2 Viewport.MouseEvent (field "offsetX" int) (field "offsetY" int)
+  in
+  case Viewport.getState viewport of
+    Viewport.Moving -> 
+      [ Svg.Attributes.width <| Viewport.getSvgContainerWidth viewport
+        , Svg.Attributes.height <| Viewport.getSvgContainerHeight viewport
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
-        ]
-        <| List.map toGraphNote notes 
-          :: List.filterMap (toGraphLink notes) links
-          :: panningFrame viewport
+        , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
+        , Svg.Events.onMouseUp StopMoveView
+      ]
+    Viewport.Stationary -> 
+      [ Svg.Attributes.width <| Viewport.getSvgContainerWidth viewport
+        , Svg.Attributes.height <| Viewport.getSvgContainerHeight viewport
+        , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
+        , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
+        , Svg.Events.on "wheel" <| Json.Decode.map ZoomView wheelEventDecoder
+      ]
 
 toGraphNote: Note.Note -> Svg Msg
 toGraphNote note =
@@ -567,27 +632,25 @@ svgLine note1 note2 =
     , Svg.Attributes.strokeWidth "2"
     ] 
     []
-  
 
-panningFrame: Viewport.Viewport -> Svg Msg
+panningFrame: Viewport.Viewport -> ( List Note.Note ) -> Svg Msg
 panningFrame viewport =
+  let
+      attr = Viewport.getPanningAttributes notes viewport
+  in
   Svg.g
-    [] 
+    [ Svg.Attributes.transform attr.bottomRight] 
     [ Svg.rect
-      [ Svg.Attributes.width <| Viewport.getOuterPanningFrameWidth viewport
-      , Svg.Attributes.height <| Viewport.getOuterPanningFrameHeight viewport
-      , style "border: 2px solid black;"
+      [ Svg.Attributes.width <| attr.outerWidth viewport
+      , Svg.Attributes.height <| attr.outerHeight viewport
+      , style "border: 2px solid gray;"
       ] 
       []
     , Svg.rect 
-      [ Svg.Attributes.width <| Viewport.getInnerPanningFrameWidth viewport
-      , Svg.Attributes.height <| Viewport.getInnerPanningFrameHeight viewport
-      , Svg.Attributes.style <| Viewport.getInnerPanningFrameStyle viewport
-      , Svg.Attributes.transform <| Viewport.getInnerPanningFrameTransform viewport
-      , Svg.Events.on "mousemove" mouseMoveDecoder
-      , Svg.Events.on "mousedown" mouseDownDecoder
-      , Svg.Events.onMouseUp PanningStop
-      , Svg.Events.on "wheel" wheelDecoder
+      [ Svg.Attributes.width <| attr.innerWidth viewport
+      , Svg.Attributes.height <| attr.innerHeight viewport
+      , Svg.Attributes.style <| attr.innerStyle viewport
+      , Svg.Attributes.transform <| attr.innerTransform viewport
       ] 
       []
     ]
