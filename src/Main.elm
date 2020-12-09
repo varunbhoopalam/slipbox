@@ -5,6 +5,7 @@ import Browser.Navigation
 import Html
 import Html.Events
 import Html.Attributes
+import Slipbox
 import Svg
 import Svg.Events
 import Svg.Attributes
@@ -12,6 +13,11 @@ import Element
 import Json.Decode
 import Viewport
 import Browser.Dom
+import Url
+import Task
+import Note
+import Source
+import Item
 
 -- MAIN
 main =
@@ -31,6 +37,32 @@ type alias Model =
   , deviceViewport: ( Int, Int )
   }
 
+updateTab : Tab -> Model -> Model
+updateTab tab model =
+  case model.state of
+    Session content ->
+      let
+        state = Session { content | tab = tab }
+      in
+      { model | state = state }
+    _ -> model
+
+updateSlipbox : Slipbox.Slipbox -> Model -> Model
+updateSlipbox slipbox model =
+  case model.state of
+    Session content ->
+      let
+        state = Session { content | slipbox = slipbox }
+      in
+      { model | state = state }
+    _ -> model
+
+getSlipbox : Model -> ( Maybe Slipbox.Slipbox )
+getSlipbox model =
+  case model.state of
+    Session content -> Just content.slipbox
+    _ -> Nothing
+
 type State 
   = Setup 
   | Parsing 
@@ -40,22 +72,22 @@ type State
 -- CONTENT
 type alias Content = 
   { tab: Tab
-  , slipbox: Slipbox
+  , slipbox: Slipbox.Slipbox
   }
 
 -- TAB
-type Tab = 
-  Explore String Viewport
-  Notes String |
-  Sources String |
-  History |
-  Setup
+type Tab
+  = ExploreTab String Viewport.Viewport
+  | NotesTab String
+  | SourcesTab String
+  | HistoryTab
+  | SetupTab
 
 -- INIT
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ _ _ =
-  ( Setup
+  ( Model Setup ( 0, 0 )
   , Cmd.batch [ getViewport ]
   )
 
@@ -67,30 +99,24 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | ExploreTabUpdateInput String
-  | CreateNote
+  | NewNoteForm ( Maybe Item.Item )
+  | NewSourceForm ( Maybe Item.Item )
   | CompressNote Note.Note
-  | OpenNote Note.Note
+  | OpenNote ( Maybe Item.Item ) Note.Note
   | ExpandNote Note.Note
-  | CreateSource
+  | CreateSource Item.Item
   | NoteTabUpdateInput String
   | SourceTabUpdateInput String
-  | OpenSource Source.Source
-  | EditItem Int
-  | DeleteItem Int
-  | DismissItem Int
-  | AddLink Int
-  | RemoveLink Note.Note Note.Note
-  | NoteChosenToLink Int Note.Note
-  | UpdateNoteContent Int String
-  | UpdateNoteSource Int String
-  | UpdateNoteVariant Int Variant
+  | OpenSource ( Maybe Item.Item ) Source.Source
+  | UpdateItem Item.Item Item.UpdateAction
+  | DismissItem Item.Item
+  | CreateLink Item.Item
+  | DeleteLink Item.Item
   | SubmitItem Int
   | ConfirmDismissItem Int
   | DoNotDismissItem Int
   | CancelItemAction Int
   | ConfirmDeleteItem Int
-  | UpdateSourceTitle Int String
-  | UpdateSourceAuthor Int String
   | StartMoveView Viewport.MouseEvent
   | MoveView Viewport.MouseEvent
   | StopMoveView
@@ -100,70 +126,76 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
+  let
+    updateSlipboxWrapper = \s -> case getSlipbox model of
+       Just slipbox ->
+         ( updateSlipbox (s slipbox) model, Cmd.none )
+       _ -> ( model, Cmd.none)
+  in
   case message of
     
     LinkClicked _ -> (model, Cmd.none)
 
     UrlChanged _ -> (model, Cmd.none)
 
-    ExploreTabUpdateInput input -> 
-      case model.tab of
-        Explore _ viewport -> ({ model | tab = Explore input viewport }, Cmd.none)
-        _ -> (model, Cmd.none)
+    ExploreTabUpdateInput input ->
+      case model.state of
+        Session content ->
+          case content.tab of
+            ExploreTab _ viewport ->
+              ( updateTab ( ExploreTab input viewport ) model, Cmd.none )
+            _ -> ( model, Cmd.none)
+        _ -> ( model, Cmd.none)
 
-    ExploreTabUpdateInput input -> 
-      case model.tab of
-        Notes _ -> ({ model | tab = Notes input }, Cmd.none)
-        _ -> (model, Cmd.none)
+    NoteTabUpdateInput input ->
+      case model.state of
+        Session content ->
+          case content.tab of
+            NotesTab _ ->
+              ( updateTab ( NotesTab input ) model, Cmd.none )
+            _ -> ( model, Cmd.none)
+        _ -> ( model, Cmd.none)
     
-    SourceTabUpdateInput input -> 
-      case model.tab of 
-        Sources _ sort -> ({ model | tab = Sources input sort }, Cmd.none)
-        _ -> (model, Cmd.none)
+    SourceTabUpdateInput input ->
+      case model.state of
+        Session content ->
+          case content.tab of
+            SourcesTab _ ->
+              ( updateTab ( SourcesTab input ) model, Cmd.none )
+            _ -> ( model, Cmd.none)
+        _ -> ( model, Cmd.none)
 
-    CreateNote -> ({ model | slipbox = Slipbox.createNote model.slipbox }, Cmd.none)
+    NewNoteForm maybeItem -> updateSlipboxWrapper <| Slipbox.newNoteForm maybeItem
 
-    CompressNote note -> ({ model | slipbox = Slipbox.compressNote note model.slipbox }, Cmd.none)
+    NewNoteForm maybeItem -> updateSlipboxWrapper <| Slipbox.newSourceForm maybeItem
 
-    OpenNote note -> ({ model | slipbox = Slipbox.openNote note model.slipbox }, Cmd.none)
+    CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
 
-    ExpandNote note -> ({ model | slipbox = Slipbox.expandNote note model.slipbox }, Cmd.none)
+    OpenNote maybeItem note -> updateSlipboxWrapper <| Slipbox.openNote maybeItem note
 
-    CreateSource -> ({ model | slipbox = Slipbox.createSource model.slipbox }, Cmd.none)
+    ExpandNote note -> updateSlipboxWrapper <| Slipbox.expandNote note
 
-    OpenSource source -> ({ model | slipbox = Slipbox.openSource source model.slipbox }, Cmd.none)
+    CreateSource item -> updateSlipboxWrapper <| Slipbox.createSource item
+
+    OpenSource maybeItem source -> updateSlipboxWrapper <| Slipbox.openSource maybeItem source
     
-    EditItem itemId -> ({ model | slipbox = Slipbox.editItem itemId model.slipbox }, Cmd.none)
+    UpdateItem item updateAction -> updateSlipboxWrapper <| Slipbox.updateItem item updateAction
 
-    DeleteItem itemId -> ({ model | slipbox = Slipbox.deleteItem itemId model.slipbox }, Cmd.none)
+    DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
 
-    DismissItem itemId -> ({ model | slipbox = Slipbox.dismissItem itemId model.slipbox }, Cmd.none)
+    CreateLink item -> updateSlipboxWrapper <| Slipbox.createLink item
 
-    AddLink itemId -> ({ model | slipbox = Slipbox.addLink itemId model.slipbox }, Cmd.none)
-
-    RemoveLink openNote linkedNote -> ({ model | slipbox = Slipbox.removeLink openNote linkedNote model.slipbox }, Cmd.none)
-
-    NoteChosenToLink itemId noteChosen -> ({ model | slipbox = Slipbox.noteChosenToLink itemId noteChosen model.slipbox }, Cmd.none)
-
-    UpdateNoteContent itemId input -> ({ model | slipbox = Slipbox.updateNoteContent itemId input model.slipbox }, Cmd.none)
-
-    UpdateNoteSource itemId input -> ({ model | slipbox = Slipbox.updateNoteSource itemId input model.slipbox }, Cmd.none)
-
-    UpdateNoteVariant itemId variant -> ({ model | slipbox = Slipbox.updateNoteVariant itemId variant model.slipbox }, Cmd.none)
+    DeleteLink item -> updateSlipboxWrapper <| Slipbox.deleteLink item
 
     SubmitItem itemId -> ({ model | slipbox = Slipbox.submitItem itemId model.slipbox }, Cmd.none)
 
     ConfirmDismissItem itemId -> ({ model | slipbox = Slipbox.confirmDismissItem itemId model.slipbox }, Cmd.none)
-  | 
+
     DoNotDismissItem itemId -> ({ model | slipbox = Slipbox.doNotDismissItem itemId model.slipbox }, Cmd.none)
 
     CancelItemAction itemId -> ({ model | slipbox = Slipbox.cancelItemAction itemId model.slipbox }, Cmd.none)
 
     ConfirmDeleteItem itemId -> ({ model | slipbox = Slipbox.confirmDeleteItem itemId model.slipbox }, Cmd.none)
-
-    UpdateSourceTitle itemId input -> ({ model | slipbox = Slipbox.updateSourceTitle itemId input model.slipbox }, Cmd.none)
-    
-    UpdateSourceAuthor itemId input -> ({ model | slipbox = Slipbox.updateSourceAuthor itemId input model.slipbox }, Cmd.none)
 
     StartMoveView mouseEvent -> 
       case model.tab of 
@@ -327,7 +359,7 @@ addLinkButton itemId =
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| AddLink itemId
+    { onPress = Just <| CreateLink itemId
     , label = Element.text "Add Link"
     }
 
@@ -353,7 +385,7 @@ removeLinkButton openNote linkedNote  =
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| RemoveLink openNote linkedNote
+    { onPress = Just <| DeleteLink openNote linkedNote
     , label = Element.text "Remove Link"
     }
 
@@ -790,7 +822,7 @@ createNoteButton =
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just CreateNote
+    { onPress = Just NewNoteForm
     , label = Element.text "Create Note"
     }
 

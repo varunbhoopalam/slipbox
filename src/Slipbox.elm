@@ -13,7 +13,7 @@ module Slipbox exposing
   , createSource
   , submitNoteEdits
   , submitSourceEdits
-  , addLink, removeLink
+  , createLink, deleteLink
   , updateItem, undo
   , redo, tick, save
   , getHistory
@@ -50,7 +50,7 @@ getContent slipbox =
 -- Returns Slipbox
 
 -- TODO
-initialize : (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Slipbox
+-- initialize : (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Slipbox
 -- initialize notes links response =
 --   let
 --     l =  initializeLinks links
@@ -66,16 +66,20 @@ getNotesAndLinks maybeSearch slipbox =
   case maybeSearch of
     Just search -> 
       let
-        filteredNotes = List.filter (Note.contains search) content.notes
+        filteredNotes = List.filter ( Note.contains search ) content.notes
+        relevantLinks = List.filter ( linkIsRelevant filteredNotes ) content.links
       in
-      ( filteredNotes, List.filter ( Link.isRelevant <| List.map Note.getId filteredNotes ) content.links )
+      ( filteredNotes,  relevantLinks )
     Nothing -> ( content.notes, content.links )
 
 getNotes : (Maybe String) -> Slipbox -> (List Note.Note)
 getNotes maybeSearch slipbox =
+  let
+    content = getContent slipbox
+  in
   case maybeSearch of
-    Just search -> List.filter (Note.contains search) <| notes <| getContent slipbox
-    Nothing -> notes <| getContent slipbox
+    Just search -> List.filter (Note.contains search) content.notes
+    Nothing -> content.notes
 
 getSources : (Maybe String) -> Slipbox -> (List Source.Source)
 getSources maybeSearch slipbox =
@@ -289,7 +293,7 @@ submitSourceEdits item slipbox =
 createLink : Item.Item -> Slipbox -> Slipbox
 createLink item slipbox =
   case item of
-    AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
+    Item.AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
       case maybeNoteToBeLinked of
         Just noteToBeLinked ->
           let
@@ -492,3 +496,11 @@ updateSourceEdits originalSource sourceWithEdits =
   Source.updateTitle updatedTitle
     <| Source.updateAuthor updatedAuthor
       <| Source.updateContent updatedContent originalSource
+
+linkIsRelevant : ( List Note.Note ) -> Link.Link -> Bool
+linkIsRelevant notes link =
+  let
+    sourceInNotes = Link.getSource link notes /= Nothing
+    targetInNotes = Link.getTarget link notes /= Nothing
+  in
+  sourceInNotes && targetInNotes

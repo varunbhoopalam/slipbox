@@ -1,13 +1,19 @@
 module Link exposing 
   ( Link, getSource
   , getTarget, is
-  , isAssociated, create
+  , create
   )
 
 import Note
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
 type Link = Link Info
+
+getInfo : Link -> Info
+getInfo link =
+  case link of
+    Link info -> info
+
 type alias Info = 
   { id: Int
   , sourceId: NoteId

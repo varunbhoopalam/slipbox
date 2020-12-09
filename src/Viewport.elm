@@ -7,6 +7,8 @@ module Viewport exposing
   , startMove, move
   , stopMove, changeZoom 
   , updateSvgContainerDimensions
+  , MouseEvent
+  , WheelEvent
   )
 
 import Note
@@ -20,6 +22,11 @@ type alias Info =
   { state : State
   , viewbox : Viewbox
   }
+type alias MouseEvent =
+  { offsetX : Int
+  , offsetY : Int
+  }
+type alias WheelEvent = Int
 type State = Moving MouseEvent | Stationary
 type alias Viewbox = 
   { minX: Int
