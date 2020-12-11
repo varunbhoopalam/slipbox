@@ -98,24 +98,13 @@ type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
   | ExploreTabUpdateInput String
-  | NewNoteForm ( Maybe Item.Item )
-  | NewSourceForm ( Maybe Item.Item )
-  | CompressNote Note.Note
-  | OpenNote ( Maybe Item.Item ) Note.Note
-  | ExpandNote Note.Note
-  | CreateSource Item.Item
   | NoteTabUpdateInput String
   | SourceTabUpdateInput String
-  | OpenSource ( Maybe Item.Item ) Source.Source
-  | UpdateItem Item.Item Item.UpdateAction
+  | AddItem ( Maybe Item.Item ) Slipbox.AddAction
+  | UpdateItem Item.Item Slipbox.UpdateAction
   | DismissItem Item.Item
-  | CreateLink Item.Item
-  | DeleteLink Item.Item
-  | SubmitItem Int
-  | ConfirmDismissItem Int
-  | DoNotDismissItem Int
-  | CancelItemAction Int
-  | ConfirmDeleteItem Int
+  | CompressNote Note.Note
+  | ExpandNote Note.Note
   | StartMoveView Viewport.MouseEvent
   | MoveView Viewport.MouseEvent
   | StopMoveView
@@ -130,6 +119,18 @@ update message model =
        Just slipbox ->
          ( updateSlipbox (s slipbox) model, Cmd.none )
        _ -> ( model, Cmd.none)
+    updateExploreTabViewportLambda = \toViewport ->
+      case model.state of
+        Session content ->
+          case content.tab of
+            ExploreTab input viewport ->
+              ({ model | state = Session
+                { content | tab =
+                  ExploreTab input (toViewport viewport)
+                }
+              }, Cmd.none )
+            _ -> ( model, Cmd.none )
+        _ -> ( model , Cmd.none)
   in
   case message of
     
@@ -164,72 +165,35 @@ update message model =
             _ -> ( model, Cmd.none)
         _ -> ( model, Cmd.none)
 
-    NewNoteForm maybeItem -> updateSlipboxWrapper <| Slipbox.newNoteForm maybeItem
-
-    NewNoteForm maybeItem -> updateSlipboxWrapper <| Slipbox.newSourceForm maybeItem
+    AddItem maybeItem addAction -> updateSlipboxWrapper <| Slipbox.addItem maybeItem addAction
 
     CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
 
-    OpenNote maybeItem note -> updateSlipboxWrapper <| Slipbox.openNote maybeItem note
-
     ExpandNote note -> updateSlipboxWrapper <| Slipbox.expandNote note
 
-    CreateSource item -> updateSlipboxWrapper <| Slipbox.createSource item
-
-    OpenSource maybeItem source -> updateSlipboxWrapper <| Slipbox.openSource maybeItem source
-    
     UpdateItem item updateAction -> updateSlipboxWrapper <| Slipbox.updateItem item updateAction
 
     DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
 
-    CreateLink item -> updateSlipboxWrapper <| Slipbox.createLink item
-
-    DeleteLink item -> updateSlipboxWrapper <| Slipbox.deleteLink item
-
-    SubmitItem itemId -> ({ model | slipbox = Slipbox.submitItem itemId model.slipbox }, Cmd.none)
-
-    ConfirmDismissItem itemId -> ({ model | slipbox = Slipbox.confirmDismissItem itemId model.slipbox }, Cmd.none)
-
-    DoNotDismissItem itemId -> ({ model | slipbox = Slipbox.doNotDismissItem itemId model.slipbox }, Cmd.none)
-
-    CancelItemAction itemId -> ({ model | slipbox = Slipbox.cancelItemAction itemId model.slipbox }, Cmd.none)
-
-    ConfirmDeleteItem itemId -> ({ model | slipbox = Slipbox.confirmDeleteItem itemId model.slipbox }, Cmd.none)
-
-    StartMoveView mouseEvent -> 
-      case model.tab of 
-        Explore -> ({ model | tab = Explore input (Viewport.startMove mouseEvent viewport) }, Cmd.none)
-        _ -> model
+    StartMoveView mouseEvent -> updateExploreTabViewportLambda <| Viewport.startMove mouseEvent
     
     MoveView mouseEvent ->
-      case model.tab of 
-        Explore -> 
-          ({ model | tab = Explore input 
-            <| Viewport.move mouseEvent ( Slipbox.getNotes Nothing model.slipbox ) viewport }
-          , Cmd.none)
-        _ -> model
+      case getSlipbox model of
+        Just slipbox -> updateExploreTabViewportLambda <| Viewport.move mouseEvent ( Slipbox.getNotes Nothing slipbox )
+        Nothing -> ( model, Cmd.none )
     
-    StopMoveView ->
-      case model.tab of 
-        Explore -> ({ model | tab = Explore input (Viewport.stopMove viewport) }, Cmd.none)
-        _ -> model
+    StopMoveView -> updateExploreTabViewportLambda Viewport.stopMove
 
     ZoomView wheelEvent ->
-      case model.tab of 
-        Explore -> 
-          ({ model | tab = Explore input 
-            <| Viewport.changeZoom wheelEvent ( Slipbox.getNotes Nothing model.slipbox ) viewport }
-          , Cmd.none)
-        _ -> model
+      case getSlipbox model of
+        Just slipbox -> updateExploreTabViewportLambda <| Viewport.changeZoom wheelEvent <| Slipbox.getNotes Nothing slipbox
+        Nothing -> ( model, Cmd.none )
     
-    GotViewport viewport -> 
-      ( handleWindowInfo 
-        ( round viewport.viewport.width
-        , round viewport.viewport.height
-        ) 
-        model
-      , Cmd.none
-      )
+    GotViewport viewport ->
+      let
+        windowInfo = ( round viewport.viewport.width, round viewport.viewport.height )
+      in
+      ( handleWindowInfo windowInfo model, Cmd.none )
 
     GotWindowResize windowInfo -> (handleWindowInfo windowInfo model, Cmd.none)
     
@@ -239,7 +203,7 @@ handleWindowInfo windowInfo model =
   case model.state of
     Session content ->
       case content.tab of
-        Explore input viewport ->
+        ExploreTab input viewport ->
           { model | deviceViewport = windowInfo
           , { content | tab = Explore input 
             <| Viewport.updateSvgContainerDimensions windowInfo viewport

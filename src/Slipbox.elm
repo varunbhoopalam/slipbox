@@ -408,7 +408,7 @@ updateItem item updateAction slipbox =
 -- Helper Functions
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
 buildItemList itemToMatch itemToAdd =
-  \item list -> if Item.is item itemToMatch then List.concat [item, itemToAdd] list else item :: list
+  \item list -> if Item.is item itemToMatch then item :: (itemToAdd :: list) else item :: list
 
 deleteNoteItemStateChange : Note.Note -> Item.Item -> Item.Item
 deleteNoteItemStateChange deletedNote item =

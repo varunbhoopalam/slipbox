@@ -1,15 +1,27 @@
 module Note exposing 
-  ( Note, getId
-  , getX, getY
-  , getVariant, getGraphState
-  , getContent, getTransform
-  , contains, isLinked
-  , isLinked, canLink
-  , isAssociated, is
-  , compress, expand
-  , note, updateContent
-  , updateSource, updateVariant
-  , GraphState, Variant(..)
+  ( Note
+  , getId
+  , getX
+  , getY
+  , getVariant
+  , getGraphState
+  , getContent
+  , getTransform
+  , getSource
+  , contains
+  , isLinked
+  , isLinked
+  , canLink
+  , isAssociated
+  , is
+  , compress
+  , expand
+  , note
+  , updateContent
+  , updateSource
+  , updateVariant
+  , GraphState
+  , Variant(..)
   , isNoteFromId
   , create
   )
@@ -43,26 +55,26 @@ type alias NoteRecord =
 
 getId : Note -> NoteId
 getId note =
-  id <| getInfo note
+  .id <| getInfo note
 
 getX : Note -> Float
 getX note =
-  x <| getInfo note
+  .x <| getInfo note
 getY : Note -> Float
 getY note =
-  y <| getInfo note
+  .y <| getInfo note
   
 getVariant : Note -> Variant
 getVariant note =
-  variant <| getInfo note
+  .variant <| getInfo note
 
 getGraphState : Note -> GraphState
 getGraphState note =
-  graphState <| getInfo note
+  .graphState <| getInfo note
 
 getContent : Note -> String
 getContent note =
-  content <| getInfo note
+  .content <| getInfo note
 
 getTransform : Note -> String
 getTransform note =
@@ -75,7 +87,7 @@ getTransform note =
 
 getSource : Note -> String
 getSource note =
-  source <| getInfo note
+  .source <| getInfo note
 
 contains : String -> Note -> Bool
 contains string note =
