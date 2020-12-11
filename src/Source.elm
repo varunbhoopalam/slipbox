@@ -8,6 +8,8 @@ module Source exposing
   , updateAuthor
   )
 
+import IdGenerator
+
 type Source = Source Info
 type alias Info = 
   { id : Int

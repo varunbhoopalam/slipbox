@@ -80,7 +80,6 @@ type Tab
   = ExploreTab String Viewport.Viewport
   | NotesTab String
   | SourcesTab String
-  | HistoryTab
   | SetupTab
 
 -- INIT
@@ -285,10 +284,9 @@ sessionView deviceViewport content =
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content = 
   case content.tab of
-    Explore input viewport -> exploreTabView deviceViewport input viewport content.slipbox
-    Notes input -> noteTabView input content.slipbox
-    Sources input sort -> sourceTabView input sort content.slipbox
-    History ->
+    ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
+    NotesTab input -> noteTabView input content.slipbox
+    SourcesTab input -> sourceTabView input content.slipbox
     Setup ->
 
 -- ITEMS

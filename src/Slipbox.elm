@@ -23,7 +23,6 @@ module Slipbox exposing
 import Simulation
 import Note
 import Link
-import Action
 import Item
 import Source
 import IdGenerator
@@ -35,7 +34,6 @@ type Slipbox = Slipbox Content
 type alias Content =
   { notes: List Note.Note
   , links: List Link.Link
-  , actions: List Action.Action
   , items: List Item.Item
   , sources: List Source.Source
   , state: Simulation.State Int
@@ -190,21 +188,12 @@ deleteNote item slipbox =
     Item.ConfirmDeleteNote _ noteToDelete ->
       let
           content = getContent slipbox
-          linksToDelete = List.filter ( isAssociated noteToDelete ) content.links
-          linksToKeep = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-          (state, notes) = Simulation.step linksToKeep (List.filter (Note.is noteToDelete) content.notes) content.state
-          deletedLinkActionsWithActionList =
-            List.foldr
-              (\linkToDelete actionList -> (Action.deleteLink actionList linkToDelete) :: actionList)
-              content.actions
-              linksToDelete
-          deletedNoteAction = Action.deleteNote deletedLinkActionsWithActionList noteToDelete
-
+          links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
+          (state, notes) = Simulation.step links (List.filter (Note.is noteToDelete) content.notes) content.state
       in
       Slipbox 
         { content | notes = notes
-        , links = linksToKeep
-        , actions = deletedNoteAction :: deletedLinkActionsWithActionList
+        , links = links
         , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
         , state = state
         }
@@ -219,7 +208,6 @@ deleteSource item slipbox =
       in
       Slipbox 
         { content | sources = List.filter (Source.is source) content.sources
-        , actions = (Action.deleteSource content.actions source) :: content.actions
         , items = List.filter (Item.is item) content.items
         }
     _ -> slipbox
@@ -235,12 +223,11 @@ createNote item slipbox =
       in
       Slipbox
         { content | notes = notes
-        , actions = (Action.createNote note content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
         , state = state
         , idGenerator = idGenerator
         }
-    _ -> Slipbox
+    _ -> slipbox
 
 createSource : Item.Item -> Slipbox -> Slipbox
 createSource item slipbox =
@@ -248,11 +235,10 @@ createSource item slipbox =
     Item.NewSource itemId sourceContent ->
       let
           content = getContent slipbox
-          source = Source.createSource sourceContent
+          source = Source.createSource content.idGenerator sourceContent
       in
       Slipbox
         { content | sources = source :: content.sources
-        , actions = (Action.createSource source content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
         }
     _ -> slipbox
@@ -267,7 +253,6 @@ submitNoteEdits item slipbox =
       in
       Slipbox 
         { content | notes = List.map noteUpdateLambda content.notes
-        , actions = (Action.editNote originalNote editingNote content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Note itemId editingNote else i) content.items
         }
     _ -> slipbox
@@ -276,14 +261,13 @@ submitNoteEdits item slipbox =
 submitSourceEdits : Item.Item -> Slipbox -> Slipbox
 submitSourceEdits item slipbox =
   case item of
-    Item.EditingSource itemId originalSource sourceWithEdits ->
+    Item.EditingSource itemId _ sourceWithEdits ->
       let
           content = getContent slipbox
           sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s 
       in
       Slipbox 
         { content | sources = List.map sourceUpdateLambda content.sources
-        , actions = (Action.editSource originalSource editingsourceWithEdits content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Source itemId sourceWithEdits else i) content.items
         }
     _ -> slipbox
@@ -296,14 +280,13 @@ createLink item slipbox =
         Just noteToBeLinked ->
           let
               content = getContent slipbox
-              (idGenerator, link) = Link.create slipbox.idGenerator note noteToBeLinked
+              (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
               links = link :: content.links
               (state, notes) = Simulation.step links content.notes content.state
           in
           Slipbox
             { content | notes = notes
             , links = links
-            , actions = Action.createLink link |> List.concat content.actions
             , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
             , state = state
             , idGenerator = idGenerator
@@ -323,7 +306,6 @@ deleteLink item slipbox =
       Slipbox 
         { content | notes = notes
         , links = links
-        , actions = (Action.deleteLink link content.actions) :: content.actions
         , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
         }
     _ -> slipbox
@@ -439,15 +421,9 @@ updateItem item updateAction slipbox =
         _ -> slipbox
 
 -- TODO
--- undo: Int -> Slipbox -> Slipbox
--- TODO
--- redo: Int -> Slipbox -> Slipbox
--- TODO
 -- tick: Slipbox -> Slipbox
 -- TODO
 -- save: Slipbox -> Slipbox
--- TODO
--- getHistory: Slipbox -> (List Action.Summary)
 -- TODO
 -- simulationIsCompleted: Slipbox -> Bool
 
