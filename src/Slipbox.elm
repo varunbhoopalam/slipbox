@@ -414,12 +414,13 @@ encode slipbox =
   let
     info = getContent slipbox
   in
-  Json.Encode.object
-    [ ( "notes", List.map Note.encode info.notes )
-    , ( "links", List.map Link.encode info.links )
-    , ( "sources", List.map Source.encode info.sources )
-    , ( "idGenerator", List.map IdGenerator.encode info.idGenerator )
-    ]
+  Json.Encode.encode 0
+    <| Json.Encode.object
+      [ ( "notes", Json.Encode.list Note.encode info.notes )
+      , ( "links", Json.Encode.list Link.encode info.links )
+      , ( "sources", Json.Encode.list Source.encode info.sources )
+      , ( "idGenerator", IdGenerator.encode info.idGenerator )
+      ]
 
 -- Helper Functions
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))

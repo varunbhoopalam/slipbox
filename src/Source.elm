@@ -6,9 +6,11 @@ module Source exposing
   , updateContent
   , updateTitle
   , updateAuthor
+  , encode
   )
 
 import IdGenerator
+import Json.Encode
 
 type Source = Source Info
 type alias Info = 
@@ -29,28 +31,28 @@ getInfo source =
 
 getTitle : Source -> String
 getTitle source =
-  title <| getInfo source
+  .title <| getInfo source
 
 getAuthor : Source -> String
 getAuthor source =
-  author <| getInfo source
+  .author <| getInfo source
 
 getContent : Source -> String
 getContent source =
-  content <| getInfo source
+  .content <| getInfo source
 
 contains : String -> Source -> Bool
 contains input source =
   let
       info = getInfo source
       lowerInput = String.toLower input
-      contains = \s -> String.contains (String.toLower input) <| String.toLower s
+      has = \s -> String.contains (String.toLower input) <| String.toLower s
   in
-  contains info.title || contains info.author || contains info.content
+  has info.title || has info.author || has info.content
 
 is : Source -> Source -> Bool
 is source1 source2 =
-  id <| getInfo source1 == id <| getInfo source2
+  .id <| getInfo source1 == .id <| getInfo source2
 
 createSource : IdGenerator.IdGenerator -> SourceContent -> ( Source, IdGenerator.IdGenerator)
 createSource generator content =
@@ -80,3 +82,15 @@ updateTitle input source =
       info = getInfo source
   in
     Source { info | title = input}
+
+encode : Source -> Json.Encode.Value
+encode source =
+  let
+    info = getInfo source
+  in
+  Json.Encode.object
+    [ ( "id", Json.Encode.int info.id )
+    , ( "title", Json.Encode.string info.title )
+    , ( "author", Json.Encode.string info.author )
+    , ( "content", Json.Encode.string info.content )
+    ]

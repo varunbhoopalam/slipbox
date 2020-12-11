@@ -4,11 +4,15 @@ module Link exposing
   , isSource
   , isTarget
   , create
+  , encode
   )
 
+import Json.Encode
 import Note
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
+
+
 type Link = Link Info
 
 getInfo : Link -> Info
@@ -43,6 +47,20 @@ create generator sourceNote targetNote =
       (id , idGenerator) = IdGenerator.generateId generator
   in
   (Link <| Info id sourceNote targetNote, idGenerator)
+
+encode : Link -> Json.Encode.Value
+encode link =
+  let
+    info = getInfo link
+  in
+  Json.Encode.object
+    [ ( "id", Json.Encode.int info.id )
+    , ( "sourceId", Json.Encode.int info.sourceId )
+    , ( "targetId", Json.Encode.int info.targetId )
+    ]
+
+
+-- HELPER
 
 getId : Link -> Int
 getId link =
