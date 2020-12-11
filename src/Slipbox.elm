@@ -13,14 +13,6 @@ module Slipbox exposing
   , AddAction(..)
   , addItem
   , dismissItem
-  , deleteNote
-  , deleteSource
-  , createNote
-  , createSource
-  , submitNoteEdits
-  , submitSourceEdits
-  , createLink
-  , deleteLink
   , updateItem
   , UpdateAction(..)
   , tick
@@ -190,134 +182,6 @@ dismissItem item slipbox =
   in
   Slipbox { content | items = List.filter (Item.is item) content.items}
 
-deleteNote : Item.Item -> Slipbox -> Slipbox
-deleteNote item slipbox =
-  case item of
-    Item.ConfirmDeleteNote _ noteToDelete ->
-      let
-          content = getContent slipbox
-          links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-          (state, notes) = Simulation.step links (List.filter (Note.is noteToDelete) content.notes) content.state
-      in
-      Slipbox 
-        { content | notes = notes
-        , links = links
-        , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
-        , state = state
-        }
-    _ -> slipbox
-
-deleteSource : Item.Item -> Slipbox -> Slipbox
-deleteSource item slipbox =
-  case item of
-    Item.ConfirmDeleteSource _ source ->
-      let
-          content = getContent slipbox
-      in
-      Slipbox 
-        { content | sources = List.filter (Source.is source) content.sources
-        , items = List.filter (Item.is item) content.items
-        }
-    _ -> slipbox
-
-createNote : Item.Item -> Slipbox -> Slipbox
-createNote item slipbox =
-  case item of
-    Item.NewNote itemId noteContent ->
-      let
-          content = getContent slipbox
-          (note, idGenerator) = Note.create content.idGenerator {}
-          (state, notes) = Simulation.step content.links (note :: content.notes) content.state
-      in
-      Slipbox
-        { content | notes = notes
-        , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
-        , state = state
-        , idGenerator = idGenerator
-        }
-    _ -> slipbox
-
-createSource : Item.Item -> Slipbox -> Slipbox
-createSource item slipbox =
-  case item of
-    Item.NewSource itemId sourceContent ->
-      let
-          content = getContent slipbox
-          source = Source.createSource content.idGenerator sourceContent
-      in
-      Slipbox
-        { content | sources = source :: content.sources
-        , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
-        }
-    _ -> slipbox
-
-submitNoteEdits : Item.Item -> Slipbox -> Slipbox
-submitNoteEdits item slipbox =
-  case item of
-    Item.EditingNote itemId originalNote editingNote ->
-      let
-          content = getContent slipbox
-          noteUpdateLambda = \n -> if Note.is n editingNote then updateNoteEdits n editingNote else n 
-      in
-      Slipbox 
-        { content | notes = List.map noteUpdateLambda content.notes
-        , items = List.map (\i -> if Item.is item i then Item.Note itemId editingNote else i) content.items
-        }
-    _ -> slipbox
-      
--- TODO: Implement Migrate note sources to new source title if this is wanted behavior
-submitSourceEdits : Item.Item -> Slipbox -> Slipbox
-submitSourceEdits item slipbox =
-  case item of
-    Item.EditingSource itemId _ sourceWithEdits ->
-      let
-          content = getContent slipbox
-          sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s 
-      in
-      Slipbox 
-        { content | sources = List.map sourceUpdateLambda content.sources
-        , items = List.map (\i -> if Item.is item i then Item.Source itemId sourceWithEdits else i) content.items
-        }
-    _ -> slipbox
-
-createLink : Item.Item -> Slipbox -> Slipbox
-createLink item slipbox =
-  case item of
-    Item.AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
-      case maybeNoteToBeLinked of
-        Just noteToBeLinked ->
-          let
-              content = getContent slipbox
-              (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
-              links = link :: content.links
-              (state, notes) = Simulation.step links content.notes content.state
-          in
-          Slipbox
-            { content | notes = notes
-            , links = links
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
-            , state = state
-            , idGenerator = idGenerator
-            }
-        _ -> slipbox
-    _ -> slipbox
-
-deleteLink : Item.Item -> Slipbox -> Slipbox
-deleteLink item slipbox =
-  case item of
-    Item.ConfirmDeleteLink itemId note linkedNote link ->
-      let
-          content = getContent slipbox
-          links = List.filter (Link.is link) content.links
-          (state, notes) = Simulation.step links content.notes content.state
-      in
-      Slipbox 
-        { content | notes = notes
-        , links = links
-        , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
-        }
-    _ -> slipbox
-
 type UpdateAction
   = UpdateContent String
   | UpdateSource String
@@ -331,6 +195,7 @@ type UpdateAction
   | AddLinkForm
   | PromptConfirmRemoveLink Note.Note
   | Cancel
+  | Submit
 
 updateItem : Item.Item -> UpdateAction -> Slipbox -> Slipbox
 updateItem item updateAction slipbox =
@@ -400,6 +265,7 @@ updateItem item updateAction slipbox =
         _ -> slipbox
             
     PromptConfirmDelete ->
+      case item of
         Item.Note itemId note ->
           update <| Item.ConfirmDeleteNote itemId note
         Item.Source itemId source ->
@@ -433,13 +299,103 @@ updateItem item updateAction slipbox =
         Item.NewSource itemId source ->
           update <| Item.ConfirmDiscardNewSourceForm itemId source
         Item.ConfirmDiscardNewSourceForm itemId source ->
-          updated <| Item.NewSource itemId source
+          update <| Item.NewSource itemId source
         Item.EditingSource itemId originalSource sourceWithEdits ->
-          updated <| Item.Source itemId originalSource
+          update <| Item.Source itemId originalSource
         Item.ConfirmDeleteSource itemId source ->
-          updated <| Item.Source itemId source
+          update <| Item.Source itemId source
         Item.ConfirmDeleteLink itemId note linkedNote link ->
-          updated <| Item.Note itemId note
+          update <| Item.Note itemId note
+        _ -> slipbox
+
+    Submit ->
+      case item of
+        Item.ConfirmDeleteNote _ noteToDelete ->
+          let
+            links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
+            (state, notes) = Simulation.step links (List.filter (Note.is noteToDelete) content.notes) content.state
+          in
+          Slipbox
+            { content | notes = notes
+            , links = links
+            , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
+            , state = state
+            }
+        Item.ConfirmDeleteSource _ source ->
+          Slipbox
+            { content | sources = List.filter (Source.is source) content.sources
+            , items = List.filter (Item.is item) content.items
+            }
+
+        Item.NewNote itemId noteContent ->
+          let
+              (note, idGenerator) = Note.create content.idGenerator
+                <| { content = noteContent.content, source = noteContent.source, variant = noteContent.variant }
+              (state, notes) = Simulation.step content.links (note :: content.notes) content.state
+          in
+          Slipbox
+            { content | notes = notes
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+            , state = state
+            , idGenerator = idGenerator
+            }
+
+        Item.NewSource itemId sourceContent ->
+          let
+              source = Source.createSource content.idGenerator sourceContent
+          in
+          Slipbox
+            { content | sources = source :: content.sources
+            , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
+            }
+
+        Item.EditingNote itemId originalNote editingNote ->
+          let
+              noteUpdateLambda = \n -> if Note.is n editingNote then updateNoteEdits n editingNote else n
+          in
+          Slipbox
+            { content | notes = List.map noteUpdateLambda content.notes
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId editingNote else i) content.items
+            }
+
+        -- TODO: Implement Migrate note sources to new source title if this is wanted behavior
+        Item.EditingSource itemId _ sourceWithEdits ->
+          let
+              sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s
+          in
+          Slipbox
+            { content | sources = List.map sourceUpdateLambda content.sources
+            , items = List.map (\i -> if Item.is item i then Item.Source itemId sourceWithEdits else i) content.items
+            }
+
+        Item.AddingLinkToNoteForm itemId _ note maybeNoteToBeLinked ->
+          case maybeNoteToBeLinked of
+            Just noteToBeLinked ->
+              let
+                  (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
+                  links = link :: content.links
+                  (state, notes) = Simulation.step links content.notes content.state
+              in
+              Slipbox
+                { content | notes = notes
+                , links = links
+                , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+                , state = state
+                , idGenerator = idGenerator
+                }
+            _ -> slipbox
+
+        Item.ConfirmDeleteLink itemId note linkedNote link ->
+          let
+             links = List.filter (Link.is link) content.links
+             (state, notes) = Simulation.step links content.notes content.state
+          in
+          Slipbox
+            { content | notes = notes
+            , links = links
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+            , state = state
+            }
         _ -> slipbox
 
 -- TODO

@@ -24,7 +24,7 @@ type Item
   | ConfirmDiscardNewSourceForm ItemId Source.Source
   | ConfirmDeleteNote ItemId Note.Note
   | ConfirmDeleteSource ItemId Source.Source
-  | ConfirmRemoveLink ItemId Note.Note Note.Note Link.Link
+  | ConfirmDeleteLink ItemId Note.Note Note.Note Link.Link
 
 type alias ItemId = Int
 
@@ -94,7 +94,7 @@ getId item =
     ConfirmDiscardNewSourceForm id _ -> id
     ConfirmDeleteNote id _ -> id
     ConfirmDeleteSource id _ -> id
-    ConfirmRemoveLink id _ _ _ -> id
+    ConfirmDeleteLink id _ _ _ -> id
 
 getNote : Item -> ( Maybe Note.Note )
 getNote item =
@@ -103,7 +103,7 @@ getNote item =
     EditingNote - note _ -> Just note
     AddingLinkToNoteForm _ _ note _ -> Just note
     ConfirmDeleteNote _ note -> Just note
-    ConfirmRemoveLink _ note _ _ -> Just note
+    ConfirmDeleteLink _ note _ _ -> Just note
     _ -> Nothing
 
 getSource : Item -> ( Maybe Source.Source )
