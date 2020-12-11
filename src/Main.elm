@@ -231,17 +231,23 @@ update message model =
           )
         _ -> ( model, Cmd.none )
 
-    FileLoaded content ->
+    FileLoaded fileContentAsString ->
       case model.state of
         Parsing ->
-          ({ model | state = initSession content }
-          , Cmd.none
-          )
+          let
+            maybeSlipbox = Slipbox.parse fileContentAsString
+          in
+          case maybeSlipbox of
+            Just slipbox ->
+              ({ model | state = Session <| Content ( ExploreTab "" <| Viewport.initialize model.deviceViewport ) slipbox }
+              , Cmd.none
+              )
+            Nothing -> ( { model | state = FailureToParse }, Cmd.none )
         _ -> ( model, Cmd.none )
 
     FileDownload ->
       case getSlipbox model of
-        Just slipbox -> ( model, File.Download.bytes "slipbox.slipbox" "text/plain" <| Slipbox.bytes slipbox )
+        Just slipbox -> ( model, File.Download.string "slipbox.slipbox" "text/plain" <| Slipbox.encode slipbox )
         Nothing -> ( model, Cmd.none )
     
 

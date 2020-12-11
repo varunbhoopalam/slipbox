@@ -24,10 +24,12 @@ module Note exposing
   , Variant(..)
   , isNoteFromId
   , create
+  , encode
   )
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Link
+import Json.Encode
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -189,6 +191,18 @@ updateVariant variant =
 --        EQ -> EQ
 --        GT -> LT
 
+encode : Note -> Json.Encode.Value
+encode note =
+  let
+    info = getInfo note
+  in
+  Json.Encode.object
+    [ ( "id", Json.Encode.int info.id )
+    , ( "content", Json.Encode.string info.content )
+    , ( "source", Json.Encode.string info.source )
+    , ( "variant", Json.Encode.string <| variantStringRepresentation info.variant )
+    ]
+
 -- Helper
 linkBelongsToNotes : Note -> Note -> Link.Link -> Bool
 linkBelongsToNotes note1 note2 link=
@@ -200,3 +214,9 @@ linkBelongsToNotes note1 note2 link=
   in
   (linkSourceId == note1Id && linkTargetId == note2Id)
   || (linkSourceId == note2Id && linkTargetId == note1Id)
+
+variantStringRepresentation : Variant -> String
+variantStringRepresentation variant =
+  case variant of
+    Regular -> "regular"
+    Index -> "index"

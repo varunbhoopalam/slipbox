@@ -17,7 +17,8 @@ module Slipbox exposing
   , UpdateAction(..)
   , tick
   , simulationIsCompleted
-  , save
+  , parse
+  , encode
   )
 
 import Simulation
@@ -26,7 +27,8 @@ import Link
 import Item
 import Source
 import IdGenerator
-import IdGenerator exposing (IdGenerator)
+import Json.Encode
+import Json.Decode
 
 --Types
 type Slipbox = Slipbox Content
@@ -400,10 +402,24 @@ updateItem item updateAction slipbox =
 
 -- TODO
 -- tick: Slipbox -> Slipbox
--- TODO
--- save: Slipbox -> Slipbox
+
 -- TODO
 -- simulationIsCompleted: Slipbox -> Bool
+
+parse : String -> ( Maybe Slipbox )
+parse jsonString = Nothing
+
+encode : Slipbox -> String
+encode slipbox =
+  let
+    info = getContent slipbox
+  in
+  Json.Encode.object
+    [ ( "notes", List.map Note.encode info.notes )
+    , ( "links", List.map Link.encode info.links )
+    , ( "sources", List.map Source.encode info.sources )
+    , ( "idGenerator", List.map IdGenerator.encode info.idGenerator )
+    ]
 
 -- Helper Functions
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
