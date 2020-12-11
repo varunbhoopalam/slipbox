@@ -2,6 +2,9 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation
+import Element.Background
+import Element.Input
+import File.Download
 import Html
 import Html.Events
 import Html.Attributes
@@ -18,6 +21,8 @@ import Task
 import Note
 import Source
 import Item
+import File
+import File.Select
 
 -- MAIN
 main =
@@ -111,6 +116,11 @@ type Msg
   | ZoomView Viewport.WheelEvent
   | GotViewport Browser.Dom.Viewport
   | GotWindowResize ( Int, Int )
+  | InitializeNewSlipbox
+  | FileRequested
+  | FileSelected File.File
+  | FileLoaded String
+  | FileDownload
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -196,6 +206,43 @@ update message model =
       ( handleWindowInfo windowInfo model, Cmd.none )
 
     GotWindowResize windowInfo -> (handleWindowInfo windowInfo model, Cmd.none)
+
+    InitializeNewSlipbox ->
+      case model.state of
+        Setup ->
+          ({ model | state =
+            Session <| Content
+              (ExploreTab "" <| Viewport.initialize model.deviceViewport)
+              Slipbox.initialize
+          }
+          , Cmd.none)
+        _ -> ( model, Cmd.none )
+
+    FileRequested ->
+      case model.state of
+        Setup -> ( model, File.Select.file ["text/plain"] FileSelected )
+        _ -> ( model, Cmd.none )
+
+    FileSelected file ->
+      case model.state of
+        Setup ->
+          ({ model | state = Parsing}
+          , Task.perform FileLoaded (File.toString file)
+          )
+        _ -> ( model, Cmd.none )
+
+    FileLoaded content ->
+      case model.state of
+        Parsing ->
+          ({ model | state = initSession content }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    FileDownload ->
+      case getSlipbox model of
+        Just slipbox -> ( model, File.Download.bytes "slipbox.slipbox" "text/plain" <| Slipbox.bytes slipbox )
+        Nothing -> ( model, Cmd.none )
     
 
 handleWindowInfo: ( Int, Int ) -> Model -> Model
@@ -224,17 +271,52 @@ sourceStep model (summaryModel, sourceMsg) =
   ({model | page = Source summaryModel}, Cmd.map SourceMsg sourceMsg)
 
 -- VIEW
--- Source source -> {title = "TODO", body = [Html.map SourceMsg <| SourceSummary.view source]}
 
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> {title = "TODO", body = []}
+    Setup -> {title = "TODO", body = [ setupView ]}
     Parsing -> {title = "TODO", body = []}
     FailureToParse -> {title = "TODO", body = []}
     Session content -> {title = "MySlipbox", body = [ sessionView model.deviceViewport content ]}
 
-sessionView: ( Int, Int ) -> Content -> Html Msg
+-- SETUP VIEW
+
+setupView : Html.Html Msg
+setupView =
+  Element.layout []
+    <| Element.column []
+      [ startNewSlipboxButton
+      , requestCsvButton
+      ]
+
+startNewSlipboxButton : Element.Element Msg
+startNewSlipboxButton =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just InitializeNewSlipbox
+    , label = Element.text "Start New"
+    }
+
+requestCsvButton : Element.Element Msg
+requestCsvButton =
+  Element.Input.button
+    [ Element.Background.color indianred
+    , Element.mouseOver
+        [ Element.Background.color thistle ]
+    , Element.width Element.fill
+    ]
+    { onPress = Just CsvRequested
+    , label = Element.text "Load Slipbox"
+    }
+
+-- SESSION VIEW
+
+sessionView : ( Int, Int ) -> Content -> Html.Html Msg
 sessionView deviceViewport content =
   Element.layout 
     [] 
