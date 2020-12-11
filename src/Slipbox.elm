@@ -432,7 +432,7 @@ encode slipbox =
 slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox
 slipbox_ notesBeforeSimulation links sources idGenerator =
   let
-    ( notes, state ) = Simulation.init notesBeforeSimulation links
+    ( notes, state ) = Simulation.initNote notesBeforeSimulation links
   in
   Slipbox <| Content notes links [] sources state idGenerator
 

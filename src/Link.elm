@@ -6,6 +6,8 @@ module Link exposing
   , create
   , encode
   , decode
+  , getSourceId
+  , getTargetId
   )
 
 import Json.Decode

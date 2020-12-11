@@ -1,7 +1,14 @@
-module Simulation exposing (SimulationRecord, init, simulate, tick, State, isCompleted)
+module Simulation exposing
+  ( SimulationRecord
+  , initNote
+  , simulation
+  , tick
+  , State
+  , isCompleted)
 
 import Force
-import Debug
+import Link
+import Note
 
 -- TYPES
 
@@ -17,19 +24,27 @@ type State comparable = State (Force.State comparable)
 
 -- EXPOSED
 
-init: Int -> SimulationRecord
-init id =
+initNote : Int -> SimulationRecord
+initNote id =
   let
     entity = Force.entity id 1
   in
     SimulationRecord id entity.x entity.y entity.vx entity.vy
 
-simulate: (List SimulationRecord) -> (List (Int, Int)) -> (State Int, (List SimulationRecord))
-simulate records links =
-  Force.tick (stateBuilder records links) records |> toStateRecordTuple
+simulation : ( List Note.Note ) -> ( List Link.Link ) -> ( State Int, (List Note.Note) )
+simulation notes links =
+  let
+    entities = List.map toEntity notes
+    state = stateBuilder entities links
+  in
+  Force.tick state entities |> toStateRecordTuple
 
-tick: State Int -> List SimulationRecord -> (State Int, (List SimulationRecord))
-tick state records = Force.tick (extract state) records |> toStateRecordTuple
+tick : ( List Note.Note ) -> State Int -> ( State Int, (List Note.Note) )
+tick notes state =
+  let
+    entities = List.map toEntity notes
+  in
+   Force.tick (extract state) entities |> toStateRecordTuple
 
 isCompleted: State Int -> Bool
 isCompleted state = 
@@ -37,22 +52,29 @@ isCompleted state =
 
 -- HELPERS
 
-stateBuilder: (List SimulationRecord) -> (List (Int, Int)) -> Force.State Int
-stateBuilder records links =
+stateBuilder : ( List (Force.Entity Int { note : Note.Note })) -> ( List Link.Link ) -> Force.State Int
+stateBuilder entities links =
   Force.simulation
-        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) records)
-        , Force.links links
+        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) entities)
+        , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
         , Force.center 0 0
         ]
 
-toSimulationRecord: (Force.Entity Int { }) -> SimulationRecord
-toSimulationRecord entity =
-  SimulationRecord entity.id entity.x entity.y entity.vx entity.vy
+toEntity : Note.Note -> (Force.Entity Int { note : Note.Note })
+toEntity note =
+  { id = Note.getId note, x = Note.getX note, y = Note.getY note, vx = Note.getVx note, vy = Note.getVy note, note = note }
 
-extract: State Int -> Force.State Int
+updateNote: (Force.Entity Int { note : Note.Note }) -> Note.Note
+updateNote entity =
+  Note.updateX entity.x <| Note.updateY entity.y <| Note.updateVx entity.vx <| Note.updateVy entity.vy entity.note
+
+extract : State Int -> Force.State Int
 extract state =
   case state of
      State simState -> simState
 
-toStateRecordTuple: (Force.State Int, List (Force.Entity Int { })) -> (State Int, (List SimulationRecord))
-toStateRecordTuple (simState,records) = (State simState, List.map toSimulationRecord records)
+toStateRecordTuple : ( Force.State Int, List ( Force.Entity Int { note : Note.Note } ) ) -> ( State Int, (List Note.Note) )
+toStateRecordTuple ( simState, records ) =
+  ( State simState
+  , List.map updateNote records
+  )

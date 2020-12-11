@@ -3,6 +3,8 @@ module Note exposing
   , getId
   , getX
   , getY
+  , getVx
+  , getVy
   , getVariant
   , getGraphState
   , getContent
@@ -16,10 +18,13 @@ module Note exposing
   , is
   , compress
   , expand
-  , note
   , updateContent
   , updateSource
   , updateVariant
+  , updateX
+  , updateY
+  , updateVx
+  , updateVy
   , GraphState
   , Variant(..)
   , isNoteFromId
@@ -27,6 +32,7 @@ module Note exposing
   , encode
   , decode
   )
+
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Json.Decode
@@ -68,7 +74,15 @@ getX note =
 getY : Note -> Float
 getY note =
   .y <| getInfo note
-  
+
+getVx : Note -> Float
+getVx note =
+  .vx <| getInfo note
+
+getVy : Note -> Float
+getVy note =
+  .vy <| getInfo note
+
 getVariant : Note -> Variant
 getVariant note =
   .variant <| getInfo note
@@ -154,30 +168,53 @@ create generator record =
   )
 
 updateContent : String -> Note -> Note
-updateContent content =
+updateContent content note =
   let
       info = getInfo note
   in
   Note { info | content = content }
 
 updateSource : String -> Note -> Note
-updateSource source =
+updateSource source note =
   let
       info = getInfo note
   in
   Note { info | source = source }
 
 updateVariant : Variant -> Note -> Note
-updateVariant variant =
+updateVariant variant note =
   let
       info = getInfo note
   in
   Note { info | variant = variant }
 
--- TODO
--- init: NoteRecord -> Note
--- init record =
---   toNote (Simulation.init record.id) record
+updateX : Float -> Note -> Note
+updateX x note =
+  let
+      info = getInfo note
+  in
+  Note { info | x = x }
+
+updateY : Float -> Note -> Note
+updateY y note =
+  let
+      info = getInfo note
+  in
+  Note { info | y = y }
+
+updateVx : Float -> Note -> Note
+updateVx vx note =
+  let
+      info = getInfo note
+  in
+  Note { info | vx = vx }
+
+updateVy : Float -> Note -> Note
+updateVy vy note =
+  let
+      info = getInfo note
+  in
+  Note { info | vy = vy }
 
 -- TODO
 -- update: Simulation.SimulationRecord -> Note -> Note
@@ -219,7 +256,7 @@ decode =
 note_ : Int -> String -> String -> String -> Note
 note_ id content source variant =
   let
-    record = Simulation.init id
+    record = Simulation.initNote id
   in
   Note <| Info
     id
