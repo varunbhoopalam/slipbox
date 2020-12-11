@@ -1,23 +1,31 @@
 module Slipbox exposing 
-  ( Slipbox, initialize
+  ( Slipbox
+  , initialize
   , getNotesAndLinks
-  , getNotes, getSources
-  , getItems, getLinkedNotes
+  , getNotes
+  , getSources
+  , getItems
+  , getLinkedNotes
   , getNotesThatCanLinkToNote
   , getNotesAssociatedToSource
-  , compressNote, expandNote
+  , compressNote
+  , expandNote
   , AddAction(..)
   , addItem
-  , dismissItem, deleteNote
-  , deleteSource, createNote
+  , dismissItem
+  , deleteNote
+  , deleteSource
+  , createNote
   , createSource
   , submitNoteEdits
   , submitSourceEdits
-  , createLink, deleteLink
-  , updateItem, undo
-  , redo, tick, save
-  , getHistory
+  , createLink
+  , deleteLink
+  , updateItem
+  , UpdateAction(..)
+  , tick
   , simulationIsCompleted
+  , save
   )
 
 import Simulation
@@ -310,7 +318,21 @@ deleteLink item slipbox =
         }
     _ -> slipbox
 
-updateItem : Item.Item -> Item.UpdateAction -> Slipbox -> Slipbox
+type UpdateAction
+  = UpdateContent String
+  | UpdateSource String
+  | UpdateVariant Note.Variant
+  | UpdateTitle String
+  | UpdateAuthor String
+  | UpdateSearch String
+  | AddLink Note.Note
+  | Edit
+  | PromptConfirmDelete
+  | AddLinkForm
+  | PromptConfirmRemoveLink Note.Note
+  | Cancel
+
+updateItem : Item.Item -> UpdateAction -> Slipbox -> Slipbox
 updateItem item updateAction slipbox =
   let
       content = getContent slipbox
@@ -318,7 +340,7 @@ updateItem item updateAction slipbox =
         { content | items = List.map (conditionalUpdate updatedItem (Item.is item)) content.items}
   in
   case updateAction of
-    Item.Content input ->
+    UpdateContent input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
           update <| Item.EditingNote itemId originalNote 
@@ -328,48 +350,48 @@ updateItem item updateAction slipbox =
             <| Source.updateContent input sourceWithEdits
         _ -> slipbox
 
-    Item.Source input ->
+    UpdateSource input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
-          update Item.EditingNote itemId originalNote 
-            <| Note.updateSource input noteWithEdits
+          update
+            <| Item.EditingNote itemId originalNote
+              <| Note.updateSource input noteWithEdits
         _ -> slipbox
 
-    Item.Variant input ->
+    UpdateVariant input ->
       case item of
         Item.EditingNote itemId originalNote noteWithEdits ->
           update <|Item.EditingNote itemId originalNote 
             <| Note.updateVariant input noteWithEdits
         _ -> slipbox
 
-    Item.Title input ->
+    UpdateTitle input ->
       case item of
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource 
             <| Source.updateTitle input sourceWithEdits
         _ -> slipbox
 
-
-    Item.Author input ->
+    UpdateAuthor input ->
       case item of
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource 
             <| Source.updateAuthor input sourceWithEdits
       _ -> slipbox
 
-    Item.Search input ->
+    UpdateSearch input ->
       case item of 
         Item.AddingLinkToNoteForm itemId _ note maybeNote ->
           update <| Item.AddingLinkToNoteForm itemId input note maybeNote
         _ -> slipbox
 
-    Item.AddLink noteToBeAdded ->
+    AddLink noteToBeAdded ->
       case item of 
         Item.AddingLinkToNoteForm itemId search note _ ->
           update <| Item.AddingLinkToNoteForm itemId search note <| Just noteToBeAdded
         _ -> slipbox
 
-    Item.Edit ->
+    Edit ->
       case item of
         Item.Note itemId note ->
           update <| Item.EditingNote itemId note note
@@ -377,26 +399,26 @@ updateItem item updateAction slipbox =
           update <| Item.EditingSource itemId source source
         _ -> slipbox
             
-    Item.PromptConfirmDelete ->
+    PromptConfirmDelete ->
         Item.Note itemId note ->
           update <| Item.ConfirmDeleteNote itemId note
         Item.Source itemId source ->
           update <| Item.ConfirmDeleteSource itemId source
         _ -> slipbox
 
-    Item.AddLinkForm ->
+    AddLinkForm ->
       case item of 
         Item.Note itemId note ->
           update <| Item.AddingLinkToNoteForm itemId note Nothing
         _ -> slipbox
     
-    Item.PromptConfirmRemoveLink linkedNote link ->
+    PromptConfirmRemoveLink linkedNote link ->
       case item of 
         Item.Note itemId note ->
           update <| Item.ConfirmDeleteLink itemId note linkedNote link
         _ -> slipbox
     
-    Item.Cancel ->
+    Cancel ->
       case item of
         Item.NewNote itemId note ->
           update <| Item.ConfirmDiscardNewNoteForm itemId note 

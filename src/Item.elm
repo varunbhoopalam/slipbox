@@ -2,7 +2,6 @@ module Item exposing
   (Item(..), openNote
   , openSource, newNote
   , newSource, is
-  , UpdateAction(..)
   , getNote
   , getSource
   )
@@ -26,6 +25,7 @@ type Item
   | ConfirmDeleteNote ItemId Note.Note
   | ConfirmDeleteSource ItemId Source.Source
   | ConfirmRemoveLink ItemId Note.Note Note.Note Link.Link
+
 type alias ItemId = Int
 
 type alias NewNoteContent =
@@ -79,20 +79,6 @@ is item1 item2 =
       id2 = getId item2
   in
   id1 == id2
-  
-
-type UpdateAction 
-  = Content String 
-  | Source String 
-  | Variant Note.Variant 
-  | Title String 
-  | Author String 
-  | AddLink Note.Note 
-  | Edit 
-  | PromptConfirmDelete 
-  | AddLinkForm 
-  | PromptConfirmRemoveLink Note.Note 
-  | Cancel
 
 getId : Item -> Int
 getId item =

@@ -74,9 +74,9 @@ updateAuthor input source =
   in
     Source { info | author = input}
 
-updateContent : String -> Source -> Source
-updateContent input source =
+updateTitle : String -> Source -> Source
+updateTitle input source =
   let
       info = getInfo source
   in
-    Source { info | content = input}
+    Source { info | title = input}
