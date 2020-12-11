@@ -7,9 +7,11 @@ module Source exposing
   , updateTitle
   , updateAuthor
   , encode
+  , decode
   )
 
 import IdGenerator
+import Json.Decode
 import Json.Encode
 
 type Source = Source Info
@@ -94,3 +96,18 @@ encode source =
     , ( "author", Json.Encode.string info.author )
     , ( "content", Json.Encode.string info.content )
     ]
+
+decode : Json.Decode.Decoder Source
+decode =
+  Json.Decode.map4
+    source_
+    ( Json.Decode.field "id" Json.Decode.int )
+    ( Json.Decode.field "title" Json.Decode.string )
+    ( Json.Decode.field "author" Json.Decode.string )
+    ( Json.Decode.field "content" Json.Decode.string )
+
+-- HELPER
+
+source_ : Int -> String -> String -> String -> Source
+source_ id title author content =
+  Source <| Info id title author content

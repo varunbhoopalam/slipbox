@@ -25,11 +25,14 @@ module Note exposing
   , isNoteFromId
   , create
   , encode
+  , decode
   )
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
+import Json.Decode
 import Link
 import Json.Encode
+import Simulation
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -203,7 +206,33 @@ encode note =
     , ( "variant", Json.Encode.string <| variantStringRepresentation info.variant )
     ]
 
+decode : Json.Decode.Decoder Note
+decode =
+  Json.Decode.map4
+    note_
+    ( Json.Decode.field "id" Json.Decode.int )
+    ( Json.Decode.field "content" Json.Decode.string )
+    ( Json.Decode.field "source" Json.Decode.string )
+    ( Json.Decode.field "variant" Json.Decode.string )
+
 -- Helper
+note_ : Int -> String -> String -> String -> Note
+note_ id content source variant =
+  let
+    record = Simulation.init id
+  in
+  Note <| Info
+    id
+    content
+    source
+    (stringToVariant variant)
+    Compressed
+    record.x
+    record.y
+    record.vx
+    record.vy
+
+
 linkBelongsToNotes : Note -> Note -> Link.Link -> Bool
 linkBelongsToNotes note1 note2 link=
   let
@@ -220,3 +249,10 @@ variantStringRepresentation variant =
   case variant of
     Regular -> "regular"
     Index -> "index"
+
+stringToVariant : String -> Variant
+stringToVariant string =
+  case string of
+    "regular" -> Regular
+    "index" -> Index
+    _ -> Regular

@@ -17,7 +17,7 @@ module Slipbox exposing
   , UpdateAction(..)
   , tick
   , simulationIsCompleted
-  , parse
+  , decode
   , encode
   )
 
@@ -406,8 +406,14 @@ updateItem item updateAction slipbox =
 -- TODO
 -- simulationIsCompleted: Slipbox -> Bool
 
-parse : String -> ( Maybe Slipbox )
-parse jsonString = Nothing
+decode : Json.Decode.Decoder Slipbox
+decode =
+  Json.Decode.map4
+    slipbox_
+    ( Json.Decode.field "notes" (Json.Decode.list Note.decode) )
+    ( Json.Decode.field "links" (Json.Decode.list Link.decode) )
+    ( Json.Decode.field "sources" (Json.Decode.list Source.decode) )
+    ( Json.Decode.field "idGenerator" IdGenerator.decode )
 
 encode : Slipbox -> String
 encode slipbox =
@@ -423,6 +429,13 @@ encode slipbox =
       ]
 
 -- Helper Functions
+slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox
+slipbox_ notesBeforeSimulation links sources idGenerator =
+  let
+    ( notes, state ) = Simulation.init notesBeforeSimulation links
+  in
+  Slipbox <| Content notes links [] sources state idGenerator
+
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
 buildItemList itemToMatch itemToAdd =
   \item list -> if Item.is item itemToMatch then item :: (itemToAdd :: list) else item :: list

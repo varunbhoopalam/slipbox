@@ -235,14 +235,14 @@ update message model =
       case model.state of
         Parsing ->
           let
-            maybeSlipbox = Slipbox.parse fileContentAsString
+            maybeSlipbox = Json.Decode.decodeString Slipbox.decode fileContentAsString
           in
           case maybeSlipbox of
-            Just slipbox ->
+            Ok slipbox ->
               ({ model | state = Session <| Content ( ExploreTab "" <| Viewport.initialize model.deviceViewport ) slipbox }
               , Cmd.none
               )
-            Nothing -> ( { model | state = FailureToParse }, Cmd.none )
+            Err _ -> ( { model | state = FailureToParse }, Cmd.none )
         _ -> ( model, Cmd.none )
 
     FileDownload ->

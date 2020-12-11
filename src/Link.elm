@@ -5,8 +5,10 @@ module Link exposing
   , isTarget
   , create
   , encode
+  , decode
   )
 
+import Json.Decode
 import Json.Encode
 import Note
 import IdGenerator
@@ -59,8 +61,19 @@ encode link =
     , ( "targetId", Json.Encode.int info.targetId )
     ]
 
+decode : Json.Decode.Decoder Link
+decode =
+  Json.Decode.map3
+    link_
+    ( Json.Decode.field "id" Json.Decode.int )
+    ( Json.Decode.field "sourceId" Json.Decode.int )
+    ( Json.Decode.field "targetId" Json.Decode.int )
 
 -- HELPER
+link_ : Int -> Int -> Int -> Link
+link_ id source target =
+  Link <| Info id source target
+
 
 getId : Link -> Int
 getId link =
