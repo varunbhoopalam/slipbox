@@ -6,8 +6,8 @@ module Slipbox exposing
   , getNotesThatCanLinkToNote
   , getNotesAssociatedToSource
   , compressNote, expandNote
-  , openNote, openSource
-  , newNoteForm, newSourceForm
+  , AddAction(..)
+  , addItem
   , dismissItem, deleteNote
   , deleteSource, createNote
   , createSource
@@ -83,13 +83,16 @@ getNotes maybeSearch slipbox =
 
 getSources : (Maybe String) -> Slipbox -> (List Source.Source)
 getSources maybeSearch slipbox =
+  let
+    content = getContent slipbox
+  in
   case maybeSearch of
-    Just search -> List.filter (Source.contains search) <| sources <| getContent slipbox
-    Nothing -> sources <| getContent slipbox
+    Just search -> List.filter (Source.contains search) content.sources
+    Nothing -> content.sources
 
 getItems : Slipbox -> (List Item.Item)
 getItems slipbox =
-  items <| getContent slipbox
+  .items <| getContent slipbox
 
 getLinkedNotes : Note.Note -> Slipbox -> (List Note.Note)
 getLinkedNotes note slipbox =
@@ -107,17 +110,17 @@ getNotesThatCanLinkToNote note slipbox =
 
 getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource source slipbox =
-  List.filter ( Note.isAssociated source ) <| notes <| getContent slipbox
+  List.filter ( Note.isAssociated source ) <| .notes <| getContent slipbox
 
 compressNote : Note.Note -> Slipbox -> Slipbox
 compressNote note slipbox =
   let
-      content = getContent slipbox
-      conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
-      (state, notes) = Simulation.step 
-        content.links 
-        (List.map conditionallyCompressNote content.notes) 
-        content.state
+    content = getContent slipbox
+    conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
+    (state, notes) = Simulation.step
+      content.links
+      (List.map conditionallyCompressNote content.notes)
+      content.state
   in
   Slipbox { content | notes = notes, state = state}
 
@@ -133,54 +136,46 @@ expandNote note slipbox =
   in
   Slipbox { content | notes = notes, state = state}
 
--- TODO: Edge case what if note is already open and inside of items?
-openNote : (Maybe Item.Item) -> Note.Note -> Slipbox -> Slipbox
-openNote maybeItem note slipbox =
-  let
-      content = getContent slipbox
-      ( newItem, idGenerator ) = Item.openNote content.idGenerator note
-      
-  in
-  case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
-      , idGenerator = idGenerator
-      }
-     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
+type AddAction
+  = OpenNote Note.Note
+  | OpenSource Source.Source
+  | NewNote
+  | NewSource
 
--- TODO: Edge case what if source is already open and inside of items?
-openSource : (Maybe Item.Item) -> Source.Source -> Slipbox -> Slipbox
-openSource maybeItem source slipbox =
+addItem : ( Maybe Item.Item ) -> AddAction -> Slipbox -> Slipbox
+addItem maybeItem addAction slipbox =
   let
-      content = getContent slipbox
-      ( newItem, idGenerator ) = Item.openSource content.idGenerator source
-      
-  in
-  case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
-      , idGenerator = idGenerator }
-     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
+    content = getContent slipbox
 
-newNoteForm : (Maybe Item.Item) -> Slipbox -> Slipbox
-newNoteForm maybeItem slipbox =
-  let
-      content = getContent slipbox
-      ( newItem, idGenerator ) = Item.newNote content.idGenerator
-  in
-  case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
-      , idGenerator = idGenerator }
-     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
+    itemExistsLambda = \existingItem ->
+      let
+        updatedContent = getContent <| dismissItem existingItem slipbox
+      in
+      case maybeItem of
+        Just itemToMatch -> Slipbox { updatedContent | items = List.foldr (buildItemList itemToMatch existingItem) [] updatedContent.items }
+        Nothing -> Slipbox { updatedContent | items = existingItem :: updatedContent.items }
 
-newSourceForm : (Maybe Item.Item) -> Slipbox -> Slipbox
-newSourceForm maybeItem slipbox =
-  let
-      content = getContent slipbox
-      ( newItem, idGenerator ) = Item.newSource content.idGenerator    
+    itemDoesNotExistLambda = \(newItem,idGenerator) ->
+      case maybeItem of
+       Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
+        , idGenerator = idGenerator
+        }
+       Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
   in
-  case maybeItem of
-     Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
-      , idGenerator = idGenerator }
-     Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
+  case addAction of
+    OpenNote note ->
+      case tryFindItemFromComponent content.items <| hasNote note of
+        Just existingItem -> itemExistsLambda existingItem
+        Nothing -> itemDoesNotExistLambda <| Item.openNote content.idGenerator note
+
+    OpenSource source ->
+      case tryFindItemFromComponent content.items <| hasSource source of
+        Just existingItem -> itemExistsLambda existingItem
+        Nothing -> itemDoesNotExistLambda <| Item.openSource content.idGenerator source
+
+    NewNote -> itemDoesNotExistLambda <| Item.newNote content.idGenerator
+
+    NewSource -> itemDoesNotExistLambda <| Item.newSource content.idGenerator
 
 dismissItem : Item.Item -> Slipbox -> Slipbox
 dismissItem item slipbox =
@@ -192,39 +187,42 @@ dismissItem item slipbox =
 deleteNote : Item.Item -> Slipbox -> Slipbox
 deleteNote item slipbox =
   case item of
-    Item.ConfirmDeleteNote itemId note ->
+    Item.ConfirmDeleteNote _ noteToDelete ->
       let
           content = getContent slipbox
-          links = List.filter (Link.isAssociated note) content.links
-          (state, notes) = Simulation.step links (List.filter (Note.is note) content.notes) content.state
-          deletedLinkActions = 
-            List.foldr (Action.deleteLink content.actions 
-            <| List.filter (not <| Link.isAssociated note) content.links
-          deletedNoteAction = Action.deleteNote note 
-            <| List.concat deletedLinkActions content.actions
+          linksToDelete = List.filter ( isAssociated noteToDelete ) content.links
+          linksToKeep = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
+          (state, notes) = Simulation.step linksToKeep (List.filter (Note.is noteToDelete) content.notes) content.state
+          deletedLinkActionsWithActionList =
+            List.foldr
+              (\linkToDelete actionList -> (Action.deleteLink actionList linkToDelete) :: actionList)
+              content.actions
+              linksToDelete
+          deletedNoteAction = Action.deleteNote deletedLinkActionsWithActionList noteToDelete
+
       in
       Slipbox 
         { content | notes = notes
-        , links = links
-        , actions = List.concat deletedNoteAction deletedLinkActions content.actions
-        , items = List.map (deleteNoteItemStateChange note) <| List.filter (Item.is item) content.items
+        , links = linksToKeep
+        , actions = deletedNoteAction :: deletedLinkActionsWithActionList
+        , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
         , state = state
         }
-     _ -> slipbox
+    _ -> slipbox
 
 deleteSource : Item.Item -> Slipbox -> Slipbox
 deleteSource item slipbox =
   case item of
-    Item.ConfirmDeleteSource itemId source ->
+    Item.ConfirmDeleteSource _ source ->
       let
           content = getContent slipbox
       in
       Slipbox 
         { content | sources = List.filter (Source.is source) content.sources
-        , actions = (Action.deleteSource source content.actions) :: content.actions
+        , actions = (Action.deleteSource content.actions source) :: content.actions
         , items = List.filter (Item.is item) content.items
         }
-     _ -> slipbox
+    _ -> slipbox
 
 createNote : Item.Item -> Slipbox -> Slipbox
 createNote item slipbox =
@@ -232,7 +230,7 @@ createNote item slipbox =
     Item.NewNote itemId noteContent ->
       let
           content = getContent slipbox
-          (note, idGenerator) = Note.create slipbox.idGenerator noteContent
+          (note, idGenerator) = Note.create content.idGenerator {}
           (state, notes) = Simulation.step content.links (note :: content.notes) content.state
       in
       Slipbox
@@ -500,7 +498,35 @@ updateSourceEdits originalSource sourceWithEdits =
 linkIsRelevant : ( List Note.Note ) -> Link.Link -> Bool
 linkIsRelevant notes link =
   let
-    sourceInNotes = Link.getSource link notes /= Nothing
-    targetInNotes = Link.getTarget link notes /= Nothing
+    sourceInNotes = getSource link notes /= Nothing
+    targetInNotes = getTarget link notes /= Nothing
   in
   sourceInNotes && targetInNotes
+
+tryFindItemFromComponent : ( List Item.Item ) -> ( Item.Item -> (Bool) ) -> ( Maybe Item.Item )
+tryFindItemFromComponent items filterCondition =
+  List.head <| List.filter filterCondition items
+
+hasNote : Note.Note -> Item.Item -> Bool
+hasNote note item =
+  case Item.getNote item of
+    Just noteOnItem -> Note.is note noteOnItem
+    Nothing -> False
+
+hasSource : Source.Source -> Item.Item -> Bool
+hasSource source item =
+  case Item.getSource item of
+    Just sourceOnItem -> Source.is source sourceOnItem
+    Nothing -> False
+
+isAssociated : Note.Note -> Link.Link -> Bool
+isAssociated note link =
+  Link.isSource link note || Link.isTarget link note
+
+getSource : Link.Link -> (List Note.Note) -> (Maybe Note.Note)
+getSource link notes =
+  List.head <| List.filter (Link.isSource link) notes
+
+getTarget : Link.Link -> (List Note.Note) -> (Maybe Note.Note)
+getTarget link notes =
+  List.head <| List.filter (Link.isTarget link) notes

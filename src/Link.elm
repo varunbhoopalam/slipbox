@@ -1,6 +1,8 @@
 module Link exposing 
-  ( Link, getSource
-  , getTarget, is
+  ( Link
+  , is
+  , isSource
+  , isTarget
   , create
   )
 
@@ -16,28 +18,24 @@ getInfo link =
 
 type alias Info = 
   { id: Int
-  , sourceId: NoteId
-  , targetId: NoteId
+  , sourceId: Int
+  , targetId: Int
   }
 
 -- TODO
--- init: 
+-- init:
 
-getSource : Link -> (List Note.Note) -> (Maybe Note.Note)
-getSource link notes =
-  List.head <| List.filter (Note.is <| getSourceId link) notes
+isSource : Link -> Note.Note -> Bool
+isSource link note =
+  Note.isNoteFromId (getSourceId link) note
 
-getTarget : Link -> (List Note.Note) -> (Maybe Note.Note)
-getTarget link notes =
-  List.head <| List.filter (Note.is <| getTargetId link) notes
+isTarget : Link -> Note.Note -> Bool
+isTarget link note =
+  Note.isNoteFromId (getTargetId link) note
 
 is : Link -> Link -> Bool
 is link1 link2 =
   getId link1 == getId link2
-
-isAssociated : Note.Note -> Link -> Bool
-isAssociated note link =
-  getSourceId link |> Note.is note || getTargetId link |> Note.is note
 
 create : IdGenerator.IdGenerator -> Note.Note -> Note.Note -> ( Link, IdGenerator.IdGenerator )
 create generator sourceNote targetNote =
@@ -45,3 +43,15 @@ create generator sourceNote targetNote =
       (id , idGenerator) = IdGenerator.generateId generator
   in
   (Link <| Info id sourceNote targetNote, idGenerator)
+
+getId : Link -> Int
+getId link =
+  .id <| getInfo link
+
+getSourceId : Link -> Int
+getSourceId link =
+  .sourceId <| getInfo link
+
+getTargetId : Link -> Int
+getTargetId link =
+  .targetId <| getInfo link

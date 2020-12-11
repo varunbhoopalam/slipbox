@@ -3,13 +3,15 @@ module Item exposing
   , openSource, newNote
   , newSource, is
   , UpdateAction(..)
-  , ItemId
+  , getNote
+  , getSource
   )
 
 import Note
 import Source
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
+import Link
 
 type Item 
   = Note ItemId Note.Note
@@ -54,27 +56,29 @@ openSource generator source =
   in
   ( Source id source, idGenerator )
 
-newNote : IdGenerator.IdGenerator -> NewNoteContent -> ( Item, IdGenerator.IdGenerator)
-newNote generator note =
+newNote : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
+newNote generator =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
+      emptyContent = NewNoteContent "" "" Note.Regular False
   in
-  ( NewNote id note, idGenerator )
+  ( NewNote id emptyContent, idGenerator )
 
-newSource : IdGenerator.IdGenerator -> NewSourceContent -> ( Item, IdGenerator.IdGenerator)
-newSource generator source =
+newSource : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
+newSource generator =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
+      emptyContent = NewSourceContent "" "" "" False
   in
-  ( NewSource id source, idGenerator )
+  ( NewSource id emptyContent, idGenerator )
 
-is : Item.Item -> Item.Item -> Bool
+is : Item -> Item -> Bool
 is item1 item2 =
   let
       id1 = getId item1
       id2 = getId item2
   in
-  equals id1 id2
+  id1 == id2
   
 
 type UpdateAction 
@@ -89,3 +93,37 @@ type UpdateAction
   | AddLinkForm 
   | PromptConfirmRemoveLink Note.Note 
   | Cancel
+
+getId : Item -> Int
+getId item =
+  case item of
+    Note id _ -> id
+    Source id _  -> id
+    NewNote id _  -> id
+    NewSource id _  -> id
+    EditingNote id _ _ -> id
+    EditingSource id _ _ -> id
+    AddingLinkToNoteForm id _ _ _ -> id
+    ConfirmDiscardNewNoteForm id _ -> id
+    ConfirmDiscardNewSourceForm id _ -> id
+    ConfirmDeleteNote id _ -> id
+    ConfirmDeleteSource id _ -> id
+    ConfirmRemoveLink id _ _ _ -> id
+
+getNote : Item -> ( Maybe Note.Note )
+getNote item =
+  case item of
+    Note _ note -> Just note
+    EditingNote - note _ -> Just note
+    AddingLinkToNoteForm _ _ note _ -> Just note
+    ConfirmDeleteNote _ note -> Just note
+    ConfirmRemoveLink _ note _ _ -> Just note
+    _ -> Nothing
+
+getSource : Item -> ( Maybe Source.Source )
+getSource item =
+  case item of
+    Source _ source -> Just source
+    EditingSource _ source _ -> Just source
+    ConfirmDeleteSource _ source -> Just source
+    _ -> Nothing

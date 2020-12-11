@@ -6,21 +6,19 @@ module Action exposing (Action, CreateNoteRecord, EditNoteRecord, DeleteNoteReco
   , SaveRequestNote, SaveRequestNoteEdit, SaveRequestLink, extract
   , SaveRequestRecord (..), actionIsSaved)
 
+import Link
+import Note
 
 -- Types
 
 type Action =
-  CreateNote ActionId State CreateNoteRecord |
-  EditNote ActionId State EditNoteRecord |
-  DeleteNote ActionId State DeleteNoteRecord |
-  CreateLink ActionId State CreateLinkRecord |
-  DeleteLink ActionId State DeleteLinkRecord
+  CreateNote ActionId CreateNoteRecord |
+  EditNote ActionId EditNoteRecord |
+  DeleteNote ActionId Note.Note |
+  CreateLink ActionId CreateLinkRecord |
+  DeleteLink ActionId Link.Link
 
 type alias ActionId = Int
-
-type State =
-  Saved |
-  Temporary Undone
 
 type alias Undone = Bool
 
@@ -115,17 +113,17 @@ editNote: ActionId -> EditNoteRecord -> Action
 editNote actionId note =
   EditNote actionId defaultState note
 
-deleteNote: ActionId -> DeleteNoteRecord -> Action
-deleteNote actionId note =
-  DeleteNote actionId defaultState note
+deleteNote: ( List Action ) -> Note.Note -> Action
+deleteNote actions note =
+  DeleteNote (nextActionId actions) note
 
 createLink: ActionId -> CreateLinkRecord -> Action
 createLink actionId link =
   CreateLink actionId defaultState link
 
-deleteLink: ActionId -> DeleteLinkRecord -> Action
-deleteLink actionId link =
-  DeleteLink actionId defaultState link
+deleteLink: ( List Action ) -> Link.Link -> Action
+deleteLink actions link =
+  DeleteLink (nextActionId actions) link
 
 summary: Action -> Summary
 summary action =

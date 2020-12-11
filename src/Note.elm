@@ -9,10 +9,13 @@ module Note exposing
   , compress, expand
   , note, updateContent
   , updateSource, updateVariant
-  , GraphState, Variant
+  , GraphState, Variant(..)
+  , isNoteFromId
+  , create
   )
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
+import Link
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -98,6 +101,10 @@ isAssociated source note =
 is : Note -> Note -> Bool
 is note1 note2 =
   (getId note1) == (getId note2)
+
+isNoteFromId : Int -> Note -> Bool
+isNoteFromId id note =
+  getId note == id
 
 compress : Note -> Note
 compress note =
