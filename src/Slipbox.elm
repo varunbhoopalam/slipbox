@@ -397,11 +397,17 @@ updateItem item updateAction slipbox =
             }
         _ -> slipbox
 
--- TODO
--- tick: Slipbox -> Slipbox
+tick : Slipbox -> Slipbox
+tick slipbox =
+  let
+    content = getContent slipbox
+    ( state, notes ) = Simulation.tick content.notes content.state
+  in
+  Slipbox { content | notes = notes, state = state }
 
--- TODO
--- simulationIsCompleted: Slipbox -> Bool
+simulationIsCompleted : Slipbox -> Bool
+simulationIsCompleted slipbox =
+  Simulation.isCompleted <| .state <| getContent slipbox
 
 decode : Json.Decode.Decoder Slipbox
 decode =

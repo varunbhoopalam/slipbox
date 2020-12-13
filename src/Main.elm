@@ -15,6 +15,7 @@ import Svg.Events
 import Svg.Attributes
 import Element
 import Json.Decode
+import Time
 import Viewport
 import Browser.Dom
 import Url
@@ -122,6 +123,7 @@ type Msg
   | FileSelected File.File
   | FileLoaded String
   | FileDownload
+  | Tick Time.Posix
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -250,6 +252,15 @@ update message model =
       case getSlipbox model of
         Just slipbox -> ( model, File.Download.string "slipbox.slipbox" "text/plain" <| Slipbox.encode slipbox )
         Nothing -> ( model, Cmd.none )
+
+    Tick _ ->
+      case getSlipbox model of
+        Just slipbox ->
+          if Slipbox.simulationIsCompleted slipbox then
+            ( updateSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
+          else
+            ( model, Cmd.none )
+        _ -> ( model, Cmd.none )
     
 
 handleWindowInfo: ( Int, Int ) -> Model -> Model
@@ -271,7 +282,17 @@ subscriptions: Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
+    , maybeSubscribeOnAnimationFrame model
     ]
+
+maybeSubscribeOnAnimationFrame : Model -> Sub Msg
+maybeSubscribeOnAnimationFrame model =
+  case model.state of
+    Session content ->
+      case content.tab of
+        ExploreTab _ _ -> Browser.Events.onAnimationFrame Tick
+        _ -> Sub.none
+    _ -> Sub.none
 
 -- VIEW
 
