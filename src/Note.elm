@@ -61,7 +61,7 @@ type GraphState = Compressed | Expanded
 type alias NoteRecord = 
   { content : String
   , source : String
-  , noteType: String
+  , variant: Variant
   }
 
 getId : Note -> NoteId

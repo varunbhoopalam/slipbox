@@ -49,7 +49,6 @@ getContent slipbox =
 
 -- Returns Slipbox
 
--- TODO
 new :  Slipbox
 new  =
   let
@@ -116,10 +115,9 @@ compressNote note slipbox =
   let
     content = getContent slipbox
     conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
-    (state, notes) = Simulation.step
-      content.links
+    (state, notes) = Simulation.simulation
       (List.map conditionallyCompressNote content.notes)
-      content.state
+      content.links
   in
   Slipbox { content | notes = notes, state = state}
 
@@ -128,10 +126,9 @@ expandNote note slipbox =
   let
       content = getContent slipbox
       conditionallyExpandNote = \n -> if Note.is note n then Note.expand n else n
-      (state, notes) = Simulation.step 
-        content.links 
-        (List.map conditionallyExpandNote content.notes) 
-        content.state
+      (state, notes) = Simulation.simulation
+        (List.map conditionallyExpandNote content.notes)
+        content.links
   in
   Slipbox { content | notes = notes, state = state}
 
@@ -194,7 +191,7 @@ type UpdateAction
   | Edit
   | PromptConfirmDelete
   | AddLinkForm
-  | PromptConfirmRemoveLink Note.Note
+  | PromptConfirmRemoveLink Note.Note Link.Link
   | Cancel
   | Submit
 
@@ -243,7 +240,7 @@ updateItem item updateAction slipbox =
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource 
             <| Source.updateAuthor input sourceWithEdits
-      _ -> slipbox
+        _ -> slipbox
 
     UpdateSearch input ->
       case item of 
@@ -276,7 +273,7 @@ updateItem item updateAction slipbox =
     AddLinkForm ->
       case item of 
         Item.Note itemId note ->
-          update <| Item.AddingLinkToNoteForm itemId note Nothing
+          update <| Item.AddingLinkToNoteForm itemId "" note Nothing
         _ -> slipbox
     
     PromptConfirmRemoveLink linkedNote link ->
@@ -314,7 +311,7 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteNote _ noteToDelete ->
           let
             links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-            (state, notes) = Simulation.step links (List.filter (Note.is noteToDelete) content.notes) content.state
+            (state, notes) = Simulation.simulation (List.filter (Note.is noteToDelete) content.notes) links
           in
           Slipbox
             { content | notes = notes
@@ -332,7 +329,7 @@ updateItem item updateAction slipbox =
           let
               (note, idGenerator) = Note.create content.idGenerator
                 <| { content = noteContent.content, source = noteContent.source, variant = noteContent.variant }
-              (state, notes) = Simulation.step content.links (note :: content.notes) content.state
+              (state, notes) = Simulation.simulation (note :: content.notes) content.links
           in
           Slipbox
             { content | notes = notes
@@ -343,11 +340,12 @@ updateItem item updateAction slipbox =
 
         Item.NewSource itemId sourceContent ->
           let
-              source = Source.createSource content.idGenerator sourceContent
+              ( source, generator ) = Source.createSource content.idGenerator sourceContent
           in
           Slipbox
             { content | sources = source :: content.sources
             , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
+            , idGenerator = generator
             }
 
         Item.EditingNote itemId originalNote editingNote ->
@@ -375,7 +373,7 @@ updateItem item updateAction slipbox =
               let
                   (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
                   links = link :: content.links
-                  (state, notes) = Simulation.step links content.notes content.state
+                  (state, notes) = Simulation.simulation content.notes links
               in
               Slipbox
                 { content | notes = notes
@@ -389,7 +387,7 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteLink itemId note linkedNote link ->
           let
              links = List.filter (Link.is link) content.links
-             (state, notes) = Simulation.step links content.notes content.state
+             (state, notes) = Simulation.simulation content.notes links
           in
           Slipbox
             { content | notes = notes
@@ -431,7 +429,7 @@ encode slipbox =
 slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox
 slipbox_ notesBeforeSimulation links sources idGenerator =
   let
-    ( notes, state ) = Simulation.initNote notesBeforeSimulation links
+    ( state, notes ) = Simulation.simulation notesBeforeSimulation links
   in
   Slipbox <| Content notes links [] sources state idGenerator
 

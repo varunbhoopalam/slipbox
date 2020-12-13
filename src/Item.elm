@@ -20,8 +20,8 @@ type Item
   | EditingNote ItemId Note.Note Note.Note
   | EditingSource ItemId Source.Source Source.Source
   | AddingLinkToNoteForm ItemId String Note.Note (Maybe Note.Note)
-  | ConfirmDiscardNewNoteForm ItemId Note.Note
-  | ConfirmDiscardNewSourceForm ItemId Source.Source
+  | ConfirmDiscardNewNoteForm ItemId NewNoteContent
+  | ConfirmDiscardNewSourceForm ItemId NewSourceContent
   | ConfirmDeleteNote ItemId Note.Note
   | ConfirmDeleteSource ItemId Source.Source
   | ConfirmDeleteLink ItemId Note.Note Note.Note Link.Link

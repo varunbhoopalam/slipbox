@@ -21,8 +21,8 @@ type alias Info =
   , author : String
   , content : String 
   }
-type alias SourceContent =
-  { title : String
+type alias SourceContent a =
+  { a | title : String
   , author : String
   , content : String
   }
