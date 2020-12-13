@@ -13,7 +13,7 @@ import Slipbox
 import Svg
 import Svg.Events
 import Svg.Attributes
-import Element
+import Element exposing ( Element )
 import Json.Decode
 import Time
 import Viewport
@@ -197,10 +197,11 @@ update message model =
     
     StopMoveView -> updateExploreTabViewportLambda Viewport.stopMove
 
-    ZoomView wheelEvent ->
-      case getSlipbox model of
-        Just slipbox -> updateExploreTabViewportLambda <| Viewport.changeZoom wheelEvent <| Slipbox.getNotes Nothing slipbox
-        Nothing -> ( model, Cmd.none )
+    -- TODO
+    ZoomView wheelEvent -> ( model, Cmd.none )
+      --case getSlipbox model of
+      --  Just slipbox -> updateExploreTabViewportLambda <| Viewport.changeZoom wheelEvent <| Slipbox.getNotes Nothing slipbox
+      --  Nothing -> ( model, Cmd.none )
     
     GotViewport viewport ->
       let
@@ -270,12 +271,12 @@ handleWindowInfo windowInfo model =
       case content.tab of
         ExploreTab input viewport ->
           { model | deviceViewport = windowInfo
-          , { content | tab = Explore input 
-            <| Viewport.updateSvgContainerDimensions windowInfo viewport
+          , state = Session { content | tab =
+            ExploreTab input <| Viewport.updateSvgContainerDimensions windowInfo viewport
             }
           }
         _ -> { model | deviceViewport = windowInfo }
-      _ -> { model | deviceViewport = windowInfo }
+    _ -> { model | deviceViewport = windowInfo }
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -334,7 +335,7 @@ requestCsvButton =
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just CsvRequested
+    { onPress = Just FileRequested
     , label = Element.text "Load Slipbox"
     }
 
@@ -357,25 +358,26 @@ tabView deviceViewport content =
     ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
     NotesTab input -> noteTabView input content.slipbox
     SourcesTab input -> sourceTabView input content.slipbox
-    Setup ->
+    -- TODO
+    SetupTab -> Element.text "TODO"
+
 
 -- ITEMS
 itemsView: Content -> Element Msg
 itemsView content =
   let
-      items = List.map (toItemView slipbox) <| Slipbox.getItems content.slipbox
+      items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
   in
     Element.column 
       []
       items
 -- TODO: add div between each item that on hover shows buttons to create an item
--- TODO: figure out if it's necessary to have this same div but always visible either at
-  -- beginning or end of item list
+-- TODO: figure out if it's necessary to have this same div but always visible either at beginning or end of item list
 
 toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   case item of
-     Item.Note itemId note -> itemNoteView itemId note content.slipbox
+     Item.Note _ note -> itemNoteView item note content.slipbox
      Item.NewNote itemId note -> newNoteView itemId note content.slipbox
      Item.ConfirmDiscardNewNoteForm itemId note -> confirmDiscardNewNoteFormView itemId note content.slipbox
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
@@ -388,51 +390,63 @@ toItemView content item =
      Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.slipbox
      Item.ConfirmDeleteLink itemId note linkedNote link ->
 
-itemNoteView: Int -> Note.Note -> Slipbox -> Element Msg
-itemNoteView itemId note slipbox =
+itemNoteView: Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
+itemNoteView item note slipbox =
+  let
+    linkedNotes = Slipbox.getLinkedNotes note slipbox
+    canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
+    noLinkedNotes = List.isEmpty linkedNotes
+    linkedNotesNode =
+      case canAddLinkToNote of
+        True ->
+          if noLinkedNotes then
+            addLinkButton item
+          else
+            Element.column []
+              [ Element.row
+                []
+                [ Element.text "Linked Notes"
+                , addLinkButton item ]
+              , Element.column
+                []
+                <| List.map (toLinkedNoteView note) linkedNotes
+              ]
+        False ->
+          if noLinkedNotes then
+            Element.text "No notes available to link to."
+          else
+            Element.column []
+              [ Element.text "Linked Notes"
+              , Element.column
+                []
+                <| List.map (toLinkedNoteView note) linkedNotes
+              ]
+  in
   Element.column
     []
     [ Element.row 
       []
-      [ idHeader Note.getId note
-      , editButton itemId
-      , deleteButton itemId
-      , dismissButton itemId
+      [ editButton item
+      , deleteButton item
+      , dismissButton item
       ]
-    , contentView <| Note.getContent note
-    , sourceView <| Note.getSource note
-    , variantView <| Note.getVariant note
-    , Element.row
-      []
-      [ linkedNotesHeader 
-      , handleAddLinkButton itemId note slipbox
-      ]
-    , Element.column
-      []
-      <| List.map (toLinkedNoteView note <| Slipbox.getLinkedNotes note slipbox
+    , noteContentView <| Note.getContent note
+    , noteSourceView <| Note.getSource note
+    , noteVariantView <| Note.getVariant note
+    , linkedNotesNode
     ]
 
-handleAddLinkButton: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
-handleAddLinkButton itemId note slipbox =
-  if Slipbox.noteCanLinkToOtherNotes note slipbox then
-    addLinkButton itemId
-  else 
-    cannotAddLink 
-
-addLinkButton: Int -> Element Msg
-addLinkButton itemId =
+addLinkButton: Item.Item -> Element Msg
+addLinkButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| CreateLink itemId
+    { onPress = Just <| UpdateItem item Slipbox.AddLinkForm
     , label = Element.text "Add Link"
     }
-
-cannotAddLink: Element Msg
-cannotAddLink = Element.text "No notes to make a valid link to."
 
 toLinkedNoteView: Note.Note -> Note.Note -> Element Msg
 toLinkedNoteView openNote linkedNote =
@@ -905,39 +919,39 @@ createSourceButton = Element.Input.button
   , label = Element.text "Create Source"
   }
 
-editButton: Int -> Element Msg
-editButton itemId =
+editButton: Item.Item -> Element Msg
+editButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| EditItem itemId
+    { onPress = Just <| UpdateItem item Slipbox.Edit
     , label = Element.text "Edit"
     }
 
-deleteButton: Int -> Element Msg
-deleteButton itemId =
+deleteButton: Item.Item -> Element Msg
+deleteButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| DeleteItem itemId
+    { onPress = Just <| UpdateItem item Slipbox.PromptConfirmDelete
     , label = Element.text "Delete"
     }
 
-dismissButton: Int -> Element Msg
-dismissButton itemId =
+dismissButton: Item.Item -> Element Msg
+dismissButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| DismissItem itemId
+    { onPress = Just <| DismissItem item
     , label = Element.text "X"
     }
 
@@ -945,11 +959,11 @@ contentInput: Int -> String -> Element Msg
 contentInput itemId input =
   Element.Input.multiline
     []
-    { onChange : (\s -> UpdateNoteContent itemId s)
-    , text : input
-    , placeholder : Nothing
-    , label : Element.labelAbove [] <| Element.text "Content"
-    , spellcheck : True
+    { onChange = (\s -> UpdateNoteContent itemId s)
+    , text = input
+    , placeholder = Nothing
+    , label = Element.labelAbove [] <| Element.text "Content"
+    , spellcheck = True
     }
 
 sourceInput: Int -> String -> (List String) -> Element Msg
@@ -1124,3 +1138,23 @@ authorInput itemId input =
     , label : Element.labelAbove [] <| Element.text "Author"
     , spellcheck : True
     }
+
+-- MISC VIEW FUNCTIONS
+
+noteContentView : String -> Element Msg
+noteContentView noteContent =
+  Element.paragraph [] [ Element.text noteContent ]
+
+noteSourceView : String -> Element Msg
+noteSourceView noteSource =
+  Element.paragraph [] [ Element.text noteSource ]
+
+noteVariantView : Note.Variant -> Element Msg
+noteVariantView variant =
+  let
+    text = case variant of
+      Note.Regular -> "regular"
+      Note.Index -> "index"
+  in
+  Element.paragraph [] [ Element.text text ]
+

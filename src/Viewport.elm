@@ -5,7 +5,8 @@ module Viewport exposing
   , PanningAttributes
   , getState, State
   , startMove, move
-  , stopMove, changeZoom 
+  , stopMove
+  --, changeZoom
   , updateSvgContainerDimensions
   , MouseEvent
   , WheelEvent
@@ -134,8 +135,8 @@ stopMove viewport =
 -- changeZoom : WheelEvent -> ( List Note.Note ) -> Viewport -> Viewport
 
 -- TODO
--- updateSvgContainerDimensions : ( Int, Int ) -> Viewport -> Viewport
--- updateSvgContainerDimensions ( width, Height ) viewport =
+updateSvgContainerDimensions : ( Int, Int ) -> Viewport -> Viewport
+updateSvgContainerDimensions ( width, height ) viewport = viewport
 
 
 -- HELPER
