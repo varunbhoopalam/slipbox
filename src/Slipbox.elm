@@ -1,6 +1,6 @@
 module Slipbox exposing 
   ( Slipbox
-  , initialize
+  , new
   , getNotesAndLinks
   , getNotes
   , getSources
@@ -50,13 +50,12 @@ getContent slipbox =
 -- Returns Slipbox
 
 -- TODO
--- initialize : (List Note.NoteRecord) -> (List LinkRecord) -> ActionResponse -> Slipbox
--- initialize notes links response =
---   let
---     l =  initializeLinks links
---     (state, newNotes) = initializeNotes notes l
---   in
---     Slipbox (Content newNotes l (actionsInit response) LinkForm.initLinkForm state)
+new :  Slipbox
+new  =
+  let
+    ( state, _ ) = Simulation.simulation [] []
+  in
+  Slipbox <| Content [] [] [] [] state IdGenerator.init
 
 getNotesAndLinks : (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
 getNotesAndLinks maybeSearch slipbox =

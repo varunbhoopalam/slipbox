@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Events
 import Browser.Navigation
 import Element.Background
 import Element.Input
@@ -213,7 +214,7 @@ update message model =
           ({ model | state =
             Session <| Content
               (ExploreTab "" <| Viewport.initialize model.deviceViewport)
-              Slipbox.initialize
+              Slipbox.new
           }
           , Cmd.none)
         _ -> ( model, Cmd.none )
@@ -271,10 +272,6 @@ subscriptions model =
   Sub.batch
     [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
     ]
--- Steps
-sourceStep: Model -> (SourceSummary.Model, Cmd SourceSummary.Msg) -> (Model, Cmd Msg)
-sourceStep model (summaryModel, sourceMsg) =
-  ({model | page = Source summaryModel}, Cmd.map SourceMsg sourceMsg)
 
 -- VIEW
 

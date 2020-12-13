@@ -11,9 +11,8 @@ import Json.Encode
 
 type IdGenerator = IdGenerator Int
 
-init : Int -> IdGenerator
-init id =
-  IdGenerator id
+init : IdGenerator
+init = IdGenerator 0
 
 generateId : IdGenerator -> (Int, IdGenerator)
 generateId generator =
@@ -25,7 +24,7 @@ encode idGenerator =
   Json.Encode.int <| getId idGenerator
 
 decode : Json.Decode.Decoder IdGenerator
-decode = Json.Decode.map init Json.Decode.int
+decode = Json.Decode.map IdGenerator Json.Decode.int
 
 -- HELPER
 
