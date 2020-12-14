@@ -380,7 +380,7 @@ toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   case item of
      Item.Note _ note -> itemNoteView item note content.slipbox
-     Item.NewNote _ note -> newNoteView item note content.slipbox
+     Item.NewNote itemId note -> newNoteView itemId item note content.slipbox
      Item.ConfirmDiscardNewNoteForm itemId note -> confirmDiscardNewNoteFormView itemId note content.slipbox
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
      Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
@@ -391,6 +391,8 @@ toItemView content item =
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
      Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.slipbox
      Item.ConfirmDeleteLink itemId note linkedNote link ->
+
+-- NOTE ITEM
 
 itemNoteView: Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 itemNoteView item note slipbox =
@@ -471,6 +473,8 @@ removeLinkButton item linkedNote link =
     , label = Element.text "Remove Link"
     }
 
+-- NEW NOTE ITEM
+
 newNoteView: Int -> Item.Item -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
 newNoteView itemId item note slipbox =
   Element.column
@@ -482,19 +486,20 @@ newNoteView itemId item note slipbox =
     , chooseSubmitButton item note.canSubmit
     ]
 
-confirmDiscardNewNoteFormView: Int -> Item.NewNoteContent -> Element Msg
-confirmDiscardNewNoteFormView itemId note =
+-- DISCARD NOTE ITEM
+
+confirmDiscardNewNoteFormView: Item.Item -> Item.NewNoteContent -> Element Msg
+confirmDiscardNewNoteFormView item note =
   Element.column
     []
     [ Element.row 
       []
-      [ confirmDismissButton itemId
-      , doNotDismissButton itemId
+      [ confirmDismissButton item
+      , doNotDismissButton item
       ] 
-    , contentView note.content
-    , sourceView note.source
-    , chooseVariant note.variant
-    , saveButtonNotClickable
+    , noteContentView note.content
+    , noteSourceView note.source
+    , noteVariantView note.variant
     ]
 
 toLinkedNoteViewNoButtons: Int -> Note.Note -> Element Msg
@@ -1069,27 +1074,27 @@ submitButton item =
     , label = Element.text "Submit"
     }
 
-confirmDismissButton : Int -> Element Msg
-confirmDismissButton itemId =
+confirmDismissButton : Item.Item -> Element Msg
+confirmDismissButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| ConfirmDismissItem itemId
+    { onPress = Just <| DismissItem item
     , label = Element.text "Confirm Dismiss"
     }
 
-doNotDismissButton : Int -> Element Msg
-doNotDismissButton itemId =
+doNotDismissButton : Item.Item -> Element Msg
+doNotDismissButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| DoNotDismissItem itemId
+    { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Do Not Dismiss"
     }
 

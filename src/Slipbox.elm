@@ -333,6 +333,7 @@ updateItem item updateAction slipbox =
             , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
             , state = state
             }
+
         Item.ConfirmDeleteSource _ source ->
           Slipbox
             { content | sources = List.filter (Source.is source) content.sources
