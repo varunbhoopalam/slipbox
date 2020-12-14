@@ -658,24 +658,25 @@ newSourceView item source =
     , chooseSubmitButton item source.canSubmit
     ]
 
-confirmDiscardNewSourceFormView : Int -> Item.NewSourceContent -> Element Msg
-confirmDiscardNewSourceFormView itemId source =
-  ElmUI.column 
+-- CONFIRM DISCARD NEW SOURCE FORM ITEM VIEW
+
+confirmDiscardNewSourceFormView : Item.Item -> Item.NewSourceContent -> Element Msg
+confirmDiscardNewSourceFormView item source =
+  Element.column
     []
     [ Element.row 
       []
-      [ confirmDismissButton itemId
-      , doNotDismissButton itemId
+      [ confirmDismissButton item
+      , doNotDismissButton item
       ] 
-    , titleView source.title
-    , authorView source.author
-    , contentView source.content 
-    , saveButtonNotClickable
+    , sourceTitleView source.title
+    , sourceAuthorView source.author
+    , noteContentView source.content
     ]
 
 editingSourceView: Int -> Source.Source -> Slipbox -> Element Msg
 editingSourceView itemId source slipbox =
-  ElmUI.column 
+  Element.column
     []
     [ Element.row 
       []
@@ -693,7 +694,7 @@ editingSourceView itemId source slipbox =
 
 confirmDeleteSourceView: Int -> Source.Source -> Slipbox -> Element Msg
 confirmDeleteSourceView itemId source slipbox =
-  ElmUI.column 
+  Element.column
     []
     [ Element.row 
       []
