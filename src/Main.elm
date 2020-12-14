@@ -4,6 +4,7 @@ import Browser
 import Browser.Events
 import Browser.Navigation
 import Element.Background
+import Element.Border
 import Element.Input
 import File.Download
 import Html
@@ -379,7 +380,7 @@ toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   case item of
      Item.Note _ note -> itemNoteView item note content.slipbox
-     Item.NewNote itemId note -> newNoteView itemId note content.slipbox
+     Item.NewNote _ note -> newNoteView item note content.slipbox
      Item.ConfirmDiscardNewNoteForm itemId note -> confirmDiscardNewNoteFormView itemId note content.slipbox
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
      Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
@@ -470,15 +471,15 @@ removeLinkButton item linkedNote link =
     , label = Element.text "Remove Link"
     }
 
-newNoteView: Int -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
-newNoteView itemId note slipbox =
+newNoteView: Int -> Item.Item -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
+newNoteView itemId item note slipbox =
   Element.column
     []
-    [ contentInput itemId note.content
-    , sourceInput itemId note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
-    , chooseVariantButtons itemId note.variant
-    , cancelButton itemId
-    , chooseSubmitButton itemId note.canSubmit
+    [ contentInput item note.content
+    , sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
+    , chooseVariantButtons item note.variant
+    , cancelButton item
+    , chooseSubmitButton item note.canSubmit
     ]
 
 confirmDiscardNewNoteFormView: Int -> Item.NewNoteContent -> Element Msg
@@ -954,19 +955,19 @@ dismissButton item =
     , label = Element.text "X"
     }
 
-contentInput: Int -> String -> Element Msg
-contentInput itemId input =
+contentInput: Item.Item -> String -> Element Msg
+contentInput item input =
   Element.Input.multiline
     []
-    { onChange = (\s -> UpdateNoteContent itemId s)
+    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent input )
     , text = input
     , placeholder = Nothing
-    , label = Element.labelAbove [] <| Element.text "Content"
+    , label = Element.Input.labelAbove [] <| Element.text "Content"
     , spellcheck = True
     }
 
-sourceInput: Int -> String -> (List String) -> Element Msg
-sourceInput itemId input suggestions =
+sourceInput: Int -> Item.Item -> String -> (List String) -> Element Msg
+sourceInput itemId item input suggestions =
   let
     sourceInputid = "Source: " ++ (String.fromInt itemId)
     dataitemId = "Sources: " ++ (String.fromInt itemId)
@@ -982,7 +983,7 @@ sourceInput itemId input suggestions =
           , Html.Attributes.name sourceInputid
           , Html.Attributes.id sourceInputid 
           , Html.Attributes.value input
-          , Html.Events.onInput (\s -> UpdateNoteSource itemId s)
+          , Html.Events.onInput (\s -> UpdateItem item <| Slipbox.UpdateSource s)
           ]
           []
         , Html.datalist 
@@ -990,22 +991,22 @@ sourceInput itemId input suggestions =
           <| List.map toHtmlOption suggestions
         ]
 
-toHtmlOption: String -> Html Msg
+toHtmlOption: String -> Html.Html Msg
 toHtmlOption value =
   Html.option [ Html.Attributes.value value ] []
 
-chooseVariantButtons: Int -> Note.Variant -> Element Msg
-chooseVariantButtons itemId variant =
+chooseVariantButtons: Item.Item -> Note.Variant -> Element Msg
+chooseVariantButtons item variant =
   Element.Input.radioRow
     [ Element.Border.rounded 6
-    , Element.Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = rgb255 0xE0 0xE0 0xE0 } 
+    , Element.Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Element.rgb255 0xE0 0xE0 0xE0 }
     ]
-    { onChange = (\v -> UpdateNoteVariant itemId v)
+    { onChange = (\v -> UpdateItem item <| Slipbox.UpdateVariant v)
     , selected = Just variant
-    , label = Input.labelLeft [] <| text "Choose Note Variant"
+    , label = Element.Input.labelLeft [] <| Element.text "Choose Note Variant"
     , options =
-      [ Input.option Note.Index <| variantButton Note.Index
-      , Input.option Note.Regular <| variantButton Note.Regular
+      [ Element.Input.option Note.Index <| variantButton Note.Index
+      , Element.Input.option Note.Regular <| variantButton Note.Regular
       ]
     }
 
@@ -1049,22 +1050,22 @@ variantButton variant =
       ]
       <| Element.el [ Element.centerX, Element.centerY ] <| Element.text text
 
-chooseSubmitButton : Int -> Bool -> Element Msg
-chooseSubmitButton itemId canSubmit =
+chooseSubmitButton : Item.Item -> Bool -> Element Msg
+chooseSubmitButton item canSubmit =
   if canSubmit then
-    submitButon itemId
+    submitButton item
   else
     Element.text "Cannot Submit Yet!"
 
-submitButton : Int -> Element Msg
-submitButton itemId =
+submitButton : Item.Item -> Element Msg
+submitButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| SubmitItem itemId
+    { onPress = Just <| UpdateItem item Slipbox.Submit
     , label = Element.text "Submit"
     }
 
@@ -1092,15 +1093,15 @@ doNotDismissButton itemId =
     , label = Element.text "Do Not Dismiss"
     }
 
-cancelButton : Int -> Element Msg
-cancelButton itemId =
+cancelButton : Item.Item -> Element Msg
+cancelButton item =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| CancelItemAction itemId
+    { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Cancel"
     }
 

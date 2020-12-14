@@ -1,9 +1,14 @@
 module Item exposing 
-  (Item(..), openNote
-  , openSource, newNote
-  , newSource, is
+  (Item(..)
+  , openNote
+  , openSource
+  , newNote
+  , newSource
+  , is
   , getNote
   , getSource
+  , NewNoteContent
+  , NewSourceContent
   )
 
 import Note
