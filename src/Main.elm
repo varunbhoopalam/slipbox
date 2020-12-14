@@ -385,7 +385,7 @@ toItemView content item =
      Item.EditingNote itemId _ noteWithEdits -> editingNoteView itemId item noteWithEdits content.slipbox
      Item.ConfirmDeleteNote _ note -> confirmDeleteNoteView item note content.slipbox
      Item.AddingLinkToNoteForm _ search note maybeNote -> addingLinkToNoteView item search note maybeNote content.slipbox
-     Item.Source itemId source -> itemSourceView itemId source content.slipbox
+     Item.Source _ source -> itemSourceView item source content.slipbox
      Item.NewSource itemId source -> newSourceView itemId source
      Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
@@ -504,8 +504,8 @@ confirmDiscardNewNoteFormView item note =
 
 -- EDITING NOTE ITEM VIEW
 
-toLinkedNoteViewNoButtons: ( Note.Note, Link.Link ) -> Element Msg
-toLinkedNoteViewNoButtons ( linkedNote, _ ) =
+toLinkedNoteViewNoButtons: Note.Note -> Element Msg
+toLinkedNoteViewNoButtons linkedNote =
   Element.column
     []
     [ noteContentView <| Note.getContent linkedNote
@@ -526,7 +526,7 @@ editingNoteView itemId item noteWithEdits slipbox =
           [ Element.text "Linked Notes"
           , Element.column
             []
-            <| List.map toLinkedNoteViewNoButtons linkedNotes
+            <| List.map toLinkedNoteViewNoButtons <| List.map Tuple.first linkedNotes
           ]
   in
   Element.column
@@ -557,7 +557,7 @@ confirmDeleteNoteView item note slipbox =
           [ Element.text "Linked Notes"
           , Element.column
             []
-            <| List.map toLinkedNoteViewNoButtons linkedNotes
+            <| List.map toLinkedNoteViewNoButtons <| List.map Tuple.first linkedNotes
           ]
   in
   Element.column
@@ -629,23 +629,22 @@ toNoteDetailAddingLinkForm item note =
         ]
       }
 
-itemSourceView: Int -> Source.Source -> Slipbox -> Element Msg
-itemSourceView itemId source slipbox =
-  ElmUI.column 
+-- SOURCE ITEM VIEW
+
+itemSourceView: Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
+itemSourceView item source slipbox =
+  Element.column
     []
-    [ dismissButton itemId
-    , titleView <| Source.getTitle source
-    , authorView <| Source.getAuthor source
-    , editButton itemId
-    , deleteButton itemId
-    , contentView <| Source.getContent source 
-    , Element.column
-      [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons itemId) 
-        <| Slipbox.getNotesAssociatedToSource source slipbox
+    [ dismissButton item
+    , sourceTitleView <| Source.getTitle source
+    , sourceAuthorView <| Source.getAuthor source
+    , editButton item
+    , deleteButton item
+    , noteContentView <| Source.getContent source
+    , Element.column [ Element.scrollbarY ]
+      <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
--- Invariant: An edit to a source should not break a link between a source and a note
 newSourceView: Int -> Item.NewSourceContent -> Element Msg
 newSourceView itemId source =
   ElmUI.column 
@@ -1195,3 +1194,10 @@ noteVariantView variant =
   in
   Element.paragraph [] [ Element.text text ]
 
+sourceTitleView : String -> Element Msg
+sourceTitleView sourceTitle =
+  Element.paragraph [] [ Element.text sourceTitle ]
+
+sourceAuthorView : String -> Element Msg
+sourceAuthorView sourceAuthor =
+  Element.paragraph [] [ Element.text sourceAuthor ]
