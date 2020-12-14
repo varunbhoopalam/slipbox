@@ -390,7 +390,29 @@ toItemView content item =
      Item.ConfirmDiscardNewSourceForm _ source -> confirmDiscardNewSourceFormView item source
      Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
      Item.ConfirmDeleteSource _ source -> confirmDeleteSourceView item source content.slipbox
-     Item.ConfirmDeleteLink itemId note linkedNote link ->
+     Item.ConfirmDeleteLink _ note linkedNote _ ->
+       let
+             noteRepresentation = \n ->
+               Element.column []
+                 [ noteContentView <| Note.getContent n
+                 , noteSourceView <| Note.getSource n
+                 , noteVariantView <| Note.getVariant n
+                 ]
+         in
+         Element.column
+           []
+           [ Element.row
+             []
+             [ Element.text "Confirm Delete Link between these notes"
+             , submitButton item
+             , cancelButton item
+             ]
+           , Element.row
+             []
+             [ noteRepresentation note
+             , noteRepresentation linkedNote
+             ]
+           ]
 
 -- NOTE ITEM
 
