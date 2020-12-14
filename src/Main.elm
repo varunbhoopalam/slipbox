@@ -387,9 +387,9 @@ toItemView content item =
      Item.AddingLinkToNoteForm _ search note maybeNote -> addingLinkToNoteView item search note maybeNote content.slipbox
      Item.Source _ source -> itemSourceView item source content.slipbox
      Item.NewSource _ source -> newSourceView item source
-     Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
-     Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
-     Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.slipbox
+     Item.ConfirmDiscardNewSourceForm _ source -> confirmDiscardNewSourceFormView item source
+     Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
+     Item.ConfirmDeleteSource _ source-> confirmDeleteSourceView item source content.slipbox
      Item.ConfirmDeleteLink itemId note linkedNote link ->
 
 -- NOTE ITEM
@@ -674,22 +674,22 @@ confirmDiscardNewSourceFormView item source =
     , noteContentView source.content
     ]
 
-editingSourceView: Int -> Source.Source -> Slipbox -> Element Msg
-editingSourceView itemId source slipbox =
+-- EDITING SOURCE VIEW
+
+editingSourceView: Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
+editingSourceView item source slipbox =
   Element.column
     []
     [ Element.row 
       []
-      [ saveButton itemId
-      , cancelButton itemId
+      [ submitButton item
+      , cancelButton item
       ]
-    , titleInput itemId <| Source.getTitle source
-    , authorInput itemId <| Source.getAuthor source
-    , contentInput itemId <| Source.getContent source 
-    , Element.column
-      [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons itemId) 
-        <| Slipbox.getNotesAssociatedToSource source slipbox
+    , titleInput item <| Source.getTitle source
+    , authorInput item <| Source.getAuthor source
+    , contentInput item <| Source.getContent source
+    , Element.column [ Element.scrollbarY ]
+      <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
 confirmDeleteSourceView: Int -> Source.Source -> Slipbox -> Element Msg
@@ -1204,3 +1204,6 @@ sourceTitleView sourceTitle =
 sourceAuthorView : String -> Element Msg
 sourceAuthorView sourceAuthor =
   Element.paragraph [] [ Element.text sourceAuthor ]
+
+-- Using function currying or partial applying, I could have create functions that are styled buttons like red button and blue button.
+-- Then use those to create the buttons that are used for application logic.
