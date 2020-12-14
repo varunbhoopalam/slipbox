@@ -389,7 +389,7 @@ toItemView content item =
      Item.NewSource _ source -> newSourceView item source
      Item.ConfirmDiscardNewSourceForm _ source -> confirmDiscardNewSourceFormView item source
      Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
-     Item.ConfirmDeleteSource _ source-> confirmDeleteSourceView item source content.slipbox
+     Item.ConfirmDeleteSource _ source -> confirmDeleteSourceView item source content.slipbox
      Item.ConfirmDeleteLink itemId note linkedNote link ->
 
 -- NOTE ITEM
@@ -692,22 +692,22 @@ editingSourceView item source slipbox =
       <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
-confirmDeleteSourceView: Int -> Source.Source -> Slipbox -> Element Msg
-confirmDeleteSourceView itemId source slipbox =
+-- CONFIRM DELETE SOURCE VIEW
+
+confirmDeleteSourceView: Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
+confirmDeleteSourceView item source slipbox =
   Element.column
     []
     [ Element.row 
       []
-      [ confirmDeleteButton itemId
-      , cancelButton itemId
+      [ confirmDeleteButton item
+      , cancelButton item
       ]
-    , titleView <| Source.getTitle source
-    , authorView <| Source.getAuthor source
-    , contentView <| Source.getContent source 
-    , Element.column
-      [Element.scrollbarsY] 
-      <| List.map (toLinkedNoteViewNoButtons itemId) 
-        <| Slipbox.getNotesAssociatedToSource source slipbox
+    , sourceTitleView <| Source.getTitle source
+    , sourceAuthorView <| Source.getAuthor source
+    , noteContentView <| Source.getContent source
+    , Element.column [Element.scrollbarY]
+      <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
 -- EXPLORE TAB
