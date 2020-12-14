@@ -386,7 +386,7 @@ toItemView content item =
      Item.ConfirmDeleteNote _ note -> confirmDeleteNoteView item note content.slipbox
      Item.AddingLinkToNoteForm _ search note maybeNote -> addingLinkToNoteView item search note maybeNote content.slipbox
      Item.Source _ source -> itemSourceView item source content.slipbox
-     Item.NewSource itemId source -> newSourceView itemId source
+     Item.NewSource _ source -> newSourceView item source
      Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
      Item.EditingSource itemId originalSource sourceWithEdits -> editingSourceView itemId source content.slipbox
      Item.ConfirmDeleteSource -> confirmDeleteSourceView itemId source content.slipbox
@@ -645,15 +645,17 @@ itemSourceView item source slipbox =
       <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
-newSourceView: Int -> Item.NewSourceContent -> Element Msg
-newSourceView itemId source =
-  ElmUI.column 
+-- NEW SOURCE ITEM VIEW
+
+newSourceView: Item.Item -> Item.NewSourceContent -> Element Msg
+newSourceView item source =
+  Element.column
     []
-    [ titleInput itemId source.title
-    , authorInput itemId source.author
-    , contentInput itemId source.content 
-    , cancelButton itemId
-    , chooseSubmitButton itemId source.canSubmit
+    [ titleInput item source.title
+    , authorInput item source.author
+    , contentInput item source.content
+    , cancelButton item
+    , chooseSubmitButton item source.canSubmit
     ]
 
 confirmDiscardNewSourceFormView : Int -> Item.NewSourceContent -> Element Msg
@@ -1153,26 +1155,26 @@ confirmDeleteButton item =
     , label = Element.text "Confirm Delete Note"
     }
 
-titleInput: Int -> String -> Element Msg
-titleInput itemId input =
+titleInput : Item.Item -> String -> Element Msg
+titleInput item input =
   Element.Input.multiline
     []
-    { onChange : (\s -> UpdateSourceTitle itemId s)
-    , text : input
-    , placeholder : Nothing
-    , label : Element.labelAbove [] <| Element.text "Title"
-    , spellcheck : True
+    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateTitle s )
+    , text = input
+    , placeholder = Nothing
+    , label = Element.Input.labelAbove [] <| Element.text "Title"
+    , spellcheck = True
     }
 
-authorInput: Int -> String -> Element Msg
-authorInput itemId input =
+authorInput : Item.Item -> String -> Element Msg
+authorInput item input =
   Element.Input.multiline
     []
-    { onChange : (\s -> UpdateSourceAuthor itemId s)
-    , text : input
-    , placeholder : Nothing
-    , label : Element.labelAbove [] <| Element.text "Author"
-    , spellcheck : True
+    { onChange = ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s )
+    , text = input
+    , placeholder = Nothing
+    , label = Element.Input.labelAbove [] <| Element.text "Author"
+    , spellcheck = True
     }
 
 -- MISC VIEW FUNCTIONS
