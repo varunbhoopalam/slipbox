@@ -381,7 +381,7 @@ toItemView content item =
   case item of
      Item.Note _ note -> itemNoteView item note content.slipbox
      Item.NewNote itemId note -> newNoteView itemId item note content.slipbox
-     Item.ConfirmDiscardNewNoteForm itemId note -> confirmDiscardNewNoteFormView itemId note content.slipbox
+     Item.ConfirmDiscardNewNoteForm _ note -> confirmDiscardNewNoteFormView item note
      Item.EditingNote itemId originalNote noteWithEdits -> editingNoteView itemId originalNote noteWithEdits content.slipbox
      Item.ConfirmDeleteNote itemId note -> confirmDeleteNoteView itemId note content.slipbox
      Item.AddingLinkToNoteForm itemId search note maybeNote -> addingLinkToNoteView itemId search note maybeNote content.slipbox
@@ -502,35 +502,42 @@ confirmDiscardNewNoteFormView item note =
     , noteVariantView note.variant
     ]
 
-toLinkedNoteViewNoButtons: Int -> Note.Note -> Element Msg
-toLinkedNoteViewNoButtons noteId note =
+toLinkedNoteViewNoButtons: ( Note.Note, Link.Link ) -> Element Msg
+toLinkedNoteViewNoButtons ( linkedNote, _ ) =
   Element.column
     []
-    [ idHeader <| Note.getId note
-    , variantView <| Note.getVariant note
-    , contentView <| Note.getContent note
-    , sourceView <| Note.getSource note
+    [ noteContentView <| Note.getContent linkedNote
+    , noteSourceView <| Note.getSource linkedNote
+    , noteVariantView <| Note.getVariant linkedNote
     ]
 
-editingNoteView: Int -> Note.Note -> Note.Note -> Slipbox.Slipbox -> Element Msg
-editingNoteView itemId _ noteWithEdits slipbox =
+editingNoteView: Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
+editingNoteView itemId item noteWithEdits slipbox =
+  let
+    linkedNotes = Slipbox.getLinkedNotes noteWithEdits slipbox
+    noLinkedNotes = List.isEmpty linkedNotes
+    linkedNotesNode =
+      if noLinkedNotes then
+        Element.text "No Linked Notes"
+      else
+        Element.column []
+          [ Element.text "Linked Notes"
+          , Element.column
+            []
+            <| List.map toLinkedNoteViewNoButtons linkedNotes
+          ]
+  in
   Element.column
     []
     [ Element.row 
       []
-      [ idHeader <| Note.getId noteWithEdits
-      , submitButton itemId
-      , cancelButton itemId
+      [ submitButton item
+      , cancelButton item
       ]
-    , contentInput itemId <| Note.getContent noteWithEdits
-    , sourceInput itemId (Note.getSource noteWithEdits) <| Slipbox.getSources Nothing slipbox
-    , chooseVariantButtons itemId <| Note.getVariant noteWithEdits
-    , Element.row
-      []
-      [ linkedNotesHeader ]
-    , Element.column
-      []
-      <| List.map (toLinkedNoteViewNoButtons (Note.getId noteWithEdits)) <| Slipbox.getLinkedNotes noteWithEdits slipbox
+    , contentInput item <| Note.getContent noteWithEdits
+    , sourceInput itemId item (Note.getSource noteWithEdits) <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
+    , chooseVariantButtons item <| Note.getVariant noteWithEdits
+    , linkedNotesNode
     ]
 
 confirmDeleteNoteView: Int -> Note.Note -> Slipbox.Slipbox -> Element Msg
