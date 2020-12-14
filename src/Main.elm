@@ -9,6 +9,7 @@ import File.Download
 import Html
 import Html.Events
 import Html.Attributes
+import Link
 import Slipbox
 import Svg
 import Svg.Events
@@ -397,30 +398,29 @@ itemNoteView item note slipbox =
     canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
     noLinkedNotes = List.isEmpty linkedNotes
     linkedNotesNode =
-      case canAddLinkToNote of
-        True ->
-          if noLinkedNotes then
-            addLinkButton item
-          else
-            Element.column []
-              [ Element.row
-                []
-                [ Element.text "Linked Notes"
-                , addLinkButton item ]
-              , Element.column
-                []
-                <| List.map (toLinkedNoteView note) linkedNotes
-              ]
-        False ->
-          if noLinkedNotes then
-            Element.text "No notes available to link to."
-          else
-            Element.column []
+      if canAddLinkToNote then
+        if noLinkedNotes then
+          addLinkButton item
+        else
+          Element.column []
+            [ Element.row
+              []
               [ Element.text "Linked Notes"
-              , Element.column
-                []
-                <| List.map (toLinkedNoteView note) linkedNotes
-              ]
+              , addLinkButton item ]
+            , Element.column
+              []
+              <| List.map (toLinkedNoteView item) linkedNotes
+            ]
+      else
+        if noLinkedNotes then
+          Element.text "No notes available to link to."
+        else
+          Element.column []
+            [ Element.text "Linked Notes"
+            , Element.column
+              []
+              <| List.map (toLinkedNoteView item) linkedNotes
+            ]
   in
   Element.column
     []
@@ -448,26 +448,25 @@ addLinkButton item =
     , label = Element.text "Add Link"
     }
 
-toLinkedNoteView: Note.Note -> Note.Note -> Element Msg
-toLinkedNoteView openNote linkedNote =
+toLinkedNoteView: Item.Item -> ( Note.Note, Link.Link ) -> Element Msg
+toLinkedNoteView item ( linkedNote, link ) =
   Element.column
     []
-    [ idHeader <| Note.getId linkedNote
-    , contentView <| Note.getContent linkedNote
-    , sourceView <| Note.getSouce linkedNote
-    , variantView <| Note.getVariant linkedNote
-    , removeLinkButton openNote linkedNote
+    [ noteContentView <| Note.getContent linkedNote
+    , noteSourceView <| Note.getSource linkedNote
+    , noteVariantView <| Note.getVariant linkedNote
+    , removeLinkButton item linkedNote link
     ]
 
-removeLinkButton: Note.Note -> Note.Note -> Element Msg
-removeLinkButton openNote linkedNote  =
+removeLinkButton: Item.Item -> Note.Note -> Link.Link -> Element Msg
+removeLinkButton item linkedNote link =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just <| DeleteLink openNote linkedNote
+    { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
     , label = Element.text "Remove Link"
     }
 
@@ -476,7 +475,7 @@ newNoteView itemId note slipbox =
   Element.column
     []
     [ contentInput itemId note.content
-    , sourceInput itemId note.source <| Slipbox.getSources Nothing slipbox
+    , sourceInput itemId note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons itemId note.variant
     , cancelButton itemId
     , chooseSubmitButton itemId note.canSubmit

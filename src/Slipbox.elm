@@ -92,12 +92,26 @@ getItems : Slipbox -> (List Item.Item)
 getItems slipbox =
   .items <| getContent slipbox
 
-getLinkedNotes : Note.Note -> Slipbox -> (List Note.Note)
+getLinkedNotes : Note.Note -> Slipbox -> ( List ( Note.Note, Link.Link ) )
 getLinkedNotes note slipbox =
   let
       content = getContent slipbox
+      relevantLinks = List.filter ( isAssociated note ) content.links
   in
-  List.filter ( Note.isLinked content.links note ) content.notes
+  List.filterMap ( convertLinktoLinkNoteTuple note content.notes ) relevantLinks
+
+convertLinktoLinkNoteTuple : Note.Note -> ( List Note.Note ) -> Link.Link -> ( Maybe ( Note.Note, Link.Link ) )
+convertLinktoLinkNoteTuple targetNote notes link =
+  if Link.isTarget link targetNote then
+    case List.head <| List.filter ( Link.isSource link ) notes of
+      Just note -> Just ( note, link )
+      Nothing -> Nothing
+  else if Link.isSource link targetNote then
+    case List.head <| List.filter ( Link.isTarget link ) notes of
+      Just note -> Just ( note, link )
+      Nothing -> Nothing
+  else
+    Nothing
 
 getNotesThatCanLinkToNote : Note.Note -> Slipbox -> (List Note.Note)
 getNotesThatCanLinkToNote note slipbox =
