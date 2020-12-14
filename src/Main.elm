@@ -384,7 +384,7 @@ toItemView content item =
      Item.ConfirmDiscardNewNoteForm _ note -> confirmDiscardNewNoteFormView item note
      Item.EditingNote itemId _ noteWithEdits -> editingNoteView itemId item noteWithEdits content.slipbox
      Item.ConfirmDeleteNote _ note -> confirmDeleteNoteView item note content.slipbox
-     Item.AddingLinkToNoteForm itemId search note maybeNote -> addingLinkToNoteView itemId search note maybeNote content.slipbox
+     Item.AddingLinkToNoteForm _ search note maybeNote -> addingLinkToNoteView item search note maybeNote content.slipbox
      Item.Source itemId source -> itemSourceView itemId source content.slipbox
      Item.NewSource itemId source -> newSourceView itemId source
      Item.ConfirmDiscardNewSourceForm itemId source -> confirmDiscardNewSourceFormView itemId source
@@ -573,13 +573,23 @@ confirmDeleteNoteView item note slipbox =
     , linkedNotesNode
     ]
 
-addingLinkToNoteView: Int -> String -> Note.Note -> (Maybe Note.Note) -> Slipbox.Slipbox -> Element Msg
-addingLinkToNoteView itemId search note maybeNote slipbox =
+-- ADDING LINK TO NOTE ITEM VIEW
+
+addingLinkToNoteView: Item.Item -> String -> Note.Note -> (Maybe Note.Note) -> Slipbox.Slipbox -> Element Msg
+addingLinkToNoteView item search note maybeNote slipbox =
   let
-      choice = 
+      noteRepresentation = \n ->
+        Element.column []
+          [ noteContentView <| Note.getContent n
+          , noteSourceView <| Note.getSource n
+          , noteVariantView <| Note.getVariant n
+          ]
+      choice =
         case maybeNote of 
           Just chosenNoteToLink ->
-            [submitButton itemId, noteRepresentation chosenNoteToLink ]
+            [ submitButton item
+            , noteRepresentation chosenNoteToLink
+            ]
           Nothing -> 
             [ Element.text "Select note to add link to from below" ]
 
@@ -589,27 +599,30 @@ addingLinkToNoteView itemId search note maybeNote slipbox =
     [ Element.row
       []
       [ Element.text "Adding Link"
-      , cancelButton itemId
+      , cancelButton item
       ]
     , Element.row
       []
-      [ noteRepresentation note ] :: choice
+      <| noteRepresentation note :: choice
     , Element.column
       []
-      [ searchBar search itemId
-      , Element.el [Element.scrollbarsY] <| List.map (toNoteDetail itemId) <| Slipbox.getNotesThatCanLinkToNote note slipbox
+      [ searchInput search <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
+      , Element.column [ Element.scrollbarY ]
+        <| List.map (toNoteDetailAddingLinkForm item) <| Slipbox.getNotesThatCanLinkToNote note slipbox
       ]
     ]
 
-toNoteDetail: Int -> Note.Note -> Element Msg
-toNoteDetail itemId note =
+toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
+toNoteDetailAddingLinkForm item note =
   Element.el 
-    [ Element.paddingXY 8 0, Element.spacing 8
-    , Element.Border.solid, Element.Border.color gray
+    [ Element.paddingXY 8 0
+    , Element.spacing 8
+    , Element.Border.solid
+    , Element.Border.color gray
     , Element.Border.width 4 
     ] 
-    Element.Input.button [] 
-      { onPress = Just <| NoteChosenToLink itemId note
+    <| Element.Input.button []
+      { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
       , label = Element.column [] 
         [ Element.paragraph [] [ Element.text <| Note.getContent note]
         , Element.text <| "Source: " ++ (Note.getSource note)
@@ -911,7 +924,7 @@ noteColor variant =
     Note.Index -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
 
-searchInput: String -> (a -> Msg a) -> Element Msg
+searchInput: String -> (String -> Msg) -> Element Msg
 searchInput input onChange = Element.Input.text
   [Element.width Element.fill] 
   { onChange = onChange
