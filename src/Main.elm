@@ -887,18 +887,26 @@ maybePanningFrame viewport notes =
     Nothing -> []
 
 -- NOTE TAB
-noteTabView: String -> Slipbox -> Element Msg
-noteTabView search slipbox = 
+
+noteTabView: String -> Slipbox.Slipbox -> Element Msg
+noteTabView input slipbox =
+  let
+    search =
+      if String.isEmpty input then
+        Nothing
+      else
+        Just input
+  in
   Element.column [Element.width Element.fill, Element.height Element.fill]
-    [ noteTabToolbar search
-    , notesView <| Slipbox.getNotes (toMaybeSearch search) slipbox
+    [ noteTabToolbar input
+    , notesView <| Slipbox.getNotes search slipbox
     ]
 
 noteTabToolbar: String -> Element Msg
 noteTabToolbar input = 
   Element.el 
     [Element.width Element.fill, Element.height <| Element.px 50]
-    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
+    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> NoteTabUpdateInput s)
       , createNoteButton
       ]
@@ -915,12 +923,12 @@ notesView notes =
 toNoteDetail: Note.Note -> Element Msg
 toNoteDetail note = 
   Element.el 
-    [ Element.paddingXY 8 0, Element.spacing 8
+    [ Element.paddingXY 8 0, Element.spacingXY 8 8
     , Element.Border.solid, Element.Border.color gray
     , Element.Border.width 4 
     ] 
-    Element.Input.button [] 
-      { onPress = Just <| OpenNote note
+    <| Element.Input.button []
+      { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
       , label = Element.column [] 
         [ Element.paragraph [] [ Element.text <| Note.getContent note]
         , Element.text <| "Source: " ++ (Note.getSource note)
