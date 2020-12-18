@@ -638,7 +638,7 @@ toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
 toNoteDetailAddingLinkForm item note =
   Element.el 
     [ Element.paddingXY 8 0
-    , Element.spacing 8
+    , Element.spacingXY 8 0
     , Element.Border.solid
     , Element.Border.color gray
     , Element.Border.width 4 
@@ -733,138 +733,158 @@ confirmDeleteSourceView item source slipbox =
     ]
 
 -- EXPLORE TAB
+
 exploreTabView: ( Int, Int ) -> String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
-exploreTabView deviceViewport input viewport slipbox = Element.column 
-  [ Element.width Element.fill, Element.height Element.fill]
-  [ exploreTabToolbar input
-  , graph deviceViewport viewport <| Slipbox.getNotesAndLinks input slipbox
-  ]
+exploreTabView deviceViewport input viewport slipbox =
+  let
+    search =
+      if String.isEmpty input then
+        Nothing
+      else
+        Just input
+  in
+  Element.column
+    [ Element.width Element.fill, Element.height Element.fill]
+    [ exploreTabToolbar input
+    , graph deviceViewport viewport <| Slipbox.getNotesAndLinks search slipbox
+    ]
 
 exploreTabToolbar: String -> Element Msg
 exploreTabToolbar input = 
   Element.el 
     [Element.width Element.fill, Element.height <| Element.px 50]
-    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacing 8] 
+    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> ExploreTabUpdateInput s)
       , createNoteButton
       ]
 
-graph : ( Int, Int ) -> Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
+graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
 graph deviceViewport viewport elements =
   Element.el [Element.height Element.fill, Element.width Element.fill] 
     <| Element.html 
-      <| Html.div (graphWrapperAttributes viewport) <| graph_ deviceViewport viewport elements
+      <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
 
-graphWrapperAttributes : Viewport.Viewport -> ( List Html.Attributes Msg )
+graphWrapperAttributes : Viewport.Viewport -> ( List ( Html.Attribute Msg ) )
 graphWrapperAttributes viewport =
   case Viewport.getState viewport of
-    Viewport.Moving ->
-      [ Html.Events.onMouseEnter StopMoveView ]
-    Viewort.Stationary ->
-      []
+    Viewport.Moving _ -> [ Html.Events.onMouseEnter StopMoveView ]
+    Viewport.Stationary -> []
 
-graph_ : ( Int, Int ) -> Viewport -> ((List Note.Note, List Link.Link)) -> Svg Msg
+graph_ : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Svg.Svg Msg
 graph_ deviceViewport viewport (notes, links) =
-  Svg.svg (graphAttributes viewport) <| List.map toGraphNote notes 
-    :: List.filterMap (toGraphLink notes) links 
-    :: panningFrame viewport notes
+  Svg.svg ( graphAttributes deviceViewport viewport )
+    <| List.concat
+      [ List.map toGraphNote notes
+      , List.filterMap (toGraphLink notes) links
+      , maybePanningFrame viewport notes
+      ]
 
-graphAttributes : ( Int, Int ) -> Viewport -> (List Svg.Attribute Msg)
+graphAttributes : ( Int, Int ) -> Viewport.Viewport -> (List ( Svg.Attribute Msg ) )
 graphAttributes ( width, height ) viewport =
   let
-      mouseEventDecoder = map2 Viewport.MouseEvent (field "offsetX" int) (field "offsetY" int)
+      mouseEventDecoder =
+        Json.Decode.map2 Viewport.MouseEvent
+        ( Json.Decode.field "offsetX" Json.Decode.int )
+        ( Json.Decode.field "offsetY" Json.Decode.int )
   in
   case Viewport.getState viewport of
-    Viewport.Moving -> 
-      [ Svg.Attributes.width <| width
-        , Svg.Attributes.height <| height
+    Viewport.Moving _ ->
+      [ Svg.Attributes.width <| String.fromInt width
+        , Svg.Attributes.height <| String.fromInt height
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
       ]
     Viewport.Stationary -> 
-      [ Svg.Attributes.width <| Viewport.getSvgContainerWidth viewport
-        , Svg.Attributes.height <| Viewport.getSvgContainerHeight viewport
+      [ Svg.Attributes.width <| String.fromInt width
+        , Svg.Attributes.height <| String.fromInt height
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
-        , Svg.Events.on "wheel" <| Json.Decode.map ZoomView wheelEventDecoder
+        -- TODO
+        --, Svg.Events.on "wheel" <| Json.Decode.map ZoomView wheelEventDecoder
       ]
 
-toGraphNote: Note.Note -> Svg Msg
+toGraphNote: Note.Note -> Svg.Svg Msg
 toGraphNote note =
-  let
-    variant = Note.getVariant note
-  in
-    case Note.getGraphState note of
-      Note.Expanded width height -> 
-        Svg.g [Svg.Attributes.transform <| Note.getTransform note]
+  case Note.getGraphState note of
+    Note.Expanded width height ->
+      Svg.g [ Svg.Attributes.transform <| Note.getTransform note ]
         [ Svg.rect
-            [ Svg.Attributes.width width
-            , Svg.Attributes.height height
+            [ Svg.Attributes.width <| String.fromInt width
+            , Svg.Attributes.height <| String.fromInt height
             ]
+            []
         , Svg.foreignObject []
-          <| Element.layout [Element.width Element.fill, Element.height Element.fill] 
+          <| [ Element.layout [Element.width Element.fill, Element.height Element.fill]
             <| Element.column [Element.width Element.fill, Element.height Element.fill]
               [ Element.Input.button [Element.alignRight]
                 { onPress = Just <| CompressNote note
                 , label = Element.text "X"
                 }
               , Element.Input.button []
-                { onPress = Just <| OpenNote note
-                , label = Element.paragraph 
-                  [ Element.scrollbarY ] 
-                  [ Element.text <| Note.getContent note ] 
+                { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
+                , label = Element.paragraph
+                  [ Element.scrollbarY ]
+                  [ Element.text <| Note.getContent note ]
                 }
               ]
+              ]
         ]
-      Note.Compressed radius ->
-        Svg.circle 
-          [ Svg.Attributes.cx <| Note.getX note
-          , Svg.Attributes.cy <| Note.getY note
-          , Svg.Attributes.r <| String.fromInt radius
-          , Svg.Attributes.fill <| noteColor variant
-          , Svg.Attributes.cursor "Pointer"
-          , Svg.Events.onClick <| Just <| ExpandNote note
-          ]
-          []
+    Note.Compressed radius ->
+      Svg.circle
+        [ Svg.Attributes.cx <| String.fromFloat <| Note.getX note
+        , Svg.Attributes.cy <| String.fromFloat <| Note.getY note
+        , Svg.Attributes.r <| String.fromInt radius
+        , Svg.Attributes.fill <| noteColor <| Note.getVariant note
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| ExpandNote note
+        ]
+        []
 
-toGraphLink: (List Note.Note) -> Link.Link -> (Maybe Svg Msg)
-toGraphLink link notes =
-  Maybe.map2 svgLine (getSource link notes) (getTarget link notes)
+toGraphLink: (List Note.Note) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
+toGraphLink notes link =
+  let
+    maybeGetNoteByIdentifier = \identifier -> List.head <| List.filter (identifier link) notes
+  in
+  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
 
-svgLine : Note.Note -> Note.Note -> Svg Msg 
+svgLine : Note.Note -> Note.Note -> Svg.Svg Msg
 svgLine note1 note2 =
   Svg.line 
     [ Svg.Attributes.x1 <| String.fromFloat <| Note.getX note1
     , Svg.Attributes.y1 <| String.fromFloat <| Note.getY note1
-    , Svg.Attribtes.x2 <| String.fromFloat <| Note.getX note2
+    , Svg.Attributes.x2 <| String.fromFloat <| Note.getX note2
     , Svg.Attributes.y2 <| String.fromFloat <| Note.getY note2
     , Svg.Attributes.stroke "rgb(0,0,0)"
     , Svg.Attributes.strokeWidth "2"
     ] 
     []
 
-panningFrame: Viewport.Viewport -> ( List Note.Note ) -> Svg Msg
-panningFrame viewport =
+maybePanningFrame: Viewport.Viewport -> ( List Note.Note ) -> ( List ( Svg.Svg Msg ) )
+maybePanningFrame viewport notes =
   let
-      attr = Viewport.getPanningAttributes notes viewport
+      maybeAttr = Viewport.getPanningAttributes viewport notes
   in
-  Svg.g
-    [ Svg.Attributes.transform attr.bottomRight] 
-    [ Svg.rect
-      [ Svg.Attributes.width <| attr.outerWidth viewport
-      , Svg.Attributes.height <| attr.outerHeight viewport
-      , style "border: 2px solid gray;"
-      ] 
-      []
-    , Svg.rect 
-      [ Svg.Attributes.width <| attr.innerWidth viewport
-      , Svg.Attributes.height <| attr.innerHeight viewport
-      , Svg.Attributes.style <| attr.innerStyle viewport
-      , Svg.Attributes.transform <| attr.innerTransform viewport
-      ] 
-      []
-    ]
+  case maybeAttr of
+    Just attr ->
+      [ Svg.g
+        [ Svg.Attributes.transform attr.bottomRight]
+        [ Svg.rect
+          [ Svg.Attributes.width attr.outerWidth
+          , Svg.Attributes.height attr.outerHeight
+          , Svg.Attributes.style "border: 2px solid gray;"
+          ]
+          []
+        , Svg.rect
+          [ Svg.Attributes.width attr.innerWidth
+          , Svg.Attributes.height attr.innerHeight
+          , Svg.Attributes.style attr.innerStyle
+          , Svg.Attributes.transform attr.innerTransform
+          ]
+          []
+        ]
+      ]
+    Nothing -> []
 
 -- NOTE TAB
 noteTabView: String -> Slipbox -> Element Msg
@@ -908,6 +928,7 @@ toNoteDetail note =
       }
 
 -- SOURCE TAB
+
 sourceTabView: String -> Slipbox.Slipbox -> Element Msg
 sourceTabView input sort slipbox = 
   Element.column 

@@ -1,10 +1,13 @@
 module Viewport exposing 
-  ( Viewport, initialize
+  ( Viewport
+  , initialize
   , getViewbox
   , getPanningAttributes
   , PanningAttributes
-  , getState, State
-  , startMove, move
+  , getState
+  , State(..)
+  , startMove
+  , move
   , stopMove
   --, changeZoom
   , updateSvgContainerDimensions

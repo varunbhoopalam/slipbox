@@ -25,7 +25,7 @@ module Note exposing
   , updateY
   , updateVx
   , updateVy
-  , GraphState
+  , GraphState(..)
   , Variant(..)
   , isNoteFromId
   , create
@@ -57,7 +57,7 @@ type alias Info =
   }
 type alias NoteId = Int
 type Variant = Regular | Index
-type GraphState = Compressed | Expanded
+type GraphState = Compressed Int | Expanded Int Int
 type alias NoteRecord = 
   { content : String
   , source : String
