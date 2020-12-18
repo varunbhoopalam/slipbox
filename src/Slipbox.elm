@@ -21,7 +21,6 @@ module Slipbox exposing
   , encode
   )
 
-import Simulation
 import Note
 import Link
 import Item
@@ -29,6 +28,7 @@ import Source
 import IdGenerator
 import Json.Encode
 import Json.Decode
+import Force
 
 --Types
 type Slipbox = Slipbox Content
@@ -38,7 +38,7 @@ type alias Content =
   , links: List Link.Link
   , items: List Item.Item
   , sources: List Source.Source
-  , state: Simulation.State Int
+  , state: State Int
   , idGenerator: IdGenerator.IdGenerator
   }
 
@@ -52,7 +52,7 @@ getContent slipbox =
 new :  Slipbox
 new  =
   let
-    ( state, _ ) = Simulation.simulation [] []
+    ( state, _ ) = simulation [] []
   in
   Slipbox <| Content [] [] [] [] state IdGenerator.init
 
@@ -118,7 +118,7 @@ getNotesThatCanLinkToNote note slipbox =
   let
       content = getContent slipbox
   in
-  List.filter ( Note.canLink content.links note ) content.notes
+  List.filter ( Link.canLink content.links note ) content.notes
 
 getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource source slipbox =
@@ -129,7 +129,7 @@ compressNote note slipbox =
   let
     content = getContent slipbox
     conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
-    (state, notes) = Simulation.simulation
+    (state, notes) = simulation
       (List.map conditionallyCompressNote content.notes)
       content.links
   in
@@ -140,7 +140,7 @@ expandNote note slipbox =
   let
       content = getContent slipbox
       conditionallyExpandNote = \n -> if Note.is note n then Note.expand n else n
-      (state, notes) = Simulation.simulation
+      (state, notes) = simulation
         (List.map conditionallyExpandNote content.notes)
         content.links
   in
@@ -325,7 +325,7 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteNote _ noteToDelete ->
           let
             links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-            (state, notes) = Simulation.simulation (List.filter (Note.is noteToDelete) content.notes) links
+            (state, notes) = simulation (List.filter (Note.is noteToDelete) content.notes) links
           in
           Slipbox
             { content | notes = notes
@@ -344,7 +344,7 @@ updateItem item updateAction slipbox =
           let
               (note, idGenerator) = Note.create content.idGenerator
                 <| { content = noteContent.content, source = noteContent.source, variant = noteContent.variant }
-              (state, notes) = Simulation.simulation (note :: content.notes) content.links
+              (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
             { content | notes = notes
@@ -388,7 +388,7 @@ updateItem item updateAction slipbox =
               let
                   (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
                   links = link :: content.links
-                  (state, notes) = Simulation.simulation content.notes links
+                  (state, notes) = simulation content.notes links
               in
               Slipbox
                 { content | notes = notes
@@ -402,7 +402,7 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteLink itemId note linkedNote link ->
           let
              links = List.filter (Link.is link) content.links
-             (state, notes) = Simulation.simulation content.notes links
+             (state, notes) = simulation content.notes links
           in
           Slipbox
             { content | notes = notes
@@ -416,13 +416,13 @@ tick : Slipbox -> Slipbox
 tick slipbox =
   let
     content = getContent slipbox
-    ( state, notes ) = Simulation.tick content.notes content.state
+    ( state, notes ) = tick_ content.notes content.state
   in
   Slipbox { content | notes = notes, state = state }
 
 simulationIsCompleted : Slipbox -> Bool
 simulationIsCompleted slipbox =
-  Simulation.isCompleted <| .state <| getContent slipbox
+  isCompleted <| .state <| getContent slipbox
 
 decode : Json.Decode.Decoder Slipbox
 decode =
@@ -450,7 +450,7 @@ encode slipbox =
 slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox
 slipbox_ notesBeforeSimulation links sources idGenerator =
   let
-    ( state, notes ) = Simulation.simulation notesBeforeSimulation links
+    ( state, notes ) = simulation notesBeforeSimulation links
   in
   Slipbox <| Content notes links [] sources state idGenerator
 
@@ -532,3 +532,72 @@ getSource link notes =
 getTarget : Link.Link -> (List Note.Note) -> (Maybe Note.Note)
 getTarget link notes =
   List.head <| List.filter (Link.isTarget link) notes
+
+-- SIMULATION
+
+type alias SimulationRecord =
+  { id: Int
+  , x: Float
+  , y: Float
+  , vx: Float
+  , vy: Float
+  }
+
+type State comparable = State (Force.State comparable)
+
+-- EXPOSED
+
+initNote : Int -> SimulationRecord
+initNote id =
+  let
+    entity = Force.entity id 1
+  in
+    SimulationRecord id entity.x entity.y entity.vx entity.vy
+
+simulation : ( List Note.Note ) -> ( List Link.Link ) -> ( State Int, (List Note.Note) )
+simulation notes links =
+  let
+    entities = List.map toEntity notes
+    state = stateBuilder entities links
+  in
+  Force.tick state entities |> toStateRecordTuple
+
+tick_ : ( List Note.Note ) -> State Int -> ( State Int, (List Note.Note) )
+tick_ notes state =
+  let
+    entities = List.map toEntity notes
+  in
+   Force.tick (extract state) entities |> toStateRecordTuple
+
+isCompleted: State Int -> Bool
+isCompleted state =
+  extract state |> Force.isCompleted
+
+-- HELPERS
+
+stateBuilder : ( List (Force.Entity Int { note : Note.Note })) -> ( List Link.Link ) -> Force.State Int
+stateBuilder entities links =
+  Force.simulation
+        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) entities)
+        , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
+        , Force.center 0 0
+        ]
+
+toEntity : Note.Note -> (Force.Entity Int { note : Note.Note })
+toEntity note =
+  { id = Note.getId note, x = Note.getX note, y = Note.getY note, vx = Note.getVx note, vy = Note.getVy note, note = note }
+
+updateNote: (Force.Entity Int { note : Note.Note }) -> Note.Note
+updateNote entity =
+  Note.updateX entity.x <| Note.updateY entity.y <| Note.updateVx entity.vx <| Note.updateVy entity.vy entity.note
+
+extract : State Int -> Force.State Int
+extract state =
+  case state of
+     State simState -> simState
+
+toStateRecordTuple : ( Force.State Int, List ( Force.Entity Int { note : Note.Note } ) ) -> ( State Int, (List Note.Note) )
+toStateRecordTuple ( simState, records ) =
+  ( State simState
+  , List.map updateNote records
+  )

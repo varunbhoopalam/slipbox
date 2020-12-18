@@ -11,9 +11,6 @@ module Note exposing
   , getTransform
   , getSource
   , contains
-  , isLinked
-  , isLinked
-  , canLink
   , isAssociated
   , is
   , compress
@@ -36,9 +33,9 @@ module Note exposing
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Json.Decode
-import Link
 import Json.Encode
 import Simulation
+import Source
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -112,22 +109,13 @@ contains : String -> Note -> Bool
 contains string note =
   let
       info = getInfo note
-      contains = \s -> String.contains (String.toLower string) <| String.toLower s
+      has = \s -> String.contains (String.toLower string) <| String.toLower s
   in
-  contains info.content || contains info.source
-  
-isLinked : (List Link.Link) -> Note -> Note -> Bool
-isLinked links note1 note2 =
-  linkBelongsToNotes note1 note2 |> List.any links
-
-canLink : (List Link.Link) -> Note -> Note -> Bool
-canLink links note1 note2 =
-  not <| isLinked note1 note2
-  && ( getVariant note1 == Regular || getVariant note2 == Regular )
+  has info.content || has info.source
 
 isAssociated : Source.Source -> Note -> Bool
 isAssociated source note =
-  Source.getTitle source == Note.getSource note
+  Source.getTitle source == getSource note
 
 is : Note -> Note -> Bool
 is note1 note2 =
@@ -142,14 +130,14 @@ compress note =
   let
       info = getInfo note
   in
-  Note { info | graphState = Compressed }
+  Note { info | graphState = Compressed 5 }
 
 expand : Note -> Note
 expand note =
   let
       info = getInfo note
   in
-  Note { info | graphState = Expanded }
+  Note { info | graphState = Expanded 10 10 }
 
 create : IdGenerator.IdGenerator -> NoteRecord -> ( Note, IdGenerator.IdGenerator)
 create generator record =
@@ -162,7 +150,7 @@ create generator record =
     record.content
     record.source
     record.variant
-    Compressed
+    ( Compressed 5 )
     0 0 0 0
   , idGenerator
   )
@@ -263,23 +251,11 @@ note_ id content source variant =
     content
     source
     (stringToVariant variant)
-    Compressed
+    ( Compressed 5 )
     record.x
     record.y
     record.vx
     record.vy
-
-
-linkBelongsToNotes : Note -> Note -> Link.Link -> Bool
-linkBelongsToNotes note1 note2 link=
-  let
-      linkSourceId = Link.getSourceId link
-      linkTargetId = Link.getTargetId link
-      note1Id = getId note1
-      note2Id = getId note2
-  in
-  (linkSourceId == note1Id && linkTargetId == note2Id)
-  || (linkSourceId == note2Id && linkTargetId == note1Id)
 
 variantStringRepresentation : Variant -> String
 variantStringRepresentation variant =

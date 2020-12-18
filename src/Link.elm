@@ -8,6 +8,7 @@ module Link exposing
   , decode
   , getSourceId
   , getTargetId
+  , canLink
   )
 
 import Json.Decode
@@ -15,7 +16,6 @@ import Json.Encode
 import Note
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
-
 
 type Link = Link Info
 
@@ -29,9 +29,6 @@ type alias Info =
   , sourceId: Int
   , targetId: Int
   }
-
--- TODO
--- init:
 
 isSource : Link -> Note.Note -> Bool
 isSource link note =
@@ -50,7 +47,7 @@ create generator sourceNote targetNote =
   let
       (id , idGenerator) = IdGenerator.generateId generator
   in
-  (Link <| Info id sourceNote targetNote, idGenerator)
+  (Link <| Info id ( Note.getId sourceNote ) ( Note.getId targetNote ), idGenerator)
 
 encode : Link -> Json.Encode.Value
 encode link =
@@ -88,3 +85,26 @@ getSourceId link =
 getTargetId : Link -> Int
 getTargetId link =
   .targetId <| getInfo link
+
+canLink : (List Link) -> Note.Note -> Note.Note -> Bool
+canLink links note1 note2 =
+  let
+    notAlreadyLinked = not <| isLinked links note1 note2
+    doesNotBreakNoteLinkingRules = ( Note.getVariant note1 == Note.Regular || Note.getVariant note2 == Note.Regular )
+  in
+  notAlreadyLinked && doesNotBreakNoteLinkingRules
+
+isLinked : (List Link) -> Note.Note -> Note.Note -> Bool
+isLinked links note1 note2 =
+   List.any (linkBelongsToNotes note1 note2) links
+
+linkBelongsToNotes : Note.Note -> Note.Note -> Link -> Bool
+linkBelongsToNotes note1 note2 link=
+  let
+      linkSourceId = getSourceId link
+      linkTargetId = getTargetId link
+      note1Id = Note.getId note1
+      note2Id = Note.getId note2
+  in
+  (linkSourceId == note1Id && linkTargetId == note2Id)
+  || (linkSourceId == note2Id && linkTargetId == note1Id)
