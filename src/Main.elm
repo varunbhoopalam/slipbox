@@ -938,15 +938,22 @@ toNoteDetail note =
 -- SOURCE TAB
 
 sourceTabView: String -> Slipbox.Slipbox -> Element Msg
-sourceTabView input sort slipbox = 
+sourceTabView input slipbox =
+  let
+    search =
+      if String.isEmpty input then
+        Nothing
+      else
+        Just input
+  in
   Element.column 
     [ Element.width Element.fill
     , Element.height Element.fill
     ]
-    [ sourceTabToolbar model.search
+    [ sourceTabToolbar input
     , Element.column 
       [ Element.scrollbarY ]
-      List.map toSource <| Slipbox.getSources input slipbox
+      <| List.map toSource <| Slipbox.getSources search slipbox
     ]
 
 sourceTabToolbar: String -> Element Msg
@@ -957,15 +964,29 @@ sourceTabToolbar input = Element.el
   <| Element.row 
     [ Element.width Element.fill
     , Element.paddingXY 8 0
-    , Element.spacing 8
+    , Element.spacingXY 8 8
     ] 
-    [ searchInput input (\s -> SourceTabUpdateInput)
+    [ searchInput input SourceTabUpdateInput
     , createSourceButton
     ]
 
--- TODO
 toSource : Source.Source -> Element Msg
-toSource source = Element.text "todo"
+toSource source =
+  Element.el
+    [ Element.paddingXY 8 0, Element.spacingXY 8 8
+    , Element.Border.solid, Element.Border.color gray
+    , Element.Border.width 4
+    ]
+    <| Element.Input.button []
+      { onPress = Just <| AddItem Nothing <| Slipbox.OpenSource source
+      , label = Element.column []
+        [ Element.paragraph []
+          [ Element.text <| Source.getTitle source
+          , Element.text <| Source.getAuthor source
+          , Element.text <| Source.getContent source
+          ]
+        ]
+      }
 
 -- VIEW UTILITIES
 gray = Element.rgb255 238 238 238
