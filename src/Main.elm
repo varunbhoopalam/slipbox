@@ -755,7 +755,7 @@ exploreTabToolbar input =
     [Element.width Element.fill, Element.height <| Element.px 50]
     <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> ExploreTabUpdateInput s)
-      , createNoteButton
+      , createNoteButton Nothing
       ]
 
 graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
@@ -908,7 +908,7 @@ noteTabToolbar input =
     [Element.width Element.fill, Element.height <| Element.px 50]
     <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> NoteTabUpdateInput s)
-      , createNoteButton
+      , createNoteButton Nothing
       ]
 
 notesView: (List Note.Note) -> Element Msg
@@ -967,7 +967,7 @@ sourceTabToolbar input = Element.el
     , Element.spacingXY 8 8
     ] 
     [ searchInput input SourceTabUpdateInput
-    , createSourceButton
+    , createSourceButton Nothing
     ]
 
 toSource : Source.Source -> Element Msg
@@ -992,13 +992,13 @@ toSource source =
 gray = Element.rgb255 238 238 238
 thistle = Element.rgb255 216 191 216
 indianred = Element.rgb255 205 92 92
-noteColor: Note.Variant -> String
+noteColor : Note.Variant -> String
 noteColor variant =
   case variant of
     Note.Index -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
 
-searchInput: String -> (String -> Msg) -> Element Msg
+searchInput : String -> (String -> Msg) -> Element Msg
 searchInput input onChange = Element.Input.text
   [Element.width Element.fill] 
   { onChange = onChange
@@ -1007,26 +1007,26 @@ searchInput input onChange = Element.Input.text
   , label = Element.Input.labelLeft [] <| Element.text "search"
   }
 
-createNoteButton: Element Msg
-createNoteButton = 
+createNoteButton : ( Maybe Item.Item ) -> Element Msg
+createNoteButton maybeItem =
   Element.Input.button
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
     , Element.width Element.fill
     ]
-    { onPress = Just NewNoteForm
+    { onPress = Just <| AddItem maybeItem Slipbox.NewNote
     , label = Element.text "Create Note"
     }
 
-createSourceButton: Element Msg
-createSourceButton = Element.Input.button
+createSourceButton : ( Maybe Item.Item ) -> Element Msg
+createSourceButton maybeItem = Element.Input.button
   [ Element.Background.color indianred
   , Element.mouseOver
       [ Element.Background.color thistle ]
   , Element.width Element.fill
   ]
-  { onPress = Just CreateSource
+  { onPress = Just <| AddItem maybeItem Slipbox.NewSource
   , label = Element.text "Create Source"
   }
 
@@ -1132,32 +1132,33 @@ variantButton variant =
           { left = 0, right = 2, top = 2, bottom = 2 }
     corners =
       case variant of
-        Index ->
+        Note.Index ->
           { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
-        Regular ->
+        Note.Regular ->
+          { topLeft = 0, bottomLeft = 0, topRight = 6, bottomRight = 6 }
     text =
       case variant of
-        Index -> "Index"
-        Regular -> "Regular"
+        Note.Index -> "Index"
+        Note.Regular -> "Regular"
     color =
       case variant of
-        Index -> 
+        Note.Index ->
           if Note.Index == variant then
             Element.rgb255 114 159 207
           else
             Element.rgb255 0xFF 0xFF 0xFF
-        Regular -> 
+        Note.Regular ->
           if Note.Regular == variant then
             Element.rgb255 114 159 207
           else
             Element.rgb255 0xFF 0xFF 0xFF
   in
     Element.el
-      [ paddingEach { left = 20, right = 20, top = 10, bottom = 10 }
-      , Border.roundEach { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
-      , Border.widthEach { left = 2, right = 2, top = 2, bottom = 2 }
-      , Border.color <| Element.rgb255 0xC0 0xC0 0xC0
-      , Background.color <| color
+      [ Element.paddingEach { left = 20, right = 20, top = 10, bottom = 10 }
+      , Element.Border.roundEach { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
+      , Element.Border.widthEach { left = 2, right = 2, top = 2, bottom = 2 }
+      , Element.Border.color <| Element.rgb255 0xC0 0xC0 0xC0
+      , Element.Background.color <| color
       ]
       <| Element.el [ Element.centerX, Element.centerY ] <| Element.text text
 
