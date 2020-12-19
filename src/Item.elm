@@ -1,5 +1,5 @@
 module Item exposing 
-  (Item(..)
+  ( Item(..)
   , openNote
   , openSource
   , newNote
@@ -9,6 +9,8 @@ module Item exposing
   , getSource
   , NewNoteContent
   , NewSourceContent
+  , noteCanSubmit
+  , sourceCanSubmit
   )
 
 import Note
@@ -37,14 +39,12 @@ type alias NewNoteContent =
   { content : String
   , source : String
   , variant : Note.Variant
-  , canSubmit : Bool
   }
 
 type alias NewSourceContent =
   { title : String
   , author : String
   , content : String
-  , canSubmit : Bool
   }
 
 openNote : IdGenerator.IdGenerator -> Note.Note -> ( Item, IdGenerator.IdGenerator)
@@ -65,17 +65,27 @@ newNote : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
 newNote generator =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
-      emptyContent = NewNoteContent "" "" Note.Regular False
+      emptyContent = NewNoteContent "" "" Note.Regular
   in
   ( NewNote id emptyContent, idGenerator )
+
+noteCanSubmit : NewNoteContent -> Bool
+noteCanSubmit newNoteContent =
+  ( not <| String.isEmpty newNoteContent.source ) && ( not <| String.isEmpty newNoteContent.content )
 
 newSource : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
 newSource generator =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
-      emptyContent = NewSourceContent "" "" "" False
+      emptyContent = NewSourceContent "" "" ""
   in
   ( NewSource id emptyContent, idGenerator )
+
+sourceCanSubmit : NewSourceContent -> Bool
+sourceCanSubmit newSourceContent =
+  ( not <| String.isEmpty newSourceContent.title ) &&
+  ( not <| String.isEmpty newSourceContent.author ) &&
+  ( not <| String.isEmpty newSourceContent.content )
 
 is : Item -> Item -> Bool
 is item1 item2 =

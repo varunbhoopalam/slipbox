@@ -293,7 +293,11 @@ maybeSubscribeOnAnimationFrame model =
   case model.state of
     Session content ->
       case content.tab of
-        ExploreTab _ _ -> Browser.Events.onAnimationFrame Tick
+        ExploreTab _ _ ->
+          if Slipbox.simulationIsCompleted content.slipbox then
+            Sub.none
+          else
+            Browser.Events.onAnimationFrame Tick
         _ -> Sub.none
     _ -> Sub.none
 
@@ -505,7 +509,7 @@ newNoteView itemId item note slipbox =
     , sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons item note.variant
     , cancelButton item
-    , chooseSubmitButton item note.canSubmit
+    , chooseSubmitButton item <| Item.noteCanSubmit note
     ]
 
 -- DISCARD NOTE ITEM
@@ -677,7 +681,7 @@ newSourceView item source =
     , authorInput item source.author
     , contentInput item source.content
     , cancelButton item
-    , chooseSubmitButton item source.canSubmit
+    , chooseSubmitButton item <| Item.sourceCanSubmit source
     ]
 
 -- CONFIRM DISCARD NEW SOURCE FORM ITEM VIEW
@@ -1070,7 +1074,7 @@ contentInput: Item.Item -> String -> Element Msg
 contentInput item input =
   Element.Input.multiline
     []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent input )
+    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
     , text = input
     , placeholder = Nothing
     , label = Element.Input.labelAbove [] <| Element.text "Content"

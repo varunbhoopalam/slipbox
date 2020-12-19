@@ -225,6 +225,10 @@ updateItem item updateAction slipbox =
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource
             <| Source.updateContent input sourceWithEdits
+        Item.NewNote itemId newNoteContent ->
+          update <| Item.NewNote itemId { newNoteContent | content = input }
+        Item.NewSource itemId newSourceContent ->
+          update <| Item.NewSource itemId { newSourceContent | content = input }
         _ -> slipbox
 
     UpdateSource input ->
@@ -233,6 +237,8 @@ updateItem item updateAction slipbox =
           update
             <| Item.EditingNote itemId originalNote
               <| Note.updateSource input noteWithEdits
+        Item.NewNote itemId newNoteContent ->
+          update <| Item.NewNote itemId { newNoteContent | source = input }
         _ -> slipbox
 
     UpdateVariant input ->
@@ -240,6 +246,8 @@ updateItem item updateAction slipbox =
         Item.EditingNote itemId originalNote noteWithEdits ->
           update <|Item.EditingNote itemId originalNote 
             <| Note.updateVariant input noteWithEdits
+        Item.NewNote itemId newNoteContent ->
+          update <| Item.NewNote itemId { newNoteContent | variant = input }
         _ -> slipbox
 
     UpdateTitle input ->
@@ -247,6 +255,8 @@ updateItem item updateAction slipbox =
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource 
             <| Source.updateTitle input sourceWithEdits
+        Item.NewSource itemId newSourceContent ->
+          update <| Item.NewSource itemId { newSourceContent | title = input }
         _ -> slipbox
 
     UpdateAuthor input ->
@@ -254,6 +264,8 @@ updateItem item updateAction slipbox =
         Item.EditingSource itemId originalSource sourceWithEdits ->
           update <| Item.EditingSource itemId originalSource 
             <| Source.updateAuthor input sourceWithEdits
+        Item.NewSource itemId newSourceContent ->
+          update <| Item.NewSource itemId { newSourceContent | author = input }
         _ -> slipbox
 
     UpdateSearch input ->

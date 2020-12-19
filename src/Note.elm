@@ -137,7 +137,7 @@ expand note =
   let
       info = getInfo note
   in
-  Note { info | graphState = Expanded 10 10 }
+  Note { info | graphState = Expanded 100 100 }
 
 create : IdGenerator.IdGenerator -> NoteRecord -> ( Note, IdGenerator.IdGenerator)
 create generator record =
