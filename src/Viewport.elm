@@ -48,7 +48,7 @@ initialize dimensions =
 getViewbox : Viewport -> String
 getViewbox viewport =
   let
-      box = viewbox <| getInfo viewport
+      box = .viewbox <| getInfo viewport
   in
   String.fromInt box.minX ++ " " ++  String.fromInt box.minY ++ " " ++  String.fromInt box.width ++ " " ++  String.fromInt box.height
 
@@ -66,28 +66,29 @@ getPanningAttributes viewport notes =
   let
       maybeExtremes = getNotePositionExtremes notes
       info = getInfo viewport
+      viewbox = info.viewbox
   in
   case maybeExtremes of
     Just extremes ->
-      if allNotesInView extremes info.viewbox then
+      if allNotesInView extremes viewbox then
         let
             outerWidth = viewbox.height // 4
             outerHeight = outerWidth
             padding = viewbox.height // 20
             xTranslation = (viewboxMaxX viewbox) - ( outerWidth + padding )
             yTranslation = ( viewboxMaxY viewbox ) - ( outerHeight + padding )
-            totalXLength = extremes.maxX - extremes.minX
-            totalYLength = extremes.maxY - extremes.minY
+            totalXLength = floor <| extremes.maxX - extremes.minX
+            totalYLength = floor <| extremes.maxY - extremes.minY
 
-            xScalingFactor = outerWidth / totalXLength
-            yScalingFactor = outerHeight / totalYLength
+            xScalingFactor = outerWidth // totalXLength
+            yScalingFactor = outerHeight // totalYLength
         in
         Just <| PanningAttributes
-          "translate(" ++ String.fromInt xTranslation ++ "," ++ String.fromInt yTranslation ++ ")"
+          ( "translate(" ++ String.fromInt xTranslation ++ "," ++ String.fromInt yTranslation ++ ")" )
           ( String.fromInt outerWidth )
           ( String.fromInt outerHeight )
-          ( info.viewbox.width * xScalingFactor )
-          ( info.viewbox.height * yScalingFactor )
+          ( String.fromInt <| info.viewbox.width * xScalingFactor )
+          ( String.fromInt <| info.viewbox.height * yScalingFactor )
           "fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0);"
           ( "translate(" 
             ++ (String.fromInt <| info.viewbox.minX * xScalingFactor) 
@@ -101,7 +102,7 @@ getPanningAttributes viewport notes =
 
 getState : Viewport -> State
 getState viewport =
-  state <| getInfo viewport
+  .state <| getInfo viewport
 
 startMove : MouseEvent -> Viewport -> Viewport
 startMove event viewport =
@@ -116,13 +117,17 @@ move : MouseEvent -> ( List Note.Note ) -> Viewport -> Viewport
 move currentMouseEvent notes viewport =
   let
       info = getInfo viewport
+      maybeExtremes = getNotePositionExtremes notes
   in
   case info.state of
-    Moving previousMouseEvent -> 
-      if allNotesInView extremes info.viewbox then
-        viewport
-      else
-        Viewport { info | viewbox = shiftViewbox previousMouseEvent currentMouseEvent extremes viewbox }
+    Moving previousMouseEvent ->
+      case maybeExtremes of
+        Just extremes ->
+          if allNotesInView extremes info.viewbox then
+            viewport
+          else
+            Viewport { info | viewbox = shiftViewbox previousMouseEvent currentMouseEvent extremes info.viewbox }
+        Nothing -> viewport
     _ -> viewport
 
 stopMove : Viewport -> Viewport
@@ -170,10 +175,10 @@ getNotePositionExtremes notes =
 allNotesInView : PositionExtremes -> Viewbox -> Bool
 allNotesInView extremes viewbox =
   let
-      noNotesLeftOfViewbox = viewbox.minX < extremes.minX
-      noNotesRightOfViewbox = viewboxMaxX viewbox > extremes.maxX
-      noNotesAboveViewbox = viewbox.minY < extremes.minY
-      noNotesBelowViewbox = viewboxMaxY viewbox > extremes.maxY
+      noNotesLeftOfViewbox = viewbox.minX < floor extremes.minX
+      noNotesRightOfViewbox = viewboxMaxX viewbox > floor extremes.maxX
+      noNotesAboveViewbox = viewbox.minY < floor extremes.minY
+      noNotesBelowViewbox = viewboxMaxY viewbox > floor extremes.maxY
   in
   noNotesLeftOfViewbox || noNotesRightOfViewbox || noNotesAboveViewbox || noNotesBelowViewbox
 
@@ -183,17 +188,17 @@ viewboxMaxX viewbox =
 
 viewboxMaxY : Viewbox -> Int
 viewboxMaxY viewbox =
-  viewbox.minY + viewbox.length
+  viewbox.minY + viewbox.height
 
 shiftViewbox : MouseEvent -> MouseEvent -> PositionExtremes -> Viewbox -> Viewbox
 shiftViewbox currentMouseEvent previousMouseEvent extremes viewbox =
   let
     xChange = (previousMouseEvent.offsetX - currentMouseEvent.offsetX)
     yChange = (previousMouseEvent.offsetY - currentMouseEvent.offsetY)
-    xMinBound = Int.min extremes.minX viewbox.minX
-    xMaxBound = Int.max extremes.maxX <| viewboxMaxX viewbox
-    yMinBound = Int.min extremes.minY viewbox.minY
-    yMaxBound = Int.max extremes.maxY <| viewboxMaxY viewbox
+    xMinBound = min ( floor extremes.minX ) viewbox.minX
+    xMaxBound = max ( floor extremes.maxX ) <| viewboxMaxX viewbox
+    yMinBound = min ( floor extremes.minY ) viewbox.minY
+    yMaxBound = max ( floor extremes.maxY ) <| viewboxMaxY viewbox
   in
   { viewbox | minX = shiftPointWithBounds xMinBound xMaxBound <| viewbox.minX - xChange
   , minY = shiftPointWithBounds yMinBound yMaxBound <| viewbox.minY - yChange
@@ -202,7 +207,7 @@ shiftViewbox currentMouseEvent previousMouseEvent extremes viewbox =
 shiftPointWithBounds : Int -> Int -> Int -> Int
 shiftPointWithBounds lowerBound upperBound pointAfterShift =
   let
-      belowLowerBound = pointAfterShift <= xMin
+      belowLowerBound = pointAfterShift <= lowerBound
       aboveUpperBound = pointAfterShift >= upperBound 
   in 
   if belowLowerBound then
