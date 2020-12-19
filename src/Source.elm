@@ -54,9 +54,9 @@ contains input source =
 
 is : Source -> Source -> Bool
 is source1 source2 =
-  .id <| getInfo source1 == .id <| getInfo source2
+  ( .id <| getInfo source1 ) == ( .id <| getInfo source2 )
 
-createSource : IdGenerator.IdGenerator -> SourceContent -> ( Source, IdGenerator.IdGenerator)
+createSource : IdGenerator.IdGenerator -> SourceContent a -> ( Source, IdGenerator.IdGenerator)
 createSource generator content =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator

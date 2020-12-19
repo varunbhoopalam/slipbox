@@ -34,8 +34,8 @@ import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Json.Decode
 import Json.Encode
-import Simulation
 import Source
+import Force
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -204,21 +204,6 @@ updateVy vy note =
   in
   Note { info | vy = vy }
 
--- TODO
--- update: Simulation.SimulationRecord -> Note -> Note
--- update simRecord note =
---   case note of
---     Note content -> Note {content | x = simRecord.x , y = simRecord.y, vx = simRecord.vx, vy = simRecord.vy}
---     Selected content sContent -> Selected {content | x = simRecord.x , y = simRecord.y, vx = simRecord.vx, vy = simRecord.vy} sContent
-
--- Exposed Functions
--- sortDesc: (Note -> Note -> Order)
--- sortDesc noteA noteB =
---   case compare (getId noteA) (getId noteB) of
---        LT -> GT
---        EQ -> EQ
---        GT -> LT
-
 encode : Note -> Json.Encode.Value
 encode note =
   let
@@ -244,7 +229,7 @@ decode =
 note_ : Int -> String -> String -> String -> Note
 note_ id content source variant =
   let
-    record = Simulation.initNote id
+    record = Force.entity id 1
   in
   Note <| Info
     id

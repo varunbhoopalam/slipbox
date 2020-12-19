@@ -148,10 +148,10 @@ initializeViewbox ( width, height ) =
  Viewbox (negate (width // 2)) (negate (height // 2)) width height
 
 type alias PositionExtremes =
-  { minX : Double
-  , minY : Double
-  , maxX : Double
-  , maxY : Double
+  { minX : Float
+  , minY : Float
+  , maxX : Float
+  , maxY : Float
   }
 getNotePositionExtremes : ( List Note.Note ) -> (Maybe PositionExtremes)
 getNotePositionExtremes notes =

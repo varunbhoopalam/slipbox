@@ -105,7 +105,7 @@ getNote : Item -> ( Maybe Note.Note )
 getNote item =
   case item of
     Note _ note -> Just note
-    EditingNote - note _ -> Just note
+    EditingNote _ note _ -> Just note
     AddingLinkToNoteForm _ _ note _ -> Just note
     ConfirmDeleteNote _ note -> Just note
     ConfirmDeleteLink _ note _ _ -> Just note
