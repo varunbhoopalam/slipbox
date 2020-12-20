@@ -3,8 +3,10 @@ module Main exposing (..)
 import Browser
 import Browser.Events
 import Browser.Navigation
+import Color
 import Element.Background
 import Element.Border
+import Element.Font
 import Element.Input
 import File.Download
 import Html
@@ -302,11 +304,12 @@ maybeSubscribeOnAnimationFrame model =
     _ -> Sub.none
 
 -- VIEW
+version = 0.1
 
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> {title = "TODO", body = [ setupView ]}
+    Setup -> {title = String.fromFloat <| version, body = [ setupView ]}
     Parsing -> {title = "TODO", body = []}
     FailureToParse -> {title = "TODO", body = []}
     Session content -> {title = "MySlipbox", body = [ sessionView model.deviceViewport content ]}
@@ -316,34 +319,81 @@ view model =
 setupView : Html.Html Msg
 setupView =
   Element.layout []
-    <| Element.column []
-      [ startNewSlipboxButton
-      , requestCsvButton
+    <| Element.column
+      [ Element.height Element.fill
+      , Element.width Element.fill
+      , Element.Font.color <| Color.white
+      , Element.Font.size 24
       ]
+      [ header
+      , Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.Font.size 36
+        , Element.Font.heavy
+        ]
+        [ startNewSlipboxButton
+        , requestCsvButton
+        , aboutButton
+        ]
+      ]
+
+header : Element.Element Msg
+header =
+  Element.el
+    [ Element.height <| Element.px 30
+    , Element.width Element.fill
+    , Element.Background.color Color.ebonyRegular
+    ]
+    <| Element.el [ Element.centerX, Element.centerY ]
+      <| Element.text
+        <| "Slipbox.io Version " ++ ( String.fromFloat version )
 
 startNewSlipboxButton : Element.Element Msg
 startNewSlipboxButton =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.mistyRoseRegular
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+      [ Element.Background.color Color.mistyRoseHighlighted
+      , Element.Font.color Color.mistyRoseRegular
+      ]
     , Element.width Element.fill
+    , Element.height Element.fill
     ]
     { onPress = Just InitializeNewSlipbox
-    , label = Element.text "Start New"
+    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Start New"
     }
 
 requestCsvButton : Element.Element Msg
 requestCsvButton =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.heliotropeGrayRegular
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+      [ Element.Background.color Color.heliotropeGrayHighlighted
+      , Element.Font.color Color.heliotropeGrayRegular
+      ]
     , Element.width Element.fill
+    , Element.height Element.fill
     ]
     { onPress = Just FileRequested
-    , label = Element.text "Load Slipbox"
+    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Load Slipbox"
     }
+
+aboutButton : Element.Element Msg
+aboutButton =
+  Element.Input.button
+    [ Element.Background.color Color.oldLavenderRegular
+    , Element.mouseOver
+      [ Element.Background.color Color.oldLavenderHighlighted
+      , Element.Font.color Color.oldLavenderRegular
+      ]
+    , Element.width Element.fill
+    , Element.height Element.fill
+    ]
+    { onPress = Nothing
+    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "About"
+    }
+
 
 -- SESSION VIEW
 
@@ -992,7 +1042,7 @@ toSource source =
         ]
       }
 
--- VIEW UTILITIES
+-- COLORS
 gray = Element.rgb255 238 238 238
 thistle = Element.rgb255 216 191 216
 indianred = Element.rgb255 205 92 92
@@ -1001,6 +1051,8 @@ noteColor variant =
   case variant of
     Note.Index -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
+
+-- UTILITIES
 
 searchInput : String -> (String -> Msg) -> Element Msg
 searchInput input onChange = Element.Input.text
