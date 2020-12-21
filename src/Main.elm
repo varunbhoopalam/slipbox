@@ -1022,7 +1022,9 @@ toGraphNote note =
           [ Svg.Attributes.width <| String.fromInt width
           , Svg.Attributes.height <| String.fromInt height
           ]
-          <| [ Element.layout [ Element.width <| Element.px width, Element.height <| Element.px height ]
+          <| [ Element.layoutWith
+            { options = [ Element.noStaticStyleSheet ] }
+            [ Element.width <| Element.px width, Element.height <| Element.px height ]
             <| Element.column
               [ Element.width Element.fill
               , Element.height Element.fill
