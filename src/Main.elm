@@ -561,32 +561,53 @@ itemsView content =
 
 toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
+  let
+    itemContainerLambda =
+      \contents ->
+        Element.column
+          [ Element.Border.width 3
+          , Element.Border.color Color.heliotropeGrayRegular
+          , Element.padding 8
+          , Element.spacingXY 8 8
+          , Element.width <| Element.maximum 800 Element.fill
+          , Element.height Element.fill
+          , Element.centerX
+          ]
+          contents
+  in
   case item of
-     Item.Note _ note -> itemNoteView item note content.slipbox
 
-     Item.NewNote itemId note ->
-       Element.column
-           [ Element.Border.width 3
-           , Element.Border.color Color.heliotropeGrayRegular
-           , Element.padding 8
-           , Element.spacingXY 8 8
-           , Element.width <| Element.maximum 800 Element.fill
-           , Element.height Element.fill
-           , Element.centerX
-           ]
-           [ Element.row
-             [ Element.width Element.fill
-             , Element.spacingXY 8 0
-             ]
-             [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
-             , Element.el [ Element.alignRight ] <| cancelButton item
-             , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
-             ]
-           , contentInput item note.content
-           , Element.el []
-             <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
-           , chooseVariantButtons item note.variant
-           ]
+     Item.Note _ note -> itemContainerLambda
+       [ Element.row
+         [ Element.width Element.fill
+         , Element.spacingXY 8 0
+         ]
+         [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Note"
+         , Element.el [ Element.alignRight ] <| editButton item
+         , Element.el [ Element.alignRight ] <| deleteButton item
+         , Element.el [ Element.alignRight ] <| dismissButton item
+         ]
+       , Element.el [] <| noteContentView <| Note.getContent note
+       , Element.el [] <| noteSourceView <| Note.getSource note
+       , Element.el [] <| noteVariantView <| Note.getVariant note
+       , linkedNotesNode item note content.slipbox
+       ]
+
+
+     Item.NewNote itemId note -> itemContainerLambda
+       [ Element.row
+         [ Element.width Element.fill
+         , Element.spacingXY 8 0
+         ]
+         [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+         , Element.el [ Element.alignRight ] <| cancelButton item
+         , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
+         ]
+       , contentInput item note.content
+       , Element.el []
+         <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
+       , chooseVariantButtons item note.variant
+       ]
 
      Item.ConfirmDiscardNewNoteForm _ note -> confirmDiscardNewNoteFormView item note
      Item.EditingNote itemId _ noteWithEdits -> editingNoteView itemId item noteWithEdits content.slipbox
@@ -623,50 +644,51 @@ toItemView content item =
 
 -- NOTE ITEM
 
-itemNoteView: Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
+itemNoteView : Item.Item -> Note.Note -> Slipbox.Slipbox -> ( List ( Element Msg ) )
 itemNoteView item note slipbox =
+  [ Element.row
+    []
+    [ editButton item
+    , deleteButton item
+    , dismissButton item
+    ]
+  , noteContentView <| Note.getContent note
+  , noteSourceView <| Note.getSource note
+  , noteVariantView <| Note.getVariant note
+  , linkedNotesNode item note slipbox
+  ]
+
+linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
+linkedNotesNode item note slipbox =
   let
     linkedNotes = Slipbox.getLinkedNotes note slipbox
     canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
     noLinkedNotes = List.isEmpty linkedNotes
-    linkedNotesNode =
-      if canAddLinkToNote then
-        if noLinkedNotes then
-          addLinkButton item
-        else
-          Element.column []
-            [ Element.row
-              []
-              [ Element.text "Linked Notes"
-              , addLinkButton item ]
-            , Element.column
-              []
-              <| List.map (toLinkedNoteView item) linkedNotes
-            ]
-      else
-        if noLinkedNotes then
-          Element.text "No notes available to link to."
-        else
-          Element.column []
-            [ Element.text "Linked Notes"
-            , Element.column
-              []
-              <| List.map (toLinkedNoteView item) linkedNotes
-            ]
   in
-  Element.column
-    []
-    [ Element.row 
-      []
-      [ editButton item
-      , deleteButton item
-      , dismissButton item
-      ]
-    , noteContentView <| Note.getContent note
-    , noteSourceView <| Note.getSource note
-    , noteVariantView <| Note.getVariant note
-    , linkedNotesNode
-    ]
+  if canAddLinkToNote then
+    if noLinkedNotes then
+      addLinkButton item
+    else
+      Element.column
+        []
+        [ Element.row
+          []
+          [ Element.text "Linked Notes"
+          , addLinkButton item ]
+        , Element.column
+          []
+          <| List.map (toLinkedNoteView item) linkedNotes
+        ]
+  else
+    if noLinkedNotes then
+      Element.none
+    else
+      Element.column []
+        [ Element.text "Linked Notes"
+        , Element.column
+          []
+          <| List.map (toLinkedNoteView item) linkedNotes
+        ]
 
 addLinkButton: Item.Item -> Element Msg
 addLinkButton item =
@@ -734,7 +756,7 @@ editingNoteView itemId item noteWithEdits slipbox =
   let
     linkedNotes = Slipbox.getLinkedNotes noteWithEdits slipbox
     noLinkedNotes = List.isEmpty linkedNotes
-    linkedNotesNode =
+    linkedNotesNode_ =
       if noLinkedNotes then
         Element.text "No Linked Notes"
       else
@@ -755,7 +777,7 @@ editingNoteView itemId item noteWithEdits slipbox =
     , contentInput item <| Note.getContent noteWithEdits
     , sourceInput itemId item (Note.getSource noteWithEdits) <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons item <| Note.getVariant noteWithEdits
-    , linkedNotesNode
+    , linkedNotesNode_
     ]
 
 -- CONFIRM DELETE NOTE ITEM VIEW
@@ -765,7 +787,7 @@ confirmDeleteNoteView item note slipbox =
   let
     linkedNotes = Slipbox.getLinkedNotes note slipbox
     noLinkedNotes = List.isEmpty linkedNotes
-    linkedNotesNode =
+    linkedNotesNode_ =
       if noLinkedNotes then
         Element.text "No Linked Notes"
       else
@@ -786,7 +808,7 @@ confirmDeleteNoteView item note slipbox =
     , noteContentView <| Note.getContent note
     , noteSourceView <| Note.getSource note
     , noteVariantView <| Note.getVariant note
-    , linkedNotesNode
+    , linkedNotesNode_
     ]
 
 -- ADDING LINK TO NOTE ITEM VIEW
@@ -1251,24 +1273,14 @@ createSourceButton maybeItem = Element.Input.button
 
 editButton: Item.Item -> Element Msg
 editButton item =
-  Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.width Element.fill
-    ]
+  smallOldLavenderButton
     { onPress = Just <| UpdateItem item Slipbox.Edit
     , label = Element.text "Edit"
     }
 
 deleteButton: Item.Item -> Element Msg
 deleteButton item =
-  Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.width Element.fill
-    ]
+  smallRedButton
     { onPress = Just <| UpdateItem item Slipbox.PromptConfirmDelete
     , label = Element.text "Delete"
     }
@@ -1276,10 +1288,9 @@ deleteButton item =
 dismissButton: Item.Item -> Element Msg
 dismissButton item =
   Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.width Element.fill
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    , Element.Font.heavy
     ]
     { onPress = Just <| DismissItem item
     , label = Element.text "X"
@@ -1427,11 +1438,17 @@ authorInput item input =
 
 noteContentView : String -> Element Msg
 noteContentView noteContent =
-  Element.paragraph [] [ Element.text noteContent ]
+  Element.textColumn
+    [ Element.spacingXY 0 8 ]
+    [ Element.el [ Element.Font.underline ] <| Element.text "Content"
+    , Element.paragraph [] [ Element.text noteContent ] ]
 
 noteSourceView : String -> Element Msg
 noteSourceView noteSource =
-  Element.paragraph [] [ Element.text noteSource ]
+  Element.textColumn
+    [ Element.spacingXY 0 8 ]
+    [ Element.el [ Element.Font.underline ] <| Element.text "Source"
+    , Element.paragraph [] [ Element.text noteSource ] ]
 
 noteVariantView : Note.Variant -> Element Msg
 noteVariantView variant =
@@ -1440,7 +1457,7 @@ noteVariantView variant =
       Note.Regular -> "regular"
       Note.Index -> "index"
   in
-  Element.paragraph [] [ Element.text text ]
+  Element.paragraph [] [  Element.text <| "Type: " ++ text ]
 
 sourceTitleView : String -> Element Msg
 sourceTitleView sourceTitle =

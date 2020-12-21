@@ -118,7 +118,8 @@ getNotesThatCanLinkToNote note slipbox =
   let
       content = getContent slipbox
   in
-  List.filter ( Link.canLink content.links note ) content.notes
+  List.filter ( Link.canLink content.links note )
+    <| List.filter (\n -> not <|  Note.is note n ) content.notes
 
 getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource source slipbox =
