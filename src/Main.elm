@@ -541,8 +541,19 @@ itemsView content =
       items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
   in
     Element.column 
-      [ Element.centerX ]
-      items
+      [ Element.centerX
+      , Element.padding 8
+      , Element.spacingXY 24 24
+      ]
+      <| ( Element.el
+        [ Element.Font.heavy
+        , Element.Border.width 1
+        , Element.padding 4
+        , Element.Font.color Color.oldLavenderRegular
+        , Element.centerX
+        ] <| Element.text "Workspace" )
+        :: items
+
 -- TODO: add div between each item that on hover shows buttons to create an item
 -- TODO: figure out if it's necessary to have this same div but always visible either at beginning or end of item list
 
