@@ -93,6 +93,12 @@ type Tab
   | SourcesTab String
   | SetupTab
 
+type Tab_
+  = Explore
+  | Notes
+  | Sources
+  | Back
+
 -- INIT
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -128,6 +134,7 @@ type Msg
   | FileLoaded String
   | FileDownload
   | Tick Time.Posix
+  | ChangeTab Tab_
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -266,6 +273,48 @@ update message model =
           else
             ( model, Cmd.none )
         _ -> ( model, Cmd.none )
+
+    ChangeTab tab ->
+      case model.state of
+        Session content ->
+          case tab of
+            Explore ->
+              case content.tab of
+                ExploreTab _ _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = ExploreTab "" <| Viewport.initialize model.deviceViewport }
+                    }
+                  , Cmd.none
+                  )
+            Notes ->
+              case content.tab of
+                NotesTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = NotesTab "" }
+                    }
+                  , Cmd.none
+                  )
+            Sources ->
+              case content.tab of
+                SourcesTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = SourcesTab "" }
+                    }
+                  , Cmd.none
+                  )
+            Back ->
+              case content.tab of
+                SetupTab -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = SetupTab }
+                    }
+                  , Cmd.none
+                  )
+        _ -> ( model, Cmd.none )
     
 
 handleWindowInfo: ( Int, Int ) -> Model -> Model
@@ -344,6 +393,8 @@ header =
     [ Element.height <| Element.px 30
     , Element.width Element.fill
     , Element.Background.color Color.ebonyRegular
+    , Element.Font.color <| Color.white
+    , Element.Font.size 24
     ]
     <| Element.el [ Element.centerX, Element.centerY ]
       <| Element.text
@@ -409,14 +460,74 @@ sessionView deviceViewport content =
 
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
-tabView deviceViewport content = 
-  case content.tab of
-    ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
-    NotesTab input -> noteTabView input content.slipbox
-    SourcesTab input -> sourceTabView input content.slipbox
-    -- TODO
-    SetupTab -> Element.text "TODO"
+tabView deviceViewport content =
+  Element.column
+    [ Element.width Element.fill, Element.height Element.fill ]
+    [ header
+    , tabHeader content.tab
+    , case content.tab of
+        ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
+        NotesTab input -> noteTabView input content.slipbox
+        SourcesTab input -> sourceTabView input content.slipbox
+        SetupTab -> Element.text "TODO"
+    ]
 
+tabHeader : Tab -> Element.Element Msg
+tabHeader tab =
+  let
+    tab_ =
+      case tab of
+        ExploreTab _ _ -> Explore
+        NotesTab _ -> Notes
+        SourcesTab _ ->Sources
+        SetupTab -> Back
+  in
+  Element.row
+    [ Element.height <| Element.px 65
+    , Element.width Element.fill
+    , Element.Font.size 36
+    , Element.Font.heavy
+    ]
+    [ tabHeaderBuilder
+      { onPress = Just <| ChangeTab Explore
+      , label = Element.el [ Element.centerX ] <| Element.text "Explore"
+      }
+      ( tab_ == Explore )
+    , tabHeaderBuilder
+      { onPress = Just <| ChangeTab Notes
+      , label = Element.el [ Element.centerX ] <| Element.text "Notes"
+      }
+      ( tab_ == Notes )
+    , tabHeaderBuilder
+      { onPress = Just <| ChangeTab Sources
+      , label = Element.el [ Element.centerX ] <| Element.text "Sources"
+      }
+      ( tab_ == Sources )
+    , tabHeaderBuilder
+      { onPress = Just <| ChangeTab Back
+      , label = Element.el [ Element.centerX ] <| Element.text "Back"
+      }
+      ( tab_ == Back )
+    ]
+
+tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
+tabHeaderBuilder content onTab =
+  let
+    attributes =
+      if onTab then
+        [ Element.Background.color Color.heliotropeGrayRegular
+        , Element.Font.color Color.white
+        , Element.width Element.fill
+        , Element.height Element.fill
+        ]
+      else
+        [ Element.Background.color Color.heliotropeGrayHighlighted
+        , Element.Font.color Color.white
+        , Element.width Element.fill
+        , Element.height Element.fill
+        ]
+  in
+  Element.Input.button attributes content
 
 -- ITEMS
 itemsView: Content -> Element Msg
