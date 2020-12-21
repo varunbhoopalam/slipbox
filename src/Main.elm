@@ -268,7 +268,7 @@ update message model =
     Tick _ ->
       case getSlipbox model of
         Just slipbox ->
-          if Slipbox.simulationIsCompleted slipbox then
+          if not <| Slipbox.simulationIsCompleted slipbox then
             ( updateSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
           else
             ( model, Cmd.none )

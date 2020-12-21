@@ -185,9 +185,6 @@ allNotesInView extremes viewbox =
       noNotesRightOfViewbox = viewboxMaxX viewbox > floor extremes.maxX
       noNotesAboveViewbox = viewbox.minY < floor extremes.minY
       noNotesBelowViewbox = viewboxMaxY viewbox > floor extremes.maxY
-      _ = Debug.log ( Debug.toString extremes ) 1
-      _ = Debug.log ( Debug.toString viewbox ) 2
-      _ = Debug.log ( Debug.toString (noNotesLeftOfViewbox || noNotesRightOfViewbox || noNotesAboveViewbox || noNotesBelowViewbox)) 3
   in
   noNotesLeftOfViewbox || noNotesRightOfViewbox || noNotesAboveViewbox || noNotesBelowViewbox
 

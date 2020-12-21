@@ -434,7 +434,14 @@ tick slipbox =
 
 simulationIsCompleted : Slipbox -> Bool
 simulationIsCompleted slipbox =
-  isCompleted <| .state <| getContent slipbox
+  let
+    content = getContent slipbox
+    thereAreNoNotes = ( List.length <| content.notes ) == 0
+  in
+  if thereAreNoNotes then
+    True
+  else
+    extract content.state |> Force.isCompleted
 
 decode : Json.Decode.Decoder Slipbox
 decode =
@@ -581,9 +588,6 @@ tick_ notes state =
   in
    Force.tick (extract state) entities |> toStateRecordTuple
 
-isCompleted: State Int -> Bool
-isCompleted state =
-  extract state |> Force.isCompleted
 
 -- HELPERS
 
