@@ -647,9 +647,9 @@ itemNoteView item note slipbox =
 addLinkButton: Item.Item -> Element Msg
 addLinkButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item Slipbox.AddLinkForm
@@ -669,9 +669,9 @@ toLinkedNoteView item ( linkedNote, link ) =
 removeLinkButton: Item.Item -> Note.Note -> Link.Link -> Element Msg
 removeLinkButton item linkedNote link =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
@@ -686,19 +686,22 @@ newNoteView itemId item note slipbox =
     [ Element.Border.width 3
     , Element.Border.color Color.heliotropeGrayRegular
     , Element.padding 8
-    , Element.spacingXY 16 16
+    , Element.spacingXY 8 8
     , Element.width <| Element.maximum 800 Element.fill
     , Element.height Element.fill
     , Element.centerX
     ]
     [ Element.row
-      [ Element.width Element.fill ]
-      [ Element.el [ Element.centerX ] <| Element.text "New Note"
-      , cancelButton item
-      , chooseSubmitButton item <| Item.noteCanSubmit note
+      [ Element.width Element.fill
+      , Element.spacingXY 8 0
+      ]
+      [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+      , Element.el [ Element.alignRight ] <| cancelButton item
+      , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
       ]
     , contentInput item note.content
-    , sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
+    , Element.el []
+      <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons item note.variant
     ]
 
@@ -834,7 +837,7 @@ toNoteDetailAddingLinkForm item note =
     [ Element.paddingXY 8 0
     , Element.spacingXY 8 0
     , Element.Border.solid
-    , Element.Border.color gray
+    , Element.Border.color Color.gray
     , Element.Border.width 4 
     ] 
     <| Element.Input.button []
@@ -1132,7 +1135,7 @@ toNoteDetail: Note.Note -> Element Msg
 toNoteDetail note = 
   Element.el 
     [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid, Element.Border.color gray
+    , Element.Border.solid, Element.Border.color Color.gray
     , Element.Border.width 4 
     ] 
     <| Element.Input.button []
@@ -1182,7 +1185,7 @@ toSource : Source.Source -> Element Msg
 toSource source =
   Element.el
     [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid, Element.Border.color gray
+    , Element.Border.solid, Element.Border.color Color.gray
     , Element.Border.width 4
     ]
     <| Element.Input.button []
@@ -1197,9 +1200,6 @@ toSource source =
       }
 
 -- COLORS
-gray = Element.rgb255 238 238 238
-thistle = Element.rgb255 216 191 216
-indianred = Element.rgb255 205 92 92
 noteColor : Note.Variant -> String
 noteColor variant =
   case variant of
@@ -1219,30 +1219,22 @@ searchInput input onChange = Element.Input.text
 
 createNoteButton : ( Maybe Item.Item ) -> Element Msg
 createNoteButton maybeItem =
-  Element.Input.button
-    [ Element.Background.color Color.oldLavenderRegular
-    , Element.mouseOver
-      [ Element.Background.color Color.oldLavenderHighlighted
-      , Element.Font.color Color.oldLavenderRegular
-      ]
-    , Element.centerX
-    , Element.height Element.fill
-    , Element.padding 8
-    ]
+  smallOldLavenderButton
     { onPress = Just <| AddItem maybeItem Slipbox.NewNote
     , label = Element.el
       [ Element.centerX
       , Element.centerY
       , Element.Font.heavy
       , Element.Font.color Color.white
-      ] <| Element.text "Create Note"
+      ]
+      <| Element.text "Create Note"
     }
 
 createSourceButton : ( Maybe Item.Item ) -> Element Msg
 createSourceButton maybeItem = Element.Input.button
-  [ Element.Background.color indianred
+  [ Element.Background.color Color.indianred
   , Element.mouseOver
-      [ Element.Background.color thistle ]
+      [ Element.Background.color Color.thistle ]
   , Element.width Element.fill
   ]
   { onPress = Just <| AddItem maybeItem Slipbox.NewSource
@@ -1252,9 +1244,9 @@ createSourceButton maybeItem = Element.Input.button
 editButton: Item.Item -> Element Msg
 editButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item Slipbox.Edit
@@ -1264,9 +1256,9 @@ editButton item =
 deleteButton: Item.Item -> Element Msg
 deleteButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item Slipbox.PromptConfirmDelete
@@ -1276,9 +1268,9 @@ deleteButton item =
 dismissButton: Item.Item -> Element Msg
 dismissButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| DismissItem item
@@ -1307,7 +1299,7 @@ sourceInput itemId item input suggestions =
         []
         [ Html.label 
           [ Html.Attributes.for sourceInputid ]
-          [ Html.text "Label:" ]
+          [ Html.text "Source: " ]
         , Html.input
           [ Html.Attributes.list dataitemId 
           , Html.Attributes.name sourceInputid
@@ -1327,59 +1319,22 @@ toHtmlOption value =
 
 chooseVariantButtons: Item.Item -> Note.Variant -> Element Msg
 chooseVariantButtons item variant =
+  let
+    variantDisplay = \v ->
+      case v of
+        Note.Index -> Element.el [ Element.centerX, Element.centerY ] <| Element.text "Index"
+        Note.Regular -> Element.el [ Element.centerX, Element.centerY ] <| Element.text "Regular"
+  in
   Element.Input.radioRow
-    [ Element.Border.rounded 6
-    , Element.Border.shadow { offset = ( 0, 0 ), size = 3, blur = 10, color = Element.rgb255 0xE0 0xE0 0xE0 }
-    ]
+    [ Element.spacingXY 8 0, Element.paddingXY 8 0 ]
     { onChange = (\v -> UpdateItem item <| Slipbox.UpdateVariant v)
     , selected = Just variant
-    , label = Element.Input.labelLeft [] <| Element.text "Choose Note Variant"
+    , label = Element.Input.labelLeft [ ] <| Element.text "Note Type:"
     , options =
-      [ Element.Input.option Note.Index <| variantButton Note.Index
-      , Element.Input.option Note.Regular <| variantButton Note.Regular
+      [ Element.Input.option Note.Index <| variantDisplay Note.Index
+      , Element.Input.option Note.Regular <| variantDisplay Note.Regular
       ]
     }
-
-variantButton: Note.Variant -> Element Msg
-variantButton variant =
-  let
-    borders =
-      case variant of
-        Note.Index ->
-          { left = 2, right = 2, top = 2, bottom = 2 }
-        Note.Regular ->
-          { left = 0, right = 2, top = 2, bottom = 2 }
-    corners =
-      case variant of
-        Note.Index ->
-          { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
-        Note.Regular ->
-          { topLeft = 0, bottomLeft = 0, topRight = 6, bottomRight = 6 }
-    text =
-      case variant of
-        Note.Index -> "Index"
-        Note.Regular -> "Regular"
-    color =
-      case variant of
-        Note.Index ->
-          if Note.Index == variant then
-            Element.rgb255 114 159 207
-          else
-            Element.rgb255 0xFF 0xFF 0xFF
-        Note.Regular ->
-          if Note.Regular == variant then
-            Element.rgb255 114 159 207
-          else
-            Element.rgb255 0xFF 0xFF 0xFF
-  in
-    Element.el
-      [ Element.paddingEach { left = 20, right = 20, top = 10, bottom = 10 }
-      , Element.Border.roundEach { topLeft = 6, bottomLeft = 6, topRight = 0, bottomRight = 0 }
-      , Element.Border.widthEach { left = 2, right = 2, top = 2, bottom = 2 }
-      , Element.Border.color <| Element.rgb255 0xC0 0xC0 0xC0
-      , Element.Background.color <| color
-      ]
-      <| Element.el [ Element.centerX, Element.centerY ] <| Element.text text
 
 chooseSubmitButton : Item.Item -> Bool -> Element Msg
 chooseSubmitButton item canSubmit =
@@ -1390,12 +1345,7 @@ chooseSubmitButton item canSubmit =
 
 submitButton : Item.Item -> Element Msg
 submitButton item =
-  Element.Input.button
-    [ Element.Background.color indianred
-    , Element.mouseOver
-        [ Element.Background.color thistle ]
-    , Element.width Element.fill
-    ]
+  smallOldLavenderButton
     { onPress = Just <| UpdateItem item Slipbox.Submit
     , label = Element.text "Submit"
     }
@@ -1403,9 +1353,9 @@ submitButton item =
 confirmDismissButton : Item.Item -> Element Msg
 confirmDismissButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| DismissItem item
@@ -1415,9 +1365,9 @@ confirmDismissButton item =
 doNotDismissButton : Item.Item -> Element Msg
 doNotDismissButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item Slipbox.Cancel
@@ -1426,12 +1376,7 @@ doNotDismissButton item =
 
 cancelButton : Item.Item -> Element Msg
 cancelButton item =
-  Element.Input.button
-    [ Element.Background.color indianred
-    , Element.mouseOver
-        [ Element.Background.color thistle ]
-    , Element.padding 8
-    ]
+  smallRedButton
     { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Cancel"
     }
@@ -1439,9 +1384,9 @@ cancelButton item =
 confirmDeleteButton : Item.Item -> Element Msg
 confirmDeleteButton item =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.indianred
     , Element.mouseOver
-        [ Element.Background.color thistle ]
+        [ Element.Background.color Color.thistle ]
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item Slipbox.Submit
@@ -1497,5 +1442,30 @@ sourceAuthorView : String -> Element Msg
 sourceAuthorView sourceAuthor =
   Element.paragraph [] [ Element.text sourceAuthor ]
 
--- Using function currying or partial applying, I could have create functions that are styled buttons like red button and blue button.
--- Then use those to create the buttons that are used for application logic.
+-- VIEW BUTTON BUILDER
+
+smallRedButton : { onPress: Maybe Msg, label: Element Msg } -> Element Msg
+smallRedButton buttonFunction =
+  Element.Input.button
+    [ Element.Background.color Color.indianred
+    , Element.mouseOver
+        [ Element.Background.color Color.thistle ]
+    , Element.padding 8
+    , Element.Font.heavy
+    ]
+    buttonFunction
+
+smallOldLavenderButton : { onPress: Maybe Msg, label: Element Msg } -> Element Msg
+smallOldLavenderButton buttonFunction =
+  Element.Input.button
+    [ Element.Background.color Color.oldLavenderRegular
+    , Element.mouseOver
+      [ Element.Background.color Color.oldLavenderHighlighted
+      , Element.Font.color Color.oldLavenderRegular
+      ]
+    , Element.centerX
+    , Element.height Element.fill
+    , Element.padding 8
+    , Element.Font.heavy
+    ]
+    buttonFunction

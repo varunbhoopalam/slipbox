@@ -19,3 +19,7 @@ artichokeHighlighted = artichoke 0.5
 artichokeRegular = artichoke 1.0
 ebonyHighlighted = ebony 0.5
 ebonyRegular = ebony 1.0
+
+gray = Element.rgb255 238 238 238
+thistle = Element.rgb255 216 191 216
+indianred = Element.rgb255 205 92 92
