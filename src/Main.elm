@@ -544,6 +544,8 @@ itemsView content =
       [ Element.centerX
       , Element.padding 8
       , Element.spacingXY 24 24
+      , Element.width Element.fill
+      , Element.height Element.fill
       ]
       <| ( Element.el
         [ Element.Font.heavy
@@ -681,12 +683,23 @@ removeLinkButton item linkedNote link =
 newNoteView: Int -> Item.Item -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
 newNoteView itemId item note slipbox =
   Element.column
-    []
-    [ contentInput item note.content
+    [ Element.Border.width 3
+    , Element.Border.color Color.heliotropeGrayRegular
+    , Element.padding 8
+    , Element.spacingXY 16 16
+    , Element.width <| Element.maximum 800 Element.fill
+    , Element.height Element.fill
+    , Element.centerX
+    ]
+    [ Element.row
+      [ Element.width Element.fill ]
+      [ Element.el [ Element.centerX ] <| Element.text "New Note"
+      , cancelButton item
+      , chooseSubmitButton item <| Item.noteCanSubmit note
+      ]
+    , contentInput item note.content
     , sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
     , chooseVariantButtons item note.variant
-    , cancelButton item
-    , chooseSubmitButton item <| Item.noteCanSubmit note
     ]
 
 -- DISCARD NOTE ITEM
@@ -1373,7 +1386,7 @@ chooseSubmitButton item canSubmit =
   if canSubmit then
     submitButton item
   else
-    Element.text "Cannot Submit Yet!"
+    Element.none
 
 submitButton : Item.Item -> Element Msg
 submitButton item =
@@ -1417,7 +1430,7 @@ cancelButton item =
     [ Element.Background.color indianred
     , Element.mouseOver
         [ Element.Background.color thistle ]
-    , Element.width Element.fill
+    , Element.padding 8
     ]
     { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Cancel"
