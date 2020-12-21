@@ -70,7 +70,7 @@ getPanningAttributes viewport notes =
   in
   case maybeExtremes of
     Just extremes ->
-      if allNotesInView extremes viewbox then
+      if not <| allNotesInView extremes viewbox then
         let
             outerWidth = viewbox.height // 4
             outerHeight = outerWidth
@@ -87,13 +87,13 @@ getPanningAttributes viewport notes =
           ( "translate(" ++ String.fromInt xTranslation ++ "," ++ String.fromInt yTranslation ++ ")" )
           ( String.fromInt outerWidth )
           ( String.fromInt outerHeight )
-          ( String.fromInt <| info.viewbox.width * xScalingFactor )
-          ( String.fromInt <| info.viewbox.height * yScalingFactor )
+          ( String.fromInt <| info.viewbox.width // xScalingFactor )
+          ( String.fromInt <| info.viewbox.height // yScalingFactor )
           "fill:rgb(220,220,220);stroke-width:3;stroke:rgb(0,0,0);"
           ( "translate(" 
-            ++ (String.fromInt <| info.viewbox.minX * xScalingFactor) 
+            ++ (String.fromInt <| info.viewbox.minX // xScalingFactor)
             ++ "," 
-            ++ (String.fromInt <| info.viewbox.minY * yScalingFactor)
+            ++ (String.fromInt <| info.viewbox.minY // yScalingFactor)
             ++ ")" 
           )
       else 
@@ -144,7 +144,13 @@ stopMove viewport =
 
 -- TODO
 updateSvgContainerDimensions : ( Int, Int ) -> Viewport -> Viewport
-updateSvgContainerDimensions ( width, height ) viewport = viewport
+updateSvgContainerDimensions ( width, height ) viewport =
+  case viewport of
+    Viewport info ->
+      let
+        viewbox = info.viewbox
+      in
+      Viewport { info | viewbox = { viewbox | width = width } }
 
 
 -- HELPER
@@ -179,6 +185,9 @@ allNotesInView extremes viewbox =
       noNotesRightOfViewbox = viewboxMaxX viewbox > floor extremes.maxX
       noNotesAboveViewbox = viewbox.minY < floor extremes.minY
       noNotesBelowViewbox = viewboxMaxY viewbox > floor extremes.maxY
+      _ = Debug.log ( Debug.toString extremes ) 1
+      _ = Debug.log ( Debug.toString viewbox ) 2
+      _ = Debug.log ( Debug.toString (noNotesLeftOfViewbox || noNotesRightOfViewbox || noNotesAboveViewbox || noNotesBelowViewbox)) 3
   in
   noNotesLeftOfViewbox || noNotesRightOfViewbox || noNotesAboveViewbox || noNotesBelowViewbox
 

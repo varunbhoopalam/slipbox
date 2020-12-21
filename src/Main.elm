@@ -1086,7 +1086,7 @@ maybePanningFrame viewport notes =
           [ Svg.Attributes.width attr.outerWidth
           , Svg.Attributes.height attr.outerHeight
           , Svg.Attributes.style "border: 2px solid gray;"
-          , Svg.Attributes.fill "none"
+          , Svg.Attributes.fillOpacity "0.1"
           ]
           []
         , Svg.rect

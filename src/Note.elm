@@ -144,16 +144,7 @@ create generator record =
   let
       (id, idGenerator) = IdGenerator.generateId generator
   in
-  
-  ( Note <| Info
-    id
-    record.content
-    record.source
-    record.variant
-    ( Compressed 5 )
-    0 0 0 0
-  , idGenerator
-  )
+  ( note_ id record.content record.source (variantStringRepresentation record.variant ), idGenerator )
 
 updateContent : String -> Note -> Note
 updateContent content note =
