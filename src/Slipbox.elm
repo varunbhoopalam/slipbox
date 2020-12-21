@@ -192,7 +192,7 @@ dismissItem item slipbox =
   let
       content = getContent slipbox
   in
-  Slipbox { content | items = List.filter (Item.is item) content.items}
+  Slipbox { content | items = List.filter (\i -> not <| Item.is item i) content.items}
 
 type UpdateAction
   = UpdateContent String
