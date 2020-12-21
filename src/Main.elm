@@ -227,7 +227,7 @@ update message model =
         Setup ->
           ({ model | state =
             Session <| Content
-              (ExploreTab "" <| Viewport.initialize model.deviceViewport)
+              (ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) )
               Slipbox.new
           }
           , Cmd.none)
@@ -254,7 +254,7 @@ update message model =
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( ExploreTab "" <| Viewport.initialize model.deviceViewport ) slipbox }
+              ({ model | state = Session <| Content ( ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) ) slipbox }
               , Cmd.none
               )
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
@@ -283,7 +283,7 @@ update message model =
                 ExploreTab _ _ -> ( model, Cmd.none )
                 _ ->
                   ( { model | state =
-                    Session { content | tab = ExploreTab "" <| Viewport.initialize model.deviceViewport }
+                    Session { content | tab = ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) }
                     }
                   , Cmd.none
                   )
@@ -453,24 +453,23 @@ sessionView deviceViewport content =
   Element.layout 
     [] 
     <| Element.column 
-      [] 
-      [ tabView deviceViewport content
+      [ Element.width Element.fill]
+      [ header
+      , tabHeader content.tab
+      , tabView deviceViewport content
       , itemsView content
       ]
 
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content =
-  Element.column
+  Element.el
     [ Element.width Element.fill, Element.height Element.fill ]
-    [ header
-    , tabHeader content.tab
-    , case content.tab of
+    <| case content.tab of
         ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
         NotesTab input -> noteTabView input content.slipbox
         SourcesTab input -> sourceTabView input content.slipbox
         SetupTab -> Element.text "TODO"
-    ]
 
 tabHeader : Tab -> Element.Element Msg
 tabHeader tab =
@@ -944,8 +943,10 @@ graph_ deviceViewport viewport (notes, links) =
       , maybePanningFrame viewport notes
       ]
 
+svgGraphHeight = 500
+
 graphAttributes : ( Int, Int ) -> Viewport.Viewport -> (List ( Svg.Attribute Msg ) )
-graphAttributes ( width, height ) viewport =
+graphAttributes ( width, _ ) viewport =
   let
       mouseEventDecoder =
         Json.Decode.map2 Viewport.MouseEvent
@@ -955,14 +956,14 @@ graphAttributes ( width, height ) viewport =
   case Viewport.getState viewport of
     Viewport.Moving _ ->
       [ Svg.Attributes.width <| String.fromInt width
-        , Svg.Attributes.height <| String.fromInt height
+        , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
       ]
     Viewport.Stationary -> 
       [ Svg.Attributes.width <| String.fromInt width
-        , Svg.Attributes.height <| String.fromInt height
+        , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
         -- TODO
