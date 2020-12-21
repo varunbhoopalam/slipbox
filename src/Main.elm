@@ -464,12 +464,18 @@ sessionView deviceViewport content =
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content =
   Element.el
-    [ Element.width Element.fill, Element.height Element.fill ]
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    , Element.Border.widthEach { bottom = 3, top = 0, right = 0, left = 0 }
+    , Element.Border.color Color.heliotropeGrayRegular
+    ]
     <| case content.tab of
         ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
         NotesTab input -> noteTabView input content.slipbox
         SourcesTab input -> sourceTabView input content.slipbox
         SetupTab -> Element.text "TODO"
+
+barHeight = 65
 
 tabHeader : Tab -> Element.Element Msg
 tabHeader tab =
@@ -478,11 +484,11 @@ tabHeader tab =
       case tab of
         ExploreTab _ _ -> Explore
         NotesTab _ -> Notes
-        SourcesTab _ ->Sources
+        SourcesTab _ -> Sources
         SetupTab -> Back
   in
   Element.row
-    [ Element.height <| Element.px 65
+    [ Element.height <| Element.px barHeight
     , Element.width Element.fill
     , Element.Font.size 36
     , Element.Font.heavy
@@ -504,7 +510,7 @@ tabHeader tab =
       ( tab_ == Sources )
     , tabHeaderBuilder
       { onPress = Just <| ChangeTab Back
-      , label = Element.el [ Element.centerX ] <| Element.text "Back"
+      , label = Element.el [ Element.centerX ] <| Element.text "Setup"
       }
       ( tab_ == Back )
     ]
@@ -908,7 +914,8 @@ exploreTabView deviceViewport input viewport slipbox =
         Just input
   in
   Element.column
-    [ Element.width Element.fill, Element.height Element.fill]
+    [ Element.width Element.fill
+    ]
     [ exploreTabToolbar input
     , graph deviceViewport viewport <| Slipbox.getNotesAndLinks search slipbox
     ]
@@ -916,15 +923,21 @@ exploreTabView deviceViewport input viewport slipbox =
 exploreTabToolbar: String -> Element Msg
 exploreTabToolbar input = 
   Element.el 
-    [Element.width Element.fill, Element.height <| Element.px 50]
-    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
+    [ Element.width Element.fill
+    , Element.height <| Element.px barHeight
+    , Element.padding 8
+    ]
+    <| Element.row [Element.width Element.fill, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> ExploreTabUpdateInput s)
       , createNoteButton Nothing
       ]
 
 graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
 graph deviceViewport viewport elements =
-  Element.el [Element.height Element.fill, Element.width Element.fill] 
+  Element.el
+    [ Element.height <| Element.px svgGraphHeight
+    , Element.width Element.fill
+    ]
     <| Element.html 
       <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
 
@@ -1063,7 +1076,10 @@ noteTabView input slipbox =
       else
         Just input
   in
-  Element.column [Element.width Element.fill, Element.height Element.fill]
+  Element.column
+    [ Element.width Element.fill
+    , Element.height <| Element.px svgGraphHeight
+    ]
     [ noteTabToolbar input
     , notesView <| Slipbox.getNotes search slipbox
     ]
@@ -1178,13 +1194,22 @@ searchInput input onChange = Element.Input.text
 createNoteButton : ( Maybe Item.Item ) -> Element Msg
 createNoteButton maybeItem =
   Element.Input.button
-    [ Element.Background.color indianred
+    [ Element.Background.color Color.oldLavenderRegular
     , Element.mouseOver
-        [ Element.Background.color thistle ]
-    , Element.width Element.fill
+      [ Element.Background.color Color.oldLavenderHighlighted
+      , Element.Font.color Color.oldLavenderRegular
+      ]
+    , Element.centerX
+    , Element.height Element.fill
+    , Element.padding 8
     ]
     { onPress = Just <| AddItem maybeItem Slipbox.NewNote
-    , label = Element.text "Create Note"
+    , label = Element.el
+      [ Element.centerX
+      , Element.centerY
+      , Element.Font.heavy
+      , Element.Font.color Color.white
+      ] <| Element.text "Create Note"
     }
 
 createSourceButton : ( Maybe Item.Item ) -> Element Msg
