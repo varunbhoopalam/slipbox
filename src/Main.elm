@@ -563,7 +563,31 @@ toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   case item of
      Item.Note _ note -> itemNoteView item note content.slipbox
-     Item.NewNote itemId note -> newNoteView itemId item note content.slipbox
+
+     Item.NewNote itemId note ->
+       Element.column
+           [ Element.Border.width 3
+           , Element.Border.color Color.heliotropeGrayRegular
+           , Element.padding 8
+           , Element.spacingXY 8 8
+           , Element.width <| Element.maximum 800 Element.fill
+           , Element.height Element.fill
+           , Element.centerX
+           ]
+           [ Element.row
+             [ Element.width Element.fill
+             , Element.spacingXY 8 0
+             ]
+             [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+             , Element.el [ Element.alignRight ] <| cancelButton item
+             , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
+             ]
+           , contentInput item note.content
+           , Element.el []
+             <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
+           , chooseVariantButtons item note.variant
+           ]
+
      Item.ConfirmDiscardNewNoteForm _ note -> confirmDiscardNewNoteFormView item note
      Item.EditingNote itemId _ noteWithEdits -> editingNoteView itemId item noteWithEdits content.slipbox
      Item.ConfirmDeleteNote _ note -> confirmDeleteNoteView item note content.slipbox
@@ -677,33 +701,6 @@ removeLinkButton item linkedNote link =
     { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
     , label = Element.text "Remove Link"
     }
-
--- NEW NOTE ITEM
-
-newNoteView: Int -> Item.Item -> Item.NewNoteContent -> Slipbox.Slipbox -> Element Msg
-newNoteView itemId item note slipbox =
-  Element.column
-    [ Element.Border.width 3
-    , Element.Border.color Color.heliotropeGrayRegular
-    , Element.padding 8
-    , Element.spacingXY 8 8
-    , Element.width <| Element.maximum 800 Element.fill
-    , Element.height Element.fill
-    , Element.centerX
-    ]
-    [ Element.row
-      [ Element.width Element.fill
-      , Element.spacingXY 8 0
-      ]
-      [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
-      , Element.el [ Element.alignRight ] <| cancelButton item
-      , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
-      ]
-    , contentInput item note.content
-    , Element.el []
-      <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
-    , chooseVariantButtons item note.variant
-    ]
 
 -- DISCARD NOTE ITEM
 
@@ -1018,16 +1015,24 @@ toGraphNote note =
         [ Svg.rect
             [ Svg.Attributes.width <| String.fromInt width
             , Svg.Attributes.height <| String.fromInt height
+            , Svg.Attributes.fill "none"
             ]
             []
-        , Svg.foreignObject []
-          <| [ Element.layout [Element.width Element.fill, Element.height Element.fill]
-            <| Element.column [Element.width Element.fill, Element.height Element.fill]
+        , Svg.foreignObject
+          [ Svg.Attributes.width <| String.fromInt width
+          , Svg.Attributes.height <| String.fromInt height
+          ]
+          <| [ Element.layout [ Element.width <| Element.px width, Element.height <| Element.px height ]
+            <| Element.column
+              [ Element.width Element.fill
+              , Element.height Element.fill
+              , Element.Border.width 3
+              ]
               [ Element.Input.button [Element.alignRight]
                 { onPress = Just <| CompressNote note
                 , label = Element.text "X"
                 }
-              , Element.Input.button []
+              , Element.Input.button [ Element.width Element.fill, Element.height Element.fill]
                 { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
                 , label = Element.paragraph
                   [ Element.scrollbarY ]
@@ -1079,6 +1084,7 @@ maybePanningFrame viewport notes =
           [ Svg.Attributes.width attr.outerWidth
           , Svg.Attributes.height attr.outerHeight
           , Svg.Attributes.style "border: 2px solid gray;"
+          , Svg.Attributes.fill "none"
           ]
           []
         , Svg.rect
