@@ -541,7 +541,7 @@ itemsView content =
       items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
   in
     Element.column 
-      []
+      [ Element.centerX ]
       items
 -- TODO: add div between each item that on hover shows buttons to create an item
 -- TODO: figure out if it's necessary to have this same div but always visible either at beginning or end of item list
@@ -927,7 +927,7 @@ exploreTabToolbar input =
     , Element.height <| Element.px barHeight
     , Element.padding 8
     ]
-    <| Element.row [Element.width Element.fill, Element.spacingXY 8 8 ]
+    <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> ExploreTabUpdateInput s)
       , createNoteButton Nothing
       ]
@@ -1078,7 +1078,6 @@ noteTabView input slipbox =
   in
   Element.column
     [ Element.width Element.fill
-    , Element.height <| Element.px svgGraphHeight
     ]
     [ noteTabToolbar input
     , notesView <| Slipbox.getNotes search slipbox
@@ -1087,8 +1086,11 @@ noteTabView input slipbox =
 noteTabToolbar: String -> Element Msg
 noteTabToolbar input = 
   Element.el 
-    [Element.width Element.fill, Element.height <| Element.px 50]
-    <| Element.row [Element.width Element.fill, Element.paddingXY 8 0, Element.spacingXY 8 8 ]
+    [ Element.width Element.fill
+    , Element.height <| Element.px barHeight
+    , Element.padding 8
+    ]
+    <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> NoteTabUpdateInput s)
       , createNoteButton Nothing
       ]
