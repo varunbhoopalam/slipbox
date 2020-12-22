@@ -1312,25 +1312,11 @@ confirmButton item =
     , label = Element.text "Confirm"
     }
 
-doNotDismissButton : Item.Item -> Element Msg
-doNotDismissButton item =
-  smallOldLavenderButton
-    { onPress = Just <| UpdateItem item Slipbox.Cancel
-    , label = Element.text "Do Not Dismiss"
-    }
-
 cancelButton : Item.Item -> Element Msg
 cancelButton item =
   smallRedButton
     { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Cancel"
-    }
-
-confirmDeleteButton : Item.Item -> Element Msg
-confirmDeleteButton item =
-  smallOldLavenderButton
-    { onPress = Just <| UpdateItem item Slipbox.Submit
-    , label = Element.text "Confirm Delete Note"
     }
 
 titleInput : Item.Item -> String -> Element Msg
