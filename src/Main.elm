@@ -592,6 +592,47 @@ itemsView content =
 -- TODO: add div between each item that on hover shows buttons to create an item
 -- TODO: figure out if it's necessary to have this same div but always visible either at beginning or end of item list
 
+itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
+itemHeaderBuilder contents =
+  Element.row
+    [ Element.width Element.fill
+    , Element.spacingXY 8 0
+    ]
+    contents
+
+normalItemHeader : String -> Item.Item -> Element Msg
+normalItemHeader text item =
+  itemHeaderBuilder
+    [ headerText text
+    , Element.el [ Element.alignRight ] <| editButton item
+    , Element.el [ Element.alignRight ] <| deleteButton item
+    , Element.el [ Element.alignRight ] <| dismissButton item
+    ]
+
+newItemHeader : String -> Bool -> Item.Item -> Element Msg
+newItemHeader text canSubmit item =
+  itemHeaderBuilder
+    [ headerText text
+    , Element.el [ Element.alignRight ] <| cancelButton item
+    , Element.el [ Element.alignRight ] <| chooseSubmitButton item canSubmit
+    ]
+
+deleteItemHeader : String -> Item.Item -> Element Msg
+deleteItemHeader text item =
+  itemHeaderBuilder
+    [ headerText text
+    , Element.el [ Element.alignRight ] <| confirmButton item
+    , Element.el [ Element.alignRight ] <| cancelButton item
+    ]
+
+editItemHeader : String -> Item.Item -> Element Msg
+editItemHeader text item =
+  itemHeaderBuilder
+    [ headerText text
+    , Element.el [ Element.alignRight ] <| submitButton item
+    , Element.el [ Element.alignRight ] <| cancelButton item
+    ]
+
 toItemView: Content -> Item.Item -> Element Msg
 toItemView content item =
   let
@@ -607,65 +648,37 @@ toItemView content item =
           , Element.centerX
           ]
           contents
-    headerContainerLambda =
-      \contents ->
-        Element.row
-          [ Element.width Element.fill
-          , Element.spacingXY 8 0
-          ]
-          contents
   in
   case item of
     Item.Note _ note -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Note"
-        , Element.el [ Element.alignRight ] <| editButton item
-        , Element.el [ Element.alignRight ] <| deleteButton item
-        , Element.el [ Element.alignRight ] <| dismissButton item
-        ]
+      [ normalItemHeader "Note" item
       , toNoteRepresentationFromNote note
       , linkedNotesNode item note content.slipbox
       ]
 
 
     Item.NewNote itemId note -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "New Note"
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
-        ]
+      [ newItemHeader "New Note" ( Item.noteCanSubmit note ) item
       , toEditingNoteRepresentation
         itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source note.variant
       ]
 
 
     Item.ConfirmDiscardNewNoteForm _ note -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "New Note"
-        , Element.el [ Element.alignRight ] <| confirmDismissButton item
-        , Element.el [ Element.alignRight ] <| doNotDismissButton item
-        ]
+      [ deleteItemHeader "Discard New Note" item
       , toNoteRepresentation note.content note.source note.variant
       ]
 
 
     Item.EditingNote itemId _ noteWithEdits -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Editing Note"
-        , Element.el [ Element.alignRight ] <| submitButton item
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        ]
+      [ editItemHeader "Editing Note" item
       , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
       , linkedNotesNodeNoButtons noteWithEdits content.slipbox
       ]
 
 
     Item.ConfirmDeleteNote _ note -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Note"
-        , Element.el [ Element.alignRight ] <| confirmDeleteButton item
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        ]
+      [ deleteItemHeader "Delete Note" item
       , toNoteRepresentationFromNote note
       , linkedNotesNodeNoButtons note content.slipbox
       ]
@@ -677,17 +690,9 @@ toItemView content item =
           case maybeNote of
             Just chosenNoteToLink -> toNoteRepresentationFromNote chosenNoteToLink
             Nothing -> Element.paragraph [] [ Element.text "Select note to add link to from below" ]
-        maybeSubmit =
-          case maybeNote of
-            Just _ -> submitButton item
-            Nothing -> Element.none
       in
       itemContainerLambda
-        [ headerContainerLambda
-          [ headerText "Adding Link"
-          , Element.el [ Element.alignRight ] <| cancelButton item
-          , Element.el [ Element.alignRight ] maybeSubmit
-          ]
+        [ newItemHeader "Add Link" ( maybeNote /= Nothing ) item
         , Element.row
           [ Element.width Element.fill ]
           [ toNoteRepresentationFromNote note
@@ -715,65 +720,40 @@ toItemView content item =
 
 
     Item.Source _ source -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Source"
-        , Element.el [ Element.alignRight ] <| editButton item
-        , Element.el [ Element.alignRight ] <| deleteButton item
-        , Element.el [ Element.alignRight ] <| dismissButton item
-        ]
+      [ normalItemHeader "Source" item
       , toSourceRepresentationFromSource source
       , associatedNotesNode source content.slipbox
       ]
 
 
     Item.NewSource _ source -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "New Source"
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.sourceCanSubmit source
-        ]
+      [ newItemHeader "New Source" ( Item.sourceCanSubmit source ) item
       , toEditingSourceRepresentation item source.title source.author source.content
       ]
 
 
     Item.ConfirmDiscardNewSourceForm _ source -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "New Source"
-        , Element.el [ Element.alignRight ] <| confirmDismissButton item
-        , Element.el [ Element.alignRight ] <| doNotDismissButton item
-        ]
+      [ deleteItemHeader "Confirm Discard New Source" item
       , toSourceRepresentation source.title source.author source.content
       ]
 
 
     Item.EditingSource _ _ sourceWithEdits -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "New Source"
-        , Element.el [ Element.alignRight ] <| submitButton item
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        ]
+      [ editItemHeader "Editing Source" item
       , toEditingSourceRepresentationFromItemSource item sourceWithEdits
       , associatedNotesNode sourceWithEdits content.slipbox
       ]
 
 
     Item.ConfirmDeleteSource _ source -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Source"
-        , Element.el [ Element.alignRight ] <| confirmDeleteButton item
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        ]
+      [ deleteItemHeader "Confirm Delete Source" item
       , toSourceRepresentationFromSource source
       , associatedNotesNode source content.slipbox
       ]
 
 
     Item.ConfirmDeleteLink _ note linkedNote _ -> itemContainerLambda
-      [ headerContainerLambda
-        [ headerText "Confirm Delete Link"
-        , Element.el [ Element.alignRight ] <| submitButton item
-        , Element.el [ Element.alignRight ] <| cancelButton item
-        ]
+      [ deleteItemHeader "Confirm Delete Link" item
       , Element.row
         [ Element.spaceEvenly ]
         [ toNoteRepresentationFromNote note
@@ -1325,11 +1305,11 @@ submitButton item =
     , label = Element.text "Submit"
     }
 
-confirmDismissButton : Item.Item -> Element Msg
-confirmDismissButton item =
+confirmButton : Item.Item -> Element Msg
+confirmButton item =
   smallRedButton
     { onPress = Just <| DismissItem item
-    , label = Element.text "Confirm Dismiss"
+    , label = Element.text "Confirm"
     }
 
 doNotDismissButton : Item.Item -> Element Msg
