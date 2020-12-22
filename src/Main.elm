@@ -661,14 +661,14 @@ toItemView content item =
 
      Item.AddingLinkToNoteForm _ search note maybeNote ->
        let
-         choice =
+         maybeChoice =
            case maybeNote of
-             Just chosenNoteToLink ->
-               [ submitButton item
-               , toNoteRepresentation chosenNoteToLink
-               ]
-             Nothing ->
-               [ Element.text "Select note to add link to from below" ]
+             Just chosenNoteToLink -> toNoteRepresentation chosenNoteToLink
+             Nothing -> Element.paragraph [] [ Element.text "Select note to add link to from below" ]
+         maybeSubmit =
+           case maybeNote of
+             Just _ -> submitButton item
+             Nothing -> Element.none
        in
        itemContainerLambda
          [ Element.row
@@ -677,16 +677,25 @@ toItemView content item =
            ]
            [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Adding Link"
            , Element.el [ Element.alignRight ] <| cancelButton item
+           , Element.el [ Element.alignRight ] maybeSubmit
            ]
          , Element.row
            [ Element.width Element.fill ]
-           <| toNoteRepresentation note :: choice
+           [ toNoteRepresentation note
+           , maybeChoice
+           ]
          , Element.column
-           [ Element.height Element.fill, Element.width Element.fill]
-           [ searchInput search <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
+           [ Element.height Element.fill
+           , Element.width Element.fill
+           , Element.spacingXY 8 8
+           ]
+           [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Select Note to Link"
+           , searchInput search
+             <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
            , Element.column
              [ Element.width Element.fill
-             , Element.height Element.fill
+             , Element.height <| Element.minimum 100 Element.fill
+             , Element.spacingXY 8 0
              , Element.scrollbarY
              ]
              <| List.map (toNoteDetailAddingLinkForm item)
@@ -822,16 +831,9 @@ toNoteDetailAddingLinkForm item note =
     , Element.Border.color Color.gray
     , Element.Border.width 4
     , Element.width Element.fill
-    , Element.height Element.fill
     ]
     { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
-    , label =
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill]
-        [ Element.paragraph [] [ Element.text <| Note.getContent note]
-        , Element.text <| "Source: " ++ (Note.getSource note)
-        ]
+    , label = toNoteRepresentation note
     }
 
 -- SOURCE ITEM VIEW
