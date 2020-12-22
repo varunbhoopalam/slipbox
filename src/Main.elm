@@ -470,10 +470,43 @@ tabView deviceViewport content =
     , Element.Border.color Color.heliotropeGrayRegular
     ]
     <| case content.tab of
-        ExploreTab input viewport -> exploreTabView deviceViewport input viewport content.slipbox
-        NotesTab input -> noteTabView input content.slipbox
-        SourcesTab input -> sourceTabView input content.slipbox
+        ExploreTab input viewport ->
+          Element.column
+            [ Element.width Element.fill
+            ]
+            [ exploreTabToolbar input
+            , graph deviceViewport viewport <| Slipbox.getNotesAndLinks ( searchConverter input ) content.slipbox
+            ]
+
+        NotesTab input ->
+          Element.column
+            [ Element.width Element.fill
+            ]
+            [ noteTabToolbar input
+            , notesView <| Slipbox.getNotes ( searchConverter input ) content.slipbox
+            ]
+
+        SourcesTab input ->
+          Element.column
+            [ Element.width Element.fill
+            ]
+            [ sourceTabToolbar input
+            , Element.column
+              [ Element.scrollbarY
+              , Element.height <| Element.px 500
+              ]
+              <| List.map toSource
+                <| Slipbox.getSources ( searchConverter input ) content.slipbox
+            ]
+
         SetupTab -> Element.text "TODO"
+
+searchConverter : String -> ( Maybe String )
+searchConverter input =
+  if String.isEmpty input then
+    Nothing
+  else
+    Just input
 
 barHeight = 65
 
@@ -934,24 +967,6 @@ confirmDeleteSourceView item source slipbox =
       <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
--- EXPLORE TAB
-
-exploreTabView: ( Int, Int ) -> String -> Viewport.Viewport -> Slipbox.Slipbox -> Element Msg
-exploreTabView deviceViewport input viewport slipbox =
-  let
-    search =
-      if String.isEmpty input then
-        Nothing
-      else
-        Just input
-  in
-  Element.column
-    [ Element.width Element.fill
-    ]
-    [ exploreTabToolbar input
-    , graph deviceViewport viewport <| Slipbox.getNotesAndLinks search slipbox
-    ]
-
 exploreTabToolbar: String -> Element Msg
 exploreTabToolbar input = 
   Element.el 
@@ -1108,24 +1123,6 @@ maybePanningFrame viewport notes =
       ]
     Nothing -> []
 
--- NOTE TAB
-
-noteTabView: String -> Slipbox.Slipbox -> Element Msg
-noteTabView input slipbox =
-  let
-    search =
-      if String.isEmpty input then
-        Nothing
-      else
-        Just input
-  in
-  Element.column
-    [ Element.width Element.fill
-    ]
-    [ noteTabToolbar input
-    , notesView <| Slipbox.getNotes search slipbox
-    ]
-
 noteTabToolbar: String -> Element Msg
 noteTabToolbar input = 
   Element.el 
@@ -1156,42 +1153,16 @@ toNoteDetail note =
     ] 
     <| Element.Input.button []
       { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
-      , label = Element.column [] 
-        [ Element.paragraph [] [ Element.text <| Note.getContent note]
-        , Element.text <| "Source: " ++ (Note.getSource note)
-        ]
+      , label = toNoteRepresentation note
       }
 
--- SOURCE TAB
-
-sourceTabView: String -> Slipbox.Slipbox -> Element Msg
-sourceTabView input slipbox =
-  let
-    search =
-      if String.isEmpty input then
-        Nothing
-      else
-        Just input
-  in
-  Element.column 
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    [ sourceTabToolbar input
-    , Element.column 
-      [ Element.scrollbarY ]
-      <| List.map toSource <| Slipbox.getSources search slipbox
-    ]
-
 sourceTabToolbar: String -> Element Msg
-sourceTabToolbar input = Element.el 
-  [ Element.width Element.fill
-  , Element.height <| Element.px 50
-  ]
-  <| Element.row 
+sourceTabToolbar input =
+  Element.row
     [ Element.width Element.fill
-    , Element.paddingXY 8 0
+    , Element.padding 8
     , Element.spacingXY 8 8
+    , Element.height <| Element.px barHeight
     ] 
     [ searchInput input SourceTabUpdateInput
     , createSourceButton Nothing
@@ -1247,15 +1218,11 @@ createNoteButton maybeItem =
     }
 
 createSourceButton : ( Maybe Item.Item ) -> Element Msg
-createSourceButton maybeItem = Element.Input.button
-  [ Element.Background.color Color.indianred
-  , Element.mouseOver
-      [ Element.Background.color Color.thistle ]
-  , Element.width Element.fill
-  ]
-  { onPress = Just <| AddItem maybeItem Slipbox.NewSource
-  , label = Element.text "Create Source"
-  }
+createSourceButton maybeItem =
+  smallOldLavenderButton
+    { onPress = Just <| AddItem maybeItem Slipbox.NewSource
+    , label = Element.text "Create Source"
+    }
 
 editButton: Item.Item -> Element Msg
 editButton item =
