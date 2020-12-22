@@ -725,6 +725,7 @@ toItemView content item =
       , associatedNotesNode source content.slipbox
       ]
 
+
     Item.NewSource _ source -> itemContainerLambda
       [ headerContainerLambda
         [ headerText "New Source"
@@ -734,7 +735,17 @@ toItemView content item =
       , toEditingSourceRepresentation item source.title source.author source.content
       ]
 
-    Item.ConfirmDiscardNewSourceForm _ source -> confirmDiscardNewSourceFormView item source
+
+    Item.ConfirmDiscardNewSourceForm _ source -> itemContainerLambda
+      [ headerContainerLambda
+        [ headerText "New Source"
+        , Element.el [ Element.alignRight ] <| confirmDismissButton item
+        , Element.el [ Element.alignRight ] <| doNotDismissButton item
+        ]
+      , toSourceRepresentation source.title source.author source.content
+      ]
+
+
     Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
     Item.ConfirmDeleteSource _ source -> confirmDeleteSourceView item source content.slipbox
     Item.ConfirmDeleteLink _ note linkedNote _ ->
@@ -934,22 +945,6 @@ toEditingSourceRepresentation item title author content =
     [ titleInput item title
     , authorInput item author
     , contentInput item content
-    ]
-
--- CONFIRM DISCARD NEW SOURCE FORM ITEM VIEW
-
-confirmDiscardNewSourceFormView : Item.Item -> Item.NewSourceContent -> Element Msg
-confirmDiscardNewSourceFormView item source =
-  Element.column
-    []
-    [ Element.row 
-      []
-      [ confirmDismissButton item
-      , doNotDismissButton item
-      ] 
-    , sourceTitleView source.title
-    , sourceAuthorView source.author
-    , noteContentView source.content
     ]
 
 -- EDITING SOURCE VIEW
