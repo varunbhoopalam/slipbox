@@ -666,9 +666,7 @@ toItemView content item =
         , Element.el [ Element.alignRight ] <| confirmDeleteButton item
         , Element.el [ Element.alignRight ] <| cancelButton item
         ]
-      , noteContentView <| Note.getContent note
-      , noteSourceView <| Note.getSource note
-      , noteVariantView <| Note.getVariant note
+      , toNoteRepresentationFromNote note
       , linkedNotesNodeNoButtons note content.slipbox
       ]
 
@@ -723,13 +721,19 @@ toItemView content item =
         , Element.el [ Element.alignRight ] <| deleteButton item
         , Element.el [ Element.alignRight ] <| dismissButton item
         ]
-      , sourceTitleView <| Source.getTitle source
-      , sourceAuthorView <| Source.getAuthor source
-      , noteContentView <| Source.getContent source
+      , toSourceRepresentationFromSource source
       , associatedNotesNode source content.slipbox
       ]
 
-    Item.NewSource _ source -> newSourceView item source
+    Item.NewSource _ source -> itemContainerLambda
+      [ headerContainerLambda
+        [ headerText "New Source"
+        , Element.el [ Element.alignRight ] <| cancelButton item
+        , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.sourceCanSubmit source
+        ]
+      , toEditingSourceRepresentation item source.title source.author source.content
+      ]
+
     Item.ConfirmDiscardNewSourceForm _ source -> confirmDiscardNewSourceFormView item source
     Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
     Item.ConfirmDeleteSource _ source -> confirmDeleteSourceView item source content.slipbox
@@ -907,17 +911,29 @@ toNoteDetailAddingLinkForm item note =
     , label = toNoteRepresentationFromNote note
     }
 
--- NEW SOURCE ITEM VIEW
+toSourceRepresentationFromSource : Source.Source -> Element Msg
+toSourceRepresentationFromSource source =
+  toSourceRepresentation
+    ( Source.getTitle source )
+    ( Source.getAuthor source )
+    ( Source.getContent source )
 
-newSourceView: Item.Item -> Item.NewSourceContent -> Element Msg
-newSourceView item source =
+toSourceRepresentation : String -> String -> String -> Element Msg
+toSourceRepresentation title author content =
   Element.column
     []
-    [ titleInput item source.title
-    , authorInput item source.author
-    , contentInput item source.content
-    , cancelButton item
-    , chooseSubmitButton item <| Item.sourceCanSubmit source
+    [ sourceTitleView title
+    , sourceAuthorView author
+    , noteContentView content
+    ]
+
+toEditingSourceRepresentation : Item.Item -> String -> String -> String -> Element Msg
+toEditingSourceRepresentation item title author content =
+  Element.column
+    []
+    [ titleInput item title
+    , authorInput item author
+    , contentInput item content
     ]
 
 -- CONFIRM DISCARD NEW SOURCE FORM ITEM VIEW
