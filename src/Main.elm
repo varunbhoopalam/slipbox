@@ -593,7 +593,6 @@ toItemView content item =
        , linkedNotesNode item note content.slipbox
        ]
 
-
      Item.NewNote itemId note -> itemContainerLambda
        [ Element.row
          [ Element.width Element.fill
@@ -609,7 +608,20 @@ toItemView content item =
        , chooseVariantButtons item note.variant
        ]
 
-     Item.ConfirmDiscardNewNoteForm _ note -> confirmDiscardNewNoteFormView item note
+     Item.ConfirmDiscardNewNoteForm _ note -> itemContainerLambda
+       [ Element.row
+         [ Element.width Element.fill
+         , Element.spacingXY 8 0
+         ]
+         [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+         , Element.el [ Element.alignRight] <| confirmDismissButton item
+         , Element.el [ Element.alignRight] <| doNotDismissButton item
+         ]
+       , noteContentView note.content
+       , noteSourceView note.source
+       , noteVariantView note.variant
+       ]
+
      Item.EditingNote itemId _ noteWithEdits -> editingNoteView itemId item noteWithEdits content.slipbox
      Item.ConfirmDeleteNote _ note -> confirmDeleteNoteView item note content.slipbox
      Item.AddingLinkToNoteForm _ search note maybeNote -> addingLinkToNoteView item search note maybeNote content.slipbox
@@ -643,20 +655,6 @@ toItemView content item =
            ]
 
 -- NOTE ITEM
-
-itemNoteView : Item.Item -> Note.Note -> Slipbox.Slipbox -> ( List ( Element Msg ) )
-itemNoteView item note slipbox =
-  [ Element.row
-    []
-    [ editButton item
-    , deleteButton item
-    , dismissButton item
-    ]
-  , noteContentView <| Note.getContent note
-  , noteSourceView <| Note.getSource note
-  , noteVariantView <| Note.getVariant note
-  , linkedNotesNode item note slipbox
-  ]
 
 linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 linkedNotesNode item note slipbox =
@@ -723,22 +721,6 @@ removeLinkButton item linkedNote link =
     { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
     , label = Element.text "Remove Link"
     }
-
--- DISCARD NOTE ITEM
-
-confirmDiscardNewNoteFormView: Item.Item -> Item.NewNoteContent -> Element Msg
-confirmDiscardNewNoteFormView item note =
-  Element.column
-    []
-    [ Element.row 
-      []
-      [ confirmDismissButton item
-      , doNotDismissButton item
-      ] 
-    , noteContentView note.content
-    , noteSourceView note.source
-    , noteVariantView note.variant
-    ]
 
 -- EDITING NOTE ITEM VIEW
 
@@ -1371,24 +1353,14 @@ submitButton item =
 
 confirmDismissButton : Item.Item -> Element Msg
 confirmDismissButton item =
-  Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.width Element.fill
-    ]
+  smallRedButton
     { onPress = Just <| DismissItem item
     , label = Element.text "Confirm Dismiss"
     }
 
 doNotDismissButton : Item.Item -> Element Msg
 doNotDismissButton item =
-  Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.width Element.fill
-    ]
+  smallOldLavenderButton
     { onPress = Just <| UpdateItem item Slipbox.Cancel
     , label = Element.text "Do Not Dismiss"
     }
