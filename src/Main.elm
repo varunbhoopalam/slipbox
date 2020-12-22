@@ -358,10 +358,10 @@ version = 0.1
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> {title = String.fromFloat <| version, body = [ setupView ]}
-    Parsing -> {title = "TODO", body = []}
-    FailureToParse -> {title = "TODO", body = []}
-    Session content -> {title = "MySlipbox", body = [ sessionView model.deviceViewport content ]}
+    Setup -> { title = String.fromFloat <| version, body = [ setupView ] }
+    Parsing -> { title = "TODO", body = [] }
+    FailureToParse -> { title = "TODO", body = [] }
+    Session content -> { title = "MySlipbox", body = [ sessionView model.deviceViewport content ] }
 
 -- SETUP VIEW
 
@@ -607,80 +607,62 @@ toItemView content item =
           , Element.centerX
           ]
           contents
+    headerContainerLambda =
+      \contents ->
+        Element.row
+          [ Element.width Element.fill
+          , Element.spacingXY 8 0
+          ]
+          contents
   in
   case item of
     Item.Note _ note -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Note"
+      [ headerContainerLambda
+        [ headerText "Note"
         , Element.el [ Element.alignRight ] <| editButton item
         , Element.el [ Element.alignRight ] <| deleteButton item
         , Element.el [ Element.alignRight ] <| dismissButton item
         ]
-      , Element.el [] <| noteContentView <| Note.getContent note
-      , Element.el [] <| noteSourceView <| Note.getSource note
-      , Element.el [] <| noteVariantView <| Note.getVariant note
+      , toNoteRepresentationFromNote note
       , linkedNotesNode item note content.slipbox
       ]
 
 
     Item.NewNote itemId note -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+      [ headerContainerLambda
+        [ headerText "New Note"
         , Element.el [ Element.alignRight ] <| cancelButton item
         , Element.el [ Element.alignRight ] <| chooseSubmitButton item <| Item.noteCanSubmit note
         ]
-      , contentInput item note.content
-      , Element.el []
-        <| sourceInput itemId item note.source <| List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
-      , chooseVariantButtons item note.variant
+      , toEditingNoteRepresentation
+        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source note.variant
       ]
 
 
     Item.ConfirmDiscardNewNoteForm _ note -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "New Note"
+      [ headerContainerLambda
+        [ headerText "New Note"
         , Element.el [ Element.alignRight ] <| confirmDismissButton item
         , Element.el [ Element.alignRight ] <| doNotDismissButton item
         ]
-      , noteContentView note.content
-      , noteSourceView note.source
-      , noteVariantView note.variant
+      , toNoteRepresentation note.content note.source note.variant
       ]
 
 
     Item.EditingNote itemId _ noteWithEdits -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Editing Note"
+      [ headerContainerLambda
+        [ headerText "Editing Note"
         , Element.el [ Element.alignRight ] <| submitButton item
         , Element.el [ Element.alignRight ] <| cancelButton item
         ]
-      , contentInput item <| Note.getContent noteWithEdits
-      , sourceInput itemId item (Note.getSource noteWithEdits)
-        <| List.map Source.getTitle
-          <| Slipbox.getSources Nothing content.slipbox
-      , chooseVariantButtons item <| Note.getVariant noteWithEdits
+      , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
       , linkedNotesNodeNoButtons noteWithEdits content.slipbox
       ]
 
 
     Item.ConfirmDeleteNote _ note -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Note"
+      [ headerContainerLambda
+        [ headerText "Note"
         , Element.el [ Element.alignRight ] <| confirmDeleteButton item
         , Element.el [ Element.alignRight ] <| cancelButton item
         ]
@@ -695,7 +677,7 @@ toItemView content item =
       let
         maybeChoice =
           case maybeNote of
-            Just chosenNoteToLink -> toNoteRepresentation chosenNoteToLink
+            Just chosenNoteToLink -> toNoteRepresentationFromNote chosenNoteToLink
             Nothing -> Element.paragraph [] [ Element.text "Select note to add link to from below" ]
         maybeSubmit =
           case maybeNote of
@@ -703,17 +685,14 @@ toItemView content item =
             Nothing -> Element.none
       in
       itemContainerLambda
-        [ Element.row
-          [ Element.width Element.fill
-          , Element.spacingXY 8 0
-          ]
-          [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Adding Link"
+        [ headerContainerLambda
+          [ headerText "Adding Link"
           , Element.el [ Element.alignRight ] <| cancelButton item
           , Element.el [ Element.alignRight ] maybeSubmit
           ]
         , Element.row
           [ Element.width Element.fill ]
-          [ toNoteRepresentation note
+          [ toNoteRepresentationFromNote note
           , maybeChoice
           ]
         , Element.column
@@ -738,11 +717,8 @@ toItemView content item =
 
 
     Item.Source _ source -> itemContainerLambda
-      [ Element.row
-        [ Element.width Element.fill
-        , Element.spacingXY 8 0
-        ]
-        [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Source"
+      [ headerContainerLambda
+        [ headerText "Source"
         , Element.el [ Element.alignRight ] <| editButton item
         , Element.el [ Element.alignRight ] <| deleteButton item
         , Element.el [ Element.alignRight ] <| dismissButton item
@@ -768,9 +744,8 @@ toItemView content item =
       in
       Element.column
         []
-        [ Element.row
-          []
-          [ Element.text "Confirm Delete Link between these notes"
+        [ headerContainerLambda
+          [ headerText "Confirm Delete Link"
           , submitButton item
           , cancelButton item
           ]
@@ -780,6 +755,10 @@ toItemView content item =
           , noteRepresentation linkedNote
           ]
         ]
+
+headerText : String -> Element Msg
+headerText text =
+  Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text text
 
 linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 linkedNotesNode item note slipbox =
@@ -828,7 +807,7 @@ associatedNotesNode source slipbox =
       , Element.spacingXY 8 0
       , Element.scrollbarY
       ]
-      <| ( Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Associated Notes" ) ::
+      <| ( headerText "Associated Notes" ) ::
       ( List.map toLinkedNoteViewNoButtons associatedNotes )
 
 addLinkButton: Item.Item -> Element Msg
@@ -880,12 +859,38 @@ linkedNotesNodeNoButtons noteWithEdits slipbox =
           <| List.map toLinkedNoteViewNoButtons <| List.map Tuple.first linkedNotes
         ]
 
-toNoteRepresentation : Note.Note -> Element Msg
-toNoteRepresentation note =
+toNoteRepresentationFromNote : Note.Note -> Element Msg
+toNoteRepresentationFromNote note =
+  toNoteRepresentation
+    ( Note.getContent note )
+    ( Note.getSource note )
+    ( Note.getVariant note )
+
+toNoteRepresentation : String -> String -> Note.Variant -> Element Msg
+toNoteRepresentation content source variant =
   Element.column []
-    [ noteContentView <| Note.getContent note
-    , noteSourceView <| Note.getSource note
-    , noteVariantView <| Note.getVariant note
+    [ noteContentView content
+    , noteSourceView source
+    , noteVariantView variant
+    ]
+
+toEditingNoteRepresentationFromItemNoteSlipbox : Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
+toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
+  toEditingNoteRepresentation
+    itemId
+    item
+    ( List.map Source.getTitle <| Slipbox.getSources Nothing slipbox )
+    ( Note.getContent note )
+    ( Note.getSource note )
+    ( Note.getVariant note )
+
+toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
+toEditingNoteRepresentation itemId item titles content source variant =
+  Element.column
+    []
+    [ contentInput item content
+    , sourceInput itemId item source titles
+    , chooseVariantButtons item variant
     ]
 
 toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
@@ -899,7 +904,7 @@ toNoteDetailAddingLinkForm item note =
     , Element.width Element.fill
     ]
     { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
-    , label = toNoteRepresentation note
+    , label = toNoteRepresentationFromNote note
     }
 
 -- NEW SOURCE ITEM VIEW
@@ -1142,18 +1147,18 @@ notesView notes =
     , Element.height <| Element.px 500
     , Element.scrollbarY
     ] 
-    <| List.map toNoteDetail notes
+    <| List.map ( openNoteButton Nothing ) notes
 
-toNoteDetail: Note.Note -> Element Msg
-toNoteDetail note = 
+openNoteButton: ( Maybe Item.Item ) -> Note.Note -> Element Msg
+openNoteButton maybeItemOpenedFrom note =
   Element.el 
     [ Element.paddingXY 8 0, Element.spacingXY 8 8
     , Element.Border.solid, Element.Border.color Color.gray
     , Element.Border.width 4 
     ] 
     <| Element.Input.button []
-      { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
-      , label = toNoteRepresentation note
+      { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
+      , label = toNoteRepresentationFromNote note
       }
 
 sourceTabToolbar: String -> Element Msg
