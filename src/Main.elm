@@ -746,30 +746,40 @@ toItemView content item =
       ]
 
 
-    Item.EditingSource _ _ sourceWithEdits -> editingSourceView item sourceWithEdits content.slipbox
-    Item.ConfirmDeleteSource _ source -> confirmDeleteSourceView item source content.slipbox
-    Item.ConfirmDeleteLink _ note linkedNote _ ->
-      let
-        noteRepresentation = \n ->
-           Element.column []
-             [ noteContentView <| Note.getContent n
-             , noteSourceView <| Note.getSource n
-             , noteVariantView <| Note.getVariant n
-             ]
-      in
-      Element.column
-        []
-        [ headerContainerLambda
-          [ headerText "Confirm Delete Link"
-          , submitButton item
-          , cancelButton item
-          ]
-        , Element.row
-          []
-          [ noteRepresentation note
-          , noteRepresentation linkedNote
-          ]
+    Item.EditingSource _ _ sourceWithEdits -> itemContainerLambda
+      [ headerContainerLambda
+        [ headerText "New Source"
+        , Element.el [ Element.alignRight ] <| submitButton item
+        , Element.el [ Element.alignRight ] <| cancelButton item
         ]
+      , toEditingSourceRepresentationFromItemSource item sourceWithEdits
+      , associatedNotesNode sourceWithEdits content.slipbox
+      ]
+
+
+    Item.ConfirmDeleteSource _ source -> itemContainerLambda
+      [ headerContainerLambda
+        [ headerText "Source"
+        , Element.el [ Element.alignRight ] <| confirmDeleteButton item
+        , Element.el [ Element.alignRight ] <| cancelButton item
+        ]
+      , toSourceRepresentationFromSource source
+      , associatedNotesNode source content.slipbox
+      ]
+
+
+    Item.ConfirmDeleteLink _ note linkedNote _ -> itemContainerLambda
+      [ headerContainerLambda
+        [ headerText "Confirm Delete Link"
+        , Element.el [ Element.alignRight ] <| submitButton item
+        , Element.el [ Element.alignRight ] <| cancelButton item
+        ]
+      , Element.row
+        [ Element.spaceEvenly ]
+        [ toNoteRepresentationFromNote note
+        , toNoteRepresentationFromNote linkedNote
+        ]
+      ]
 
 headerText : String -> Element Msg
 headerText text =
@@ -938,6 +948,14 @@ toSourceRepresentation title author content =
     , noteContentView content
     ]
 
+toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> Element Msg
+toEditingSourceRepresentationFromItemSource item source =
+  toEditingSourceRepresentation
+    item
+    ( Source.getTitle source )
+    ( Source.getAuthor source )
+    ( Source.getContent source )
+
 toEditingSourceRepresentation : Item.Item -> String -> String -> String -> Element Msg
 toEditingSourceRepresentation item title author content =
   Element.column
@@ -945,42 +963,6 @@ toEditingSourceRepresentation item title author content =
     [ titleInput item title
     , authorInput item author
     , contentInput item content
-    ]
-
--- EDITING SOURCE VIEW
-
-editingSourceView: Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
-editingSourceView item source slipbox =
-  Element.column
-    []
-    [ Element.row 
-      []
-      [ submitButton item
-      , cancelButton item
-      ]
-    , titleInput item <| Source.getTitle source
-    , authorInput item <| Source.getAuthor source
-    , contentInput item <| Source.getContent source
-    , Element.column [ Element.scrollbarY ]
-      <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
-    ]
-
--- CONFIRM DELETE SOURCE VIEW
-
-confirmDeleteSourceView: Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
-confirmDeleteSourceView item source slipbox =
-  Element.column
-    []
-    [ Element.row 
-      []
-      [ confirmDeleteButton item
-      , cancelButton item
-      ]
-    , sourceTitleView <| Source.getTitle source
-    , sourceAuthorView <| Source.getAuthor source
-    , noteContentView <| Source.getContent source
-    , Element.column [Element.scrollbarY]
-      <| List.map toLinkedNoteViewNoButtons <| Slipbox.getNotesAssociatedToSource source slipbox
     ]
 
 exploreTabToolbar: String -> Element Msg
