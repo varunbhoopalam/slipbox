@@ -1221,7 +1221,12 @@ createSourceButton : ( Maybe Item.Item ) -> Element Msg
 createSourceButton maybeItem =
   smallOldLavenderButton
     { onPress = Just <| AddItem maybeItem Slipbox.NewSource
-    , label = Element.text "Create Source"
+    , label = Element.el
+      [ Element.centerX
+      , Element.centerY
+      , Element.Font.heavy
+      , Element.Font.color Color.white
+      ] <| Element.text "Create Source"
     }
 
 editButton: Item.Item -> Element Msg
