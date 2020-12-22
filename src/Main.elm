@@ -672,7 +672,9 @@ toItemView content item =
        in
        itemContainerLambda
          [ Element.row
-           []
+           [ Element.width Element.fill
+           , Element.spacingXY 8 0
+           ]
            [ Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text "Adding Link"
            , Element.el [ Element.alignRight ] <| cancelButton item
            ]
@@ -680,10 +682,15 @@ toItemView content item =
            [ Element.width Element.fill ]
            <| toNoteRepresentation note :: choice
          , Element.column
-           []
+           [ Element.height Element.fill, Element.width Element.fill]
            [ searchInput search <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
-           , Element.column [ Element.scrollbarY ]
-             <| List.map (toNoteDetailAddingLinkForm item) <| Slipbox.getNotesThatCanLinkToNote note content.slipbox
+           , Element.column
+             [ Element.width Element.fill
+             , Element.height Element.fill
+             , Element.scrollbarY
+             ]
+             <| List.map (toNoteDetailAddingLinkForm item)
+               <| Slipbox.getNotesThatCanLinkToNote note content.slipbox
            ]
          ]
 
@@ -808,20 +815,24 @@ toNoteRepresentation note =
 
 toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
 toNoteDetailAddingLinkForm item note =
-  Element.el 
+  Element.Input.button
     [ Element.paddingXY 8 0
     , Element.spacingXY 8 0
     , Element.Border.solid
     , Element.Border.color Color.gray
-    , Element.Border.width 4 
-    ] 
-    <| Element.Input.button []
-      { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
-      , label = Element.column [] 
+    , Element.Border.width 4
+    , Element.width Element.fill
+    , Element.height Element.fill
+    ]
+    { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
+    , label =
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill]
         [ Element.paragraph [] [ Element.text <| Note.getContent note]
         , Element.text <| "Source: " ++ (Note.getSource note)
         ]
-      }
+    }
 
 -- SOURCE ITEM VIEW
 
