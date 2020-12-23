@@ -942,6 +942,15 @@ linkedNotesNodeNoButtons noteWithEdits slipbox =
           <| List.map toLinkedNoteViewNoButtons <| List.map Tuple.first linkedNotes
         ]
 
+contentContainer : ( List ( Element Msg ) ) -> Element Msg
+contentContainer contents =
+  Element.column
+    [ Element.padding 8
+    , Element.spacingXY 8 8
+    , Element.width Element.fill
+    ]
+    contents
+
 toNoteRepresentationFromNote : Note.Note -> Element Msg
 toNoteRepresentationFromNote note =
   toNoteRepresentation
@@ -951,10 +960,10 @@ toNoteRepresentationFromNote note =
 
 toNoteRepresentation : String -> String -> Note.Variant -> Element Msg
 toNoteRepresentation content source variant =
-  Element.column []
-    [ noteContentView content
-    , noteSourceView source
-    , noteVariantView variant
+  contentContainer
+    [ Element.el [ Element.width Element.fill] <| noteContentView content
+    , Element.el [ Element.width Element.fill] <| noteSourceView source
+    , Element.el [ Element.width Element.fill] <| noteVariantView variant
     ]
 
 toEditingNoteRepresentationFromItemNoteSlipbox : Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
@@ -969,11 +978,10 @@ toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
 
 toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
 toEditingNoteRepresentation itemId item titles content source variant =
-  Element.column
-    []
-    [ contentInput item content
-    , sourceInput itemId item source titles
-    , chooseVariantButtons item variant
+  contentContainer
+    [ Element.el [ Element.width Element.fill ] <| contentInput item content
+    , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
+    , Element.el [ Element.width Element.fill ] <| chooseVariantButtons item variant
     ]
 
 toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
@@ -999,8 +1007,7 @@ toSourceRepresentationFromSource source =
 
 toSourceRepresentation : String -> String -> String -> Element Msg
 toSourceRepresentation title author content =
-  Element.column
-    []
+  contentContainer
     [ sourceTitleView title
     , sourceAuthorView author
     , noteContentView content
@@ -1016,8 +1023,7 @@ toEditingSourceRepresentationFromItemSource item source =
 
 toEditingSourceRepresentation : Item.Item -> String -> String -> String -> Element Msg
 toEditingSourceRepresentation item title author content =
-  Element.column
-    []
+  contentContainer
     [ titleInput item title
     , authorInput item author
     , contentInput item content
