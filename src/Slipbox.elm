@@ -387,7 +387,6 @@ updateItem item updateAction slipbox =
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray editingNote else i) content.items
             }
 
-        -- TODO: Implement Migrate note sources to new source title if this is wanted behavior
         Item.EditingSource itemId tray _ sourceWithEdits ->
           let
               sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s

@@ -256,7 +256,7 @@ update message model =
 
     FileDownload ->
       case getSlipbox model of
-        Just slipbox -> ( model, File.Download.string "slipbox.slipbox" "text/plain" <| Slipbox.encode slipbox )
+        Just slipbox -> ( model, File.Download.string "slipbox.json" "text/plain" <| Slipbox.encode slipbox )
         Nothing -> ( model, Cmd.none )
 
     Tick _ ->
@@ -368,7 +368,7 @@ setupView =
       , Element.Font.color <| Color.white
       , Element.Font.size 24
       ]
-      [ header
+      [ headerSetupPage
       , Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
@@ -383,8 +383,8 @@ setupView =
 
 topHeaderHeight = 30
 
-header : Element.Element Msg
-header =
+headerSetupPage : Element.Element Msg
+headerSetupPage =
   Element.el
     [ Element.height <| Element.px topHeaderHeight
     , Element.width Element.fill
@@ -395,6 +395,32 @@ header =
     <| Element.el [ Element.centerX, Element.centerY ]
       <| Element.text
         <| "Slipbox.io Version " ++ ( String.fromFloat version )
+
+header : Element.Element Msg
+header =
+  let
+    versionText = Element.el [ Element.centerX, Element.centerY ]
+      <| Element.text <| "Slipbox.io Version " ++ ( String.fromFloat version )
+  in
+  Element.row
+    [ Element.height <| Element.px topHeaderHeight
+    , Element.width Element.fill
+    , Element.Background.color Color.ebonyRegular
+    , Element.Font.color <| Color.white
+    , Element.Font.size 24
+    , Element.inFront versionText
+    , Element.paddingXY 4 0
+    ]
+    [ Element.Input.button
+      [ Element.Background.color Color.indianred
+      , Element.mouseOver
+          [ Element.Background.color Color.thistle ]
+      , Element.paddingXY 4 0
+      , Element.alignRight
+      , Element.height Element.fill
+      ]
+      { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
+    ]
 
 startNewSlipboxButton : Element.Element Msg
 startNewSlipboxButton =
