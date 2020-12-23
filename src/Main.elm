@@ -381,10 +381,12 @@ setupView =
         ]
       ]
 
+topHeaderHeight = 30
+
 header : Element.Element Msg
 header =
   Element.el
-    [ Element.height <| Element.px 30
+    [ Element.height <| Element.px topHeaderHeight
     , Element.width Element.fill
     , Element.Background.color Color.ebonyRegular
     , Element.Font.color <| Color.white
@@ -445,11 +447,11 @@ aboutButton =
 sessionView : ( Int, Int ) -> Content -> Html.Html Msg
 sessionView deviceViewport content =
   Element.layout 
-    [] 
+    [ Element.inFront header]
     <| Element.column 
-      [ Element.width Element.fill]
-      [ header
-      , tabHeader content.tab
+      [ Element.width Element.fill
+      , Element.moveDown <| toFloat topHeaderHeight ]
+      [ tabHeader content.tab
       , tabView deviceViewport content
       , itemsView content
       ]
