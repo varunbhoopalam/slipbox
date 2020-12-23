@@ -414,12 +414,11 @@ aboutButton =
 downloadButton : Element Msg
 downloadButton =
   Element.Input.button
-    [ Element.Background.color Color.white
-    , Element.Font.color Color.black
-    , Element.paddingXY 4 0
+    [ Element.paddingXY 4 0
     , Element.alignRight
-    --, Element.height Element.fill
     , Element.Border.rounded 10
+    , Element.Border.color Color.white
+    , Element.Border.width 2
     ]
     { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
 
