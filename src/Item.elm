@@ -11,6 +11,10 @@ module Item exposing
   , NewSourceContent
   , noteCanSubmit
   , sourceCanSubmit
+  , openTray
+  , closeTray
+  , ButtonTray
+  , isTrayOpen
   )
 
 import Note
@@ -20,20 +24,22 @@ import IdGenerator exposing (IdGenerator)
 import Link
 
 type Item 
-  = Note ItemId Note.Note
-  | Source ItemId Source.Source
-  | NewNote ItemId NewNoteContent
-  | NewSource ItemId NewSourceContent
-  | EditingNote ItemId Note.Note Note.Note
-  | EditingSource ItemId Source.Source Source.Source
-  | AddingLinkToNoteForm ItemId String Note.Note (Maybe Note.Note)
-  | ConfirmDiscardNewNoteForm ItemId NewNoteContent
-  | ConfirmDiscardNewSourceForm ItemId NewSourceContent
-  | ConfirmDeleteNote ItemId Note.Note
-  | ConfirmDeleteSource ItemId Source.Source
-  | ConfirmDeleteLink ItemId Note.Note Note.Note Link.Link
+  = Note ItemId ButtonTray Note.Note
+  | Source ItemId ButtonTray Source.Source
+  | NewNote ItemId ButtonTray NewNoteContent
+  | NewSource ItemId ButtonTray NewSourceContent
+  | EditingNote ItemId ButtonTray Note.Note Note.Note
+  | EditingSource ItemId ButtonTray Source.Source Source.Source
+  | AddingLinkToNoteForm ItemId ButtonTray String Note.Note (Maybe Note.Note)
+  | ConfirmDiscardNewNoteForm ItemId ButtonTray NewNoteContent
+  | ConfirmDiscardNewSourceForm ItemId ButtonTray NewSourceContent
+  | ConfirmDeleteNote ItemId ButtonTray Note.Note
+  | ConfirmDeleteSource ItemId ButtonTray Source.Source
+  | ConfirmDeleteLink ItemId ButtonTray Note.Note Note.Note Link.Link
 
 type alias ItemId = Int
+
+type ButtonTray = Open | Closed
 
 type alias NewNoteContent =
   { content : String
@@ -52,14 +58,14 @@ openNote generator note =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
   in
-  ( Note id note, idGenerator )
+  ( Note id Closed note, idGenerator )
   
 openSource : IdGenerator.IdGenerator -> Source.Source -> ( Item, IdGenerator.IdGenerator)
 openSource generator source =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
   in
-  ( Source id source, idGenerator )
+  ( Source id Closed source, idGenerator )
 
 newNote : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
 newNote generator =
@@ -67,7 +73,7 @@ newNote generator =
       ( id, idGenerator ) = IdGenerator.generateId generator
       emptyContent = NewNoteContent "" "" Note.Regular
   in
-  ( NewNote id emptyContent, idGenerator )
+  ( NewNote id Closed emptyContent, idGenerator )
 
 noteCanSubmit : NewNoteContent -> Bool
 noteCanSubmit newNoteContent =
@@ -79,7 +85,7 @@ newSource generator =
       ( id, idGenerator ) = IdGenerator.generateId generator
       emptyContent = NewSourceContent "" "" ""
   in
-  ( NewSource id emptyContent, idGenerator )
+  ( NewSource id Closed emptyContent, idGenerator )
 
 sourceCanSubmit : NewSourceContent -> Bool
 sourceCanSubmit newSourceContent =
@@ -98,33 +104,77 @@ is item1 item2 =
 getId : Item -> Int
 getId item =
   case item of
-    Note id _ -> id
-    Source id _  -> id
-    NewNote id _  -> id
-    NewSource id _  -> id
-    EditingNote id _ _ -> id
-    EditingSource id _ _ -> id
-    AddingLinkToNoteForm id _ _ _ -> id
-    ConfirmDiscardNewNoteForm id _ -> id
-    ConfirmDiscardNewSourceForm id _ -> id
-    ConfirmDeleteNote id _ -> id
-    ConfirmDeleteSource id _ -> id
-    ConfirmDeleteLink id _ _ _ -> id
+    Note id _ _ -> id
+    Source id _ _  -> id
+    NewNote id _ _  -> id
+    NewSource id _ _  -> id
+    EditingNote id _ _ _ -> id
+    EditingSource id _ _ _ -> id
+    AddingLinkToNoteForm id _ _ _ _ -> id
+    ConfirmDiscardNewNoteForm id _ _ -> id
+    ConfirmDiscardNewSourceForm id _ _ -> id
+    ConfirmDeleteNote id _ _ -> id
+    ConfirmDeleteSource id _ _ -> id
+    ConfirmDeleteLink id _ _ _ _ -> id
 
 getNote : Item -> ( Maybe Note.Note )
 getNote item =
   case item of
-    Note _ note -> Just note
-    EditingNote _ note _ -> Just note
-    AddingLinkToNoteForm _ _ note _ -> Just note
-    ConfirmDeleteNote _ note -> Just note
-    ConfirmDeleteLink _ note _ _ -> Just note
+    Note _ _ note -> Just note
+    EditingNote _ _ note _ -> Just note
+    AddingLinkToNoteForm _ _ _ note _ -> Just note
+    ConfirmDeleteNote _ _ note -> Just note
+    ConfirmDeleteLink _ _ note _ _ -> Just note
     _ -> Nothing
 
 getSource : Item -> ( Maybe Source.Source )
 getSource item =
   case item of
-    Source _ source -> Just source
-    EditingSource _ source _ -> Just source
-    ConfirmDeleteSource _ source -> Just source
+    Source _ _ source -> Just source
+    EditingSource _ _ source _ -> Just source
+    ConfirmDeleteSource _ _ source -> Just source
     _ -> Nothing
+
+getButtonTray : Item -> ButtonTray
+getButtonTray item =
+  case item of
+    Note _ tray _ -> tray
+    Source _ tray _  -> tray
+    NewNote _ tray _  -> tray
+    NewSource _ tray _  -> tray
+    EditingNote _ tray _ _ -> tray
+    EditingSource _ tray _ _ -> tray
+    AddingLinkToNoteForm _ tray _ _ _ -> tray
+    ConfirmDiscardNewNoteForm _ tray _ -> tray
+    ConfirmDiscardNewSourceForm _ tray _ -> tray
+    ConfirmDeleteNote _ tray _ -> tray
+    ConfirmDeleteSource _ tray _ -> tray
+    ConfirmDeleteLink _ tray _ _ _ -> tray
+
+openTray : Item -> Item
+openTray item =
+  setTray Open item
+
+closeTray : Item -> Item
+closeTray item =
+  setTray Closed item
+
+isTrayOpen : Item -> Bool
+isTrayOpen item =
+  getButtonTray item == Open
+
+setTray : ButtonTray -> Item -> Item
+setTray tray item =
+  case item of
+    Note id _ note -> Note id tray note
+    Source id _ source -> Source id tray source
+    NewNote id _ content -> NewNote id tray content
+    NewSource id _ content -> NewSource id tray content
+    EditingNote id _ note noteWithEdits -> EditingNote id tray note noteWithEdits
+    EditingSource id _ source sourceWithEdits -> EditingSource id tray source sourceWithEdits
+    AddingLinkToNoteForm id _ input note maybeNote -> AddingLinkToNoteForm id tray input note maybeNote
+    ConfirmDiscardNewNoteForm id _ content -> ConfirmDiscardNewNoteForm id tray content
+    ConfirmDiscardNewSourceForm id _ content -> ConfirmDiscardNewSourceForm id tray content
+    ConfirmDeleteNote id _ note -> ConfirmDeleteNote id tray note
+    ConfirmDeleteSource id _ source -> ConfirmDeleteSource id tray source
+    ConfirmDeleteLink id _ note linkedNote link -> ConfirmDeleteLink id tray note linkedNote link

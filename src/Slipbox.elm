@@ -209,6 +209,8 @@ type UpdateAction
   | PromptConfirmRemoveLink Note.Note Link.Link
   | Cancel
   | Submit
+  | OpenTray
+  | CloseTray
 
 updateItem : Item.Item -> UpdateAction -> Slipbox -> Slipbox
 updateItem item updateAction slipbox =
@@ -220,122 +222,122 @@ updateItem item updateAction slipbox =
   case updateAction of
     UpdateContent input ->
       case item of
-        Item.EditingNote itemId originalNote noteWithEdits ->
-          update <| Item.EditingNote itemId originalNote 
+        Item.EditingNote itemId tray originalNote noteWithEdits ->
+          update <| Item.EditingNote itemId tray originalNote
             <| Note.updateContent input noteWithEdits
-        Item.EditingSource itemId originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId originalSource
+        Item.EditingSource itemId tray originalSource sourceWithEdits ->
+          update <| Item.EditingSource itemId tray originalSource
             <| Source.updateContent input sourceWithEdits
-        Item.NewNote itemId newNoteContent ->
-          update <| Item.NewNote itemId { newNoteContent | content = input }
-        Item.NewSource itemId newSourceContent ->
-          update <| Item.NewSource itemId { newSourceContent | content = input }
+        Item.NewNote itemId tray newNoteContent ->
+          update <| Item.NewNote itemId tray { newNoteContent | content = input }
+        Item.NewSource itemId tray newSourceContent ->
+          update <| Item.NewSource itemId tray { newSourceContent | content = input }
         _ -> slipbox
 
     UpdateSource input ->
       case item of
-        Item.EditingNote itemId originalNote noteWithEdits ->
+        Item.EditingNote itemId tray originalNote noteWithEdits ->
           update
-            <| Item.EditingNote itemId originalNote
+            <| Item.EditingNote itemId tray originalNote
               <| Note.updateSource input noteWithEdits
-        Item.NewNote itemId newNoteContent ->
-          update <| Item.NewNote itemId { newNoteContent | source = input }
+        Item.NewNote itemId tray newNoteContent ->
+          update <| Item.NewNote itemId tray { newNoteContent | source = input }
         _ -> slipbox
 
     UpdateVariant input ->
       case item of
-        Item.EditingNote itemId originalNote noteWithEdits ->
-          update <|Item.EditingNote itemId originalNote 
+        Item.EditingNote itemId tray originalNote noteWithEdits ->
+          update <|Item.EditingNote itemId tray originalNote
             <| Note.updateVariant input noteWithEdits
-        Item.NewNote itemId newNoteContent ->
-          update <| Item.NewNote itemId { newNoteContent | variant = input }
+        Item.NewNote itemId tray newNoteContent ->
+          update <| Item.NewNote itemId tray { newNoteContent | variant = input }
         _ -> slipbox
 
     UpdateTitle input ->
       case item of
-        Item.EditingSource itemId originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId originalSource 
+        Item.EditingSource itemId tray originalSource sourceWithEdits ->
+          update <| Item.EditingSource itemId tray originalSource
             <| Source.updateTitle input sourceWithEdits
-        Item.NewSource itemId newSourceContent ->
-          update <| Item.NewSource itemId { newSourceContent | title = input }
+        Item.NewSource itemId tray newSourceContent ->
+          update <| Item.NewSource itemId tray { newSourceContent | title = input }
         _ -> slipbox
 
     UpdateAuthor input ->
       case item of
-        Item.EditingSource itemId originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId originalSource 
+        Item.EditingSource itemId tray originalSource sourceWithEdits ->
+          update <| Item.EditingSource itemId tray originalSource
             <| Source.updateAuthor input sourceWithEdits
-        Item.NewSource itemId newSourceContent ->
-          update <| Item.NewSource itemId { newSourceContent | author = input }
+        Item.NewSource itemId tray newSourceContent ->
+          update <| Item.NewSource itemId tray { newSourceContent | author = input }
         _ -> slipbox
 
     UpdateSearch input ->
       case item of 
-        Item.AddingLinkToNoteForm itemId _ note maybeNote ->
-          update <| Item.AddingLinkToNoteForm itemId input note maybeNote
+        Item.AddingLinkToNoteForm itemId tray _ note maybeNote ->
+          update <| Item.AddingLinkToNoteForm itemId tray input note maybeNote
         _ -> slipbox
 
     AddLink noteToBeAdded ->
       case item of 
-        Item.AddingLinkToNoteForm itemId search note _ ->
-          update <| Item.AddingLinkToNoteForm itemId search note <| Just noteToBeAdded
+        Item.AddingLinkToNoteForm itemId tray search note _ ->
+          update <| Item.AddingLinkToNoteForm itemId tray search note <| Just noteToBeAdded
         _ -> slipbox
 
     Edit ->
       case item of
-        Item.Note itemId note ->
-          update <| Item.EditingNote itemId note note
-        Item.Source itemId source ->
-          update <| Item.EditingSource itemId source source
+        Item.Note itemId tray note ->
+          update <| Item.EditingNote itemId tray note note
+        Item.Source itemId tray source ->
+          update <| Item.EditingSource itemId tray source source
         _ -> slipbox
             
     PromptConfirmDelete ->
       case item of
-        Item.Note itemId note ->
-          update <| Item.ConfirmDeleteNote itemId note
-        Item.Source itemId source ->
-          update <| Item.ConfirmDeleteSource itemId source
+        Item.Note itemId tray note ->
+          update <| Item.ConfirmDeleteNote itemId tray note
+        Item.Source itemId tray source ->
+          update <| Item.ConfirmDeleteSource itemId tray source
         _ -> slipbox
 
     AddLinkForm ->
       case item of 
-        Item.Note itemId note ->
-          update <| Item.AddingLinkToNoteForm itemId "" note Nothing
+        Item.Note itemId tray note ->
+          update <| Item.AddingLinkToNoteForm itemId tray "" note Nothing
         _ -> slipbox
     
     PromptConfirmRemoveLink linkedNote link ->
       case item of 
-        Item.Note itemId note ->
-          update <| Item.ConfirmDeleteLink itemId note linkedNote link
+        Item.Note itemId tray note ->
+          update <| Item.ConfirmDeleteLink itemId tray note linkedNote link
         _ -> slipbox
     
     Cancel ->
       case item of
-        Item.NewNote itemId note ->
-          update <| Item.ConfirmDiscardNewNoteForm itemId note 
-        Item.ConfirmDiscardNewNoteForm itemId note ->
-          update <| Item.NewNote itemId note
-        Item.EditingNote itemId originalNote noteWithEdits ->
-          update <| Item.Note itemId originalNote
-        Item.ConfirmDeleteNote itemId note ->
-          update <| Item.Note itemId note
-        Item.AddingLinkToNoteForm itemId search note maybeNote ->
-          update <| Item.Note itemId note
-        Item.NewSource itemId source ->
-          update <| Item.ConfirmDiscardNewSourceForm itemId source
-        Item.ConfirmDiscardNewSourceForm itemId source ->
-          update <| Item.NewSource itemId source
-        Item.EditingSource itemId originalSource sourceWithEdits ->
-          update <| Item.Source itemId originalSource
-        Item.ConfirmDeleteSource itemId source ->
-          update <| Item.Source itemId source
-        Item.ConfirmDeleteLink itemId note linkedNote link ->
-          update <| Item.Note itemId note
+        Item.NewNote itemId tray note ->
+          update <| Item.ConfirmDiscardNewNoteForm itemId tray note
+        Item.ConfirmDiscardNewNoteForm itemId tray note ->
+          update <| Item.NewNote itemId tray note
+        Item.EditingNote itemId tray originalNote noteWithEdits ->
+          update <| Item.Note itemId tray originalNote
+        Item.ConfirmDeleteNote itemId tray note ->
+          update <| Item.Note itemId tray note
+        Item.AddingLinkToNoteForm itemId tray search note maybeNote ->
+          update <| Item.Note itemId tray note
+        Item.NewSource itemId tray source ->
+          update <| Item.ConfirmDiscardNewSourceForm itemId tray source
+        Item.ConfirmDiscardNewSourceForm itemId tray source ->
+          update <| Item.NewSource itemId tray source
+        Item.EditingSource itemId tray originalSource sourceWithEdits ->
+          update <| Item.Source itemId tray originalSource
+        Item.ConfirmDeleteSource itemId tray source ->
+          update <| Item.Source itemId tray source
+        Item.ConfirmDeleteLink itemId tray note linkedNote link ->
+          update <| Item.Note itemId tray note
         _ -> slipbox
 
     Submit ->
       case item of
-        Item.ConfirmDeleteNote _ noteToDelete ->
+        Item.ConfirmDeleteNote _ _ noteToDelete ->
           let
             links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
             (state, notes) = simulation (List.filter (Note.is noteToDelete) content.notes) links
@@ -347,13 +349,13 @@ updateItem item updateAction slipbox =
             , state = state
             }
 
-        Item.ConfirmDeleteSource _ source ->
+        Item.ConfirmDeleteSource _ _ source ->
           Slipbox
             { content | sources = List.filter (Source.is source) content.sources
             , items = List.filter (Item.is item) content.items
             }
 
-        Item.NewNote itemId noteContent ->
+        Item.NewNote itemId tray noteContent ->
           let
               (note, idGenerator) = Note.create content.idGenerator
                 <| { content = noteContent.content, source = noteContent.source, variant = noteContent.variant }
@@ -361,41 +363,41 @@ updateItem item updateAction slipbox =
           in
           Slipbox
             { content | notes = notes
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
             , idGenerator = idGenerator
             }
 
-        Item.NewSource itemId sourceContent ->
+        Item.NewSource itemId tray sourceContent ->
           let
               ( source, generator ) = Source.createSource content.idGenerator sourceContent
           in
           Slipbox
             { content | sources = source :: content.sources
-            , items = List.map (\i -> if Item.is item i then Item.Source itemId source else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Source itemId tray source else i) content.items
             , idGenerator = generator
             }
 
-        Item.EditingNote itemId originalNote editingNote ->
+        Item.EditingNote itemId tray originalNote editingNote ->
           let
               noteUpdateLambda = \n -> if Note.is n editingNote then updateNoteEdits n editingNote else n
           in
           Slipbox
             { content | notes = List.map noteUpdateLambda content.notes
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId editingNote else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray editingNote else i) content.items
             }
 
         -- TODO: Implement Migrate note sources to new source title if this is wanted behavior
-        Item.EditingSource itemId _ sourceWithEdits ->
+        Item.EditingSource itemId tray _ sourceWithEdits ->
           let
               sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s
           in
           Slipbox
             { content | sources = List.map sourceUpdateLambda content.sources
-            , items = List.map (\i -> if Item.is item i then Item.Source itemId sourceWithEdits else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Source itemId tray sourceWithEdits else i) content.items
             }
 
-        Item.AddingLinkToNoteForm itemId _ note maybeNoteToBeLinked ->
+        Item.AddingLinkToNoteForm itemId tray _ note maybeNoteToBeLinked ->
           case maybeNoteToBeLinked of
             Just noteToBeLinked ->
               let
@@ -406,13 +408,13 @@ updateItem item updateAction slipbox =
               Slipbox
                 { content | notes = notes
                 , links = links
-                , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+                , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
                 , state = state
                 , idGenerator = idGenerator
                 }
             _ -> slipbox
 
-        Item.ConfirmDeleteLink itemId note linkedNote link ->
+        Item.ConfirmDeleteLink itemId tray note linkedNote link ->
           let
              links = List.filter (Link.is link) content.links
              (state, notes) = simulation content.notes links
@@ -420,10 +422,24 @@ updateItem item updateAction slipbox =
           Slipbox
             { content | notes = notes
             , links = links
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId note else i) content.items
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
             }
         _ -> slipbox
+
+    OpenTray ->
+      Slipbox { content | items = List.map ( updateLambda Item.is Item.openTray item ) content.items }
+
+    CloseTray ->
+      Slipbox { content | items = List.map ( updateLambda Item.is Item.closeTray item ) content.items }
+
+updateLambda : ( a -> a -> Bool ) -> ( a -> a ) -> a -> ( a -> a )
+updateLambda is update target =
+  \maybeTarget ->
+    if is target maybeTarget then
+      update maybeTarget
+    else
+      maybeTarget
 
 tick : Slipbox -> Slipbox
 tick slipbox =
@@ -481,11 +497,11 @@ buildItemList itemToMatch itemToAdd =
 deleteNoteItemStateChange : Note.Note -> Item.Item -> Item.Item
 deleteNoteItemStateChange deletedNote item =
   case item of
-    Item.AddingLinkToNoteForm itemId search note maybeNoteToBeLinked ->
+    Item.AddingLinkToNoteForm itemId tray search note maybeNoteToBeLinked ->
       case maybeNoteToBeLinked of
         Just noteToBeLinked -> 
           if Note.is noteToBeLinked deletedNote then
-            Item.AddingLinkToNoteForm itemId search note Nothing
+            Item.AddingLinkToNoteForm itemId tray search note Nothing
           else 
             item
         _ -> item   

@@ -134,6 +134,8 @@ type Msg
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
+  | OpenTray Item.Item
+  | CloseTray Item.Item -- Do I need a close tray action or does opening one tray close all others?
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -582,9 +584,6 @@ itemsView content =
         ] <| Element.text "Workspace" )
         :: items
 
--- TODO: add div between each item that on hover shows buttons to create an item
--- TODO: figure out if it's necessary to have this same div but always visible either at beginning or end of item list
-
 itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
 itemHeaderBuilder contents =
   Element.row
@@ -640,44 +639,47 @@ toItemView content item =
           , Element.height Element.fill
           , Element.centerX
           ]
-          contents
+          <| List.concat
+            [ contents
+            , buttonTray <| Item.isTrayOpen
+            ]
   in
   case item of
-    Item.Note _ note -> itemContainerLambda
+    Item.Note _ _ note -> itemContainerLambda
       [ normalItemHeader "Note" item
       , toNoteRepresentationFromNote note
       , linkedNotesNode item note content.slipbox
       ]
 
 
-    Item.NewNote itemId note -> itemContainerLambda
+    Item.NewNote itemId _ note -> itemContainerLambda
       [ newItemHeader "New Note" ( Item.noteCanSubmit note ) item
       , toEditingNoteRepresentation
         itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source note.variant
       ]
 
 
-    Item.ConfirmDiscardNewNoteForm _ note -> itemContainerLambda
+    Item.ConfirmDiscardNewNoteForm _ _ note -> itemContainerLambda
       [ deleteItemHeader "Discard New Note" item
       , toNoteRepresentation note.content note.source note.variant
       ]
 
 
-    Item.EditingNote itemId _ noteWithEdits -> itemContainerLambda
+    Item.EditingNote itemId _ _ noteWithEdits -> itemContainerLambda
       [ editItemHeader "Editing Note" item
       , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
       , linkedNotesNodeNoButtons noteWithEdits content.slipbox
       ]
 
 
-    Item.ConfirmDeleteNote _ note -> itemContainerLambda
+    Item.ConfirmDeleteNote _ _ note -> itemContainerLambda
       [ deleteItemHeader "Delete Note" item
       , toNoteRepresentationFromNote note
       , linkedNotesNodeNoButtons note content.slipbox
       ]
 
 
-    Item.AddingLinkToNoteForm _ search note maybeNote ->
+    Item.AddingLinkToNoteForm _ _ search note maybeNote ->
       let
         maybeChoice =
           case maybeNote of
@@ -712,40 +714,40 @@ toItemView content item =
         ]
 
 
-    Item.Source _ source -> itemContainerLambda
+    Item.Source _ _ source -> itemContainerLambda
       [ normalItemHeader "Source" item
       , toSourceRepresentationFromSource source
       , associatedNotesNode source content.slipbox
       ]
 
 
-    Item.NewSource _ source -> itemContainerLambda
+    Item.NewSource _ _ source -> itemContainerLambda
       [ newItemHeader "New Source" ( Item.sourceCanSubmit source ) item
       , toEditingSourceRepresentation item source.title source.author source.content
       ]
 
 
-    Item.ConfirmDiscardNewSourceForm _ source -> itemContainerLambda
+    Item.ConfirmDiscardNewSourceForm _ _ source -> itemContainerLambda
       [ deleteItemHeader "Confirm Discard New Source" item
       , toSourceRepresentation source.title source.author source.content
       ]
 
 
-    Item.EditingSource _ _ sourceWithEdits -> itemContainerLambda
+    Item.EditingSource _ _ _ sourceWithEdits -> itemContainerLambda
       [ editItemHeader "Editing Source" item
       , toEditingSourceRepresentationFromItemSource item sourceWithEdits
       , associatedNotesNode sourceWithEdits content.slipbox
       ]
 
 
-    Item.ConfirmDeleteSource _ source -> itemContainerLambda
+    Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
       [ deleteItemHeader "Confirm Delete Source" item
       , toSourceRepresentationFromSource source
       , associatedNotesNode source content.slipbox
       ]
 
 
-    Item.ConfirmDeleteLink _ note linkedNote _ -> itemContainerLambda
+    Item.ConfirmDeleteLink _ _ note linkedNote _ -> itemContainerLambda
       [ deleteItemHeader "Confirm Delete Link" item
       , Element.row
         [ Element.spaceEvenly ]
