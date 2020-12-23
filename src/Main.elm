@@ -6,6 +6,7 @@ import Browser.Navigation
 import Color
 import Element.Background
 import Element.Border
+import Element.Events
 import Element.Font
 import Element.Input
 import File.Download
@@ -134,8 +135,6 @@ type Msg
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
-  | OpenTray Item.Item
-  | CloseTray Item.Item -- Do I need a close tray action or does opening one tray close all others?
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -571,7 +570,7 @@ itemsView content =
     Element.column 
       [ Element.centerX
       , Element.padding 8
-      , Element.spacingXY 24 24
+      , Element.spacingXY 8 8
       , Element.width Element.fill
       , Element.height Element.fill
       ]
@@ -631,18 +630,22 @@ toItemView content item =
     itemContainerLambda =
       \contents ->
         Element.column
-          [ Element.Border.width 3
-          , Element.Border.color Color.heliotropeGrayRegular
-          , Element.padding 8
-          , Element.spacingXY 8 8
-          , Element.width <| Element.maximum 800 Element.fill
-          , Element.height Element.fill
+          [ Element.spacingXY 4 4
           , Element.centerX
+          , Element.width <| Element.maximum 800 Element.fill
+          , Element.height Element.shrink
           ]
-          <| List.concat
-            [ contents
-            , buttonTray <| Item.isTrayOpen
+          [ Element.column
+            [ Element.Border.width 3
+            , Element.Border.color Color.heliotropeGrayRegular
+            , Element.padding 8
+            , Element.spacingXY 8 8
+            , Element.width Element.fill
+            , Element.centerX
             ]
+            contents
+          , buttonTray item
+          ]
   in
   case item of
     Item.Note _ _ note -> itemContainerLambda
@@ -755,6 +758,32 @@ toItemView content item =
         , toNoteRepresentationFromNote linkedNote
         ]
       ]
+
+buttonTray : Item.Item -> Element Msg
+buttonTray item =
+  let
+    tray =
+      if Item.isTrayOpen item then
+        Element.row
+          [ Element.width Element.fill
+          , Element.padding 8
+          , Element.spacingXY 8 8
+          , Element.height Element.fill
+          ]
+          [ createNoteButton <| Just item
+          , createSourceButton <| Just item
+          ]
+      else
+        Element.el
+          [ Element.height <| Element.minimum 8 Element.fill ]
+          Element.none
+  in
+  Element.el
+    [ Element.Events.onMouseEnter <| UpdateItem item Slipbox.OpenTray
+    , Element.Events.onMouseLeave <| UpdateItem item Slipbox.CloseTray
+    , Element.width Element.fill
+    ]
+    tray
 
 headerText : String -> Element Msg
 headerText text =
