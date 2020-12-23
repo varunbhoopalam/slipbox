@@ -411,6 +411,18 @@ aboutButton =
     , label = Element.text "About"
     }
 
+downloadButton : Element Msg
+downloadButton =
+  Element.Input.button
+    [ Element.Background.color Color.white
+    , Element.Font.color Color.black
+    , Element.paddingXY 4 0
+    , Element.alignRight
+    --, Element.height Element.fill
+    , Element.Border.rounded 10
+    ]
+    { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
+
 
 header : Element.Element Msg
 header =
@@ -429,15 +441,7 @@ header =
     , Element.spacingXY 8 0
     ]
     [ aboutButton
-    , Element.Input.button
-      [ Element.Background.color Color.indianred
-      , Element.mouseOver
-          [ Element.Background.color Color.thistle ]
-      , Element.paddingXY 4 0
-      , Element.alignRight
-      , Element.height Element.fill
-      ]
-      { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
+    , downloadButton
     ]
 
 startNewSlipboxButton : Element.Element Msg
