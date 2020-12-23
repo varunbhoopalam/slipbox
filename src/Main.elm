@@ -125,7 +125,6 @@ type Msg
   | StartMoveView Viewport.MouseEvent
   | MoveView Viewport.MouseEvent
   | StopMoveView
-  | ZoomView Viewport.WheelEvent
   | GotViewport Browser.Dom.Viewport
   | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
@@ -207,12 +206,6 @@ update message model =
         Nothing -> ( model, Cmd.none )
     
     StopMoveView -> updateExploreTabViewportLambda Viewport.stopMove
-
-    -- TODO
-    ZoomView wheelEvent -> ( model, Cmd.none )
-      --case getSlipbox model of
-      --  Just slipbox -> updateExploreTabViewportLambda <| Viewport.changeZoom wheelEvent <| Slipbox.getNotes Nothing slipbox
-      --  Nothing -> ( model, Cmd.none )
     
     GotViewport viewport ->
       let
@@ -1004,8 +997,6 @@ graphAttributes ( width, _ ) viewport =
         , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
-        -- TODO
-        --, Svg.Events.on "wheel" <| Json.Decode.map ZoomView wheelEventDecoder
       ]
 
 toGraphNote: Note.Note -> Svg.Svg Msg

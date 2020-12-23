@@ -9,30 +9,32 @@ module Viewport exposing
   , startMove
   , move
   , stopMove
-  --, changeZoom
   , updateSvgContainerDimensions
   , MouseEvent
-  , WheelEvent
   )
 
 import Note
 
 type Viewport = Viewport Info
+
 getInfo : Viewport -> Info
 getInfo viewport =
   case viewport of 
     Viewport info -> info
-type alias Info = 
+
+type alias Info =
   { state : State
   , viewbox : Viewbox
   }
+
 type alias MouseEvent =
   { offsetX : Int
   , offsetY : Int
   }
-type alias WheelEvent = Int
+
 type State = Moving MouseEvent | Stationary
-type alias Viewbox = 
+
+type alias Viewbox =
   { minX: Int
   , minY: Int
   , width: Int
@@ -123,10 +125,7 @@ move currentMouseEvent notes viewport =
     Moving previousMouseEvent ->
       case maybeExtremes of
         Just extremes ->
-          if allNotesInView extremes info.viewbox then
-            viewport
-          else
-            Viewport { info | viewbox = shiftViewbox previousMouseEvent currentMouseEvent extremes info.viewbox }
+          Viewport { info | viewbox = shiftViewbox previousMouseEvent currentMouseEvent extremes info.viewbox }
         Nothing -> viewport
     _ -> viewport
 
@@ -139,10 +138,6 @@ stopMove viewport =
     Moving _ -> Viewport { info | state = Stationary }
     _ -> viewport
 
--- TODO
--- changeZoom : WheelEvent -> ( List Note.Note ) -> Viewport -> Viewport
-
--- TODO
 updateSvgContainerDimensions : ( Int, Int ) -> Viewport -> Viewport
 updateSvgContainerDimensions ( width, height ) viewport =
   case viewport of
@@ -150,7 +145,7 @@ updateSvgContainerDimensions ( width, height ) viewport =
       let
         viewbox = info.viewbox
       in
-      Viewport { info | viewbox = { viewbox | width = width } }
+      Viewport { info | viewbox = { viewbox | width = width, height = height } }
 
 
 -- HELPER
@@ -208,7 +203,7 @@ shiftViewbox currentMouseEvent previousMouseEvent extremes viewbox =
   in
   { viewbox | minX = shiftPointWithBounds xMinBound xMaxBound <| viewbox.minX - xChange
   , minY = shiftPointWithBounds yMinBound yMaxBound <| viewbox.minY - yChange
-  } 
+  }
 
 shiftPointWithBounds : Int -> Int -> Int -> Int
 shiftPointWithBounds lowerBound upperBound pointAfterShift =
