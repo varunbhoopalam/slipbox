@@ -1390,7 +1390,7 @@ submitButton item =
 confirmButton : Item.Item -> Element Msg
 confirmButton item =
   smallRedButton
-    { onPress = Just <| DismissItem item
+    { onPress = Just <| UpdateItem item Slipbox.Submit
     , label = Element.text "Confirm"
     }
 

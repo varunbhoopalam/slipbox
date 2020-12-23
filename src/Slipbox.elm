@@ -340,19 +340,20 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteNote _ _ noteToDelete ->
           let
             links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-            (state, notes) = simulation (List.filter (Note.is noteToDelete) content.notes) links
+            notesWithDeletedNoteRemoved = List.filter (isNotLambda Note.is noteToDelete) content.notes
+            (state, notes) = simulation notesWithDeletedNoteRemoved links
           in
           Slipbox
             { content | notes = notes
             , links = links
-            , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (Item.is item) content.items
+            , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (isNotLambda Item.is item) content.items
             , state = state
             }
 
         Item.ConfirmDeleteSource _ _ source ->
           Slipbox
-            { content | sources = List.filter (Source.is source) content.sources
-            , items = List.filter (Item.is item) content.items
+            { content | sources = List.filter (isNotLambda Source.is source) content.sources
+            , items = List.filter (isNotLambda Item.is item) content.items
             }
 
         Item.NewNote itemId tray noteContent ->
@@ -380,19 +381,19 @@ updateItem item updateAction slipbox =
 
         Item.EditingNote itemId tray originalNote editingNote ->
           let
-              noteUpdateLambda = \n -> if Note.is n editingNote then updateNoteEdits n editingNote else n
+              conditionallyUpdateTargetNoteWithEdits = updateLambda Note.is ( updateNoteEdits editingNote ) editingNote
           in
           Slipbox
-            { content | notes = List.map noteUpdateLambda content.notes
+            { content | notes = List.map conditionallyUpdateTargetNoteWithEdits content.notes
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray editingNote else i) content.items
             }
 
         Item.EditingSource itemId tray _ sourceWithEdits ->
           let
-              sourceUpdateLambda = \s -> if Source.is s sourceWithEdits then updateSourceEdits s sourceWithEdits else s
+              conditionallyUpdateTargetSourceWithEdits = updateLambda Source.is ( updateSourceEdits sourceWithEdits ) sourceWithEdits
           in
           Slipbox
-            { content | sources = List.map sourceUpdateLambda content.sources
+            { content | sources = List.map conditionallyUpdateTargetSourceWithEdits content.sources
             , items = List.map (\i -> if Item.is item i then Item.Source itemId tray sourceWithEdits else i) content.items
             }
 
@@ -413,10 +414,11 @@ updateItem item updateAction slipbox =
                 }
             _ -> slipbox
 
-        Item.ConfirmDeleteLink itemId tray note linkedNote link ->
+        Item.ConfirmDeleteLink itemId tray note _ link ->
           let
-             links = List.filter (Link.is link) content.links
-             (state, notes) = simulation content.notes links
+            trueIfNotTargetLink = isNotLambda Link.is link
+            links = List.filter trueIfNotTargetLink content.links
+            (state, notes) = simulation content.notes links
           in
           Slipbox
             { content | notes = notes
@@ -439,6 +441,14 @@ updateLambda is update target =
       update maybeTarget
     else
       maybeTarget
+
+isNotLambda : ( a -> a -> Bool) -> a -> ( a -> Bool )
+isNotLambda is target =
+  \maybeTarget ->
+    if is target maybeTarget then
+      False
+    else
+      True
 
 tick : Slipbox -> Slipbox
 tick slipbox =
@@ -511,7 +521,7 @@ conditionalUpdate updatedItem itemIdentifier =
   (\i -> if itemIdentifier i then updatedItem else i)
 
 updateNoteEdits : Note.Note -> Note.Note -> Note.Note
-updateNoteEdits originalNote noteWithEdits =  
+updateNoteEdits noteWithEdits originalNote =
   let
       updatedContent = Note.getContent noteWithEdits
       updatedSource = Note.getSource noteWithEdits
@@ -522,7 +532,7 @@ updateNoteEdits originalNote noteWithEdits =
       <| Note.updateVariant updatedVariant originalNote
 
 updateSourceEdits : Source.Source -> Source.Source -> Source.Source
-updateSourceEdits originalSource sourceWithEdits =  
+updateSourceEdits sourceWithEdits originalSource =
   let
       updatedTitle = Source.getTitle sourceWithEdits
       updatedAuthor = Source.getAuthor sourceWithEdits
