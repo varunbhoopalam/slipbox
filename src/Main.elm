@@ -227,7 +227,7 @@ update message model =
 
     FileRequested ->
       case model.state of
-        Setup -> ( model, File.Select.file ["text/plain"] FileSelected )
+        Setup -> ( model, File.Select.file ["application/json"] FileSelected )
         _ -> ( model, Cmd.none )
 
     FileSelected file ->
@@ -254,7 +254,7 @@ update message model =
 
     FileDownload ->
       case getSlipbox model of
-        Just slipbox -> ( model, File.Download.string "slipbox.json" "text/plain" <| Slipbox.encode slipbox )
+        Just slipbox -> ( model, File.Download.string "slipbox.json" "application/json" <| Slipbox.encode slipbox )
         Nothing -> ( model, Cmd.none )
 
     Tick _ ->
@@ -342,8 +342,8 @@ view: Model -> Browser.Document Msg
 view model =
   case model.state of
     Setup -> { title = String.fromFloat <| version, body = [ setupView ] }
-    Parsing -> { title = "TODO", body = [] }
-    FailureToParse -> { title = "TODO", body = [] }
+    Parsing -> { title = "Loading", body = [ Element.layout [] <| Element.text "Loading" ] }
+    FailureToParse -> { title = "Failure", body = [ Element.layout [] <| Element.text "Failure" ] }
     Session content -> { title = "MySlipbox", body = [ sessionView model.deviceViewport content ] }
 
 -- SETUP VIEW
