@@ -92,13 +92,11 @@ type Tab
   = ExploreTab String Viewport.Viewport
   | NotesTab String
   | SourcesTab String
-  | SetupTab
 
 type Tab_
   = Explore
   | Notes
   | Sources
-  | Back
 
 -- INIT
 
@@ -296,15 +294,6 @@ update message model =
                 _ ->
                   ( { model | state =
                     Session { content | tab = SourcesTab "" }
-                    }
-                  , Cmd.none
-                  )
-            Back ->
-              case content.tab of
-                SetupTab -> ( model, Cmd.none )
-                _ ->
-                  ( { model | state =
-                    Session { content | tab = SetupTab }
                     }
                   , Cmd.none
                   )
@@ -547,8 +536,6 @@ tabView deviceViewport content =
                 <| Slipbox.getSources ( searchConverter input ) content.slipbox
             ]
 
-        SetupTab -> Element.text "TODO"
-
 searchConverter : String -> ( Maybe String )
 searchConverter input =
   if String.isEmpty input then
@@ -566,7 +553,6 @@ tabHeader tab =
         ExploreTab _ _ -> Explore
         NotesTab _ -> Notes
         SourcesTab _ -> Sources
-        SetupTab -> Back
   in
   Element.row
     [ Element.height <| Element.px barHeight
@@ -589,11 +575,6 @@ tabHeader tab =
       , label = Element.el [ Element.centerX ] <| Element.text "Sources"
       }
       ( tab_ == Sources )
-    , tabHeaderBuilder
-      { onPress = Just <| ChangeTab Back
-      , label = Element.el [ Element.centerX ] <| Element.text "Setup"
-      }
-      ( tab_ == Back )
     ]
 
 tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
