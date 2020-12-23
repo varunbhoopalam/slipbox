@@ -377,7 +377,6 @@ setupView =
         ]
         [ startNewSlipboxButton
         , requestCsvButton
-        , aboutButton
         ]
       ]
 
@@ -385,16 +384,33 @@ topHeaderHeight = 30
 
 headerSetupPage : Element.Element Msg
 headerSetupPage =
+  let
+    versionText = Element.el [ Element.centerX, Element.centerY ]
+      <| Element.text <| "Slipbox.io Version " ++ ( String.fromFloat version )
+  in
   Element.el
     [ Element.height <| Element.px topHeaderHeight
     , Element.width Element.fill
     , Element.Background.color Color.ebonyRegular
     , Element.Font.color <| Color.white
     , Element.Font.size 24
+    , Element.inFront versionText
+    , Element.paddingXY 8 0
     ]
-    <| Element.el [ Element.centerX, Element.centerY ]
-      <| Element.text
-        <| "Slipbox.io Version " ++ ( String.fromFloat version )
+    aboutButton
+
+aboutButton : Element Msg
+aboutButton =
+  Element.newTabLink
+    [ Element.alignRight
+    , Element.Font.color Color.white
+    , Element.Font.underline
+    , Element.centerY
+    ]
+    { url = contactUrl
+    , label = Element.text "About"
+    }
+
 
 header : Element.Element Msg
 header =
@@ -410,8 +426,10 @@ header =
     , Element.Font.size 24
     , Element.inFront versionText
     , Element.paddingXY 4 0
+    , Element.spacingXY 8 0
     ]
-    [ Element.Input.button
+    [ aboutButton
+    , Element.Input.button
       [ Element.Background.color Color.indianred
       , Element.mouseOver
           [ Element.Background.color Color.thistle ]
@@ -425,10 +443,10 @@ header =
 startNewSlipboxButton : Element.Element Msg
 startNewSlipboxButton =
   Element.Input.button
-    [ Element.Background.color Color.mistyRoseRegular
+    [ Element.Background.color Color.heliotropeGrayRegular
     , Element.mouseOver
-      [ Element.Background.color Color.mistyRoseHighlighted
-      , Element.Font.color Color.mistyRoseRegular
+      [ Element.Background.color Color.heliotropeGrayHighlighted
+      , Element.Font.color Color.heliotropeGrayRegular
       ]
     , Element.width Element.fill
     , Element.height Element.fill
@@ -440,21 +458,6 @@ startNewSlipboxButton =
 requestCsvButton : Element.Element Msg
 requestCsvButton =
   Element.Input.button
-    [ Element.Background.color Color.heliotropeGrayRegular
-    , Element.mouseOver
-      [ Element.Background.color Color.heliotropeGrayHighlighted
-      , Element.Font.color Color.heliotropeGrayRegular
-      ]
-    , Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    { onPress = Just FileRequested
-    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Load Slipbox"
-    }
-
-aboutButton : Element.Element Msg
-aboutButton =
-  Element.Input.button
     [ Element.Background.color Color.oldLavenderRegular
     , Element.mouseOver
       [ Element.Background.color Color.oldLavenderHighlighted
@@ -463,10 +466,9 @@ aboutButton =
     , Element.width Element.fill
     , Element.height Element.fill
     ]
-    { onPress = Nothing
-    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "About"
+    { onPress = Just FileRequested
+    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Load Slipbox"
     }
-
 
 -- SESSION VIEW
 
@@ -497,9 +499,11 @@ contact =
       , Element.Font.color Color.white
       , Element.Font.underline
       ]
-      { url = "https://github.com/varunbhoopalam/slipbox"
+      { url = contactUrl
       , label = Element.text "Contact/Contribute"
       }
+
+contactUrl = "https://github.com/varunbhoopalam/slipbox"
 
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
