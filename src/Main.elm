@@ -480,7 +480,26 @@ sessionView deviceViewport content =
       [ tabHeader content.tab
       , tabView deviceViewport content
       , itemsView content
+      , Element.el [ Element.height <| Element.px <| barHeight * 2 ] Element.none
+      , contact
       ]
+
+contact : Element Msg
+contact =
+  Element.el
+    [ Element.Background.color Color.ebonyRegular
+    , Element.width Element.fill
+    , Element.height <| Element.px 36
+    , Element.padding 8
+    ]
+    <| Element.newTabLink
+      [ Element.centerX
+      , Element.Font.color Color.white
+      , Element.Font.underline
+      ]
+      { url = "https://github.com/varunbhoopalam/slipbox"
+      , label = Element.text "Contact/Contribute"
+      }
 
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
