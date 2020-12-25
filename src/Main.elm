@@ -989,9 +989,9 @@ toSourceRepresentationFromSource source =
 toSourceRepresentation : String -> String -> String -> Element Msg
 toSourceRepresentation title author content =
   contentContainer
-    [ sourceTitleView title
-    , sourceAuthorView author
-    , noteContentView content
+    [ Element.el [ Element.width Element.fill] <| sourceTitleView title
+    , Element.el [ Element.width Element.fill] <| sourceAuthorView author
+    , Element.el [ Element.width Element.fill] <| noteContentView content
     ]
 
 toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> Element Msg
