@@ -193,7 +193,11 @@ dismissItem item slipbox =
   let
       content = getContent slipbox
   in
-  Slipbox { content | items = List.filter (\i -> not <| Item.is item i) content.items}
+  Slipbox { content | items = removeItemFromList item content.items }
+
+removeItemFromList : Item.Item -> ( List (Item.Item ) ) -> ( List ( Item.Item ) )
+removeItemFromList item items =
+  List.filter ( isNotLambda Item.is item ) items
 
 type UpdateAction
   = UpdateContent String
@@ -346,14 +350,14 @@ updateItem item updateAction slipbox =
           Slipbox
             { content | notes = notes
             , links = links
-            , items = List.map (deleteNoteItemStateChange noteToDelete) <| List.filter (isNotLambda Item.is item) content.items
+            , items = List.map (deleteNoteItemStateChange noteToDelete) <| removeItemFromList item content.items
             , state = state
             }
 
         Item.ConfirmDeleteSource _ _ source ->
           Slipbox
             { content | sources = List.filter (isNotLambda Source.is source) content.sources
-            , items = List.filter (isNotLambda Item.is item) content.items
+            , items = removeItemFromList item content.items
             }
 
         Item.NewNote itemId tray noteContent ->
@@ -426,6 +430,13 @@ updateItem item updateAction slipbox =
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
             }
+
+        Item.ConfirmDiscardNewNoteForm _ _ _ ->
+          Slipbox { content | items = removeItemFromList item content.items }
+
+        Item.ConfirmDiscardNewSourceForm itemId tray source ->
+          Slipbox { content | items = removeItemFromList item content.items }
+
         _ -> slipbox
 
     OpenTray ->
