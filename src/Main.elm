@@ -520,7 +520,9 @@ tabView deviceViewport content =
             [ Element.width Element.fill
             ]
             [ noteTabToolbar input
-            , notesView <| Slipbox.getNotes ( searchConverter input ) content.slipbox
+            , tabTextContentContainer
+              <| List.map ( toOpenNoteButton Nothing )
+                <| Slipbox.getNotes ( searchConverter input ) content.slipbox
             ]
 
         SourcesTab input ->
@@ -528,13 +530,20 @@ tabView deviceViewport content =
             [ Element.width Element.fill
             ]
             [ sourceTabToolbar input
-            , Element.column
-              [ Element.scrollbarY
-              , Element.height <| Element.px 500
-              ]
-              <| List.map toSource
+            , tabTextContentContainer
+              <| List.map toOpenSourceButton
                 <| Slipbox.getSources ( searchConverter input ) content.slipbox
             ]
+
+tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
+tabTextContentContainer contents =
+  Element.wrappedRow
+    [ Element.scrollbarY
+    , Element.height <| Element.px 500
+    , Element.padding 8
+    , Element.spacingXY 8 8
+    ]
+    contents
 
 searchConverter : String -> ( Maybe String )
 searchConverter input =
@@ -991,7 +1000,7 @@ toSourceRepresentation title author content =
   contentContainer
     [ Element.el [ Element.width Element.fill] <| sourceTitleView title
     , Element.el [ Element.width Element.fill] <| sourceAuthorView author
-    , Element.el [ Element.width Element.fill] <| noteContentView content
+    , Element.el [ Element.width Element.fill] <| sourceContentView content
     ]
 
 toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> Element Msg
@@ -1176,17 +1185,8 @@ noteTabToolbar input =
       , createNoteButton Nothing
       ]
 
-notesView: (List Note.Note) -> Element Msg
-notesView notes = 
-  Element.column 
-    [ Element.width Element.fill
-    , Element.height <| Element.px 500
-    , Element.scrollbarY
-    ] 
-    <| List.map ( openNoteButton Nothing ) notes
-
-openNoteButton: ( Maybe Item.Item ) -> Note.Note -> Element Msg
-openNoteButton maybeItemOpenedFrom note =
+toOpenNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
+toOpenNoteButton maybeItemOpenedFrom note =
   Element.el 
     [ Element.paddingXY 8 0, Element.spacingXY 8 8
     , Element.Border.solid, Element.Border.color Color.gray
@@ -1209,22 +1209,17 @@ sourceTabToolbar input =
     , createSourceButton Nothing
     ]
 
-toSource : Source.Source -> Element Msg
-toSource source =
+toOpenSourceButton : Source.Source -> Element Msg
+toOpenSourceButton source =
   Element.el
     [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid, Element.Border.color Color.gray
+    , Element.Border.solid
+    , Element.Border.color Color.heliotropeGrayRegular
     , Element.Border.width 4
     ]
     <| Element.Input.button []
       { onPress = Just <| AddItem Nothing <| Slipbox.OpenSource source
-      , label = Element.column []
-        [ Element.paragraph []
-          [ Element.text <| Source.getTitle source
-          , Element.text <| Source.getAuthor source
-          , Element.text <| Source.getContent source
-          ]
-        ]
+      , label = toSourceRepresentationFromSource source
       }
 
 -- COLORS
@@ -1442,6 +1437,16 @@ sourceAuthorView sourceAuthor =
     [ Element.spacingXY 0 8 ]
     [ Element.el [ Element.Font.underline ] <| Element.text "Author"
     , Element.paragraph [] [ Element.text sourceAuthor ] ]
+
+sourceContentView : String -> Element Msg
+sourceContentView noteContent =
+  Element.textColumn
+    [ Element.spacingXY 0 8
+    , Element.scrollbarY
+    , Element.height <| Element.maximum 300 Element.fill
+    ]
+    [ Element.el [ Element.Font.underline ] <| Element.text "Content"
+    , Element.paragraph [] [ Element.text noteContent ] ]
 
 -- VIEW BUTTON BUILDER
 
