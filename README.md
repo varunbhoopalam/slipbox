@@ -1,32 +1,18 @@
-# slipbox-ui
+# slipbox.io
+https://varunbhoopalam.github.io/slipbox/
 
-This project's purpose is to make it as easy as possible to take notes in the slipbox note-taking system and get value from it.
+## What does this project do?
+Slipbox.io is a note taking system inspired by the [Zettelkasten](https://en.wikipedia.org/wiki/Zettelkasten). This software is intended to make note taking simple, convenient, and fun while unlocking the benefits of using a Zettelkasten note taking system.
 
+## Why is this project useful?
+This project is useful to make the Zettelkasten system more accessible and unlock insights from the notes through visualization software. 
 
-### Installation
+## How do I get started?
+The project is available [here](https://varunbhoopalam.github.io/slipbox/).
 
-To run this repo, please follow the instructions at this url to download elm for your respective os. 
+At this time, the project is not set up for collaboration. Please reach out if you have something to discuss or want from this project. If there is interest, I would love to collaborate and perhaps bring on other contributors as a result. 
 
-https://guide.elm-lang.org/install/elm.html
+Another option to contribute is to fill out issues with bugs, feature requests and the like.
 
-Then you should be able to run `elm reactor` on the command line to run the project and access it at localhost:8000
-
-### To run locally 
-
-elm make src/Main.elm
-
-http-server --proxy http://localhost:8080?
-
-### To do
-
-I want to try releasing this to the public by December 1st, 2020. To do that I think I need to do the following:
-- Hosted by us source summary solution integrated into UI/SPA - 10/25 in progress
-- Refactor the User Experience to be
-  - SPA
-  - Responsive Design to include Mobile
-  - More intuitive interface to take notes
-- Figure out a way to export data
-- Authentication (MFA?)
-- Multi-User architecture change + data migration
-- Home/Splash page educating about how to use note taking system and benefits
-- Deployment pipeline?
+## Where can I get more help, if I need it?
+Please feel free to directly reach out to me at bhoopalam.varun@gmail.com
