@@ -4,8 +4,6 @@ https://varunbhoopalam.github.io/slipbox/
 ## What does this project do?
 Slipbox.io is a note taking system inspired by the [Zettelkasten](https://en.wikipedia.org/wiki/Zettelkasten). This software is intended to make note taking simple, convenient, and fun while unlocking the benefits of using a Zettelkasten note taking system. Right now, the project is only designed for the desktop browser and there is no server. After a session, a file called slipbox.json is produced. To continue with the slipbox, the same file should be loaded into the next session.
 
-This project was open sourced for multiple reasons. One is transparency. It is important that nothing is hidden about what is happening while the software is working. To this point, the project has been driven by what I would find convenient and useful in a note taking system. If it should get wider use from others, I believe it will start to move in different directions than I am able to anticipate. This is another reason for open sourcing the project. I want to make it open to more perspectives than my own should anyone else find this project useful.
-
 ## Why is this project useful?
 This project is useful to make the Zettelkasten system more accessible and unlock insights from the notes through visualization software. 
 
@@ -18,3 +16,11 @@ Another option to contribute is to fill out issues with bugs, feature requests a
 
 ## Where can I get more help, if I need it?
 Please feel free to directly reach out to me at bhoopalam.varun@gmail.com
+
+## Vision
+
+I imagine a foundation set up to host people's data for free if they want to use this system from any device. Similarly, a solution is set up on any device to access and add notes or explore your own slipbox. Further, I think expanding the capabilities of the system, especially ways of collaborating, sensemaking, and sharing knowledge should be possible.
+
+## Why open source?
+
+This project was open sourced for multiple reasons. One is transparency. It is important that nothing is hidden about what is happening while the software is working. To this point, the project has been driven by what I would find convenient and useful in a note taking system. If it should get wider use from others, I believe it will start to move in different directions than I am able to anticipate. This is another reason for open sourcing the project. I want to make it open to more perspectives than my own should anyone else find this project useful.
