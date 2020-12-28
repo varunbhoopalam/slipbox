@@ -16,9 +16,9 @@ This note storage system gives a systematic approach to learning and knowledge s
 #### Steps
 1. Navigate to the project. The project is available [here](https://varunbhoopalam.github.io/slipbox/).
 2. Click start new slipbox
-3. Scroll down to the workspace and click create a note button. Add a note by filling in the content and source and then hitting the submit button that pops up!
-4. If you have a source associated to the note, click the create source button and fill out the form!
-5. Click the create question button and submit a question that you want to answer!
+3. Scroll down to the workspace and click create a note button. Add a note by filling in the content and source and then hitting the submit button that pops up.
+4. If you have a source associated to the note, click the create source button and fill out the form.
+5. Click the create question button and submit a question that you want to answer! This can be your entry point when referencing the slipbox for projects that you have going on.
 6. If your question and note are related, create a link between them by clicking the add link button on one of the notes or questions. If you dismissed them from the workspace, you can open them in the workspace by finding them on the graph in the explore tab or clicking on them in the notes tab.
 7. Save your work by clicking save in the top right corner. You'll use this file next time when you return to add new notes to the slipbox.
 
