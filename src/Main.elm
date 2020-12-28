@@ -648,8 +648,8 @@ normalItemHeader text item =
     , Element.el [ Element.alignRight ] <| dismissButton item
     ]
 
-newItemHeader : String -> Bool -> Item.Item -> Element Msg
-newItemHeader text canSubmit item =
+conditionalSubmitItemHeader : String -> Bool -> Item.Item -> Element Msg
+conditionalSubmitItemHeader text canSubmit item =
   itemHeaderBuilder
     [ headerText text
     , Element.el [ Element.alignRight ] <| cancelButton item
@@ -660,16 +660,16 @@ deleteItemHeader : String -> Item.Item -> Element Msg
 deleteItemHeader text item =
   itemHeaderBuilder
     [ headerText text
-    , Element.el [ Element.alignRight ] <| confirmButton item
     , Element.el [ Element.alignRight ] <| cancelButton item
+    , Element.el [ Element.alignRight ] <| confirmButton item
     ]
 
-editItemHeader : String -> Item.Item -> Element Msg
-editItemHeader text item =
+submitItemHeader : String -> Item.Item -> Element Msg
+submitItemHeader text item =
   itemHeaderBuilder
     [ headerText text
-    , Element.el [ Element.alignRight ] <| submitButton item
     , Element.el [ Element.alignRight ] <| cancelButton item
+    , Element.el [ Element.alignRight ] <| submitButton item
     ]
 
 toItemView: Content -> Item.Item -> Element Msg
@@ -698,7 +698,7 @@ toItemView content item =
 
 
     Item.NewNote itemId _ note -> itemContainerLambda
-      [ newItemHeader "New Note" ( Item.noteCanSubmit note ) item
+      [ conditionalSubmitItemHeader "New Note" ( Item.noteCanSubmit note ) item
       , toEditingNoteRepresentation
         itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source
       ]
@@ -711,7 +711,7 @@ toItemView content item =
 
 
     Item.EditingNote itemId _ _ noteWithEdits -> itemContainerLambda
-      [ editItemHeader "Editing Note" item
+      [ submitItemHeader "Editing Note" item
       , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
       , linkedNotesNodeNoButtons noteWithEdits content.slipbox
       ]
@@ -732,7 +732,7 @@ toItemView content item =
             Nothing -> Element.paragraph [] [ Element.text "Select note to add link to from below" ]
       in
       itemContainerLambda
-        [ newItemHeader "Add Link" ( maybeNote /= Nothing ) item
+        [ conditionalSubmitItemHeader "Add Link" ( maybeNote /= Nothing ) item
         , Element.row
           [ Element.width Element.fill ]
           [ toNoteRepresentationFromNote note
@@ -767,7 +767,7 @@ toItemView content item =
 
 
     Item.NewSource _ _ source -> itemContainerLambda
-      [ newItemHeader "New Source" ( Item.sourceCanSubmit source ) item
+      [ conditionalSubmitItemHeader "New Source" ( Item.sourceCanSubmit source ) item
       , toEditingSourceRepresentation item source.title source.author source.content
       ]
 
@@ -779,7 +779,7 @@ toItemView content item =
 
 
     Item.EditingSource _ _ _ sourceWithEdits -> itemContainerLambda
-      [ editItemHeader "Editing Source" item
+      [ conditionalSubmitItemHeader "Editing Source" ( Source.titleIsValid <| Source.getTitle sourceWithEdits ) item
       , toEditingSourceRepresentationFromItemSource item sourceWithEdits
       , associatedNotesNode item sourceWithEdits content.slipbox
       ]
@@ -802,7 +802,7 @@ toItemView content item =
       ]
 
     Item.NewQuestion _ _ question -> itemContainerLambda
-      [ newItemHeader "New Question" ( not <| String.isEmpty question ) item
+      [ conditionalSubmitItemHeader "New Question" ( not <| String.isEmpty question ) item
       , contentContainer
         [ Element.el [ Element.width Element.fill ] <| questionInput item question
         ]
@@ -1442,12 +1442,19 @@ cancelButton item =
 
 titleInput : Item.Item -> String -> Element Msg
 titleInput item input =
+  let
+    titleLabel =
+      if Source.titleIsValid input then
+        Element.text "Title"
+      else
+        Element.text "Title is not valid. Please use a different title than 'n/a'"
+  in
   Element.Input.multiline
     []
     { onChange = (\s -> UpdateItem item <| Slipbox.UpdateTitle s )
     , text = input
     , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Title"
+    , label = Element.Input.labelAbove [] titleLabel
     , spellcheck = True
     }
 

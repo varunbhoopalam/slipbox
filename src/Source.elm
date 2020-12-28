@@ -8,6 +8,7 @@ module Source exposing
   , updateAuthor
   , encode
   , decode
+  , titleIsValid
   )
 
 import IdGenerator
@@ -105,6 +106,10 @@ decode =
     ( Json.Decode.field "title" Json.Decode.string )
     ( Json.Decode.field "author" Json.Decode.string )
     ( Json.Decode.field "content" Json.Decode.string )
+
+titleIsValid : String -> Bool
+titleIsValid title =
+  ( String.toLower title ) /= "n/a"
 
 -- HELPER
 
