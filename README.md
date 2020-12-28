@@ -1,4 +1,5 @@
 # slipbox.io
+Click the link below to go create your own slipbox!
 https://varunbhoopalam.github.io/slipbox/
 
 ## What does this project do?
