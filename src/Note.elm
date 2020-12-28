@@ -53,7 +53,7 @@ type alias Info =
   , vy : Float
   }
 type alias NoteId = Int
-type Variant = Regular | Index
+type Variant = Regular | Question
 type GraphState = Compressed Int | Expanded Int Int
 type alias NoteRecord = 
   { content : String
@@ -237,11 +237,11 @@ variantStringRepresentation : Variant -> String
 variantStringRepresentation variant =
   case variant of
     Regular -> "regular"
-    Index -> "index"
+    Question -> "index"
 
 stringToVariant : String -> Variant
 stringToVariant string =
   case string of
     "regular" -> Regular
-    "index" -> Index
+    "index" -> Question
     _ -> Regular
