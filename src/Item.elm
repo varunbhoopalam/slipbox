@@ -96,11 +96,11 @@ newQuestion generator =
   in
   ( NewQuestion id Closed "", idGenerator )
 
-sourceCanSubmit : NewSourceContent -> Bool
-sourceCanSubmit newSourceContent =
+sourceCanSubmit : NewSourceContent -> ( List String ) -> Bool
+sourceCanSubmit newSourceContent existingTitles =
   ( not <| String.isEmpty newSourceContent.title ) &&
   ( not <| String.isEmpty newSourceContent.author ) &&
-  ( Source.titleIsValid newSourceContent.title)
+  ( Source.titleIsValid existingTitles newSourceContent.title )
 
 is : Item -> Item -> Bool
 is item1 item2 =
