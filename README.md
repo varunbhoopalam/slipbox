@@ -1,4 +1,4 @@
-# slipbox.io - A wonderful note storage application!
+# slipbox.io - a wonderful note storage application!
 Click the link below to go create your own slipbox!
 
 https://varunbhoopalam.github.io/slipbox/
