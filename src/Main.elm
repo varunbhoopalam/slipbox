@@ -894,7 +894,7 @@ associatedNotesNode item source slipbox =
       [ Element.width Element.fill, Element.spacingXY 8 8 ]
       [ headerText "Associated Notes"
       , Element.column containerWithScrollAttributes
-          ( List.map (\n -> toOpenNoteButton ( Just item ) n ) associatedNotes )
+          ( List.map (\n -> toAssociatedNoteButton ( Just item ) n ) associatedNotes )
       ]
 
 addLinkButton: Item.Item -> Element Msg
@@ -986,6 +986,19 @@ toNoteRepresentation content source variant =
         [ Element.el [ Element.width Element.fill] <| questionView content
         ]
 
+toAssociatedNoteRepresentation : String -> Note.Variant -> Element Msg
+toAssociatedNoteRepresentation content variant =
+  case variant of
+    Note.Regular ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| labeledViewBuilder "Note" content ]
+    Note.Question ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| questionView content ]
+
+toAssociatedNoteRepresentationFromNote : Note.Note -> Element Msg
+toAssociatedNoteRepresentationFromNote note =
+  toAssociatedNoteRepresentation ( Note.getContent note ) ( Note.getVariant note )
 
 toEditingNoteRepresentationFromItemNoteSlipbox : Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
@@ -1229,6 +1242,18 @@ toOpenNoteButton maybeItemOpenedFrom note =
     <| Element.Input.button []
       { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
       , label = toNoteRepresentationFromNote note
+      }
+
+toAssociatedNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
+toAssociatedNoteButton maybeItemOpenedFrom note =
+  Element.el
+    [ Element.paddingXY 8 0, Element.spacingXY 8 8
+    , Element.Border.solid, Element.Border.color Color.gray
+    , Element.Border.width 4
+    ]
+    <| Element.Input.button []
+      { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
+      , label = toAssociatedNoteRepresentationFromNote note
       }
 
 sourceTabToolbar: String -> Element Msg
