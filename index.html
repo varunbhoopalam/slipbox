@@ -16398,15 +16398,6 @@ var $author$project$Main$associatedNotesNode = F3(
 						associatedNotes))
 				]));
 	});
-var $author$project$Main$containerAttributes = _List_fromArray(
-	[
-		$mdgriffith$elm_ui$Element$Border$width(3),
-		$mdgriffith$elm_ui$Element$Border$color($author$project$Color$heliotropeGrayRegular),
-		$mdgriffith$elm_ui$Element$padding(8),
-		A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-		$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-		$mdgriffith$elm_ui$Element$centerX
-	]);
 var $author$project$Slipbox$Cancel = {$: 'Cancel'};
 var $author$project$Color$indianred = A3($mdgriffith$elm_ui$Element$rgb255, 205, 92, 92);
 var $author$project$Color$thistle = A3($mdgriffith$elm_ui$Element$rgb255, 216, 191, 216);
@@ -16435,14 +16426,18 @@ var $author$project$Main$cancelButton = function (item) {
 		});
 };
 var $author$project$Slipbox$Submit = {$: 'Submit'};
-var $author$project$Main$confirmButton = function (item) {
-	return $author$project$Main$smallRedButton(
+var $author$project$Main$submitButton = function (item) {
+	return $author$project$Main$smallOldLavenderButton(
 		{
-			label: $mdgriffith$elm_ui$Element$text('Confirm'),
+			label: $mdgriffith$elm_ui$Element$text('Submit'),
 			onPress: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Submit))
 		});
 };
+var $author$project$Main$chooseSubmitButton = F2(
+	function (item, canSubmit) {
+		return canSubmit ? $author$project$Main$submitButton(item) : $mdgriffith$elm_ui$Element$none;
+	});
 var $author$project$Main$itemHeaderBuilder = function (contents) {
 	return A2(
 		$mdgriffith$elm_ui$Element$row,
@@ -16452,6 +16447,41 @@ var $author$project$Main$itemHeaderBuilder = function (contents) {
 				A2($mdgriffith$elm_ui$Element$spacingXY, 8, 0)
 			]),
 		contents);
+};
+var $author$project$Main$conditionalSubmitItemHeader = F3(
+	function (text, canSubmit, item) {
+		return $author$project$Main$itemHeaderBuilder(
+			_List_fromArray(
+				[
+					$author$project$Main$headerText(text),
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$alignRight]),
+					$author$project$Main$cancelButton(item)),
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$alignRight]),
+					A2($author$project$Main$chooseSubmitButton, item, canSubmit))
+				]));
+	});
+var $author$project$Main$containerAttributes = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Border$width(3),
+		$mdgriffith$elm_ui$Element$Border$color($author$project$Color$heliotropeGrayRegular),
+		$mdgriffith$elm_ui$Element$padding(8),
+		A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+		$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+		$mdgriffith$elm_ui$Element$centerX
+	]);
+var $author$project$Main$confirmButton = function (item) {
+	return $author$project$Main$smallRedButton(
+		{
+			label: $mdgriffith$elm_ui$Element$text('Confirm'),
+			onPress: $elm$core$Maybe$Just(
+				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Submit))
+		});
 };
 var $author$project$Main$deleteItemHeader = F2(
 	function (text, item) {
@@ -16463,38 +16493,12 @@ var $author$project$Main$deleteItemHeader = F2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
 						[$mdgriffith$elm_ui$Element$alignRight]),
-					$author$project$Main$confirmButton(item)),
+					$author$project$Main$cancelButton(item)),
 					A2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
 						[$mdgriffith$elm_ui$Element$alignRight]),
-					$author$project$Main$cancelButton(item))
-				]));
-	});
-var $author$project$Main$submitButton = function (item) {
-	return $author$project$Main$smallOldLavenderButton(
-		{
-			label: $mdgriffith$elm_ui$Element$text('Submit'),
-			onPress: $elm$core$Maybe$Just(
-				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Submit))
-		});
-};
-var $author$project$Main$editItemHeader = F2(
-	function (text, item) {
-		return $author$project$Main$itemHeaderBuilder(
-			_List_fromArray(
-				[
-					$author$project$Main$headerText(text),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$alignRight]),
-					$author$project$Main$submitButton(item)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$alignRight]),
-					$author$project$Main$cancelButton(item))
+					$author$project$Main$confirmButton(item))
 				]));
 	});
 var $author$project$Link$linkBelongsToNotes = F3(
@@ -16783,28 +16787,6 @@ var $author$project$Main$linkedNotesNodeNoButtons = F2(
 						$elm$core$List$map,
 						$author$project$Main$toNoteRepresentationFromNote,
 						A2($elm$core$List$map, $elm$core$Tuple$first, linkedNotes)))
-				]));
-	});
-var $author$project$Main$chooseSubmitButton = F2(
-	function (item, canSubmit) {
-		return canSubmit ? $author$project$Main$submitButton(item) : $mdgriffith$elm_ui$Element$none;
-	});
-var $author$project$Main$newItemHeader = F3(
-	function (text, canSubmit, item) {
-		return $author$project$Main$itemHeaderBuilder(
-			_List_fromArray(
-				[
-					$author$project$Main$headerText(text),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$alignRight]),
-					$author$project$Main$cancelButton(item)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$alignRight]),
-					A2($author$project$Main$chooseSubmitButton, item, canSubmit))
 				]));
 	});
 var $author$project$Slipbox$PromptConfirmDelete = {$: 'PromptConfirmDelete'};
@@ -17871,10 +17853,31 @@ var $author$project$Main$searchInput = F2(
 				text: input
 			});
 	});
+var $author$project$Source$titleIsValid = function (title) {
+	return $elm$core$String$toLower(title) !== 'n/a';
+};
 var $author$project$Item$sourceCanSubmit = function (newSourceContent) {
-	return (!$elm$core$String$isEmpty(newSourceContent.title)) && (!$elm$core$String$isEmpty(newSourceContent.author));
+	return (!$elm$core$String$isEmpty(newSourceContent.title)) && ((!$elm$core$String$isEmpty(newSourceContent.author)) && $author$project$Source$titleIsValid(newSourceContent.title));
 };
 var $mdgriffith$elm_ui$Element$spaceEvenly = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$spacing, $mdgriffith$elm_ui$Internal$Style$classes.spaceEvenly);
+var $author$project$Main$submitItemHeader = F2(
+	function (text, item) {
+		return $author$project$Main$itemHeaderBuilder(
+			_List_fromArray(
+				[
+					$author$project$Main$headerText(text),
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$alignRight]),
+					$author$project$Main$cancelButton(item)),
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$alignRight]),
+					$author$project$Main$submitButton(item))
+				]));
+	});
 var $author$project$Main$contentInput = F2(
 	function (item, input) {
 		return A2(
@@ -18027,14 +18030,12 @@ var $author$project$Slipbox$UpdateTitle = function (a) {
 };
 var $author$project$Main$titleInput = F2(
 	function (item, input) {
+		var titleLabel = $author$project$Source$titleIsValid(input) ? $mdgriffith$elm_ui$Element$text('Title') : $mdgriffith$elm_ui$Element$text('Title is not valid. Please use a different title than \'n/a\'');
 		return A2(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				label: A2(
-					$mdgriffith$elm_ui$Element$Input$labelAbove,
-					_List_Nil,
-					$mdgriffith$elm_ui$Element$text('Title')),
+				label: A2($mdgriffith$elm_ui$Element$Input$labelAbove, _List_Nil, titleLabel),
 				onChange: function (s) {
 					return A2(
 						$author$project$Main$UpdateItem,
@@ -18206,7 +18207,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A3(
-							$author$project$Main$newItemHeader,
+							$author$project$Main$conditionalSubmitItemHeader,
 							'New Note',
 							$author$project$Item$noteCanSubmit(note),
 							item),
@@ -18235,7 +18236,7 @@ var $author$project$Main$toItemView = F2(
 				return itemContainerLambda(
 					_List_fromArray(
 						[
-							A2($author$project$Main$editItemHeader, 'Editing Note', item),
+							A2($author$project$Main$submitItemHeader, 'Editing Note', item),
 							A4($author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox, itemId, item, noteWithEdits, content.slipbox),
 							A2($author$project$Main$linkedNotesNodeNoButtons, noteWithEdits, content.slipbox)
 						]));
@@ -18270,7 +18271,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A3(
-							$author$project$Main$newItemHeader,
+							$author$project$Main$conditionalSubmitItemHeader,
 							'Add Link',
 							!_Utils_eq(maybeNote, $elm$core$Maybe$Nothing),
 							item),
@@ -18340,7 +18341,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A3(
-							$author$project$Main$newItemHeader,
+							$author$project$Main$conditionalSubmitItemHeader,
 							'New Source',
 							$author$project$Item$sourceCanSubmit(source),
 							item),
@@ -18359,7 +18360,12 @@ var $author$project$Main$toItemView = F2(
 				return itemContainerLambda(
 					_List_fromArray(
 						[
-							A2($author$project$Main$editItemHeader, 'Editing Source', item),
+							A3(
+							$author$project$Main$conditionalSubmitItemHeader,
+							'Editing Source',
+							$author$project$Source$titleIsValid(
+								$author$project$Source$getTitle(sourceWithEdits)),
+							item),
 							A2($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits),
 							A3($author$project$Main$associatedNotesNode, item, sourceWithEdits, content.slipbox)
 						]));
@@ -18395,7 +18401,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A3(
-							$author$project$Main$newItemHeader,
+							$author$project$Main$conditionalSubmitItemHeader,
 							'New Question',
 							!$elm$core$String$isEmpty(question),
 							item),
