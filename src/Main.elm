@@ -409,7 +409,7 @@ downloadButton =
     , Element.Border.color Color.white
     , Element.Border.width 2
     ]
-    { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
+    { onPress = Just FileDownload, label = Element.text "Save" }
 
 
 header : Element.Element Msg
