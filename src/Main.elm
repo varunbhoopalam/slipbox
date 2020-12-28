@@ -409,7 +409,7 @@ downloadButton =
     , Element.Border.color Color.white
     , Element.Border.width 2
     ]
-    { onPress = Just FileDownload, label = Element.text "Download Slipbox" }
+    { onPress = Just FileDownload, label = Element.text "Save" }
 
 
 header : Element.Element Msg
@@ -618,14 +618,18 @@ itemsView content =
       , Element.width Element.fill
       , Element.height Element.fill
       ]
-      <| ( Element.el
-        [ Element.Font.heavy
-        , Element.Border.width 1
-        , Element.padding 4
-        , Element.Font.color Color.oldLavenderRegular
-        , Element.centerX
-        ] <| Element.text "Workspace" )
-        :: items
+      <|
+      List.concat
+        [ [ Element.el
+          [ Element.Font.heavy
+          , Element.Border.width 1
+          , Element.padding 4
+          , Element.Font.color Color.oldLavenderRegular
+          , Element.centerX
+          ] <| Element.text "Workspace" ]
+        , [ buttonTray Nothing ]
+        , items
+        ]
 
 itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
 itemHeaderBuilder contents =
@@ -680,15 +684,9 @@ toItemView content item =
           , Element.height Element.shrink
           ]
           [ Element.column
-            [ Element.Border.width 3
-            , Element.Border.color Color.heliotropeGrayRegular
-            , Element.padding 8
-            , Element.spacingXY 8 8
-            , Element.width Element.fill
-            , Element.centerX
-            ]
+            containerAttributes
             contents
-          , buttonTray item
+          , onHoverButtonTray item
           ]
   in
   case item of
@@ -702,13 +700,13 @@ toItemView content item =
     Item.NewNote itemId _ note -> itemContainerLambda
       [ newItemHeader "New Note" ( Item.noteCanSubmit note ) item
       , toEditingNoteRepresentation
-        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source note.variant
+        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source
       ]
 
 
     Item.ConfirmDiscardNewNoteForm _ _ note -> itemContainerLambda
       [ deleteItemHeader "Discard New Note" item
-      , toNoteRepresentation note.content note.source note.variant
+      , toNoteRepresentation note.content note.source Note.Regular
       ]
 
 
@@ -764,7 +762,7 @@ toItemView content item =
     Item.Source _ _ source -> itemContainerLambda
       [ normalItemHeader "Source" item
       , toSourceRepresentationFromSource source
-      , associatedNotesNode source content.slipbox
+      , associatedNotesNode item source content.slipbox
       ]
 
 
@@ -783,14 +781,14 @@ toItemView content item =
     Item.EditingSource _ _ _ sourceWithEdits -> itemContainerLambda
       [ editItemHeader "Editing Source" item
       , toEditingSourceRepresentationFromItemSource item sourceWithEdits
-      , associatedNotesNode sourceWithEdits content.slipbox
+      , associatedNotesNode item sourceWithEdits content.slipbox
       ]
 
 
     Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
       [ deleteItemHeader "Confirm Delete Source" item
       , toSourceRepresentationFromSource source
-      , associatedNotesNode source content.slipbox
+      , associatedNotesNode item source content.slipbox
       ]
 
 
@@ -803,23 +801,29 @@ toItemView content item =
         ]
       ]
 
-buttonTray : Item.Item -> Element Msg
-buttonTray item =
+    Item.NewQuestion _ _ question -> itemContainerLambda
+      [ newItemHeader "New Question" ( not <| String.isEmpty question ) item
+      , contentContainer
+        [ Element.el [ Element.width Element.fill ] <| questionInput item question
+        ]
+      ]
+
+    Item.ConfirmDiscardNewQuestion _ _ question -> itemContainerLambda
+      [ deleteItemHeader "Confirm Discard New Question" item
+      , toQuestionRepresentation question
+      ]
+
+onHoverButtonTray : Item.Item -> Element Msg
+onHoverButtonTray item =
   let
     tray =
       if Item.isTrayOpen item then
-        Element.row
-          [ Element.width Element.fill
-          , Element.padding 8
-          , Element.spacingXY 8 8
-          , Element.height Element.fill
-          ]
-          [ createNoteButton <| Just item
-          , createSourceButton <| Just item
-          ]
+        buttonTray <| Just item
       else
         Element.el
-          [ Element.height <| Element.minimum 8 Element.fill ]
+          [ Element.height <| Element.minimum 10 Element.fill
+          , Element.width Element.fill
+          ]
           Element.none
   in
   Element.el
@@ -828,6 +832,19 @@ buttonTray item =
     , Element.width Element.fill
     ]
     tray
+
+buttonTray : ( Maybe Item.Item ) -> Element Msg
+buttonTray maybeItem =
+  Element.row
+    [ Element.width Element.fill
+    , Element.padding 8
+    , Element.spacingXY 8 8
+    , Element.height Element.fill
+    ]
+    [ createNoteButton maybeItem
+    , createSourceButton maybeItem
+    , createQuestionButton maybeItem
+    ]
 
 headerText : String -> Element Msg
 headerText text =
@@ -839,6 +856,9 @@ linkedNotesNode item note slipbox =
     linkedNotes = Slipbox.getLinkedNotes note slipbox
     canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
     noLinkedNotes = List.isEmpty linkedNotes
+    linkedNotesDomRep = Element.column
+      containerWithScrollAttributes
+      <| List.map (toLinkedNoteView item) linkedNotes
   in
   if canAddLinkToNote then
     if noLinkedNotes then
@@ -847,26 +867,22 @@ linkedNotesNode item note slipbox =
       Element.column
         []
         [ Element.row
-          []
-          [ Element.text "Linked Notes"
-          , addLinkButton item ]
-        , Element.column
-          []
-          <| List.map (toLinkedNoteView item) linkedNotes
+          [ Element.width Element.fill]
+          [ headerText "Linked Notes"
+          , Element.el [ Element.alignRight ] <| addLinkButton item ]
+        , linkedNotesDomRep
         ]
   else
     if noLinkedNotes then
       Element.none
     else
       Element.column []
-        [ Element.text "Linked Notes"
-        , Element.column
-          []
-          <| List.map (toLinkedNoteView item) linkedNotes
+        [ Element.el [ Element.alignLeft ] <| Element.text "Linked Notes"
+        , linkedNotesDomRep
         ]
 
-associatedNotesNode : Source.Source -> Slipbox.Slipbox -> Element Msg
-associatedNotesNode source slipbox =
+associatedNotesNode : Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
+associatedNotesNode item source slipbox =
   let
     associatedNotes = Slipbox.getNotesAssociatedToSource source slipbox
     noAssociatedNotes = List.isEmpty associatedNotes
@@ -875,13 +891,11 @@ associatedNotesNode source slipbox =
     Element.none
   else
     Element.column
-      [ Element.width Element.fill
-      , Element.height <| Element.minimum 100 Element.fill
-      , Element.spacingXY 8 0
-      , Element.scrollbarY
+      [ Element.width Element.fill, Element.spacingXY 8 8 ]
+      [ headerText "Associated Notes"
+      , Element.column containerWithScrollAttributes
+          ( List.map (\n -> toAssociatedNoteButton ( Just item ) n ) associatedNotes )
       ]
-      <| ( headerText "Associated Notes" ) ::
-      ( List.map toLinkedNoteViewNoButtons associatedNotes )
 
 addLinkButton: Item.Item -> Element Msg
 addLinkButton item =
@@ -890,13 +904,33 @@ addLinkButton item =
     , label = Element.text "Add Link"
     }
 
+containerAttributes : ( List ( Element.Attribute Msg) )
+containerAttributes =
+  [ Element.Border.width 3
+  , Element.Border.color Color.heliotropeGrayRegular
+  , Element.padding 8
+  , Element.spacingXY 8 8
+  , Element.width Element.fill
+  , Element.centerX
+  ]
+
+containerWithScrollAttributes : ( List ( Element.Attribute Msg) )
+containerWithScrollAttributes =
+  [ Element.Border.width 3
+  , Element.Border.color Color.heliotropeGrayRegular
+  , Element.padding 8
+  , Element.spacingXY 8 8
+  , Element.width Element.fill
+  , Element.centerX
+  , Element.height <| Element.minimum 200 Element.fill
+  , Element.scrollbarY
+  ]
+
 toLinkedNoteView: Item.Item -> ( Note.Note, Link.Link ) -> Element Msg
 toLinkedNoteView item ( linkedNote, link ) =
-  Element.column
-    []
-    [ noteContentView <| Note.getContent linkedNote
-    , noteSourceView <| Note.getSource linkedNote
-    , noteVariantView <| Note.getVariant linkedNote
+  Element.row
+    containerAttributes
+    [ toOpenNoteButton ( Just item ) linkedNote
     , removeLinkButton item linkedNote link
     ]
 
@@ -906,15 +940,6 @@ removeLinkButton item linkedNote link =
     { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
     , label = Element.text "Remove Link"
     }
-
-toLinkedNoteViewNoButtons: Note.Note -> Element Msg
-toLinkedNoteViewNoButtons linkedNote =
-  Element.column
-    [ Element.spacingXY 8 8 ]
-    [ noteContentView <| Note.getContent linkedNote
-    , noteSourceView <| Note.getSource linkedNote
-    , noteVariantView <| Note.getVariant linkedNote
-    ]
 
 linkedNotesNodeNoButtons : Note.Note -> Slipbox.Slipbox -> Element Msg
 linkedNotesNodeNoButtons noteWithEdits slipbox =
@@ -929,7 +954,7 @@ linkedNotesNodeNoButtons noteWithEdits slipbox =
         [ Element.text "Linked Notes"
         , Element.column
           []
-          <| List.map toLinkedNoteViewNoButtons <| List.map Tuple.first linkedNotes
+          <| List.map toNoteRepresentationFromNote <| List.map Tuple.first linkedNotes
         ]
 
 contentContainer : ( List ( Element Msg ) ) -> Element Msg
@@ -950,11 +975,30 @@ toNoteRepresentationFromNote note =
 
 toNoteRepresentation : String -> String -> Note.Variant -> Element Msg
 toNoteRepresentation content source variant =
-  contentContainer
-    [ Element.el [ Element.width Element.fill] <| noteContentView content
-    , Element.el [ Element.width Element.fill] <| noteSourceView source
-    , Element.el [ Element.width Element.fill] <| noteVariantView variant
-    ]
+  case variant of
+    Note.Regular ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| noteContentView content
+        , Element.el [ Element.width Element.fill] <| noteSourceView source
+        ]
+    Note.Question ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| questionView content
+        ]
+
+toAssociatedNoteRepresentation : String -> Note.Variant -> Element Msg
+toAssociatedNoteRepresentation content variant =
+  case variant of
+    Note.Regular ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| labeledViewBuilder "Note" content ]
+    Note.Question ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill] <| questionView content ]
+
+toAssociatedNoteRepresentationFromNote : Note.Note -> Element Msg
+toAssociatedNoteRepresentationFromNote note =
+  toAssociatedNoteRepresentation ( Note.getContent note ) ( Note.getVariant note )
 
 toEditingNoteRepresentationFromItemNoteSlipbox : Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
@@ -964,14 +1008,12 @@ toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
     ( List.map Source.getTitle <| Slipbox.getSources Nothing slipbox )
     ( Note.getContent note )
     ( Note.getSource note )
-    ( Note.getVariant note )
 
-toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
-toEditingNoteRepresentation itemId item titles content source variant =
+toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Element Msg
+toEditingNoteRepresentation itemId item titles content source =
   contentContainer
     [ Element.el [ Element.width Element.fill ] <| contentInput item content
     , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
-    , Element.el [ Element.width Element.fill ] <| chooseVariantButtons item variant
     ]
 
 toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
@@ -1003,6 +1045,12 @@ toSourceRepresentation title author content =
     , Element.el [ Element.width Element.fill] <| sourceContentView content
     ]
 
+toQuestionRepresentation : String -> Element Msg
+toQuestionRepresentation question =
+  contentContainer
+    [ Element.el [ Element.width Element.fill] <| questionView question
+    ]
+
 toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> Element Msg
 toEditingSourceRepresentationFromItemSource item source =
   toEditingSourceRepresentation
@@ -1028,7 +1076,6 @@ exploreTabToolbar input =
     ]
     <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> ExploreTabUpdateInput s)
-      , createNoteButton Nothing
       ]
 
 graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
@@ -1064,17 +1111,18 @@ graphAttributes ( width, _ ) viewport =
         Json.Decode.map2 Viewport.MouseEvent
         ( Json.Decode.field "offsetX" Json.Decode.int )
         ( Json.Decode.field "offsetY" Json.Decode.int )
+      smallerWidthToAccountForPageWidening = ( width - 50 )
   in
   case Viewport.getState viewport of
     Viewport.Moving _ ->
-      [ Svg.Attributes.width <| String.fromInt width
+      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
         , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
       ]
     Viewport.Stationary -> 
-      [ Svg.Attributes.width <| String.fromInt width
+      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
         , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
@@ -1182,7 +1230,6 @@ noteTabToolbar input =
     ]
     <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
       [ searchInput input (\s -> NoteTabUpdateInput s)
-      , createNoteButton Nothing
       ]
 
 toOpenNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
@@ -1197,6 +1244,18 @@ toOpenNoteButton maybeItemOpenedFrom note =
       , label = toNoteRepresentationFromNote note
       }
 
+toAssociatedNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
+toAssociatedNoteButton maybeItemOpenedFrom note =
+  Element.el
+    [ Element.paddingXY 8 0, Element.spacingXY 8 8
+    , Element.Border.solid, Element.Border.color Color.gray
+    , Element.Border.width 4
+    ]
+    <| Element.Input.button []
+      { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
+      , label = toAssociatedNoteRepresentationFromNote note
+      }
+
 sourceTabToolbar: String -> Element Msg
 sourceTabToolbar input =
   Element.row
@@ -1206,7 +1265,6 @@ sourceTabToolbar input =
     , Element.height <| Element.px barHeight
     ] 
     [ searchInput input SourceTabUpdateInput
-    , createSourceButton Nothing
     ]
 
 toOpenSourceButton : Source.Source -> Element Msg
@@ -1226,7 +1284,7 @@ toOpenSourceButton source =
 noteColor : Note.Variant -> String
 noteColor variant =
   case variant of
-    Note.Index -> "rgba(250, 190, 88, 1)"
+    Note.Question -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
 
 -- UTILITIES
@@ -1265,6 +1323,18 @@ createSourceButton maybeItem =
       ] <| Element.text "Create Source"
     }
 
+createQuestionButton : ( Maybe Item.Item ) -> Element Msg
+createQuestionButton maybeItem =
+  smallOldLavenderButton
+    { onPress = Just <| AddItem maybeItem Slipbox.NewQuestion
+    , label = Element.el
+      [ Element.centerX
+      , Element.centerY
+      , Element.Font.heavy
+      , Element.Font.color Color.white
+      ] <| Element.text "Ask Question"
+    }
+
 editButton: Item.Item -> Element Msg
 editButton item =
   smallOldLavenderButton
@@ -1301,11 +1371,23 @@ contentInput item input =
     , spellcheck = True
     }
 
+questionInput: Item.Item -> String -> Element Msg
+questionInput item input =
+  Element.Input.multiline
+    []
+    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
+    , text = input
+    , placeholder = Nothing
+    , label = Element.Input.labelAbove [] <| Element.text "Question"
+    , spellcheck = True
+    }
+
 sourceInput: Int -> Item.Item -> String -> (List String) -> Element Msg
 sourceInput itemId item input suggestions =
   let
     sourceInputid = "Source: " ++ (String.fromInt itemId)
     dataitemId = "Sources: " ++ (String.fromInt itemId)
+    suggestionsWithNA = "n/a" :: suggestions
   in
     Element.html
       <| Html.div
@@ -1323,31 +1405,12 @@ sourceInput itemId item input suggestions =
           []
         , Html.datalist 
           [ Html.Attributes.id dataitemId ]
-          <| List.map toHtmlOption suggestions
+          <| List.map toHtmlOption suggestionsWithNA
         ]
 
 toHtmlOption: String -> Html.Html Msg
 toHtmlOption value =
   Html.option [ Html.Attributes.value value ] []
-
-chooseVariantButtons: Item.Item -> Note.Variant -> Element Msg
-chooseVariantButtons item variant =
-  let
-    variantDisplay = \v ->
-      case v of
-        Note.Index -> Element.el [ Element.centerX, Element.centerY ] <| Element.text "Index"
-        Note.Regular -> Element.el [ Element.centerX, Element.centerY ] <| Element.text "Regular"
-  in
-  Element.Input.radioRow
-    [ Element.spacingXY 8 0, Element.paddingXY 8 0 ]
-    { onChange = (\v -> UpdateItem item <| Slipbox.UpdateVariant v)
-    , selected = Just variant
-    , label = Element.Input.labelLeft [ ] <| Element.text "Note Type:"
-    , options =
-      [ Element.Input.option Note.Index <| variantDisplay Note.Index
-      , Element.Input.option Note.Regular <| variantDisplay Note.Regular
-      ]
-    }
 
 chooseSubmitButton : Item.Item -> Bool -> Element Msg
 chooseSubmitButton item canSubmit =
@@ -1401,42 +1464,27 @@ authorInput item input =
 
 -- MISC VIEW FUNCTIONS
 
-noteContentView : String -> Element Msg
-noteContentView noteContent =
+labeledViewBuilder : String -> String -> Element Msg
+labeledViewBuilder label content =
   Element.textColumn
     [ Element.spacingXY 0 8 ]
-    [ Element.el [ Element.Font.underline ] <| Element.text "Content"
-    , Element.paragraph [] [ Element.text noteContent ] ]
+    [ Element.el [ Element.Font.underline ] <| Element.text label
+    , Element.paragraph [] [ Element.text content ] ]
+
+noteContentView : String -> Element Msg
+noteContentView noteContent = labeledViewBuilder "Content" noteContent
 
 noteSourceView : String -> Element Msg
-noteSourceView noteSource =
-  Element.textColumn
-    [ Element.spacingXY 0 8 ]
-    [ Element.el [ Element.Font.underline ] <| Element.text "Source"
-    , Element.paragraph [] [ Element.text noteSource ] ]
+noteSourceView noteSource = labeledViewBuilder "Source" noteSource
 
-noteVariantView : Note.Variant -> Element Msg
-noteVariantView variant =
-  let
-    text = case variant of
-      Note.Regular -> "regular"
-      Note.Index -> "index"
-  in
-  Element.paragraph [] [  Element.text <| "Type: " ++ text ]
+questionView : String -> Element Msg
+questionView sourceTitle = labeledViewBuilder "Question" sourceTitle
 
 sourceTitleView : String -> Element Msg
-sourceTitleView sourceTitle =
-  Element.textColumn
-    [ Element.spacingXY 0 8 ]
-    [ Element.el [ Element.Font.underline ] <| Element.text "Title"
-    , Element.paragraph [] [ Element.text sourceTitle ] ]
+sourceTitleView sourceTitle = labeledViewBuilder "Title" sourceTitle
 
 sourceAuthorView : String -> Element Msg
-sourceAuthorView sourceAuthor =
-  Element.textColumn
-    [ Element.spacingXY 0 8 ]
-    [ Element.el [ Element.Font.underline ] <| Element.text "Author"
-    , Element.paragraph [] [ Element.text sourceAuthor ] ]
+sourceAuthorView sourceAuthor = labeledViewBuilder "Author" sourceAuthor
 
 sourceContentView : String -> Element Msg
 sourceContentView noteContent =

@@ -152,6 +152,7 @@ type AddAction
   | OpenSource Source.Source
   | NewNote
   | NewSource
+  | NewQuestion
 
 addItem : ( Maybe Item.Item ) -> AddAction -> Slipbox -> Slipbox
 addItem maybeItem addAction slipbox =
@@ -188,6 +189,8 @@ addItem maybeItem addAction slipbox =
 
     NewSource -> itemDoesNotExistLambda <| Item.newSource content.idGenerator
 
+    NewQuestion -> itemDoesNotExistLambda <| Item.newQuestion content.idGenerator
+
 dismissItem : Item.Item -> Slipbox -> Slipbox
 dismissItem item slipbox =
   let
@@ -202,7 +205,6 @@ removeItemFromList item items =
 type UpdateAction
   = UpdateContent String
   | UpdateSource String
-  | UpdateVariant Note.Variant
   | UpdateTitle String
   | UpdateAuthor String
   | UpdateSearch String
@@ -236,6 +238,8 @@ updateItem item updateAction slipbox =
           update <| Item.NewNote itemId tray { newNoteContent | content = input }
         Item.NewSource itemId tray newSourceContent ->
           update <| Item.NewSource itemId tray { newSourceContent | content = input }
+        Item.NewQuestion itemId tray _ ->
+          update <| Item.NewQuestion itemId tray input
         _ -> slipbox
 
     UpdateSource input ->
@@ -246,15 +250,6 @@ updateItem item updateAction slipbox =
               <| Note.updateSource input noteWithEdits
         Item.NewNote itemId tray newNoteContent ->
           update <| Item.NewNote itemId tray { newNoteContent | source = input }
-        _ -> slipbox
-
-    UpdateVariant input ->
-      case item of
-        Item.EditingNote itemId tray originalNote noteWithEdits ->
-          update <|Item.EditingNote itemId tray originalNote
-            <| Note.updateVariant input noteWithEdits
-        Item.NewNote itemId tray newNoteContent ->
-          update <| Item.NewNote itemId tray { newNoteContent | variant = input }
         _ -> slipbox
 
     UpdateTitle input ->
@@ -321,22 +316,26 @@ updateItem item updateAction slipbox =
           update <| Item.ConfirmDiscardNewNoteForm itemId tray note
         Item.ConfirmDiscardNewNoteForm itemId tray note ->
           update <| Item.NewNote itemId tray note
-        Item.EditingNote itemId tray originalNote noteWithEdits ->
+        Item.EditingNote itemId tray originalNote _ ->
           update <| Item.Note itemId tray originalNote
         Item.ConfirmDeleteNote itemId tray note ->
           update <| Item.Note itemId tray note
-        Item.AddingLinkToNoteForm itemId tray search note maybeNote ->
+        Item.AddingLinkToNoteForm itemId tray _ note _ ->
           update <| Item.Note itemId tray note
         Item.NewSource itemId tray source ->
           update <| Item.ConfirmDiscardNewSourceForm itemId tray source
         Item.ConfirmDiscardNewSourceForm itemId tray source ->
           update <| Item.NewSource itemId tray source
-        Item.EditingSource itemId tray originalSource sourceWithEdits ->
+        Item.EditingSource itemId tray originalSource _ ->
           update <| Item.Source itemId tray originalSource
         Item.ConfirmDeleteSource itemId tray source ->
           update <| Item.Source itemId tray source
-        Item.ConfirmDeleteLink itemId tray note linkedNote link ->
+        Item.ConfirmDeleteLink itemId tray note _ _ ->
           update <| Item.Note itemId tray note
+        Item.NewQuestion itemId tray question ->
+          update <| Item.ConfirmDiscardNewQuestion itemId tray question
+        Item.ConfirmDiscardNewQuestion itemId tray question ->
+          update <| Item.ConfirmDiscardNewQuestion itemId tray question
         _ -> slipbox
 
     Submit ->
@@ -363,7 +362,7 @@ updateItem item updateAction slipbox =
         Item.NewNote itemId tray noteContent ->
           let
               (note, idGenerator) = Note.create content.idGenerator
-                <| { content = noteContent.content, source = noteContent.source, variant = noteContent.variant }
+                <| { content = noteContent.content, source = noteContent.source, variant = Note.Regular }
               (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
@@ -434,7 +433,23 @@ updateItem item updateAction slipbox =
         Item.ConfirmDiscardNewNoteForm _ _ _ ->
           Slipbox { content | items = removeItemFromList item content.items }
 
-        Item.ConfirmDiscardNewSourceForm itemId tray source ->
+        Item.ConfirmDiscardNewSourceForm _ _ _ ->
+          Slipbox { content | items = removeItemFromList item content.items }
+
+        Item.NewQuestion itemId tray question ->
+          let
+              (note, idGenerator) = Note.create content.idGenerator
+                <| { content = question, source = "n/a", variant = Note.Question }
+              (state, notes) = simulation (note :: content.notes) content.links
+          in
+          Slipbox
+            { content | notes = notes
+            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
+            , state = state
+            , idGenerator = idGenerator
+            }
+
+        Item.ConfirmDiscardNewQuestion _ _ _ ->
           Slipbox { content | items = removeItemFromList item content.items }
 
         _ -> slipbox
