@@ -1351,7 +1351,7 @@ createQuestionButton maybeItem =
       , Element.centerY
       , Element.Font.heavy
       , Element.Font.color Color.white
-      ] <| Element.text "Ask Question"
+      ] <| Element.text "Create Question"
     }
 
 editButton: Item.Item -> Element Msg
