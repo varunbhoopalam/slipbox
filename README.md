@@ -1,5 +1,5 @@
 # slipbox.io - a wonderful note storage application!
-Click the link below to go create your own slipbox!
+Click the link below to start your own slipbox!
 
 https://varunbhoopalam.github.io/slipbox/
 
@@ -10,6 +10,10 @@ The project is designed for the desktop browser. During a session you can record
 
 ## Why is this project useful?
 This note storage system gives a systematic approach to learning and knowledge storage. Using this system helps our own memory recall. It guides us into putting things into our own words and applying them to our previous knowledge, each of which make it easier to remember information. This structure pushes us towards the formation of complex ideas, linking simple ideas together, to create powerful ideas. This system is simple and encouraging. It illuminates where we have critical masses of knowledge and where we may not know as much.
+
+#### Here are some links to learn more
+- https://takesmartnotes.com/ - I highly recommend ***How to Take Smart Notes*** by ***Sönke Ahrens***. This is the source of this project's inspiration and you will learn a lot from it.
+- https://fortelabs.co/blog/how-to-take-smart-notes/ - I believe I stumbled upon this article from HackerNews and it fascinated me. It is what led me to reading ***How to Take Smart Notes***.
 
 ## How do I get started?
 
