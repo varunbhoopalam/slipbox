@@ -107,9 +107,17 @@ decode =
     ( Json.Decode.field "author" Json.Decode.string )
     ( Json.Decode.field "content" Json.Decode.string )
 
-titleIsValid : String -> Bool
-titleIsValid title =
-  ( String.toLower title ) /= "n/a"
+titleIsValid : ( List String ) -> String -> Bool
+titleIsValid existingTitles title =
+  let
+    titleIsNotNA = ( String.toLower title ) /= "n/a"
+    titlesAreDifferent = ( \t -> (String.toLower t ) /= (String.toLower title ) )
+    allExistingTitlesAreDifferent =
+      List.all
+      titlesAreDifferent
+      existingTitles
+  in
+  titleIsNotNA && allExistingTitlesAreDifferent
 
 -- HELPER
 

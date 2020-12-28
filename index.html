@@ -16564,6 +16564,12 @@ var $author$project$Slipbox$getSources = F2(
 			return content.sources;
 		}
 	});
+var $author$project$Main$getTitlesFromSlipbox = function (slipbox) {
+	return A2(
+		$elm$core$List$map,
+		$author$project$Source$getTitle,
+		A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, slipbox));
+};
 var $author$project$Slipbox$AddLinkForm = {$: 'AddLinkForm'};
 var $author$project$Main$addLinkButton = function (item) {
 	return $author$project$Main$smallOldLavenderButton(
@@ -17853,12 +17859,28 @@ var $author$project$Main$searchInput = F2(
 				text: input
 			});
 	});
-var $author$project$Source$titleIsValid = function (title) {
-	return $elm$core$String$toLower(title) !== 'n/a';
-};
-var $author$project$Item$sourceCanSubmit = function (newSourceContent) {
-	return (!$elm$core$String$isEmpty(newSourceContent.title)) && ((!$elm$core$String$isEmpty(newSourceContent.author)) && $author$project$Source$titleIsValid(newSourceContent.title));
-};
+var $elm$core$List$all = F2(
+	function (isOkay, list) {
+		return !A2(
+			$elm$core$List$any,
+			A2($elm$core$Basics$composeL, $elm$core$Basics$not, isOkay),
+			list);
+	});
+var $author$project$Source$titleIsValid = F2(
+	function (existingTitles, title) {
+		var titlesAreDifferent = function (t) {
+			return !_Utils_eq(
+				$elm$core$String$toLower(t),
+				$elm$core$String$toLower(title));
+		};
+		var titleIsNotNA = $elm$core$String$toLower(title) !== 'n/a';
+		var allExistingTitlesAreDifferent = A2($elm$core$List$all, titlesAreDifferent, existingTitles);
+		return titleIsNotNA && allExistingTitlesAreDifferent;
+	});
+var $author$project$Item$sourceCanSubmit = F2(
+	function (newSourceContent, existingTitles) {
+		return (!$elm$core$String$isEmpty(newSourceContent.title)) && ((!$elm$core$String$isEmpty(newSourceContent.author)) && A2($author$project$Source$titleIsValid, existingTitles, newSourceContent.title));
+	});
 var $mdgriffith$elm_ui$Element$spaceEvenly = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$spacing, $mdgriffith$elm_ui$Internal$Style$classes.spaceEvenly);
 var $author$project$Main$submitItemHeader = F2(
 	function (text, item) {
@@ -18028,9 +18050,9 @@ var $author$project$Main$authorInput = F2(
 var $author$project$Slipbox$UpdateTitle = function (a) {
 	return {$: 'UpdateTitle', a: a};
 };
-var $author$project$Main$titleInput = F2(
-	function (item, input) {
-		var titleLabel = $author$project$Source$titleIsValid(input) ? $mdgriffith$elm_ui$Element$text('Title') : $mdgriffith$elm_ui$Element$text('Title is not valid. Please use a different title than \'n/a\'');
+var $author$project$Main$titleInput = F3(
+	function (item, input, existingTitles) {
+		var titleLabel = A2($author$project$Source$titleIsValid, existingTitles, input) ? $mdgriffith$elm_ui$Element$text('Title') : $mdgriffith$elm_ui$Element$text('Title is not valid. Titles must be unique and Please use a different title than \'n/a\'');
 		return A2(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
@@ -18047,24 +18069,25 @@ var $author$project$Main$titleInput = F2(
 				text: input
 			});
 	});
-var $author$project$Main$toEditingSourceRepresentation = F4(
-	function (item, title, author, content) {
+var $author$project$Main$toEditingSourceRepresentation = F5(
+	function (item, title, author, content, existingTitles) {
 		return $author$project$Main$contentContainer(
 			_List_fromArray(
 				[
-					A2($author$project$Main$titleInput, item, title),
+					A3($author$project$Main$titleInput, item, title, existingTitles),
 					A2($author$project$Main$authorInput, item, author),
 					A2($author$project$Main$contentInput, item, content)
 				]));
 	});
-var $author$project$Main$toEditingSourceRepresentationFromItemSource = F2(
-	function (item, source) {
-		return A4(
+var $author$project$Main$toEditingSourceRepresentationFromItemSource = F3(
+	function (item, source, existingTitles) {
+		return A5(
 			$author$project$Main$toEditingSourceRepresentation,
 			item,
 			$author$project$Source$getTitle(source),
 			$author$project$Source$getAuthor(source),
-			$author$project$Source$getContent(source));
+			$author$project$Source$getContent(source),
+			existingTitles);
 	});
 var $author$project$Slipbox$AddLink = function (a) {
 	return {$: 'AddLink', a: a};
@@ -18337,15 +18360,16 @@ var $author$project$Main$toItemView = F2(
 						]));
 			case 'NewSource':
 				var source = item.c;
+				var existingTitles = $author$project$Main$getTitlesFromSlipbox(content.slipbox);
 				return itemContainerLambda(
 					_List_fromArray(
 						[
 							A3(
 							$author$project$Main$conditionalSubmitItemHeader,
 							'New Source',
-							$author$project$Item$sourceCanSubmit(source),
+							A2($author$project$Item$sourceCanSubmit, source, existingTitles),
 							item),
-							A4($author$project$Main$toEditingSourceRepresentation, item, source.title, source.author, source.content)
+							A5($author$project$Main$toEditingSourceRepresentation, item, source.title, source.author, source.content, existingTitles)
 						]));
 			case 'ConfirmDiscardNewSourceForm':
 				var source = item.c;
@@ -18356,17 +18380,29 @@ var $author$project$Main$toItemView = F2(
 							A3($author$project$Main$toSourceRepresentation, source.title, source.author, source.content)
 						]));
 			case 'EditingSource':
+				var source = item.c;
 				var sourceWithEdits = item.d;
+				var titlesThatArentTheOriginalSourcesTitle = function (title) {
+					return !_Utils_eq(
+						title,
+						$author$project$Source$getTitle(source));
+				};
+				var existingTitlesExcludingThisSourcesTitle = A2(
+					$elm$core$List$filter,
+					titlesThatArentTheOriginalSourcesTitle,
+					$author$project$Main$getTitlesFromSlipbox(content.slipbox));
 				return itemContainerLambda(
 					_List_fromArray(
 						[
 							A3(
 							$author$project$Main$conditionalSubmitItemHeader,
 							'Editing Source',
-							$author$project$Source$titleIsValid(
+							A2(
+								$author$project$Source$titleIsValid,
+								existingTitlesExcludingThisSourcesTitle,
 								$author$project$Source$getTitle(sourceWithEdits)),
 							item),
-							A2($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits),
+							A3($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits, existingTitlesExcludingThisSourcesTitle),
 							A3($author$project$Main$associatedNotesNode, item, sourceWithEdits, content.slipbox)
 						]));
 			case 'ConfirmDeleteSource':

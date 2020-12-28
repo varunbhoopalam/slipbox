@@ -766,10 +766,14 @@ toItemView content item =
       ]
 
 
-    Item.NewSource _ _ source -> itemContainerLambda
-      [ conditionalSubmitItemHeader "New Source" ( Item.sourceCanSubmit source ) item
-      , toEditingSourceRepresentation item source.title source.author source.content
-      ]
+    Item.NewSource _ _ source ->
+      let
+        existingTitles = getTitlesFromSlipbox content.slipbox
+      in
+      itemContainerLambda
+        [ conditionalSubmitItemHeader "New Source" ( Item.sourceCanSubmit source existingTitles ) item
+        , toEditingSourceRepresentation item source.title source.author source.content existingTitles
+        ]
 
 
     Item.ConfirmDiscardNewSourceForm _ _ source -> itemContainerLambda
@@ -778,11 +782,21 @@ toItemView content item =
       ]
 
 
-    Item.EditingSource _ _ _ sourceWithEdits -> itemContainerLambda
-      [ conditionalSubmitItemHeader "Editing Source" ( Source.titleIsValid <| Source.getTitle sourceWithEdits ) item
-      , toEditingSourceRepresentationFromItemSource item sourceWithEdits
-      , associatedNotesNode item sourceWithEdits content.slipbox
-      ]
+    Item.EditingSource _ _ source sourceWithEdits ->
+      let
+        titlesThatArentTheOriginalSourcesTitle = ( \title -> title /= Source.getTitle source )
+        existingTitlesExcludingThisSourcesTitle =
+          List.filter titlesThatArentTheOriginalSourcesTitle
+            <| getTitlesFromSlipbox content.slipbox
+      in
+        itemContainerLambda
+          [ conditionalSubmitItemHeader
+            "Editing Source"
+            ( Source.titleIsValid existingTitlesExcludingThisSourcesTitle ( Source.getTitle sourceWithEdits ) )
+            item
+          , toEditingSourceRepresentationFromItemSource item sourceWithEdits existingTitlesExcludingThisSourcesTitle
+          , associatedNotesNode item sourceWithEdits content.slipbox
+          ]
 
 
     Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
@@ -812,6 +826,10 @@ toItemView content item =
       [ deleteItemHeader "Confirm Discard New Question" item
       , toQuestionRepresentation question
       ]
+
+getTitlesFromSlipbox : Slipbox.Slipbox -> ( List String )
+getTitlesFromSlipbox slipbox =
+  List.map (Source.getTitle) <| Slipbox.getSources Nothing slipbox
 
 onHoverButtonTray : Item.Item -> Element Msg
 onHoverButtonTray item =
@@ -1051,18 +1069,19 @@ toQuestionRepresentation question =
     [ Element.el [ Element.width Element.fill] <| questionView question
     ]
 
-toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> Element Msg
-toEditingSourceRepresentationFromItemSource item source =
+toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> ( List String ) -> Element Msg
+toEditingSourceRepresentationFromItemSource item source existingTitles =
   toEditingSourceRepresentation
     item
     ( Source.getTitle source )
     ( Source.getAuthor source )
     ( Source.getContent source )
+    existingTitles
 
-toEditingSourceRepresentation : Item.Item -> String -> String -> String -> Element Msg
-toEditingSourceRepresentation item title author content =
+toEditingSourceRepresentation : Item.Item -> String -> String -> String -> ( List String ) -> Element Msg
+toEditingSourceRepresentation item title author content existingTitles =
   contentContainer
-    [ titleInput item title
+    [ titleInput item title existingTitles
     , authorInput item author
     , contentInput item content
     ]
@@ -1440,14 +1459,14 @@ cancelButton item =
     , label = Element.text "Cancel"
     }
 
-titleInput : Item.Item -> String -> Element Msg
-titleInput item input =
+titleInput : Item.Item -> String -> ( List String ) -> Element Msg
+titleInput item input existingTitles =
   let
     titleLabel =
-      if Source.titleIsValid input then
+      if Source.titleIsValid existingTitles input then
         Element.text "Title"
       else
-        Element.text "Title is not valid. Please use a different title than 'n/a'"
+        Element.text "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
   in
   Element.Input.multiline
     []
