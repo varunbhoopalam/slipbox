@@ -6045,6 +6045,9 @@ var $author$project$Item$getId = function (item) {
 		case 'NewSource':
 			var id = item.a;
 			return id;
+		case 'NewQuestion':
+			var id = item.a;
+			return id;
 		case 'EditingNote':
 			var id = item.a;
 			return id;
@@ -6058,6 +6061,9 @@ var $author$project$Item$getId = function (item) {
 			var id = item.a;
 			return id;
 		case 'ConfirmDiscardNewSourceForm':
+			var id = item.a;
+			return id;
+		case 'ConfirmDiscardNewQuestion':
 			var id = item.a;
 			return id;
 		case 'ConfirmDeleteNote':
@@ -6205,11 +6211,10 @@ var $author$project$Item$NewNote = F3(
 	function (a, b, c) {
 		return {$: 'NewNote', a: a, b: b, c: c};
 	});
-var $author$project$Item$NewNoteContent = F3(
-	function (content, source, variant) {
-		return {content: content, source: source, variant: variant};
+var $author$project$Item$NewNoteContent = F2(
+	function (content, source) {
+		return {content: content, source: source};
 	});
-var $author$project$Note$Regular = {$: 'Regular'};
 var $author$project$IdGenerator$IdGenerator = function (a) {
 	return {$: 'IdGenerator', a: a};
 };
@@ -6220,12 +6225,24 @@ var $author$project$IdGenerator$generateId = function (generator) {
 		$author$project$IdGenerator$IdGenerator(id + 1));
 };
 var $author$project$Item$newNote = function (generator) {
-	var emptyContent = A3($author$project$Item$NewNoteContent, '', '', $author$project$Note$Regular);
+	var emptyContent = A2($author$project$Item$NewNoteContent, '', '');
 	var _v0 = $author$project$IdGenerator$generateId(generator);
 	var id = _v0.a;
 	var idGenerator = _v0.b;
 	return _Utils_Tuple2(
 		A3($author$project$Item$NewNote, id, $author$project$Item$Closed, emptyContent),
+		idGenerator);
+};
+var $author$project$Item$NewQuestion = F3(
+	function (a, b, c) {
+		return {$: 'NewQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Item$newQuestion = function (generator) {
+	var _v0 = $author$project$IdGenerator$generateId(generator);
+	var id = _v0.a;
+	var idGenerator = _v0.b;
+	return _Utils_Tuple2(
+		A3($author$project$Item$NewQuestion, id, $author$project$Item$Closed, ''),
 		idGenerator);
 };
 var $author$project$Item$NewSource = F3(
@@ -6368,9 +6385,12 @@ var $author$project$Slipbox$addItem = F3(
 			case 'NewNote':
 				return itemDoesNotExistLambda(
 					$author$project$Item$newNote(content.idGenerator));
-			default:
+			case 'NewSource':
 				return itemDoesNotExistLambda(
 					$author$project$Item$newSource(content.idGenerator));
+			default:
+				return itemDoesNotExistLambda(
+					$author$project$Item$newQuestion(content.idGenerator));
 		}
 	});
 var $author$project$Note$Compressed = function (a) {
@@ -7921,13 +7941,14 @@ var $gampleman$elm_visualization$Force$entity = F2(
 			y: radius * $elm$core$Basics$sin(angle)
 		};
 	});
-var $author$project$Note$Index = {$: 'Index'};
+var $author$project$Note$Question = {$: 'Question'};
+var $author$project$Note$Regular = {$: 'Regular'};
 var $author$project$Note$stringToVariant = function (string) {
 	switch (string) {
 		case 'regular':
 			return $author$project$Note$Regular;
 		case 'index':
-			return $author$project$Note$Index;
+			return $author$project$Note$Question;
 		default:
 			return $author$project$Note$Regular;
 	}
@@ -8478,6 +8499,10 @@ var $author$project$Item$ConfirmDiscardNewNoteForm = F3(
 	function (a, b, c) {
 		return {$: 'ConfirmDiscardNewNoteForm', a: a, b: b, c: c};
 	});
+var $author$project$Item$ConfirmDiscardNewQuestion = F3(
+	function (a, b, c) {
+		return {$: 'ConfirmDiscardNewQuestion', a: a, b: b, c: c};
+	});
 var $author$project$Item$ConfirmDiscardNewSourceForm = F3(
 	function (a, b, c) {
 		return {$: 'ConfirmDiscardNewSourceForm', a: a, b: b, c: c};
@@ -8509,6 +8534,10 @@ var $author$project$Item$setTray = F2(
 				var id = item.a;
 				var content = item.c;
 				return A3($author$project$Item$NewSource, id, tray, content);
+			case 'NewQuestion':
+				var id = item.a;
+				var question = item.c;
+				return A3($author$project$Item$NewQuestion, id, tray, question);
 			case 'EditingNote':
 				var id = item.a;
 				var note = item.c;
@@ -8533,6 +8562,10 @@ var $author$project$Item$setTray = F2(
 				var id = item.a;
 				var content = item.c;
 				return A3($author$project$Item$ConfirmDiscardNewSourceForm, id, tray, content);
+			case 'ConfirmDiscardNewQuestion':
+				var id = item.a;
+				var question = item.c;
+				return A3($author$project$Item$ConfirmDiscardNewQuestion, id, tray, question);
 			case 'ConfirmDeleteNote':
 				var id = item.a;
 				var note = item.c;
@@ -8818,6 +8851,11 @@ var $author$project$Slipbox$updateItem = F3(
 								_Utils_update(
 									newSourceContent,
 									{content: input})));
+					case 'NewQuestion':
+						var itemId = item.a;
+						var tray = item.b;
+						return update(
+							A3($author$project$Item$NewQuestion, itemId, tray, input));
 					default:
 						return slipbox;
 				}
@@ -8848,36 +8886,6 @@ var $author$project$Slipbox$updateItem = F3(
 								_Utils_update(
 									newNoteContent,
 									{source: input})));
-					default:
-						return slipbox;
-				}
-			case 'UpdateVariant':
-				var input = updateAction.a;
-				switch (item.$) {
-					case 'EditingNote':
-						var itemId = item.a;
-						var tray = item.b;
-						var originalNote = item.c;
-						var noteWithEdits = item.d;
-						return update(
-							A4(
-								$author$project$Item$EditingNote,
-								itemId,
-								tray,
-								originalNote,
-								A2($author$project$Note$updateVariant, input, noteWithEdits)));
-					case 'NewNote':
-						var itemId = item.a;
-						var tray = item.b;
-						var newNoteContent = item.c;
-						return update(
-							A3(
-								$author$project$Item$NewNote,
-								itemId,
-								tray,
-								_Utils_update(
-									newNoteContent,
-									{variant: input})));
 					default:
 						return slipbox;
 				}
@@ -9045,7 +9053,6 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var originalNote = item.c;
-						var noteWithEdits = item.d;
 						return update(
 							A3($author$project$Item$Note, itemId, tray, originalNote));
 					case 'ConfirmDeleteNote':
@@ -9057,9 +9064,7 @@ var $author$project$Slipbox$updateItem = F3(
 					case 'AddingLinkToNoteForm':
 						var itemId = item.a;
 						var tray = item.b;
-						var search = item.c;
 						var note = item.d;
-						var maybeNote = item.e;
 						return update(
 							A3($author$project$Item$Note, itemId, tray, note));
 					case 'NewSource':
@@ -9078,7 +9083,6 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var originalSource = item.c;
-						var sourceWithEdits = item.d;
 						return update(
 							A3($author$project$Item$Source, itemId, tray, originalSource));
 					case 'ConfirmDeleteSource':
@@ -9091,10 +9095,20 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var note = item.c;
-						var linkedNote = item.d;
-						var link = item.e;
 						return update(
 							A3($author$project$Item$Note, itemId, tray, note));
+					case 'NewQuestion':
+						var itemId = item.a;
+						var tray = item.b;
+						var question = item.c;
+						return update(
+							A3($author$project$Item$ConfirmDiscardNewQuestion, itemId, tray, question));
+					case 'ConfirmDiscardNewQuestion':
+						var itemId = item.a;
+						var tray = item.b;
+						var question = item.c;
+						return update(
+							A3($author$project$Item$ConfirmDiscardNewQuestion, itemId, tray, question));
 					default:
 						return slipbox;
 				}
@@ -9112,9 +9126,9 @@ var $author$project$Slipbox$updateItem = F3(
 								return !A2($author$project$Slipbox$isAssociated, noteToDelete, l);
 							},
 							content.links);
-						var _v14 = A2($author$project$Slipbox$simulation, notesWithDeletedNoteRemoved, links);
-						var state = _v14.a;
-						var notes = _v14.b;
+						var _v13 = A2($author$project$Slipbox$simulation, notesWithDeletedNoteRemoved, links);
+						var state = _v13.a;
+						var notes = _v13.b;
 						return $author$project$Slipbox$Slipbox(
 							_Utils_update(
 								content,
@@ -9143,18 +9157,18 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var noteContent = item.c;
-						var _v15 = A2(
+						var _v14 = A2(
 							$author$project$Note$create,
 							content.idGenerator,
-							{content: noteContent.content, source: noteContent.source, variant: noteContent.variant});
-						var note = _v15.a;
-						var idGenerator = _v15.b;
-						var _v16 = A2(
+							{content: noteContent.content, source: noteContent.source, variant: $author$project$Note$Regular});
+						var note = _v14.a;
+						var idGenerator = _v14.b;
+						var _v15 = A2(
 							$author$project$Slipbox$simulation,
 							A2($elm$core$List$cons, note, content.notes),
 							content.links);
-						var state = _v16.a;
-						var notes = _v16.b;
+						var state = _v15.a;
+						var notes = _v15.b;
 						return $author$project$Slipbox$Slipbox(
 							_Utils_update(
 								content,
@@ -9173,9 +9187,9 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var sourceContent = item.c;
-						var _v17 = A2($author$project$Source$createSource, content.idGenerator, sourceContent);
-						var source = _v17.a;
-						var generator = _v17.b;
+						var _v16 = A2($author$project$Source$createSource, content.idGenerator, sourceContent);
+						var source = _v16.a;
+						var generator = _v16.b;
 						return $author$project$Slipbox$Slipbox(
 							_Utils_update(
 								content,
@@ -9239,13 +9253,13 @@ var $author$project$Slipbox$updateItem = F3(
 						var maybeNoteToBeLinked = item.e;
 						if (maybeNoteToBeLinked.$ === 'Just') {
 							var noteToBeLinked = maybeNoteToBeLinked.a;
-							var _v19 = A3($author$project$Link$create, content.idGenerator, note, noteToBeLinked);
-							var link = _v19.a;
-							var idGenerator = _v19.b;
+							var _v18 = A3($author$project$Link$create, content.idGenerator, note, noteToBeLinked);
+							var link = _v18.a;
+							var idGenerator = _v18.b;
 							var links = A2($elm$core$List$cons, link, content.links);
-							var _v20 = A2($author$project$Slipbox$simulation, content.notes, links);
-							var state = _v20.a;
-							var notes = _v20.b;
+							var _v19 = A2($author$project$Slipbox$simulation, content.notes, links);
+							var state = _v19.a;
+							var notes = _v19.b;
 							return $author$project$Slipbox$Slipbox(
 								_Utils_update(
 									content,
@@ -9271,9 +9285,9 @@ var $author$project$Slipbox$updateItem = F3(
 						var link = item.e;
 						var trueIfNotTargetLink = A2($author$project$Slipbox$isNotLambda, $author$project$Link$is, link);
 						var links = A2($elm$core$List$filter, trueIfNotTargetLink, content.links);
-						var _v21 = A2($author$project$Slipbox$simulation, content.notes, links);
-						var state = _v21.a;
-						var notes = _v21.b;
+						var _v20 = A2($author$project$Slipbox$simulation, content.notes, links);
+						var state = _v20.a;
+						var notes = _v20.b;
 						return $author$project$Slipbox$Slipbox(
 							_Utils_update(
 								content,
@@ -9296,9 +9310,43 @@ var $author$project$Slipbox$updateItem = F3(
 									items: A2($author$project$Slipbox$removeItemFromList, item, content.items)
 								}));
 					case 'ConfirmDiscardNewSourceForm':
+						return $author$project$Slipbox$Slipbox(
+							_Utils_update(
+								content,
+								{
+									items: A2($author$project$Slipbox$removeItemFromList, item, content.items)
+								}));
+					case 'NewQuestion':
 						var itemId = item.a;
 						var tray = item.b;
-						var source = item.c;
+						var question = item.c;
+						var _v21 = A2(
+							$author$project$Note$create,
+							content.idGenerator,
+							{content: question, source: 'n/a', variant: $author$project$Note$Question});
+						var note = _v21.a;
+						var idGenerator = _v21.b;
+						var _v22 = A2(
+							$author$project$Slipbox$simulation,
+							A2($elm$core$List$cons, note, content.notes),
+							content.links);
+						var state = _v22.a;
+						var notes = _v22.b;
+						return $author$project$Slipbox$Slipbox(
+							_Utils_update(
+								content,
+								{
+									idGenerator: idGenerator,
+									items: A2(
+										$elm$core$List$map,
+										function (i) {
+											return A2($author$project$Item$is, item, i) ? A3($author$project$Item$Note, itemId, tray, note) : i;
+										},
+										content.items),
+									notes: notes,
+									state: state
+								}));
+					case 'ConfirmDiscardNewQuestion':
 						return $author$project$Slipbox$Slipbox(
 							_Utils_update(
 								content,
@@ -15784,7 +15832,7 @@ var $author$project$Main$downloadButton = A2(
 			$mdgriffith$elm_ui$Element$Border$width(2)
 		]),
 	{
-		label: $mdgriffith$elm_ui$Element$text('Download Slipbox'),
+		label: $mdgriffith$elm_ui$Element$text('Save'),
 		onPress: $elm$core$Maybe$Just($author$project$Main$FileDownload)
 	});
 var $mdgriffith$elm_ui$Internal$Model$InFront = {$: 'InFront'};
@@ -15875,214 +15923,13 @@ var $author$project$Main$header = function () {
 		_List_fromArray(
 			[$author$project$Main$aboutButton, $author$project$Main$downloadButton]));
 }();
-var $author$project$Slipbox$getItems = function (slipbox) {
-	return $author$project$Slipbox$getContent(slipbox).items;
-};
-var $mdgriffith$elm_ui$Internal$Flag$fontWeight = $mdgriffith$elm_ui$Internal$Flag$flag(13);
-var $mdgriffith$elm_ui$Element$Font$heavy = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.textHeavy);
-var $author$project$Color$oldLavender = A3($mdgriffith$elm_ui$Element$rgba255, 128, 114, 123);
-var $author$project$Color$oldLavenderRegular = $author$project$Color$oldLavender(1.0);
-var $author$project$Main$UpdateItem = F2(
-	function (a, b) {
-		return {$: 'UpdateItem', a: a, b: b};
-	});
-var $author$project$Slipbox$UpdateSearch = function (a) {
-	return {$: 'UpdateSearch', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
-var $mdgriffith$elm_ui$Element$alignLeft = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Left);
-var $author$project$Note$isAssociated = F2(
-	function (source, note) {
-		return _Utils_eq(
-			$author$project$Source$getTitle(source),
-			$author$project$Note$getSource(note));
-	});
-var $author$project$Slipbox$getNotesAssociatedToSource = F2(
-	function (source, slipbox) {
-		return A2(
-			$elm$core$List$filter,
-			$author$project$Note$isAssociated(source),
-			$author$project$Slipbox$getContent(slipbox).notes);
-	});
-var $author$project$Main$headerText = function (text) {
-	return A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_fromArray(
-			[$mdgriffith$elm_ui$Element$alignLeft, $mdgriffith$elm_ui$Element$Font$heavy]),
-		$mdgriffith$elm_ui$Element$text(text));
-};
-var $mdgriffith$elm_ui$Internal$Model$Min = F2(
-	function (a, b) {
-		return {$: 'Min', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$minimum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Min, i, l);
-	});
-var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
-var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
-var $mdgriffith$elm_ui$Internal$Flag$overflow = $mdgriffith$elm_ui$Internal$Flag$flag(20);
-var $mdgriffith$elm_ui$Element$scrollbarY = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$overflow, $mdgriffith$elm_ui$Internal$Style$classes.scrollbarsY);
-var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 'Paragraph'};
-var $mdgriffith$elm_ui$Element$spacing = function (x) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$spacing,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
-			A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, x),
-			x,
-			x));
-};
-var $mdgriffith$elm_ui$Element$paragraph = F2(
-	function (attrs, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asParagraph,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Paragraph),
-				A2(
-					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-					A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$spacing(5),
-						attrs))),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
-var $mdgriffith$elm_ui$Internal$Model$AsTextColumn = {$: 'AsTextColumn'};
-var $mdgriffith$elm_ui$Internal$Model$asTextColumn = $mdgriffith$elm_ui$Internal$Model$AsTextColumn;
-var $mdgriffith$elm_ui$Internal$Model$Max = F2(
-	function (a, b) {
-		return {$: 'Max', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$maximum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
-	});
-var $mdgriffith$elm_ui$Element$textColumn = F2(
-	function (attrs, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asTextColumn,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Element$width(
-					A2(
-						$mdgriffith$elm_ui$Element$maximum,
-						750,
-						A2($mdgriffith$elm_ui$Element$minimum, 500, $mdgriffith$elm_ui$Element$fill))),
-				attrs),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
-var $author$project$Main$noteContentView = function (noteContent) {
-	return A2(
-		$mdgriffith$elm_ui$Element$textColumn,
-		_List_fromArray(
-			[
-				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
-			]),
-		_List_fromArray(
-			[
-				A2(
-				$mdgriffith$elm_ui$Element$el,
-				_List_fromArray(
-					[$mdgriffith$elm_ui$Element$Font$underline]),
-				$mdgriffith$elm_ui$Element$text('Content')),
-				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$text(noteContent)
-					]))
-			]));
-};
-var $author$project$Main$noteSourceView = function (noteSource) {
-	return A2(
-		$mdgriffith$elm_ui$Element$textColumn,
-		_List_fromArray(
-			[
-				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
-			]),
-		_List_fromArray(
-			[
-				A2(
-				$mdgriffith$elm_ui$Element$el,
-				_List_fromArray(
-					[$mdgriffith$elm_ui$Element$Font$underline]),
-				$mdgriffith$elm_ui$Element$text('Source')),
-				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$text(noteSource)
-					]))
-			]));
-};
-var $author$project$Main$noteVariantView = function (variant) {
-	var text = function () {
-		if (variant.$ === 'Regular') {
-			return 'regular';
-		} else {
-			return 'index';
-		}
-	}();
-	return A2(
-		$mdgriffith$elm_ui$Element$paragraph,
-		_List_Nil,
-		_List_fromArray(
-			[
-				$mdgriffith$elm_ui$Element$text('Type: ' + text)
-			]));
-};
-var $author$project$Main$toLinkedNoteViewNoButtons = function (linkedNote) {
-	return A2(
-		$mdgriffith$elm_ui$Element$column,
-		_List_fromArray(
-			[
-				A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8)
-			]),
-		_List_fromArray(
-			[
-				$author$project$Main$noteContentView(
-				$author$project$Note$getContent(linkedNote)),
-				$author$project$Main$noteSourceView(
-				$author$project$Note$getSource(linkedNote)),
-				$author$project$Main$noteVariantView(
-				$author$project$Note$getVariant(linkedNote))
-			]));
-};
-var $author$project$Main$associatedNotesNode = F2(
-	function (source, slipbox) {
-		var associatedNotes = A2($author$project$Slipbox$getNotesAssociatedToSource, source, slipbox);
-		var noAssociatedNotes = $elm$core$List$isEmpty(associatedNotes);
-		return noAssociatedNotes ? $mdgriffith$elm_ui$Element$none : A2(
-			$mdgriffith$elm_ui$Element$column,
-			_List_fromArray(
-				[
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-					$mdgriffith$elm_ui$Element$height(
-					A2($mdgriffith$elm_ui$Element$minimum, 100, $mdgriffith$elm_ui$Element$fill)),
-					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 0),
-					$mdgriffith$elm_ui$Element$scrollbarY
-				]),
-			A2(
-				$elm$core$List$cons,
-				$author$project$Main$headerText('Associated Notes'),
-				A2($elm$core$List$map, $author$project$Main$toLinkedNoteViewNoButtons, associatedNotes)));
-	});
-var $author$project$Slipbox$CloseTray = {$: 'CloseTray'};
-var $author$project$Slipbox$OpenTray = {$: 'OpenTray'};
 var $author$project$Main$AddItem = F2(
 	function (a, b) {
 		return {$: 'AddItem', a: a, b: b};
 	});
 var $author$project$Slipbox$NewNote = {$: 'NewNote'};
+var $mdgriffith$elm_ui$Internal$Flag$fontWeight = $mdgriffith$elm_ui$Internal$Flag$flag(13);
+var $mdgriffith$elm_ui$Element$Font$heavy = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.textHeavy);
 var $mdgriffith$elm_ui$Internal$Model$Hover = {$: 'Hover'};
 var $mdgriffith$elm_ui$Internal$Model$PseudoSelector = F2(
 	function (a, b) {
@@ -16093,6 +15940,7 @@ var $mdgriffith$elm_ui$Internal$Model$TransformComponent = F2(
 	function (a, b) {
 		return {$: 'TransformComponent', a: a, b: b};
 	});
+var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $mdgriffith$elm_ui$Internal$Model$map = F2(
 	function (fn, el) {
@@ -16216,7 +16064,9 @@ var $mdgriffith$elm_ui$Element$mouseOver = function (decs) {
 			$mdgriffith$elm_ui$Internal$Model$Hover,
 			$mdgriffith$elm_ui$Internal$Model$unwrapDecorations(decs)));
 };
+var $author$project$Color$oldLavender = A3($mdgriffith$elm_ui$Element$rgba255, 128, 114, 123);
 var $author$project$Color$oldLavenderHighlighted = $author$project$Color$oldLavender(0.5);
+var $author$project$Color$oldLavenderRegular = $author$project$Color$oldLavender(1.0);
 var $author$project$Main$smallOldLavenderButton = function (buttonFunction) {
 	return A2(
 		$mdgriffith$elm_ui$Element$Input$button,
@@ -16253,6 +16103,24 @@ var $author$project$Main$createNoteButton = function (maybeItem) {
 				A2($author$project$Main$AddItem, maybeItem, $author$project$Slipbox$NewNote))
 		});
 };
+var $author$project$Slipbox$NewQuestion = {$: 'NewQuestion'};
+var $author$project$Main$createQuestionButton = function (maybeItem) {
+	return $author$project$Main$smallOldLavenderButton(
+		{
+			label: A2(
+				$mdgriffith$elm_ui$Element$el,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$centerX,
+						$mdgriffith$elm_ui$Element$centerY,
+						$mdgriffith$elm_ui$Element$Font$heavy,
+						$mdgriffith$elm_ui$Element$Font$color($author$project$Color$white)
+					]),
+				$mdgriffith$elm_ui$Element$text('Ask Question')),
+			onPress: $elm$core$Maybe$Just(
+				A2($author$project$Main$AddItem, maybeItem, $author$project$Slipbox$NewQuestion))
+		});
+};
 var $author$project$Slipbox$NewSource = {$: 'NewSource'};
 var $author$project$Main$createSourceButton = function (maybeItem) {
 	return $author$project$Main$smallOldLavenderButton(
@@ -16271,67 +16139,8 @@ var $author$project$Main$createSourceButton = function (maybeItem) {
 				A2($author$project$Main$AddItem, maybeItem, $author$project$Slipbox$NewSource))
 		});
 };
-var $author$project$Item$getButtonTray = function (item) {
-	switch (item.$) {
-		case 'Note':
-			var tray = item.b;
-			return tray;
-		case 'Source':
-			var tray = item.b;
-			return tray;
-		case 'NewNote':
-			var tray = item.b;
-			return tray;
-		case 'NewSource':
-			var tray = item.b;
-			return tray;
-		case 'EditingNote':
-			var tray = item.b;
-			return tray;
-		case 'EditingSource':
-			var tray = item.b;
-			return tray;
-		case 'AddingLinkToNoteForm':
-			var tray = item.b;
-			return tray;
-		case 'ConfirmDiscardNewNoteForm':
-			var tray = item.b;
-			return tray;
-		case 'ConfirmDiscardNewSourceForm':
-			var tray = item.b;
-			return tray;
-		case 'ConfirmDeleteNote':
-			var tray = item.b;
-			return tray;
-		case 'ConfirmDeleteSource':
-			var tray = item.b;
-			return tray;
-		default:
-			var tray = item.b;
-			return tray;
-	}
-};
-var $author$project$Item$isTrayOpen = function (item) {
-	return _Utils_eq(
-		$author$project$Item$getButtonTray(item),
-		$author$project$Item$Open);
-};
-var $elm$html$Html$Events$onMouseEnter = function (msg) {
+var $author$project$Main$buttonTray = function (maybeItem) {
 	return A2(
-		$elm$html$Html$Events$on,
-		'mouseenter',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $mdgriffith$elm_ui$Element$Events$onMouseEnter = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseEnter);
-var $elm$html$Html$Events$onMouseLeave = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'mouseleave',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $mdgriffith$elm_ui$Element$Events$onMouseLeave = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseLeave);
-var $author$project$Main$buttonTray = function (item) {
-	var tray = $author$project$Item$isTrayOpen(item) ? A2(
 		$mdgriffith$elm_ui$Element$row,
 		_List_fromArray(
 			[
@@ -16342,30 +16151,262 @@ var $author$project$Main$buttonTray = function (item) {
 			]),
 		_List_fromArray(
 			[
-				$author$project$Main$createNoteButton(
-				$elm$core$Maybe$Just(item)),
-				$author$project$Main$createSourceButton(
-				$elm$core$Maybe$Just(item))
-			])) : A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_fromArray(
-			[
-				$mdgriffith$elm_ui$Element$height(
-				A2($mdgriffith$elm_ui$Element$minimum, 8, $mdgriffith$elm_ui$Element$fill))
-			]),
-		$mdgriffith$elm_ui$Element$none);
+				$author$project$Main$createNoteButton(maybeItem),
+				$author$project$Main$createSourceButton(maybeItem),
+				$author$project$Main$createQuestionButton(maybeItem)
+			]));
+};
+var $author$project$Slipbox$getItems = function (slipbox) {
+	return $author$project$Slipbox$getContent(slipbox).items;
+};
+var $author$project$Main$UpdateItem = F2(
+	function (a, b) {
+		return {$: 'UpdateItem', a: a, b: b};
+	});
+var $author$project$Slipbox$UpdateSearch = function (a) {
+	return {$: 'UpdateSearch', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
+var $mdgriffith$elm_ui$Element$alignLeft = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Left);
+var $author$project$Color$heliotropeGray = A3($mdgriffith$elm_ui$Element$rgba255, 187, 172, 193);
+var $author$project$Color$heliotropeGrayRegular = $author$project$Color$heliotropeGray(1.0);
+var $mdgriffith$elm_ui$Internal$Model$Min = F2(
+	function (a, b) {
+		return {$: 'Min', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$minimum = F2(
+	function (i, l) {
+		return A2($mdgriffith$elm_ui$Internal$Model$Min, i, l);
+	});
+var $mdgriffith$elm_ui$Internal$Flag$overflow = $mdgriffith$elm_ui$Internal$Flag$flag(20);
+var $mdgriffith$elm_ui$Element$scrollbarY = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$overflow, $mdgriffith$elm_ui$Internal$Style$classes.scrollbarsY);
+var $author$project$Main$containerWithScrollAttributes = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Border$width(3),
+		$mdgriffith$elm_ui$Element$Border$color($author$project$Color$heliotropeGrayRegular),
+		$mdgriffith$elm_ui$Element$padding(8),
+		A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+		$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+		$mdgriffith$elm_ui$Element$centerX,
+		$mdgriffith$elm_ui$Element$height(
+		A2($mdgriffith$elm_ui$Element$minimum, 200, $mdgriffith$elm_ui$Element$fill)),
+		$mdgriffith$elm_ui$Element$scrollbarY
+	]);
+var $author$project$Note$isAssociated = F2(
+	function (source, note) {
+		return _Utils_eq(
+			$author$project$Source$getTitle(source),
+			$author$project$Note$getSource(note));
+	});
+var $author$project$Slipbox$getNotesAssociatedToSource = F2(
+	function (source, slipbox) {
+		return A2(
+			$elm$core$List$filter,
+			$author$project$Note$isAssociated(source),
+			$author$project$Slipbox$getContent(slipbox).notes);
+	});
+var $author$project$Main$headerText = function (text) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
+			[$mdgriffith$elm_ui$Element$alignLeft, $mdgriffith$elm_ui$Element$Font$heavy]),
+		$mdgriffith$elm_ui$Element$text(text));
+};
+var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
+var $author$project$Slipbox$OpenNote = function (a) {
+	return {$: 'OpenNote', a: a};
+};
+var $author$project$Color$gray = A3($mdgriffith$elm_ui$Element$rgb255, 238, 238, 238);
+var $mdgriffith$elm_ui$Internal$Flag$borderStyle = $mdgriffith$elm_ui$Internal$Flag$flag(11);
+var $mdgriffith$elm_ui$Element$Border$solid = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$borderStyle, $mdgriffith$elm_ui$Internal$Style$classes.borderSolid);
+var $author$project$Main$contentContainer = function (contents) {
+	return A2(
+		$mdgriffith$elm_ui$Element$column,
+		_List_fromArray(
 			[
-				$mdgriffith$elm_ui$Element$Events$onMouseEnter(
-				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$OpenTray)),
-				$mdgriffith$elm_ui$Element$Events$onMouseLeave(
-				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$CloseTray)),
+				$mdgriffith$elm_ui$Element$padding(8),
+				A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
 				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 			]),
-		tray);
+		contents);
 };
+var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 'Paragraph'};
+var $mdgriffith$elm_ui$Element$spacing = function (x) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$spacing,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
+			A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, x),
+			x,
+			x));
+};
+var $mdgriffith$elm_ui$Element$paragraph = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asParagraph,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Paragraph),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Element$spacing(5),
+						attrs))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
+var $mdgriffith$elm_ui$Internal$Model$AsTextColumn = {$: 'AsTextColumn'};
+var $mdgriffith$elm_ui$Internal$Model$asTextColumn = $mdgriffith$elm_ui$Internal$Model$AsTextColumn;
+var $mdgriffith$elm_ui$Internal$Model$Max = F2(
+	function (a, b) {
+		return {$: 'Max', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$maximum = F2(
+	function (i, l) {
+		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
+	});
+var $mdgriffith$elm_ui$Element$textColumn = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asTextColumn,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Element$width(
+					A2(
+						$mdgriffith$elm_ui$Element$maximum,
+						750,
+						A2($mdgriffith$elm_ui$Element$minimum, 500, $mdgriffith$elm_ui$Element$fill))),
+				attrs),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
+var $author$project$Main$labeledViewBuilder = F2(
+	function (label, content) {
+		return A2(
+			$mdgriffith$elm_ui$Element$textColumn,
+			_List_fromArray(
+				[
+					A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$Font$underline]),
+					$mdgriffith$elm_ui$Element$text(label)),
+					A2(
+					$mdgriffith$elm_ui$Element$paragraph,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$text(content)
+						]))
+				]));
+	});
+var $author$project$Main$questionView = function (sourceTitle) {
+	return A2($author$project$Main$labeledViewBuilder, 'Question', sourceTitle);
+};
+var $author$project$Main$toAssociatedNoteRepresentation = F2(
+	function (content, variant) {
+		if (variant.$ === 'Regular') {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						A2($author$project$Main$labeledViewBuilder, 'Note', content))
+					]));
+		} else {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						$author$project$Main$questionView(content))
+					]));
+		}
+	});
+var $author$project$Main$toAssociatedNoteRepresentationFromNote = function (note) {
+	return A2(
+		$author$project$Main$toAssociatedNoteRepresentation,
+		$author$project$Note$getContent(note),
+		$author$project$Note$getVariant(note));
+};
+var $author$project$Main$toAssociatedNoteButton = F2(
+	function (maybeItemOpenedFrom, note) {
+		return A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_fromArray(
+				[
+					A2($mdgriffith$elm_ui$Element$paddingXY, 8, 0),
+					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+					$mdgriffith$elm_ui$Element$Border$solid,
+					$mdgriffith$elm_ui$Element$Border$color($author$project$Color$gray),
+					$mdgriffith$elm_ui$Element$Border$width(4)
+				]),
+			A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				_List_Nil,
+				{
+					label: $author$project$Main$toAssociatedNoteRepresentationFromNote(note),
+					onPress: $elm$core$Maybe$Just(
+						A2(
+							$author$project$Main$AddItem,
+							maybeItemOpenedFrom,
+							$author$project$Slipbox$OpenNote(note)))
+				}));
+	});
+var $author$project$Main$associatedNotesNode = F3(
+	function (item, source, slipbox) {
+		var associatedNotes = A2($author$project$Slipbox$getNotesAssociatedToSource, source, slipbox);
+		var noAssociatedNotes = $elm$core$List$isEmpty(associatedNotes);
+		return noAssociatedNotes ? $mdgriffith$elm_ui$Element$none : A2(
+			$mdgriffith$elm_ui$Element$column,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8)
+				]),
+			_List_fromArray(
+				[
+					$author$project$Main$headerText('Associated Notes'),
+					A2(
+					$mdgriffith$elm_ui$Element$column,
+					$author$project$Main$containerWithScrollAttributes,
+					A2(
+						$elm$core$List$map,
+						function (n) {
+							return A2(
+								$author$project$Main$toAssociatedNoteButton,
+								$elm$core$Maybe$Just(item),
+								n);
+						},
+						associatedNotes))
+				]));
+	});
+var $author$project$Main$containerAttributes = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Border$width(3),
+		$mdgriffith$elm_ui$Element$Border$color($author$project$Color$heliotropeGrayRegular),
+		$mdgriffith$elm_ui$Element$padding(8),
+		A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+		$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+		$mdgriffith$elm_ui$Element$centerX
+	]);
 var $author$project$Slipbox$Cancel = {$: 'Cancel'};
 var $author$project$Color$indianred = A3($mdgriffith$elm_ui$Element$rgb255, 205, 92, 92);
 var $author$project$Color$thistle = A3($mdgriffith$elm_ui$Element$rgb255, 216, 191, 216);
@@ -16519,8 +16560,6 @@ var $author$project$Slipbox$getSources = F2(
 			return content.sources;
 		}
 	});
-var $author$project$Color$heliotropeGray = A3($mdgriffith$elm_ui$Element$rgba255, 187, 172, 193);
-var $author$project$Color$heliotropeGrayRegular = $author$project$Color$heliotropeGray(1.0);
 var $author$project$Slipbox$AddLinkForm = {$: 'AddLinkForm'};
 var $author$project$Main$addLinkButton = function (item) {
 	return $author$project$Main$smallOldLavenderButton(
@@ -16592,27 +16631,104 @@ var $author$project$Main$removeLinkButton = F3(
 						A2($author$project$Slipbox$PromptConfirmRemoveLink, linkedNote, link)))
 			});
 	});
+var $author$project$Main$noteContentView = function (noteContent) {
+	return A2($author$project$Main$labeledViewBuilder, 'Content', noteContent);
+};
+var $author$project$Main$noteSourceView = function (noteSource) {
+	return A2($author$project$Main$labeledViewBuilder, 'Source', noteSource);
+};
+var $author$project$Main$toNoteRepresentation = F3(
+	function (content, source, variant) {
+		if (variant.$ === 'Regular') {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						$author$project$Main$noteContentView(content)),
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						$author$project$Main$noteSourceView(source))
+					]));
+		} else {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						$author$project$Main$questionView(content))
+					]));
+		}
+	});
+var $author$project$Main$toNoteRepresentationFromNote = function (note) {
+	return A3(
+		$author$project$Main$toNoteRepresentation,
+		$author$project$Note$getContent(note),
+		$author$project$Note$getSource(note),
+		$author$project$Note$getVariant(note));
+};
+var $author$project$Main$toOpenNoteButton = F2(
+	function (maybeItemOpenedFrom, note) {
+		return A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_fromArray(
+				[
+					A2($mdgriffith$elm_ui$Element$paddingXY, 8, 0),
+					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+					$mdgriffith$elm_ui$Element$Border$solid,
+					$mdgriffith$elm_ui$Element$Border$color($author$project$Color$gray),
+					$mdgriffith$elm_ui$Element$Border$width(4)
+				]),
+			A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				_List_Nil,
+				{
+					label: $author$project$Main$toNoteRepresentationFromNote(note),
+					onPress: $elm$core$Maybe$Just(
+						A2(
+							$author$project$Main$AddItem,
+							maybeItemOpenedFrom,
+							$author$project$Slipbox$OpenNote(note)))
+				}));
+	});
 var $author$project$Main$toLinkedNoteView = F2(
 	function (item, _v0) {
 		var linkedNote = _v0.a;
 		var link = _v0.b;
 		return A2(
-			$mdgriffith$elm_ui$Element$column,
-			_List_Nil,
+			$mdgriffith$elm_ui$Element$row,
+			$author$project$Main$containerAttributes,
 			_List_fromArray(
 				[
-					$author$project$Main$noteContentView(
-					$author$project$Note$getContent(linkedNote)),
-					$author$project$Main$noteSourceView(
-					$author$project$Note$getSource(linkedNote)),
-					$author$project$Main$noteVariantView(
-					$author$project$Note$getVariant(linkedNote)),
+					A2(
+					$author$project$Main$toOpenNoteButton,
+					$elm$core$Maybe$Just(item),
+					linkedNote),
 					A3($author$project$Main$removeLinkButton, item, linkedNote, link)
 				]));
 	});
 var $author$project$Main$linkedNotesNode = F3(
 	function (item, note, slipbox) {
 		var linkedNotes = A2($author$project$Slipbox$getLinkedNotes, note, slipbox);
+		var linkedNotesDomRep = A2(
+			$mdgriffith$elm_ui$Element$column,
+			$author$project$Main$containerWithScrollAttributes,
+			A2(
+				$elm$core$List$map,
+				$author$project$Main$toLinkedNoteView(item),
+				linkedNotes));
 		var noLinkedNotes = $elm$core$List$isEmpty(linkedNotes);
 		var canAddLinkToNote = !$elm$core$List$isEmpty(
 			A2($author$project$Slipbox$getNotesThatCanLinkToNote, note, slipbox));
@@ -16623,32 +16739,31 @@ var $author$project$Main$linkedNotesNode = F3(
 				[
 					A2(
 					$mdgriffith$elm_ui$Element$row,
-					_List_Nil,
 					_List_fromArray(
 						[
-							$mdgriffith$elm_ui$Element$text('Linked Notes'),
-							$author$project$Main$addLinkButton(item)
+							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+						]),
+					_List_fromArray(
+						[
+							$author$project$Main$headerText('Linked Notes'),
+							A2(
+							$mdgriffith$elm_ui$Element$el,
+							_List_fromArray(
+								[$mdgriffith$elm_ui$Element$alignRight]),
+							$author$project$Main$addLinkButton(item))
 						])),
-					A2(
-					$mdgriffith$elm_ui$Element$column,
-					_List_Nil,
-					A2(
-						$elm$core$List$map,
-						$author$project$Main$toLinkedNoteView(item),
-						linkedNotes))
+					linkedNotesDomRep
 				]))) : (noLinkedNotes ? $mdgriffith$elm_ui$Element$none : A2(
 			$mdgriffith$elm_ui$Element$column,
 			_List_Nil,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$text('Linked Notes'),
 					A2(
-					$mdgriffith$elm_ui$Element$column,
-					_List_Nil,
-					A2(
-						$elm$core$List$map,
-						$author$project$Main$toLinkedNoteView(item),
-						linkedNotes))
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$alignLeft]),
+					$mdgriffith$elm_ui$Element$text('Linked Notes')),
+					linkedNotesDomRep
 				])));
 	});
 var $author$project$Main$linkedNotesNodeNoButtons = F2(
@@ -16666,7 +16781,7 @@ var $author$project$Main$linkedNotesNodeNoButtons = F2(
 					_List_Nil,
 					A2(
 						$elm$core$List$map,
-						$author$project$Main$toLinkedNoteViewNoButtons,
+						$author$project$Main$toNoteRepresentationFromNote,
 						A2($elm$core$List$map, $elm$core$Tuple$first, linkedNotes)))
 				]));
 	});
@@ -16754,15 +16869,105 @@ var $author$project$Main$normalItemHeader = F2(
 var $author$project$Item$noteCanSubmit = function (newNoteContent) {
 	return (!$elm$core$String$isEmpty(newNoteContent.source)) && (!$elm$core$String$isEmpty(newNoteContent.content));
 };
+var $author$project$Slipbox$CloseTray = {$: 'CloseTray'};
+var $author$project$Slipbox$OpenTray = {$: 'OpenTray'};
+var $author$project$Item$getButtonTray = function (item) {
+	switch (item.$) {
+		case 'Note':
+			var tray = item.b;
+			return tray;
+		case 'Source':
+			var tray = item.b;
+			return tray;
+		case 'NewNote':
+			var tray = item.b;
+			return tray;
+		case 'NewSource':
+			var tray = item.b;
+			return tray;
+		case 'NewQuestion':
+			var tray = item.b;
+			return tray;
+		case 'EditingNote':
+			var tray = item.b;
+			return tray;
+		case 'EditingSource':
+			var tray = item.b;
+			return tray;
+		case 'AddingLinkToNoteForm':
+			var tray = item.b;
+			return tray;
+		case 'ConfirmDiscardNewNoteForm':
+			var tray = item.b;
+			return tray;
+		case 'ConfirmDiscardNewSourceForm':
+			var tray = item.b;
+			return tray;
+		case 'ConfirmDiscardNewQuestion':
+			var tray = item.b;
+			return tray;
+		case 'ConfirmDeleteNote':
+			var tray = item.b;
+			return tray;
+		case 'ConfirmDeleteSource':
+			var tray = item.b;
+			return tray;
+		default:
+			var tray = item.b;
+			return tray;
+	}
+};
+var $author$project$Item$isTrayOpen = function (item) {
+	return _Utils_eq(
+		$author$project$Item$getButtonTray(item),
+		$author$project$Item$Open);
+};
+var $elm$html$Html$Events$onMouseEnter = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'mouseenter',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $mdgriffith$elm_ui$Element$Events$onMouseEnter = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseEnter);
+var $elm$html$Html$Events$onMouseLeave = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'mouseleave',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $mdgriffith$elm_ui$Element$Events$onMouseLeave = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseLeave);
+var $author$project$Main$onHoverButtonTray = function (item) {
+	var tray = $author$project$Item$isTrayOpen(item) ? $author$project$Main$buttonTray(
+		$elm$core$Maybe$Just(item)) : A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$height(
+				A2($mdgriffith$elm_ui$Element$minimum, 10, $mdgriffith$elm_ui$Element$fill)),
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+			]),
+		$mdgriffith$elm_ui$Element$none);
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$Events$onMouseEnter(
+				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$OpenTray)),
+				$mdgriffith$elm_ui$Element$Events$onMouseLeave(
+				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$CloseTray)),
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+			]),
+		tray);
+};
+var $author$project$Slipbox$UpdateContent = function (a) {
+	return {$: 'UpdateContent', a: a};
+};
+var $mdgriffith$elm_ui$Element$Input$Above = {$: 'Above'};
 var $mdgriffith$elm_ui$Element$Input$Label = F3(
 	function (a, b, c) {
 		return {$: 'Label', a: a, b: b, c: c};
 	});
-var $mdgriffith$elm_ui$Element$Input$OnLeft = {$: 'OnLeft'};
-var $mdgriffith$elm_ui$Element$Input$labelLeft = $mdgriffith$elm_ui$Element$Input$Label($mdgriffith$elm_ui$Element$Input$OnLeft);
-var $mdgriffith$elm_ui$Element$Input$TextInputNode = function (a) {
-	return {$: 'TextInputNode', a: a};
-};
+var $mdgriffith$elm_ui$Element$Input$labelAbove = $mdgriffith$elm_ui$Element$Input$Label($mdgriffith$elm_ui$Element$Input$Above);
 var $mdgriffith$elm_ui$Element$Input$TextArea = {$: 'TextArea'};
 var $mdgriffith$elm_ui$Internal$Model$LivePolite = {$: 'LivePolite'};
 var $mdgriffith$elm_ui$Element$Region$announce = $mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$LivePolite);
@@ -17608,6 +17813,40 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 			textOptions.label,
 			wrappedInput);
 	});
+var $mdgriffith$elm_ui$Element$Input$multiline = F2(
+	function (attrs, multi) {
+		return A3(
+			$mdgriffith$elm_ui$Element$Input$textHelper,
+			{autofill: $elm$core$Maybe$Nothing, spellchecked: multi.spellcheck, type_: $mdgriffith$elm_ui$Element$Input$TextArea},
+			attrs,
+			{label: multi.label, onChange: multi.onChange, placeholder: multi.placeholder, text: multi.text});
+	});
+var $author$project$Main$questionInput = F2(
+	function (item, input) {
+		return A2(
+			$mdgriffith$elm_ui$Element$Input$multiline,
+			_List_Nil,
+			{
+				label: A2(
+					$mdgriffith$elm_ui$Element$Input$labelAbove,
+					_List_Nil,
+					$mdgriffith$elm_ui$Element$text('Question')),
+				onChange: function (s) {
+					return A2(
+						$author$project$Main$UpdateItem,
+						item,
+						$author$project$Slipbox$UpdateContent(s));
+				},
+				placeholder: $elm$core$Maybe$Nothing,
+				spellcheck: true,
+				text: input
+			});
+	});
+var $mdgriffith$elm_ui$Element$Input$OnLeft = {$: 'OnLeft'};
+var $mdgriffith$elm_ui$Element$Input$labelLeft = $mdgriffith$elm_ui$Element$Input$Label($mdgriffith$elm_ui$Element$Input$OnLeft);
+var $mdgriffith$elm_ui$Element$Input$TextInputNode = function (a) {
+	return {$: 'TextInputNode', a: a};
+};
 var $mdgriffith$elm_ui$Element$Input$text = $mdgriffith$elm_ui$Element$Input$textHelper(
 	{
 		autofill: $elm$core$Maybe$Nothing,
@@ -17633,467 +17872,9 @@ var $author$project$Main$searchInput = F2(
 			});
 	});
 var $author$project$Item$sourceCanSubmit = function (newSourceContent) {
-	return (!$elm$core$String$isEmpty(newSourceContent.title)) && ((!$elm$core$String$isEmpty(newSourceContent.author)) && (!$elm$core$String$isEmpty(newSourceContent.content)));
+	return (!$elm$core$String$isEmpty(newSourceContent.title)) && (!$elm$core$String$isEmpty(newSourceContent.author));
 };
 var $mdgriffith$elm_ui$Element$spaceEvenly = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$spacing, $mdgriffith$elm_ui$Internal$Style$classes.spaceEvenly);
-var $author$project$Slipbox$UpdateVariant = function (a) {
-	return {$: 'UpdateVariant', a: a};
-};
-var $mdgriffith$elm_ui$Element$Input$Option = F2(
-	function (a, b) {
-		return {$: 'Option', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$Input$defaultRadioOption = F2(
-	function (optionLabel, status) {
-		return A2(
-			$mdgriffith$elm_ui$Element$row,
-			_List_fromArray(
-				[
-					$mdgriffith$elm_ui$Element$spacing(10),
-					$mdgriffith$elm_ui$Element$alignLeft,
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink)
-				]),
-			_List_fromArray(
-				[
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width(
-							$mdgriffith$elm_ui$Element$px(14)),
-							$mdgriffith$elm_ui$Element$height(
-							$mdgriffith$elm_ui$Element$px(14)),
-							$mdgriffith$elm_ui$Element$Background$color($mdgriffith$elm_ui$Element$Input$white),
-							$mdgriffith$elm_ui$Element$Border$rounded(7),
-							function () {
-							if (status.$ === 'Selected') {
-								return $mdgriffith$elm_ui$Internal$Model$htmlClass('focusable');
-							} else {
-								return $mdgriffith$elm_ui$Internal$Model$NoAttribute;
-							}
-						}(),
-							$mdgriffith$elm_ui$Element$Border$width(
-							function () {
-								switch (status.$) {
-									case 'Idle':
-										return 1;
-									case 'Focused':
-										return 1;
-									default:
-										return 5;
-								}
-							}()),
-							$mdgriffith$elm_ui$Element$Border$color(
-							function () {
-								switch (status.$) {
-									case 'Idle':
-										return A3($mdgriffith$elm_ui$Element$rgb, 208 / 255, 208 / 255, 208 / 255);
-									case 'Focused':
-										return A3($mdgriffith$elm_ui$Element$rgb, 208 / 255, 208 / 255, 208 / 255);
-									default:
-										return A3($mdgriffith$elm_ui$Element$rgb, 59 / 255, 153 / 255, 252 / 255);
-								}
-							}())
-						]),
-					$mdgriffith$elm_ui$Element$none),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Internal$Model$htmlClass('unfocusable')
-						]),
-					optionLabel)
-				]));
-	});
-var $mdgriffith$elm_ui$Element$Input$option = F2(
-	function (val, txt) {
-		return A2(
-			$mdgriffith$elm_ui$Element$Input$Option,
-			val,
-			$mdgriffith$elm_ui$Element$Input$defaultRadioOption(txt));
-	});
-var $mdgriffith$elm_ui$Element$Input$Row = {$: 'Row'};
-var $mdgriffith$elm_ui$Element$Input$AfterFound = {$: 'AfterFound'};
-var $mdgriffith$elm_ui$Element$Input$BeforeFound = {$: 'BeforeFound'};
-var $mdgriffith$elm_ui$Element$Input$Idle = {$: 'Idle'};
-var $mdgriffith$elm_ui$Element$Input$NotFound = {$: 'NotFound'};
-var $mdgriffith$elm_ui$Element$Input$Selected = {$: 'Selected'};
-var $mdgriffith$elm_ui$Element$Input$column = F2(
-	function (attributes, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asColumn,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
-				A2(
-					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-					attributes)),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
-var $mdgriffith$elm_ui$Element$Input$downArrow = 'ArrowDown';
-var $mdgriffith$elm_ui$Internal$Model$filter = function (attrs) {
-	return A3(
-		$elm$core$List$foldr,
-		F2(
-			function (x, _v0) {
-				var found = _v0.a;
-				var has = _v0.b;
-				switch (x.$) {
-					case 'NoAttribute':
-						return _Utils_Tuple2(found, has);
-					case 'Class':
-						var key = x.a;
-						return _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							has);
-					case 'Attr':
-						var attr = x.a;
-						return _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							has);
-					case 'StyleClass':
-						var style = x.b;
-						return _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							has);
-					case 'Width':
-						var width = x.a;
-						return A2($elm$core$Set$member, 'width', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'width', has));
-					case 'Height':
-						var height = x.a;
-						return A2($elm$core$Set$member, 'height', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'height', has));
-					case 'Describe':
-						var description = x.a;
-						return A2($elm$core$Set$member, 'described', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'described', has));
-					case 'Nearby':
-						var location = x.a;
-						var elem = x.b;
-						return _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							has);
-					case 'AlignX':
-						return A2($elm$core$Set$member, 'align-x', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'align-x', has));
-					case 'AlignY':
-						return A2($elm$core$Set$member, 'align-y', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'align-y', has));
-					default:
-						return A2($elm$core$Set$member, 'transform', has) ? _Utils_Tuple2(found, has) : _Utils_Tuple2(
-							A2($elm$core$List$cons, x, found),
-							A2($elm$core$Set$insert, 'transform', has));
-				}
-			}),
-		_Utils_Tuple2(_List_Nil, $elm$core$Set$empty),
-		attrs).a;
-};
-var $mdgriffith$elm_ui$Internal$Model$get = F2(
-	function (attrs, isAttr) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, found) {
-					return isAttr(x) ? A2($elm$core$List$cons, x, found) : found;
-				}),
-			_List_Nil,
-			$mdgriffith$elm_ui$Internal$Model$filter(attrs));
-	});
-var $mdgriffith$elm_ui$Element$Input$leftArrow = 'ArrowLeft';
-var $mdgriffith$elm_ui$Element$Input$rightArrow = 'ArrowRight';
-var $mdgriffith$elm_ui$Element$Input$row = F2(
-	function (attributes, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asRow,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-				attributes),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
-var $mdgriffith$elm_ui$Element$Input$tabindex = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Attributes$tabindex);
-var $mdgriffith$elm_ui$Element$Input$upArrow = 'ArrowUp';
-var $mdgriffith$elm_ui$Element$Input$radioHelper = F3(
-	function (orientation, attrs, input) {
-		var track = F2(
-			function (opt, _v14) {
-				var found = _v14.a;
-				var prev = _v14.b;
-				var nxt = _v14.c;
-				var val = opt.a;
-				switch (found.$) {
-					case 'NotFound':
-						return _Utils_eq(
-							$elm$core$Maybe$Just(val),
-							input.selected) ? _Utils_Tuple3($mdgriffith$elm_ui$Element$Input$BeforeFound, prev, nxt) : _Utils_Tuple3(found, val, nxt);
-					case 'BeforeFound':
-						return _Utils_Tuple3($mdgriffith$elm_ui$Element$Input$AfterFound, prev, val);
-					default:
-						return _Utils_Tuple3(found, prev, nxt);
-				}
-			});
-		var renderOption = function (_v11) {
-			var val = _v11.a;
-			var view = _v11.b;
-			var status = _Utils_eq(
-				$elm$core$Maybe$Just(val),
-				input.selected) ? $mdgriffith$elm_ui$Element$Input$Selected : $mdgriffith$elm_ui$Element$Input$Idle;
-			return A2(
-				$mdgriffith$elm_ui$Element$el,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$pointer,
-						function () {
-						if (orientation.$ === 'Row') {
-							return $mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink);
-						} else {
-							return $mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill);
-						}
-					}(),
-						$mdgriffith$elm_ui$Element$Events$onClick(
-						input.onChange(val)),
-						function () {
-						if (status.$ === 'Selected') {
-							return $mdgriffith$elm_ui$Internal$Model$Attr(
-								A2($elm$html$Html$Attributes$attribute, 'aria-checked', 'true'));
-						} else {
-							return $mdgriffith$elm_ui$Internal$Model$Attr(
-								A2($elm$html$Html$Attributes$attribute, 'aria-checked', 'false'));
-						}
-					}(),
-						$mdgriffith$elm_ui$Internal$Model$Attr(
-						A2($elm$html$Html$Attributes$attribute, 'role', 'radio'))
-					]),
-				view(status));
-		};
-		var prevNext = function () {
-			var _v5 = input.options;
-			if (!_v5.b) {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var _v6 = _v5.a;
-				var val = _v6.a;
-				return function (_v7) {
-					var found = _v7.a;
-					var b = _v7.b;
-					var a = _v7.c;
-					switch (found.$) {
-						case 'NotFound':
-							return $elm$core$Maybe$Just(
-								_Utils_Tuple2(b, val));
-						case 'BeforeFound':
-							return $elm$core$Maybe$Just(
-								_Utils_Tuple2(b, val));
-						default:
-							return $elm$core$Maybe$Just(
-								_Utils_Tuple2(b, a));
-					}
-				}(
-					A3(
-						$elm$core$List$foldl,
-						track,
-						_Utils_Tuple3($mdgriffith$elm_ui$Element$Input$NotFound, val, val),
-						input.options));
-			}
-		}();
-		var optionArea = function () {
-			if (orientation.$ === 'Row') {
-				return A2(
-					$mdgriffith$elm_ui$Element$Input$row,
-					A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(input.label),
-						attrs),
-					A2($elm$core$List$map, renderOption, input.options));
-			} else {
-				return A2(
-					$mdgriffith$elm_ui$Element$Input$column,
-					A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(input.label),
-						attrs),
-					A2($elm$core$List$map, renderOption, input.options));
-			}
-		}();
-		var events = A2(
-			$mdgriffith$elm_ui$Internal$Model$get,
-			attrs,
-			function (attr) {
-				_v3$3:
-				while (true) {
-					switch (attr.$) {
-						case 'Width':
-							if (attr.a.$ === 'Fill') {
-								return true;
-							} else {
-								break _v3$3;
-							}
-						case 'Height':
-							if (attr.a.$ === 'Fill') {
-								return true;
-							} else {
-								break _v3$3;
-							}
-						case 'Attr':
-							return true;
-						default:
-							break _v3$3;
-					}
-				}
-				return false;
-			});
-		return A3(
-			$mdgriffith$elm_ui$Element$Input$applyLabel,
-			_Utils_ap(
-				A2(
-					$elm$core$List$filterMap,
-					$elm$core$Basics$identity,
-					_List_fromArray(
-						[
-							$elm$core$Maybe$Just($mdgriffith$elm_ui$Element$alignLeft),
-							$elm$core$Maybe$Just(
-							$mdgriffith$elm_ui$Element$Input$tabindex(0)),
-							$elm$core$Maybe$Just(
-							$mdgriffith$elm_ui$Internal$Model$htmlClass('focus')),
-							$elm$core$Maybe$Just($mdgriffith$elm_ui$Element$Region$announce),
-							$elm$core$Maybe$Just(
-							$mdgriffith$elm_ui$Internal$Model$Attr(
-								A2($elm$html$Html$Attributes$attribute, 'role', 'radiogroup'))),
-							function () {
-							if (prevNext.$ === 'Nothing') {
-								return $elm$core$Maybe$Nothing;
-							} else {
-								var _v1 = prevNext.a;
-								var prev = _v1.a;
-								var next = _v1.b;
-								return $elm$core$Maybe$Just(
-									$mdgriffith$elm_ui$Element$Input$onKeyLookup(
-										function (code) {
-											if (_Utils_eq(code, $mdgriffith$elm_ui$Element$Input$leftArrow)) {
-												return $elm$core$Maybe$Just(
-													input.onChange(prev));
-											} else {
-												if (_Utils_eq(code, $mdgriffith$elm_ui$Element$Input$upArrow)) {
-													return $elm$core$Maybe$Just(
-														input.onChange(prev));
-												} else {
-													if (_Utils_eq(code, $mdgriffith$elm_ui$Element$Input$rightArrow)) {
-														return $elm$core$Maybe$Just(
-															input.onChange(next));
-													} else {
-														if (_Utils_eq(code, $mdgriffith$elm_ui$Element$Input$downArrow)) {
-															return $elm$core$Maybe$Just(
-																input.onChange(next));
-														} else {
-															if (_Utils_eq(code, $mdgriffith$elm_ui$Element$Input$space)) {
-																var _v2 = input.selected;
-																if (_v2.$ === 'Nothing') {
-																	return $elm$core$Maybe$Just(
-																		input.onChange(prev));
-																} else {
-																	return $elm$core$Maybe$Nothing;
-																}
-															} else {
-																return $elm$core$Maybe$Nothing;
-															}
-														}
-													}
-												}
-											}
-										}));
-							}
-						}()
-						])),
-				events),
-			input.label,
-			optionArea);
-	});
-var $mdgriffith$elm_ui$Element$Input$radioRow = $mdgriffith$elm_ui$Element$Input$radioHelper($mdgriffith$elm_ui$Element$Input$Row);
-var $author$project$Main$chooseVariantButtons = F2(
-	function (item, variant) {
-		var variantDisplay = function (v) {
-			if (v.$ === 'Index') {
-				return A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$centerY]),
-					$mdgriffith$elm_ui$Element$text('Index'));
-			} else {
-				return A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$centerY]),
-					$mdgriffith$elm_ui$Element$text('Regular'));
-			}
-		};
-		return A2(
-			$mdgriffith$elm_ui$Element$Input$radioRow,
-			_List_fromArray(
-				[
-					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 0),
-					A2($mdgriffith$elm_ui$Element$paddingXY, 8, 0)
-				]),
-			{
-				label: A2(
-					$mdgriffith$elm_ui$Element$Input$labelLeft,
-					_List_Nil,
-					$mdgriffith$elm_ui$Element$text('Note Type:')),
-				onChange: function (v) {
-					return A2(
-						$author$project$Main$UpdateItem,
-						item,
-						$author$project$Slipbox$UpdateVariant(v));
-				},
-				options: _List_fromArray(
-					[
-						A2(
-						$mdgriffith$elm_ui$Element$Input$option,
-						$author$project$Note$Index,
-						variantDisplay($author$project$Note$Index)),
-						A2(
-						$mdgriffith$elm_ui$Element$Input$option,
-						$author$project$Note$Regular,
-						variantDisplay($author$project$Note$Regular))
-					]),
-				selected: $elm$core$Maybe$Just(variant)
-			});
-	});
-var $author$project$Main$contentContainer = function (contents) {
-	return A2(
-		$mdgriffith$elm_ui$Element$column,
-		_List_fromArray(
-			[
-				$mdgriffith$elm_ui$Element$padding(8),
-				A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-			]),
-		contents);
-};
-var $author$project$Slipbox$UpdateContent = function (a) {
-	return {$: 'UpdateContent', a: a};
-};
-var $mdgriffith$elm_ui$Element$Input$Above = {$: 'Above'};
-var $mdgriffith$elm_ui$Element$Input$labelAbove = $mdgriffith$elm_ui$Element$Input$Label($mdgriffith$elm_ui$Element$Input$Above);
-var $mdgriffith$elm_ui$Element$Input$multiline = F2(
-	function (attrs, multi) {
-		return A3(
-			$mdgriffith$elm_ui$Element$Input$textHelper,
-			{autofill: $elm$core$Maybe$Nothing, spellchecked: multi.spellcheck, type_: $mdgriffith$elm_ui$Element$Input$TextArea},
-			attrs,
-			{label: multi.label, onChange: multi.onChange, placeholder: multi.placeholder, text: multi.text});
-	});
 var $author$project$Main$contentInput = F2(
 	function (item, input) {
 		return A2(
@@ -18138,6 +17919,7 @@ var $author$project$Main$toHtmlOption = function (value) {
 };
 var $author$project$Main$sourceInput = F4(
 	function (itemId, item, input, suggestions) {
+		var suggestionsWithNA = A2($elm$core$List$cons, 'n/a', suggestions);
 		var sourceInputid = 'Source: ' + $elm$core$String$fromInt(itemId);
 		var dataitemId = 'Sources: ' + $elm$core$String$fromInt(itemId);
 		return $mdgriffith$elm_ui$Element$html(
@@ -18179,11 +17961,11 @@ var $author$project$Main$sourceInput = F4(
 							[
 								$elm$html$Html$Attributes$id(dataitemId)
 							]),
-						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestions))
+						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestionsWithNA))
 					])));
 	});
-var $author$project$Main$toEditingNoteRepresentation = F6(
-	function (itemId, item, titles, content, source, variant) {
+var $author$project$Main$toEditingNoteRepresentation = F5(
+	function (itemId, item, titles, content, source) {
 		return $author$project$Main$contentContainer(
 			_List_fromArray(
 				[
@@ -18200,19 +17982,12 @@ var $author$project$Main$toEditingNoteRepresentation = F6(
 						[
 							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 						]),
-					A4($author$project$Main$sourceInput, itemId, item, source, titles)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					A2($author$project$Main$chooseVariantButtons, item, variant))
+					A4($author$project$Main$sourceInput, itemId, item, source, titles))
 				]));
 	});
 var $author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox = F4(
 	function (itemId, item, note, slipbox) {
-		return A6(
+		return A5(
 			$author$project$Main$toEditingNoteRepresentation,
 			itemId,
 			item,
@@ -18221,8 +17996,7 @@ var $author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox = F4(
 				$author$project$Source$getTitle,
 				A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, slipbox)),
 			$author$project$Note$getContent(note),
-			$author$project$Note$getSource(note),
-			$author$project$Note$getVariant(note));
+			$author$project$Note$getSource(note));
 	});
 var $author$project$Slipbox$UpdateAuthor = function (a) {
 	return {$: 'UpdateAuthor', a: a};
@@ -18294,44 +18068,6 @@ var $author$project$Main$toEditingSourceRepresentationFromItemSource = F2(
 var $author$project$Slipbox$AddLink = function (a) {
 	return {$: 'AddLink', a: a};
 };
-var $author$project$Color$gray = A3($mdgriffith$elm_ui$Element$rgb255, 238, 238, 238);
-var $mdgriffith$elm_ui$Internal$Flag$borderStyle = $mdgriffith$elm_ui$Internal$Flag$flag(11);
-var $mdgriffith$elm_ui$Element$Border$solid = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$borderStyle, $mdgriffith$elm_ui$Internal$Style$classes.borderSolid);
-var $author$project$Main$toNoteRepresentation = F3(
-	function (content, source, variant) {
-		return $author$project$Main$contentContainer(
-			_List_fromArray(
-				[
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					$author$project$Main$noteContentView(content)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					$author$project$Main$noteSourceView(source)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					$author$project$Main$noteVariantView(variant))
-				]));
-	});
-var $author$project$Main$toNoteRepresentationFromNote = function (note) {
-	return A3(
-		$author$project$Main$toNoteRepresentation,
-		$author$project$Note$getContent(note),
-		$author$project$Note$getSource(note),
-		$author$project$Note$getVariant(note));
-};
 var $author$project$Main$toNoteDetailAddingLinkForm = F2(
 	function (item, note) {
 		return A2(
@@ -18354,28 +18090,21 @@ var $author$project$Main$toNoteDetailAddingLinkForm = F2(
 						$author$project$Slipbox$AddLink(note)))
 			});
 	});
-var $author$project$Main$sourceAuthorView = function (sourceAuthor) {
-	return A2(
-		$mdgriffith$elm_ui$Element$textColumn,
-		_List_fromArray(
-			[
-				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
-			]),
+var $author$project$Main$toQuestionRepresentation = function (question) {
+	return $author$project$Main$contentContainer(
 		_List_fromArray(
 			[
 				A2(
 				$mdgriffith$elm_ui$Element$el,
 				_List_fromArray(
-					[$mdgriffith$elm_ui$Element$Font$underline]),
-				$mdgriffith$elm_ui$Element$text('Author')),
-				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
-				_List_fromArray(
 					[
-						$mdgriffith$elm_ui$Element$text(sourceAuthor)
-					]))
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					]),
+				$author$project$Main$questionView(question))
 			]));
+};
+var $author$project$Main$sourceAuthorView = function (sourceAuthor) {
+	return A2($author$project$Main$labeledViewBuilder, 'Author', sourceAuthor);
 };
 var $author$project$Main$sourceContentView = function (noteContent) {
 	return A2(
@@ -18404,27 +18133,7 @@ var $author$project$Main$sourceContentView = function (noteContent) {
 			]));
 };
 var $author$project$Main$sourceTitleView = function (sourceTitle) {
-	return A2(
-		$mdgriffith$elm_ui$Element$textColumn,
-		_List_fromArray(
-			[
-				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
-			]),
-		_List_fromArray(
-			[
-				A2(
-				$mdgriffith$elm_ui$Element$el,
-				_List_fromArray(
-					[$mdgriffith$elm_ui$Element$Font$underline]),
-				$mdgriffith$elm_ui$Element$text('Title')),
-				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$text(sourceTitle)
-					]))
-			]));
+	return A2($author$project$Main$labeledViewBuilder, 'Title', sourceTitle);
 };
 var $author$project$Main$toSourceRepresentation = F3(
 	function (title, author, content) {
@@ -18476,19 +18185,8 @@ var $author$project$Main$toItemView = F2(
 					]),
 				_List_fromArray(
 					[
-						A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$Border$width(3),
-								$mdgriffith$elm_ui$Element$Border$color($author$project$Color$heliotropeGrayRegular),
-								$mdgriffith$elm_ui$Element$padding(8),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								$mdgriffith$elm_ui$Element$centerX
-							]),
-						contents),
-						$author$project$Main$buttonTray(item)
+						A2($mdgriffith$elm_ui$Element$column, $author$project$Main$containerAttributes, contents),
+						$author$project$Main$onHoverButtonTray(item)
 					]));
 		};
 		switch (item.$) {
@@ -18512,7 +18210,7 @@ var $author$project$Main$toItemView = F2(
 							'New Note',
 							$author$project$Item$noteCanSubmit(note),
 							item),
-							A6(
+							A5(
 							$author$project$Main$toEditingNoteRepresentation,
 							itemId,
 							item,
@@ -18521,8 +18219,7 @@ var $author$project$Main$toItemView = F2(
 								$author$project$Source$getTitle,
 								A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.slipbox)),
 							note.content,
-							note.source,
-							note.variant)
+							note.source)
 						]));
 			case 'ConfirmDiscardNewNoteForm':
 				var note = item.c;
@@ -18530,7 +18227,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A2($author$project$Main$deleteItemHeader, 'Discard New Note', item),
-							A3($author$project$Main$toNoteRepresentation, note.content, note.source, note.variant)
+							A3($author$project$Main$toNoteRepresentation, note.content, note.source, $author$project$Note$Regular)
 						]));
 			case 'EditingNote':
 				var itemId = item.a;
@@ -18635,7 +18332,7 @@ var $author$project$Main$toItemView = F2(
 						[
 							A2($author$project$Main$normalItemHeader, 'Source', item),
 							$author$project$Main$toSourceRepresentationFromSource(source),
-							A2($author$project$Main$associatedNotesNode, source, content.slipbox)
+							A3($author$project$Main$associatedNotesNode, item, source, content.slipbox)
 						]));
 			case 'NewSource':
 				var source = item.c;
@@ -18664,7 +18361,7 @@ var $author$project$Main$toItemView = F2(
 						[
 							A2($author$project$Main$editItemHeader, 'Editing Source', item),
 							A2($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits),
-							A2($author$project$Main$associatedNotesNode, sourceWithEdits, content.slipbox)
+							A3($author$project$Main$associatedNotesNode, item, sourceWithEdits, content.slipbox)
 						]));
 			case 'ConfirmDeleteSource':
 				var source = item.c;
@@ -18673,9 +18370,9 @@ var $author$project$Main$toItemView = F2(
 						[
 							A2($author$project$Main$deleteItemHeader, 'Confirm Delete Source', item),
 							$author$project$Main$toSourceRepresentationFromSource(source),
-							A2($author$project$Main$associatedNotesNode, source, content.slipbox)
+							A3($author$project$Main$associatedNotesNode, item, source, content.slipbox)
 						]));
-			default:
+			case 'ConfirmDeleteLink':
 				var note = item.c;
 				var linkedNote = item.d;
 				return itemContainerLambda(
@@ -18691,6 +18388,36 @@ var $author$project$Main$toItemView = F2(
 									$author$project$Main$toNoteRepresentationFromNote(note),
 									$author$project$Main$toNoteRepresentationFromNote(linkedNote)
 								]))
+						]));
+			case 'NewQuestion':
+				var question = item.c;
+				return itemContainerLambda(
+					_List_fromArray(
+						[
+							A3(
+							$author$project$Main$newItemHeader,
+							'New Question',
+							!$elm$core$String$isEmpty(question),
+							item),
+							$author$project$Main$contentContainer(
+							_List_fromArray(
+								[
+									A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+										]),
+									A2($author$project$Main$questionInput, item, question))
+								]))
+						]));
+			default:
+				var question = item.c;
+				return itemContainerLambda(
+					_List_fromArray(
+						[
+							A2($author$project$Main$deleteItemHeader, 'Confirm Discard New Question', item),
+							$author$project$Main$toQuestionRepresentation(question)
 						]));
 		}
 	});
@@ -18709,20 +18436,29 @@ var $author$project$Main$itemsView = function (content) {
 				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
 			]),
-		A2(
-			$elm$core$List$cons,
-			A2(
-				$mdgriffith$elm_ui$Element$el,
-				_List_fromArray(
+		$elm$core$List$concat(
+			_List_fromArray(
+				[
+					_List_fromArray(
 					[
-						$mdgriffith$elm_ui$Element$Font$heavy,
-						$mdgriffith$elm_ui$Element$Border$width(1),
-						$mdgriffith$elm_ui$Element$padding(4),
-						$mdgriffith$elm_ui$Element$Font$color($author$project$Color$oldLavenderRegular),
-						$mdgriffith$elm_ui$Element$centerX
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Font$heavy,
+								$mdgriffith$elm_ui$Element$Border$width(1),
+								$mdgriffith$elm_ui$Element$padding(4),
+								$mdgriffith$elm_ui$Element$Font$color($author$project$Color$oldLavenderRegular),
+								$mdgriffith$elm_ui$Element$centerX
+							]),
+						$mdgriffith$elm_ui$Element$text('Workspace'))
 					]),
-				$mdgriffith$elm_ui$Element$text('Workspace')),
-			items));
+					_List_fromArray(
+					[
+						$author$project$Main$buttonTray($elm$core$Maybe$Nothing)
+					]),
+					items
+				])));
 };
 var $mdgriffith$elm_ui$Element$moveDown = function (y) {
 	return A2(
@@ -18842,8 +18578,7 @@ var $author$project$Main$exploreTabToolbar = function (input) {
 					input,
 					function (s) {
 						return $author$project$Main$ExploreTabUpdateInput(s);
-					}),
-					$author$project$Main$createNoteButton($elm$core$Maybe$Nothing)
+					})
 				])));
 };
 var $author$project$Slipbox$getSource = F2(
@@ -18932,6 +18667,7 @@ var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $author$project$Main$graphAttributes = F2(
 	function (_v0, viewport) {
 		var width = _v0.a;
+		var smallerWidthToAccountForPageWidening = width - 50;
 		var mouseEventDecoder = A3(
 			$elm$json$Json$Decode$map2,
 			$author$project$Viewport$MouseEvent,
@@ -18942,7 +18678,7 @@ var $author$project$Main$graphAttributes = F2(
 			return _List_fromArray(
 				[
 					$elm$svg$Svg$Attributes$width(
-					$elm$core$String$fromInt(width)),
+					$elm$core$String$fromInt(smallerWidthToAccountForPageWidening)),
 					$elm$svg$Svg$Attributes$height(
 					$elm$core$String$fromInt($author$project$Main$svgGraphHeight)),
 					$elm$svg$Svg$Attributes$viewBox(
@@ -18957,7 +18693,7 @@ var $author$project$Main$graphAttributes = F2(
 			return _List_fromArray(
 				[
 					$elm$svg$Svg$Attributes$width(
-					$elm$core$String$fromInt(width)),
+					$elm$core$String$fromInt(smallerWidthToAccountForPageWidening)),
 					$elm$svg$Svg$Attributes$height(
 					$elm$core$String$fromInt($author$project$Main$svgGraphHeight)),
 					$elm$svg$Svg$Attributes$viewBox(
@@ -19137,9 +18873,6 @@ var $author$project$Main$CompressNote = function (a) {
 var $author$project$Main$ExpandNote = function (a) {
 	return {$: 'ExpandNote', a: a};
 };
-var $author$project$Slipbox$OpenNote = function (a) {
-	return {$: 'OpenNote', a: a};
-};
 var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
 var $elm$svg$Svg$Attributes$cursor = _VirtualDom_attribute('cursor');
 var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
@@ -19163,7 +18896,7 @@ var $mdgriffith$elm_ui$Internal$Model$RenderModeOption = function (a) {
 };
 var $mdgriffith$elm_ui$Element$noStaticStyleSheet = $mdgriffith$elm_ui$Internal$Model$RenderModeOption($mdgriffith$elm_ui$Internal$Model$NoStaticStyleSheet);
 var $author$project$Main$noteColor = function (variant) {
-	if (variant.$ === 'Index') {
+	if (variant.$ === 'Question') {
 		return 'rgba(250, 190, 88, 1)';
 	} else {
 		return 'rgba(137, 196, 244, 1)';
@@ -19358,8 +19091,7 @@ var $author$project$Main$noteTabToolbar = function (input) {
 					input,
 					function (s) {
 						return $author$project$Main$NoteTabUpdateInput(s);
-					}),
-					$author$project$Main$createNoteButton($elm$core$Maybe$Nothing)
+					})
 				])));
 };
 var $author$project$Main$searchConverter = function (input) {
@@ -19381,8 +19113,7 @@ var $author$project$Main$sourceTabToolbar = function (input) {
 			]),
 		_List_fromArray(
 			[
-				A2($author$project$Main$searchInput, input, $author$project$Main$SourceTabUpdateInput),
-				$author$project$Main$createSourceButton($elm$core$Maybe$Nothing)
+				A2($author$project$Main$searchInput, input, $author$project$Main$SourceTabUpdateInput)
 			]));
 };
 var $mdgriffith$elm_ui$Internal$Model$Padding = F5(
@@ -19582,30 +19313,6 @@ var $author$project$Main$tabTextContentContainer = function (contents) {
 			]),
 		contents);
 };
-var $author$project$Main$toOpenNoteButton = F2(
-	function (maybeItemOpenedFrom, note) {
-		return A2(
-			$mdgriffith$elm_ui$Element$el,
-			_List_fromArray(
-				[
-					A2($mdgriffith$elm_ui$Element$paddingXY, 8, 0),
-					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-					$mdgriffith$elm_ui$Element$Border$solid,
-					$mdgriffith$elm_ui$Element$Border$color($author$project$Color$gray),
-					$mdgriffith$elm_ui$Element$Border$width(4)
-				]),
-			A2(
-				$mdgriffith$elm_ui$Element$Input$button,
-				_List_Nil,
-				{
-					label: $author$project$Main$toNoteRepresentationFromNote(note),
-					onPress: $elm$core$Maybe$Just(
-						A2(
-							$author$project$Main$AddItem,
-							maybeItemOpenedFrom,
-							$author$project$Slipbox$OpenNote(note)))
-				}));
-	});
 var $author$project$Slipbox$OpenSource = function (a) {
 	return {$: 'OpenSource', a: a};
 };
