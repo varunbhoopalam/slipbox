@@ -11,9 +11,6 @@ The project is designed for the desktop browser. During a session, you can recor
 ## Why is this project useful?
 This note storage system gives a systematic approach to learning and knowledge storage. Using this system helps our own memory recall. It guides us into putting things into our own words and applying them to our previous knowledge, each of which make it easier to remember information. This structure pushes us towards the formation of complex ideas, linking simple ideas together, to create powerful ideas. This system is simple and encouraging. It illuminates where we have critical masses of knowledge and where we may not know as much.
 
-
-I suggest building habits around the slipbox to take advantage of our capacity to learn and situations like the ones I described. Read with a pen in hand. Keep notes of what you find interesting in the day but put it into your own words. Make summaries of what you took from your reading. Pick a time of day to record these things in your slipbox and work with it for 15-30 minutes each day. This will increase your memory recall by applying new knowledge to previous knowledge and understanding concepts independent of their context. This will also help show you where you have vast amounts of knowlege where critical masses of notes build up. Most importantly, this should be fun and effortless! Especially when you build the habits to do these and they are second nature. When we have critical masses of knowledge we are better equiped to solve questions that we have and take advantage of the knowledge. It sounds pretty fun to me to only do what we feel like doing in the moment and at the same time build up our arsenals of knowledge and increase our own memory at the same time.
-
 ## How do I get started?
 The project is available [here](https://varunbhoopalam.github.io/slipbox/).
 
