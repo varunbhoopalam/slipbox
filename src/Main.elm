@@ -684,13 +684,7 @@ toItemView content item =
           , Element.height Element.shrink
           ]
           [ Element.column
-            [ Element.Border.width 3
-            , Element.Border.color Color.heliotropeGrayRegular
-            , Element.padding 8
-            , Element.spacingXY 8 8
-            , Element.width Element.fill
-            , Element.centerX
-            ]
+            containerAttributes
             contents
           , onHoverButtonTray item
           ]
@@ -768,7 +762,7 @@ toItemView content item =
     Item.Source _ _ source -> itemContainerLambda
       [ normalItemHeader "Source" item
       , toSourceRepresentationFromSource source
-      , associatedNotesNode source content.slipbox
+      , associatedNotesNode item source content.slipbox
       ]
 
 
@@ -787,14 +781,14 @@ toItemView content item =
     Item.EditingSource _ _ _ sourceWithEdits -> itemContainerLambda
       [ editItemHeader "Editing Source" item
       , toEditingSourceRepresentationFromItemSource item sourceWithEdits
-      , associatedNotesNode sourceWithEdits content.slipbox
+      , associatedNotesNode item sourceWithEdits content.slipbox
       ]
 
 
     Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
       [ deleteItemHeader "Confirm Delete Source" item
       , toSourceRepresentationFromSource source
-      , associatedNotesNode source content.slipbox
+      , associatedNotesNode item source content.slipbox
       ]
 
 
@@ -862,6 +856,9 @@ linkedNotesNode item note slipbox =
     linkedNotes = Slipbox.getLinkedNotes note slipbox
     canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
     noLinkedNotes = List.isEmpty linkedNotes
+    linkedNotesDomRep = Element.column
+      containerWithScrollAttributes
+      <| List.map (toLinkedNoteView item) linkedNotes
   in
   if canAddLinkToNote then
     if noLinkedNotes then
@@ -870,26 +867,22 @@ linkedNotesNode item note slipbox =
       Element.column
         []
         [ Element.row
-          []
-          [ Element.text "Linked Notes"
-          , addLinkButton item ]
-        , Element.column
-          []
-          <| List.map (toLinkedNoteView item) linkedNotes
+          [ Element.width Element.fill]
+          [ headerText "Linked Notes"
+          , Element.el [ Element.alignRight ] <| addLinkButton item ]
+        , linkedNotesDomRep
         ]
   else
     if noLinkedNotes then
       Element.none
     else
       Element.column []
-        [ Element.text "Linked Notes"
-        , Element.column
-          []
-          <| List.map (toLinkedNoteView item) linkedNotes
+        [ Element.el [ Element.alignLeft ] <| Element.text "Linked Notes"
+        , linkedNotesDomRep
         ]
 
-associatedNotesNode : Source.Source -> Slipbox.Slipbox -> Element Msg
-associatedNotesNode source slipbox =
+associatedNotesNode : Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
+associatedNotesNode item source slipbox =
   let
     associatedNotes = Slipbox.getNotesAssociatedToSource source slipbox
     noAssociatedNotes = List.isEmpty associatedNotes
@@ -898,13 +891,11 @@ associatedNotesNode source slipbox =
     Element.none
   else
     Element.column
-      [ Element.width Element.fill
-      , Element.height <| Element.minimum 100 Element.fill
-      , Element.spacingXY 8 0
-      , Element.scrollbarY
+      [ Element.width Element.fill, Element.spacingXY 8 8 ]
+      [ headerText "Associated Notes"
+      , Element.column containerWithScrollAttributes
+          ( List.map (\n -> toOpenNoteButton ( Just item ) n ) associatedNotes )
       ]
-      <| ( headerText "Associated Notes" ) ::
-      ( List.map toNoteRepresentationFromNote associatedNotes )
 
 addLinkButton: Item.Item -> Element Msg
 addLinkButton item =
@@ -913,11 +904,33 @@ addLinkButton item =
     , label = Element.text "Add Link"
     }
 
+containerAttributes : ( List ( Element.Attribute Msg) )
+containerAttributes =
+  [ Element.Border.width 3
+  , Element.Border.color Color.heliotropeGrayRegular
+  , Element.padding 8
+  , Element.spacingXY 8 8
+  , Element.width Element.fill
+  , Element.centerX
+  ]
+
+containerWithScrollAttributes : ( List ( Element.Attribute Msg) )
+containerWithScrollAttributes =
+  [ Element.Border.width 3
+  , Element.Border.color Color.heliotropeGrayRegular
+  , Element.padding 8
+  , Element.spacingXY 8 8
+  , Element.width Element.fill
+  , Element.centerX
+  , Element.height <| Element.minimum 200 Element.fill
+  , Element.scrollbarY
+  ]
+
 toLinkedNoteView: Item.Item -> ( Note.Note, Link.Link ) -> Element Msg
 toLinkedNoteView item ( linkedNote, link ) =
-  Element.column
-    []
-    [ toNoteRepresentationFromNote linkedNote
+  Element.row
+    containerAttributes
+    [ toOpenNoteButton ( Just item ) linkedNote
     , removeLinkButton item linkedNote link
     ]
 
@@ -1085,17 +1098,18 @@ graphAttributes ( width, _ ) viewport =
         Json.Decode.map2 Viewport.MouseEvent
         ( Json.Decode.field "offsetX" Json.Decode.int )
         ( Json.Decode.field "offsetY" Json.Decode.int )
+      smallerWidthToAccountForPageWidening = ( width - 50 )
   in
   case Viewport.getState viewport of
     Viewport.Moving _ ->
-      [ Svg.Attributes.width <| String.fromInt width
+      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
         , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
       ]
     Viewport.Stationary -> 
-      [ Svg.Attributes.width <| String.fromInt width
+      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
         , Svg.Attributes.height <| String.fromInt svgGraphHeight
         , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
