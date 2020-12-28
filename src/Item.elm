@@ -99,8 +99,7 @@ newQuestion generator =
 sourceCanSubmit : NewSourceContent -> Bool
 sourceCanSubmit newSourceContent =
   ( not <| String.isEmpty newSourceContent.title ) &&
-  ( not <| String.isEmpty newSourceContent.author ) &&
-  ( not <| String.isEmpty newSourceContent.content )
+  ( not <| String.isEmpty newSourceContent.author )
 
 is : Item -> Item -> Bool
 is item1 item2 =
