@@ -1306,6 +1306,7 @@ sourceInput itemId item input suggestions =
   let
     sourceInputid = "Source: " ++ (String.fromInt itemId)
     dataitemId = "Sources: " ++ (String.fromInt itemId)
+    suggestionsWithNA = "n/a" :: suggestions
   in
     Element.html
       <| Html.div
@@ -1323,7 +1324,7 @@ sourceInput itemId item input suggestions =
           []
         , Html.datalist 
           [ Html.Attributes.id dataitemId ]
-          <| List.map toHtmlOption suggestions
+          <| List.map toHtmlOption suggestionsWithNA
         ]
 
 toHtmlOption: String -> Html.Html Msg
