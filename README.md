@@ -27,13 +27,13 @@ This note storage system gives a systematic approach to learning and knowledge s
 7. Save your work by clicking save in the top right corner. You'll use this file next time when you return to add new notes to the slipbox.
 
 #### Tips
-- Slipbox.io works with local files on a computer! If you're on a public or shared computer, email the file to yourself so you can pick up where you left off!
+- Slipbox.io works with local files on a computer! If you're on a public or shared computer, email the file to yourself so you can pick up where you left off.
 - Create backups of your slipbox file in cloud storage so you're able to recover work should the original file go missing. This also lets you use another computer to add to your note storage.
 
 #### Workflow suggestions
 - Throughout the day keep your mind open! Be an active and engaged listener and reader! Keep notes that interest you in a place that is convenient for you to access! I personally use a notes app on my phone.
 - Pick a time to use slipbox.io at the beginning or end of the day and spend 15 minutes every day you can working with it! At your designated time, transfer your notes from where you stored the notes throughout the day to your slipbox note storage.
-- I believe this practice will unlock the benefits of using the system in the first place while also being fun to use! This practice will note be invasive and it allows you to have freedom in your day to do what you want to do, it does not force you to live in the app
+- I believe this practice will unlock the benefits of using the system in the first place while also being fun to use! This practice will not be invasive, and it allows you to have freedom in your day to do what you want to do; it does not force you to live in the app.
 
 ## How do I contribute?
 At this time, the project is not set up for collaboration. Please reach out if you have something to discuss or want from this project. If there is interest, I would love to collaborate and perhaps bring on other contributors as a result. 
