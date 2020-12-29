@@ -16189,7 +16189,7 @@ var $author$project$Main$containerWithScrollAttributes = _List_fromArray(
 		$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 		$mdgriffith$elm_ui$Element$centerX,
 		$mdgriffith$elm_ui$Element$height(
-		A2($mdgriffith$elm_ui$Element$minimum, 200, $mdgriffith$elm_ui$Element$fill)),
+		A2($mdgriffith$elm_ui$Element$minimum, 250, $mdgriffith$elm_ui$Element$fill)),
 		$mdgriffith$elm_ui$Element$scrollbarY
 	]);
 var $author$project$Note$isAssociated = F2(
@@ -16291,7 +16291,8 @@ var $author$project$Main$labeledViewBuilder = F2(
 			$mdgriffith$elm_ui$Element$textColumn,
 			_List_fromArray(
 				[
-					A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
+					A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8),
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			_List_fromArray(
 				[
@@ -16302,7 +16303,10 @@ var $author$project$Main$labeledViewBuilder = F2(
 					$mdgriffith$elm_ui$Element$text(label)),
 					A2(
 					$mdgriffith$elm_ui$Element$paragraph,
-					_List_Nil,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+						]),
 					_List_fromArray(
 						[
 							$mdgriffith$elm_ui$Element$text(content)
@@ -16699,7 +16703,8 @@ var $author$project$Main$toOpenNoteButton = F2(
 					A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
 					$mdgriffith$elm_ui$Element$Border$solid,
 					$mdgriffith$elm_ui$Element$Border$color($author$project$Color$gray),
-					$mdgriffith$elm_ui$Element$Border$width(4)
+					$mdgriffith$elm_ui$Element$Border$width(4),
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			A2(
 				$mdgriffith$elm_ui$Element$Input$button,
@@ -18194,6 +18199,35 @@ var $author$project$Main$toSourceRepresentationFromSource = function (source) {
 		$author$project$Source$getAuthor(source),
 		$author$project$Source$getContent(source));
 };
+var $mdgriffith$elm_ui$Element$Border$widthXY = F2(
+	function (x, y) {
+		return A2(
+			$mdgriffith$elm_ui$Internal$Model$StyleClass,
+			$mdgriffith$elm_ui$Internal$Flag$borderWidth,
+			A5(
+				$mdgriffith$elm_ui$Internal$Model$BorderWidth,
+				'b-' + ($elm$core$String$fromInt(x) + ('-' + $elm$core$String$fromInt(y))),
+				y,
+				x,
+				y,
+				x));
+	});
+var $mdgriffith$elm_ui$Element$Border$widthEach = function (_v0) {
+	var bottom = _v0.bottom;
+	var top = _v0.top;
+	var left = _v0.left;
+	var right = _v0.right;
+	return (_Utils_eq(top, bottom) && _Utils_eq(left, right)) ? (_Utils_eq(top, right) ? $mdgriffith$elm_ui$Element$Border$width(top) : A2($mdgriffith$elm_ui$Element$Border$widthXY, left, top)) : A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$borderWidth,
+		A5(
+			$mdgriffith$elm_ui$Internal$Model$BorderWidth,
+			'b-' + ($elm$core$String$fromInt(top) + ('-' + ($elm$core$String$fromInt(right) + ('-' + ($elm$core$String$fromInt(bottom) + ('-' + $elm$core$String$fromInt(left))))))),
+			top,
+			right,
+			bottom,
+			left));
+};
 var $author$project$Main$toItemView = F2(
 	function (content, item) {
 		var itemContainerLambda = function (contents) {
@@ -18306,7 +18340,15 @@ var $author$project$Main$toItemView = F2(
 								]),
 							_List_fromArray(
 								[
-									$author$project$Main$toNoteRepresentationFromNote(note),
+									A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$Border$widthEach(
+											{bottom: 0, left: 0, right: 3, top: 0}),
+											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+										]),
+									$author$project$Main$toNoteRepresentationFromNote(note)),
 									maybeChoice
 								])),
 							A2(
@@ -18335,18 +18377,14 @@ var $author$project$Main$toItemView = F2(
 									}),
 									A2(
 									$mdgriffith$elm_ui$Element$column,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-											$mdgriffith$elm_ui$Element$height(
-											A2($mdgriffith$elm_ui$Element$minimum, 100, $mdgriffith$elm_ui$Element$fill)),
-											A2($mdgriffith$elm_ui$Element$spacingXY, 8, 0),
-											$mdgriffith$elm_ui$Element$scrollbarY
-										]),
+									$author$project$Main$containerWithScrollAttributes,
 									A2(
 										$elm$core$List$map,
 										$author$project$Main$toNoteDetailAddingLinkForm(item),
-										A2($author$project$Slipbox$getNotesThatCanLinkToNote, note, content.slipbox)))
+										A2(
+											$elm$core$List$filter,
+											$author$project$Note$contains(search),
+											A2($author$project$Slipbox$getNotesThatCanLinkToNote, note, content.slipbox))))
 								]))
 						]));
 			case 'Source':
@@ -19381,35 +19419,6 @@ var $author$project$Main$toOpenSourceButton = function (source) {
 						$author$project$Slipbox$OpenSource(source)))
 			}));
 };
-var $mdgriffith$elm_ui$Element$Border$widthXY = F2(
-	function (x, y) {
-		return A2(
-			$mdgriffith$elm_ui$Internal$Model$StyleClass,
-			$mdgriffith$elm_ui$Internal$Flag$borderWidth,
-			A5(
-				$mdgriffith$elm_ui$Internal$Model$BorderWidth,
-				'b-' + ($elm$core$String$fromInt(x) + ('-' + $elm$core$String$fromInt(y))),
-				y,
-				x,
-				y,
-				x));
-	});
-var $mdgriffith$elm_ui$Element$Border$widthEach = function (_v0) {
-	var bottom = _v0.bottom;
-	var top = _v0.top;
-	var left = _v0.left;
-	var right = _v0.right;
-	return (_Utils_eq(top, bottom) && _Utils_eq(left, right)) ? (_Utils_eq(top, right) ? $mdgriffith$elm_ui$Element$Border$width(top) : A2($mdgriffith$elm_ui$Element$Border$widthXY, left, top)) : A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$borderWidth,
-		A5(
-			$mdgriffith$elm_ui$Internal$Model$BorderWidth,
-			'b-' + ($elm$core$String$fromInt(top) + ('-' + ($elm$core$String$fromInt(right) + ('-' + ($elm$core$String$fromInt(bottom) + ('-' + $elm$core$String$fromInt(left))))))),
-			top,
-			right,
-			bottom,
-			left));
-};
 var $author$project$Main$tabView = F2(
 	function (deviceViewport, content) {
 		return A2(
@@ -19460,11 +19469,23 @@ var $author$project$Main$tabView = F2(
 									$author$project$Main$tabTextContentContainer(
 									A2(
 										$elm$core$List$map,
-										$author$project$Main$toOpenNoteButton($elm$core$Maybe$Nothing),
+										function (n) {
+											return A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$width(
+														A2($mdgriffith$elm_ui$Element$minimum, 300, $mdgriffith$elm_ui$Element$fill))
+													]),
+												n);
+										},
 										A2(
-											$author$project$Slipbox$getNotes,
-											$author$project$Main$searchConverter(input),
-											content.slipbox)))
+											$elm$core$List$map,
+											$author$project$Main$toOpenNoteButton($elm$core$Maybe$Nothing),
+											A2(
+												$author$project$Slipbox$getNotes,
+												$author$project$Main$searchConverter(input),
+												content.slipbox))))
 								]));
 					default:
 						var input = _v0.a;
