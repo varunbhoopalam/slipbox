@@ -521,8 +521,9 @@ tabView deviceViewport content =
             ]
             [ noteTabToolbar input
             , tabTextContentContainer
-              <| List.map ( toOpenNoteButton Nothing )
-                <| Slipbox.getNotes ( searchConverter input ) content.slipbox
+              <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
+                <| List.map ( toOpenNoteButton Nothing )
+                  <| Slipbox.getNotes ( searchConverter input ) content.slipbox
             ]
 
         SourcesTab input ->
@@ -735,7 +736,11 @@ toItemView content item =
         [ conditionalSubmitItemHeader "Add Link" ( maybeNote /= Nothing ) item
         , Element.row
           [ Element.width Element.fill ]
-          [ toNoteRepresentationFromNote note
+          [ Element.el
+            [ Element.Border.widthEach { right = 3, top = 0, left = 0, bottom = 0 }
+            , Element.width Element.fill
+            ]
+            <| toNoteRepresentationFromNote note
           , maybeChoice
           ]
         , Element.column
@@ -748,13 +753,10 @@ toItemView content item =
           , searchInput search
             <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
           , Element.column
-            [ Element.width Element.fill
-            , Element.height <| Element.minimum 100 Element.fill
-            , Element.spacingXY 8 0
-            , Element.scrollbarY
-            ]
+            containerWithScrollAttributes
               <| List.map (toNoteDetailAddingLinkForm item)
-                <| Slipbox.getNotesThatCanLinkToNote note content.slipbox
+                <| List.filter ( Note.contains search )
+                  <| Slipbox.getNotesThatCanLinkToNote note content.slipbox
           ]
         ]
 
@@ -940,7 +942,7 @@ containerWithScrollAttributes =
   , Element.spacingXY 8 8
   , Element.width Element.fill
   , Element.centerX
-  , Element.height <| Element.minimum 200 Element.fill
+  , Element.height <| Element.minimum 250 Element.fill
   , Element.scrollbarY
   ]
 
@@ -1254,9 +1256,12 @@ noteTabToolbar input =
 toOpenNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
 toOpenNoteButton maybeItemOpenedFrom note =
   Element.el 
-    [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid, Element.Border.color Color.gray
-    , Element.Border.width 4 
+    [ Element.paddingXY 8 0
+    , Element.spacingXY 8 8
+    , Element.Border.solid
+    , Element.Border.color Color.gray
+    , Element.Border.width 4
+    , Element.width Element.fill
     ] 
     <| Element.Input.button []
       { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
@@ -1493,9 +1498,9 @@ authorInput item input =
 labeledViewBuilder : String -> String -> Element Msg
 labeledViewBuilder label content =
   Element.textColumn
-    [ Element.spacingXY 0 8 ]
+    [ Element.spacingXY 0 8, Element.width Element.fill ]
     [ Element.el [ Element.Font.underline ] <| Element.text label
-    , Element.paragraph [] [ Element.text content ] ]
+    , Element.paragraph [ Element.width Element.fill ] [ Element.text content ] ]
 
 noteContentView : String -> Element Msg
 noteContentView noteContent = labeledViewBuilder "Content" noteContent
