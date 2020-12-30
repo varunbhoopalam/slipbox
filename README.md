@@ -1,4 +1,4 @@
-# slipbox.io - external mind storage!
+# slipbox.io - external mind storage
 Click the link below to start your own slipbox!
 
 https://varunbhoopalam.github.io/slipbox/
