@@ -1,4 +1,8 @@
 # slipbox - external mind storage
+We learn so much everyday but much of our knowledge goes to waste. We know more than we realize. We cannot remember everything we know, when we need to know it. Slipbox transforms this wasted knowledge into action. The more we learn, the more powerful we become. The practice of slipbox makes you powerful, and harnassing it grows your knowledge exponentially. It becomes easier to remember what you need to know, when you need to know it. Our critical masses of knowledge turn into publications, companies, and projects! You get to decide how to harness your power.
+
+The slipbox is an application with daily practice. It is a funnel that captures everything we learn and converts it into something useful to us. This system is based on psychological research and study.
+
 Click the link below to start your own slipbox!
 
 https://varunbhoopalam.github.io/slipbox/
