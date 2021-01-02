@@ -48,6 +48,14 @@ This note storage system gives a systematic approach to learning and knowledge s
 - After saving the slipbox.json file to your local computer, back it up! Google drive is a common way to do this but there are many options!
   - I personally use GitHub as it gives me a history as well. [Click here to take a look, my slipbox is public!](https://github.com/varunbhoopalam/varunbhoopalam.github.io/blob/master/slipbox.json) 
 
+#### Getting started woes
+When I first started using the slipbox system I was overwhelmed. It felt like something like this was too late for me to start using successfully. It felt like the only time to get started was when I first started learning things. In a sea of knowledge and information, it can be hard to find the right jumping off point.
+
+This is a common feeling. If you're feeling this, know that I, and many others, felt this too. Here are my suggestions to not get overwhelmed.
+- Focus on what you learned today
+- Don't worry if you're not making links between your notes to start. Your notes when you get start can be sporadic!
+- Don't force yourself to do something you don't want to or feel like doing. Do what you want! Read what you want! What you're curious about is your call.
+
 ## How do I contribute?
 At this time, the project is not set up for collaboration. Please reach out if you have something to discuss or want from this project. If there is interest, I would love to collaborate and perhaps bring on other contributors as a result. 
 
