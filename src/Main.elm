@@ -85,7 +85,16 @@ type State
 type alias Content = 
   { tab: Tab
   , slipbox: Slipbox.Slipbox
+  , sideNavState: SideNavState
   }
+
+type SideNavState = Expanded | Contracted
+
+toggle : SideNavState -> SideNavState
+toggle state =
+  case state of
+    Expanded -> Contracted
+    Contracted -> Expanded
 
 -- TAB
 type Tab
@@ -137,6 +146,7 @@ type Msg
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
+  | ToggleSideNav
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -245,7 +255,7 @@ update message model =
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( ExploreTab "" Viewport.initialize ) slipbox }
+              ({ model | state = Session <| Content ( ExploreTab "" Viewport.initialize ) slipbox Expanded }
               , Cmd.none
               )
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
@@ -312,12 +322,21 @@ update message model =
 
         _ -> ( model, Cmd.none )
 
+    ToggleSideNav ->
+      case model.state of
+        Session content ->
+          ( { model | state = ( Session { content | sideNavState = toggle content.sideNavState } ) }
+          , Cmd.none
+          )
+
+        _ -> ( model, Cmd.none )
+
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
     (ExploreTab "" Viewport.initialize )
     Slipbox.new
-
+    Expanded
 
 handleWindowInfo: ( Int, Int ) -> Model -> Model
 handleWindowInfo windowInfo model = 
@@ -356,8 +375,8 @@ maybeSubscribeOnAnimationFrame model =
 
 -- VIEW
 version = 0.1
-smallerItem = Element.fillPortion 1000
-biggerItem = Element.fillPortion 1618
+smallerElement = Element.fillPortion 1000
+biggerElement = Element.fillPortion 1618
 
 view: Model -> Browser.Document Msg
 view model =
@@ -459,12 +478,9 @@ sessionNode deviceViewport content =
     [ Element.width Element.fill
     , Element.height Element.fill
     ]
-    [ Element.el
-      [ Element.width smallerItem
-      , Element.height Element.fill]
-      <| leftNav content.tab
+    [ leftNav content.sideNavState content.tab
     , Element.el
-      [ Element.width biggerItem
+      [ Element.width biggerElement
       , Element.height Element.fill]
       <| tabView deviceViewport content
     ]
@@ -581,39 +597,60 @@ searchConverter input =
 
 barHeight = 65
 
-leftNav : Tab -> Element.Element Msg
-leftNav selectedTab =
+leftNav : SideNavState -> Tab -> Element.Element Msg
+leftNav sideNavState selectedTab =
   let
-    tab_ =
-      case selectedTab of
-        ExploreTab _ _ -> Explore
-        NotesTab _ -> Notes
-        SourcesTab _ -> Sources
-        WorkspaceTab -> Workspace
-        QuestionsTab _ -> Questions
+    buttonColumnWidth = Element.width <| Element.px 50
   in
-  Element.row
-    [ Element.height <| Element.px barHeight
-    , Element.width Element.fill
-    , Element.Font.size 36
-    , Element.Font.heavy
-    ]
-    [ tabHeaderBuilder
-      { onPress = Just <| ChangeTab Explore
-      , label = Element.el [ Element.centerX ] <| Element.text "Explore"
-      }
-      ( tab_ == Explore )
-    , tabHeaderBuilder
-      { onPress = Just <| ChangeTab Notes
-      , label = Element.el [ Element.centerX ] <| Element.text "Notes"
-      }
-      ( tab_ == Notes )
-    , tabHeaderBuilder
-      { onPress = Just <| ChangeTab Sources
-      , label = Element.el [ Element.centerX ] <| Element.text "Sources"
-      }
-      ( tab_ == Sources )
-    ]
+  case sideNavState of
+    Expanded ->
+      Element.column
+        [ Element.height Element.fill
+        , Element.width smallerElement
+        ]
+        [ Element.column
+          [ Element.height smallerElement
+          , Element.width Element.fill
+          ]
+          [ Element.row
+            [ Element.width Element.fill ]
+            [ Element.el
+              [ Element.centerX
+              , Element.centerY
+              , buttonColumnWidth
+              ]
+              <| hamburgerMenuButton
+            , Element.el
+              [ Element.centerX
+              , Element.centerY
+              , Element.width Element.fill
+              , Element.Font.heavy
+              ]
+              <| Element.text <| "Slipbox v. " ++ ( String.fromFloat version )
+            ]
+          ]
+        , Element.column
+          [ Element.height biggerElement
+          , Element.width Element.fill
+          ]
+          [ Element.text "Todo"]
+        ]
+    Contracted ->
+      Element.column
+        [ buttonColumnWidth
+        , Element.height Element.fill
+        ]
+        [ hamburgerMenuButton
+        ]
+
+hamburgerMenuButton : Element Msg
+hamburgerMenuButton =
+  Element.Input.button
+    []
+    { onPress = Just ToggleSideNav
+    -- TODO: How do I get icons in the app?
+    , label = Element.text "H"
+    }
 
 tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
 tabHeaderBuilder content onTab =
