@@ -1,9 +1,8 @@
 # slipbox - external mind storage
-We learn so much everyday, but much of our knowledge goes to waste. We know more than we realize, and we cannot remember everything we know, when we need to know it. 
+We learn so much everyday, but much of our knowledge goes to waste, inaccessible. When we research, perhaps only 5% of knowledge gained is relevant. The wasted 95% would still be useful to us if we put it in the right places in our mind. What if we could do just that?
 
-Slipbox transforms this wasted knowledge into action. The more we harness our knowledge by actively organizing ideas and insights as notes in Slipbox, the more power we have to identify opportunities for innovation, spot gaps in understanding, and recognize areas of interest to optimize our work around. Our critical masses of knowledge turn into publications, companies, and projects! 
+Slipbox lets you build and grow a replica external mind. You build this external mind systematically by recognizing the links between ideas your mind already makes. Then you translate this data to slipbox. The external mind gives us capabilities we did not have before. As it continues to grow it gets exponentially more useful. You can converse with this mind to understand what you know and don't know on different subjects. You can peer into the mind to see what critical masses of knowledge are there. These critical masses often turn into publications, companies, and projects! As a bonus, growing an external mind improves the performance of the original mind.
 
-The slipbox is an application with daily practice. It is a funnel that captures everything we learn and converts it into something useful to us. This system is based on psychological research and study.
 
 Click the link below to start your own slipbox!
 
