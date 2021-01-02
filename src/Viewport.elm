@@ -41,11 +41,11 @@ type alias Viewbox =
   , height: Int
   }
 
-initialize : ( Int, Int ) -> Viewport
-initialize dimensions =
+initialize : Viewport
+initialize =
   Viewport <| Info
     Stationary
-    (initializeViewbox dimensions)
+    initializeViewbox
 
 getViewbox : Viewport -> String
 getViewbox viewport =
@@ -149,9 +149,13 @@ updateSvgContainerDimensions ( width, height ) viewport =
 
 
 -- HELPER
-initializeViewbox : ( Int, Int ) -> Viewbox
-initializeViewbox ( width, height ) =
- Viewbox (negate (width // 2)) (negate (height // 2)) width height
+initializeViewbox : Viewbox
+initializeViewbox =
+  let
+    initialWidth = 400
+    initialHeight = 400
+  in
+  Viewbox (negate (initialWidth // 2)) (negate (initialHeight // 2)) initialWidth initialHeight
 
 type alias PositionExtremes =
   { minX : Float

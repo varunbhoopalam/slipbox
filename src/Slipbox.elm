@@ -1,8 +1,9 @@
 module Slipbox exposing 
   ( Slipbox
   , new
-  , getNotesAndLinks
+  , getGraphItems
   , getNotes
+  , getQuestions
   , getSources
   , getItems
   , getLinkedNotes
@@ -56,8 +57,8 @@ new  =
   in
   Slipbox <| Content [] [] [] [] state IdGenerator.init
 
-getNotesAndLinks : (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
-getNotesAndLinks maybeSearch slipbox =
+getGraphItems : (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
+getGraphItems maybeSearch slipbox =
   let
       content = getContent slipbox
   in
@@ -70,14 +71,32 @@ getNotesAndLinks maybeSearch slipbox =
       ( filteredNotes,  relevantLinks )
     Nothing -> ( content.notes, content.links )
 
+isNote : Note.Note -> Bool
+isNote note =
+  Note.getVariant note == Note.Regular
+
+isQuestion : Note.Note -> Bool
+isQuestion note =
+  Note.getVariant note == Note.Question
+
 getNotes : (Maybe String) -> Slipbox -> (List Note.Note)
 getNotes maybeSearch slipbox =
   let
     content = getContent slipbox
   in
   case maybeSearch of
-    Just search -> List.filter (Note.contains search) content.notes
+    Just search -> List.filter isNote <| List.filter (Note.contains search) content.notes
     Nothing -> content.notes
+
+getQuestions : (Maybe String) -> Slipbox -> (List Note.Note)
+getQuestions maybeSearch slipbox =
+  let
+    content = getContent slipbox
+  in
+  case maybeSearch of
+    Just search -> List.filter isQuestion <| List.filter (Note.contains search) content.notes
+    Nothing -> content.notes
+
 
 getSources : (Maybe String) -> Slipbox -> (List Source.Source)
 getSources maybeSearch slipbox =
