@@ -28,7 +28,7 @@ This note storage system gives a systematic approach to learning and knowledge s
 ## How do I get started?
 
 #### Steps
-1. Navigate to the project. The project is available [here](https://varunbhoopalam.github.io/slipbox/).
+1. Navigate to the project. [Click here to open the app](https://varunbhoopalam.github.io/slipbox/).
 2. Click start new slipbox
 3. Scroll down to the workspace and click create a note button. Add a note by filling in the content and source and then hitting the submit button that pops up.
 4. If you have a source associated to the note, click the create source button and fill out the form.
