@@ -41,9 +41,12 @@ This note storage system gives a systematic approach to learning and knowledge s
 - Create backups of your slipbox file in cloud storage so you're able to recover work should the original file go missing. This also lets you use another computer to add to your note storage.
 
 #### Workflow suggestions
-- Throughout the day keep your mind open! Be an active and engaged listener and reader! Keep notes that interest you in a place that is convenient for you to access! I personally use a notes app on my phone.
-- Pick a time to use slipbox at the beginning or end of the day and spend 15 minutes every day you can working with it! At your designated time, transfer your notes from where you stored the notes throughout the day to your slipbox note storage.
-- I believe this practice will unlock the benefits of using the system in the first place while also being fun to use! This practice will not be invasive, and it allows you to have freedom in your day to do what you want to do; it does not force you to live in the app.
+- Take notes any way convenient to you throughout the day.
+  - I use [Google's keep note](keep.google.com) because it is available easily on desktop and phone and I always have my phone on me.
+- Pick a time at the end of the day and spend 15 minutes or less transferring notes from your temporary notes to your slipbox. Then throw away your temporary notes! Trust me, it's a good feeling to not need them any longer.
+  - I aim for 9:30 every day.
+- After saving the slipbox.json file to your local computer, back it up! Google drive is a common way to do this but there are many options!
+  - I personally use GitHub as it gives me a history as well. [Click here to take a look, my slipbox is public!](https://github.com/varunbhoopalam/varunbhoopalam.github.io/blob/master/slipbox.json) 
 
 ## How do I contribute?
 At this time, the project is not set up for collaboration. Please reach out if you have something to discuss or want from this project. If there is interest, I would love to collaborate and perhaps bring on other contributors as a result. 
