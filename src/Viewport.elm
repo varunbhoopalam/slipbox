@@ -153,7 +153,7 @@ initializeViewbox : Viewbox
 initializeViewbox =
   let
     initialWidth = 400
-    initialHeight = 400
+    initialHeight = 200
   in
   Viewbox (negate (initialWidth // 2)) (negate (initialHeight // 2)) initialWidth initialHeight
 

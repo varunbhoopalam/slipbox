@@ -152,6 +152,7 @@ type Msg
   | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
+  | SideNavAddNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -207,6 +208,18 @@ update message model =
         _ -> ( model, Cmd.none)
 
     AddItem maybeItem addAction -> updateSlipboxWrapper <| Slipbox.addItem maybeItem addAction
+
+    SideNavAddNote ->
+      let
+         modelWithUpdatedTab = updateTab WorkspaceTab model
+         addItemToSlipboxLambda = Slipbox.addItem Nothing Slipbox.NewNote
+      in
+      case getSlipbox model of
+        Just slipbox ->
+          ( updateSlipbox ( addItemToSlipboxLambda slipbox ) modelWithUpdatedTab
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none)
 
     CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
 
@@ -464,10 +477,6 @@ aboutButton =
     , label = Element.el [ Element.Font.underline ] <| Element.text "About"
     }
 
--- TODO
---downloadButton : Element Msg
---{ onPress = Just FileDownload, label = Element.text "Save" }
-
 -- SESSION VIEW
 
 sessionView : ( Int, Int ) -> Content -> Html.Html Msg
@@ -612,53 +621,138 @@ leftNav sideNavState selectedTab =
     iconWidth = Element.width <| Element.px 35
     iconHeight = Element.width <| Element.px 40
     emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
-    container =
-      \leftIcon rightElement ->
-        Element.row
-          [ Element.width Element.fill
-          , Element.spacingXY 16 0
-          ]
-          [ leftIcon
-          , rightElement
-          ]
   in
   case sideNavState of
     Expanded ->
+      let
+        buttonLambda =
+          \alignment icon text msg ->
+            Element.el
+              [ Element.width Element.fill
+              , alignment
+              ]
+              <| Element.Input.button
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                ]
+                { onPress = Just msg
+                , label =
+                  Element.row
+                    [ Element.spacingXY 16 0]
+                    [ icon
+                    , Element.text text
+                    ]
+                }
+      in
       Element.column
         [ Element.height Element.fill
         , Element.width <| Element.px 200
         , Element.padding 8
+        , Element.spacingXY 0 8
         ]
         [ Element.column
           [ Element.height smallerElement
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ container
-              hamburgerMenuButton
-              <| Element.el [ Element.centerY, Element.alignLeft ]
-                <| Element.text <| "Slipbox " ++ versionString
-          , container
-              emptyIcon
-              <| Element.el [ Element.centerY, Element.alignLeft ] aboutButton
+          [ Element.row
+            [ Element.width Element.fill
+            , Element.spacingXY 16 0
+            ]
+            [ barsButton
+            , Element.el [ Element.centerY, Element.alignLeft ]
+              <| Element.text <| "Slipbox " ++ versionString
+            ]
+          , Element.row
+            [ Element.width Element.fill
+            , Element.spacingXY 16 0
+            ]
+            [ emptyIcon
+            , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
+            ]
+          , buttonLambda Element.alignBottom saveIcon "Save" FileDownload
+          , buttonLambda Element.alignBottom plusIcon "Create Note" SideNavAddNote
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.width Element.fill
+          , Element.spacingXY 0 8
           ]
-          [ Element.text "Todo"
+          [ buttonLambda Element.alignLeft compassIcon "Explore" <| ChangeTab Explore
+          , buttonLambda Element.alignLeft toolsIcon "Workspace" <| ChangeTab Workspace
+          , buttonLambda Element.alignLeft fileAltIcon "Notes" <| ChangeTab Notes
+          , buttonLambda Element.alignLeft scrollIcon "Sources" <| ChangeTab Sources
+          , buttonLambda Element.alignLeft questionIcon "Questions" <| ChangeTab Questions
           ]
         ]
     Contracted ->
+      let
+        iconLambda =
+          \alignment msg icon ->
+            Element.el [ alignment ]
+              <| Element.Input.button []
+                { onPress = Just msg
+                , label = icon
+                }
+      in
       Element.column
         [ Element.height Element.fill
+        , Element.width <| Element.px 100
         , Element.padding 8
+        , Element.spacingXY 0 8
         ]
-        [ hamburgerMenuButton
+        [ Element.column
+          [ Element.height smallerElement
+          , Element.spacingXY 0 8
+          ]
+          [ barsButton
+          , iconLambda Element.alignBottom FileDownload saveIcon
+          , iconLambda Element.alignBottom SideNavAddNote plusIcon
+          ]
+        , Element.column
+          [ Element.height biggerElement
+          , Element.spacingXY 0 8
+          ]
+          [ iconLambda Element.alignLeft ( ChangeTab Explore ) compassIcon
+          , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon
+          , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon
+          , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon
+          , iconLambda Element.alignLeft ( ChangeTab Questions ) questionIcon
+          ]
         ]
 
-hamburgerMenuButton : Element Msg
-hamburgerMenuButton =
+iconBuilder : FontAwesome.Icon.Icon -> Element Msg
+iconBuilder icon =
+  Element.el []
+    <| Element.html
+      <| FontAwesome.Icon.viewStyled
+        [ FontAwesome.Attributes.fa2x
+        ]
+        icon
+
+plusIcon : Element Msg
+plusIcon = iconBuilder FontAwesome.Solid.plus
+
+saveIcon : Element Msg
+saveIcon = iconBuilder FontAwesome.Solid.save
+
+compassIcon : Element Msg
+compassIcon = iconBuilder FontAwesome.Solid.compass
+
+toolsIcon : Element Msg
+toolsIcon = iconBuilder FontAwesome.Solid.tools
+
+fileAltIcon : Element Msg
+fileAltIcon = iconBuilder FontAwesome.Solid.fileAlt
+
+scrollIcon : Element Msg
+scrollIcon = iconBuilder FontAwesome.Solid.scroll
+
+questionIcon : Element Msg
+questionIcon = iconBuilder FontAwesome.Solid.question
+
+barsButton : Element Msg
+barsButton =
   Element.Input.button
     []
     { onPress = Just ToggleSideNav
@@ -1195,10 +1289,14 @@ graphAttributes ( width, _ ) viewport =
       [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
+        , Svg.Attributes.width "100%"
+        , Svg.Attributes.height "auto"
       ]
     Viewport.Stationary -> 
       [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
+        , Svg.Attributes.width "100%"
+        , Svg.Attributes.height "auto"
       ]
 
 toGraphNote: Note.Note -> Svg.Svg Msg
