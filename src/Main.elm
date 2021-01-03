@@ -409,12 +409,15 @@ view model =
 
 setupView : ( Int, Int ) -> Html.Html Msg
 setupView deviceViewport =
-  Html.div []
+  Html.div
+    [ Html.Attributes.style "height" "100%"
+    , Html.Attributes.style "width" "100%"
+    ]
     [ FontAwesome.Styles.css
     , Element.layout
       [ Element.inFront setupOverlay ]
       <| Element.el
-        [ Element.alpha 0.3 ]
+        [ Element.alpha 0.3, Element.height Element.fill, Element.width Element.fill ]
         <| sessionNode deviceViewport (newContent deviceViewport)
     ]
 
@@ -481,7 +484,10 @@ aboutButton =
 
 sessionView : ( Int, Int ) -> Content -> Html.Html Msg
 sessionView deviceViewport content =
-  Html.div []
+  Html.div
+    [ Html.Attributes.style "height" "100%"
+    , Html.Attributes.style "width" "100%"
+    ]
     [ FontAwesome.Styles.css
     , Element.layout
       [ Element.height Element.fill
@@ -550,6 +556,7 @@ tabView deviceViewport content =
     SourcesTab input ->
       Element.column
         [ Element.width Element.fill
+        , Element.height Element.fill
         ]
         [ sourceTabToolbar input
         , tabTextContentContainer
@@ -595,10 +602,11 @@ tabView deviceViewport content =
 tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
 tabTextContentContainer contents =
   Element.wrappedRow
-    [ Element.scrollbarY
-    , Element.height Element.fill
+    [ Element.height Element.fill
     , Element.padding 8
     , Element.spacingXY 8 8
+    , Element.width Element.fill
+    , Element.scrollbarY
     ]
     contents
 
