@@ -10,6 +10,8 @@ import Element.Events
 import Element.Font
 import Element.Input
 import File.Download
+import FontAwesome.Attributes
+import FontAwesome.Solid
 import Html
 import Html.Events
 import Html.Attributes
@@ -30,6 +32,9 @@ import Source
 import Item
 import File
 import File.Select
+import FontAwesome.Icon
+import FontAwesome.Styles
+
 
 -- MAIN
 main =
@@ -85,18 +90,31 @@ type State
 type alias Content = 
   { tab: Tab
   , slipbox: Slipbox.Slipbox
+  , sideNavState: SideNavState
   }
+
+type SideNavState = Expanded | Contracted
+
+toggle : SideNavState -> SideNavState
+toggle state =
+  case state of
+    Expanded -> Contracted
+    Contracted -> Expanded
 
 -- TAB
 type Tab
   = ExploreTab String Viewport.Viewport
   | NotesTab String
   | SourcesTab String
+  | WorkspaceTab
+  | QuestionsTab String
 
 type Tab_
   = Explore
+  | Workspace
   | Notes
   | Sources
+  | Questions
 
 -- INIT
 
@@ -133,6 +151,7 @@ type Msg
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
+  | ToggleSideNav
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -187,7 +206,17 @@ update message model =
             _ -> ( model, Cmd.none)
         _ -> ( model, Cmd.none)
 
-    AddItem maybeItem addAction -> updateSlipboxWrapper <| Slipbox.addItem maybeItem addAction
+    AddItem maybeItem addAction ->
+      let
+         modelWithUpdatedTab = updateTab WorkspaceTab model
+         addItemToSlipboxLambda = Slipbox.addItem maybeItem addAction
+      in
+      case getSlipbox model of
+        Just slipbox ->
+          ( updateSlipbox ( addItemToSlipboxLambda slipbox ) modelWithUpdatedTab
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none)
 
     CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
 
@@ -217,12 +246,7 @@ update message model =
     InitializeNewSlipbox ->
       case model.state of
         Setup ->
-          ({ model | state =
-            Session <| Content
-              (ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) )
-              Slipbox.new
-          }
-          , Cmd.none)
+          ({ model | state = Session <| newContent model.deviceViewport }, Cmd.none)
         _ -> ( model, Cmd.none )
 
     FileRequested ->
@@ -246,7 +270,7 @@ update message model =
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) ) slipbox }
+              ({ model | state = Session <| Content ( ExploreTab "" Viewport.initialize ) slipbox Expanded }
               , Cmd.none
               )
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
@@ -275,7 +299,7 @@ update message model =
                 ExploreTab _ _ -> ( model, Cmd.none )
                 _ ->
                   ( { model | state =
-                    Session { content | tab = ExploreTab "" <| Viewport.initialize (Tuple.first model.deviceViewport, svgGraphHeight) }
+                    Session { content | tab = ExploreTab "" Viewport.initialize }
                     }
                   , Cmd.none
                   )
@@ -297,8 +321,37 @@ update message model =
                     }
                   , Cmd.none
                   )
+
+            Workspace ->
+              ( updateTab WorkspaceTab model, Cmd.none )
+
+            Questions ->
+              case content.tab of
+                QuestionsTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = QuestionsTab "" }
+                    }
+                  , Cmd.none
+                  )
+
         _ -> ( model, Cmd.none )
-    
+
+    ToggleSideNav ->
+      case model.state of
+        Session content ->
+          ( { model | state = ( Session { content | sideNavState = toggle content.sideNavState } ) }
+          , Cmd.none
+          )
+
+        _ -> ( model, Cmd.none )
+
+newContent : ( Int, Int ) -> Content
+newContent deviceViewport =
+  Content
+    (ExploreTab "" Viewport.initialize )
+    Slipbox.new
+    Expanded
 
 handleWindowInfo: ( Int, Int ) -> Model -> Model
 handleWindowInfo windowInfo model = 
@@ -337,146 +390,121 @@ maybeSubscribeOnAnimationFrame model =
 
 -- VIEW
 version = 0.1
+versionString = "0.1"
+smallerElement = Element.fillPortion 1000
+biggerElement = Element.fillPortion 1618
 
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> { title = String.fromFloat <| version, body = [ setupView ] }
+    Setup -> { title = String.fromFloat <| version, body = [ setupView model.deviceViewport ] }
     Parsing -> { title = "Loading", body = [ Element.layout [] <| Element.text "Loading" ] }
     FailureToParse -> { title = "Failure", body = [ Element.layout [] <| Element.text "Failure" ] }
     Session content -> { title = "MySlipbox", body = [ sessionView model.deviceViewport content ] }
 
 -- SETUP VIEW
 
-setupView : Html.Html Msg
-setupView =
-  Element.layout []
-    <| Element.column
-      [ Element.height Element.fill
-      , Element.width Element.fill
-      , Element.Font.color <| Color.white
-      , Element.Font.size 24
-      ]
-      [ headerSetupPage
-      , Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.Font.size 36
-        , Element.Font.heavy
-        ]
-        [ startNewSlipboxButton
-        , requestCsvButton
-        ]
-      ]
+setupView : ( Int, Int ) -> Html.Html Msg
+setupView deviceViewport =
+  Html.div
+    [ Html.Attributes.style "height" "100%"
+    , Html.Attributes.style "width" "100%"
+    ]
+    [ FontAwesome.Styles.css
+    , Element.layout
+      [ Element.inFront setupOverlay ]
+      <| Element.el
+        [ Element.alpha 0.3, Element.height Element.fill, Element.width Element.fill ]
+        <| sessionNode deviceViewport (newContent deviceViewport)
+    ]
 
-topHeaderHeight = 30
-
-headerSetupPage : Element.Element Msg
-headerSetupPage =
+setupOverlay : Element Msg
+setupOverlay =
   let
-    versionText = Element.el [ Element.centerX, Element.centerY ]
-      <| Element.text <| "Slipbox.io Version " ++ ( String.fromFloat version )
+    xButton =
+      Element.el [ Element.width Element.fill]
+        <| Element.Input.button
+          [ Element.alignRight, Element.moveLeft 2]
+          { onPress = Just InitializeNewSlipbox, label = Element.text "x" }
+    buttonBuilder =
+      \func ->
+        Element.Input.button
+          [ Element.centerX, Element.centerY ]
+          func
+
   in
   Element.el
-    [ Element.height <| Element.px topHeaderHeight
+    [ Element.height Element.fill
     , Element.width Element.fill
-    , Element.Background.color Color.ebonyRegular
-    , Element.Font.color <| Color.white
-    , Element.Font.size 24
-    , Element.inFront versionText
-    , Element.paddingXY 8 0
+    , Element.padding barHeight
     ]
-    aboutButton
+    <| Element.el
+      [ Element.width <| Element.px 350
+      , Element.height <| Element.px 150
+      , Element.centerX
+      , Element.centerY
+      , Element.Border.width 1
+      , Element.Background.color Color.white
+      , Element.inFront xButton
+      , Element.paddingXY 0 16
+      ]
+      <| Element.row
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        ]
+        [ Element.el
+          [ Element.height Element.fill
+          , Element.width Element.fill
+          , Element.Border.widthEach {right=1,top=0,bottom=0,left=0}
+          ]
+          <| buttonBuilder
+            { onPress = Just InitializeNewSlipbox
+            , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Start New"
+            }
+        , Element.el [ Element.height Element.fill, Element.width Element.fill]
+          <| buttonBuilder
+            { onPress = Just FileRequested
+            , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Load Slipbox"
+            }
+        ]
 
 aboutButton : Element Msg
 aboutButton =
   Element.newTabLink
-    [ Element.alignRight
-    , Element.Font.color Color.white
-    , Element.Font.underline
-    , Element.centerY
+    [ Element.centerY
     ]
     { url = contactUrl
-    , label = Element.text "About"
-    }
-
-downloadButton : Element Msg
-downloadButton =
-  Element.Input.button
-    [ Element.paddingXY 4 0
-    , Element.alignRight
-    , Element.Border.rounded 10
-    , Element.Border.color Color.white
-    , Element.Border.width 2
-    ]
-    { onPress = Just FileDownload, label = Element.text "Save" }
-
-
-header : Element.Element Msg
-header =
-  let
-    versionText = Element.el [ Element.centerX, Element.centerY ]
-      <| Element.text <| "Slipbox.io Version " ++ ( String.fromFloat version )
-  in
-  Element.row
-    [ Element.height <| Element.px topHeaderHeight
-    , Element.width Element.fill
-    , Element.Background.color Color.ebonyRegular
-    , Element.Font.color <| Color.white
-    , Element.Font.size 24
-    , Element.inFront versionText
-    , Element.paddingXY 4 0
-    , Element.spacingXY 8 0
-    ]
-    [ aboutButton
-    , downloadButton
-    ]
-
-startNewSlipboxButton : Element.Element Msg
-startNewSlipboxButton =
-  Element.Input.button
-    [ Element.Background.color Color.heliotropeGrayRegular
-    , Element.mouseOver
-      [ Element.Background.color Color.heliotropeGrayHighlighted
-      , Element.Font.color Color.heliotropeGrayRegular
-      ]
-    , Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    { onPress = Just InitializeNewSlipbox
-    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Start New"
-    }
-
-requestCsvButton : Element.Element Msg
-requestCsvButton =
-  Element.Input.button
-    [ Element.Background.color Color.oldLavenderRegular
-    , Element.mouseOver
-      [ Element.Background.color Color.oldLavenderHighlighted
-      , Element.Font.color Color.oldLavenderRegular
-      ]
-    , Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    { onPress = Just FileRequested
-    , label = Element.el [ Element.centerX, Element.Border.width 1, Element.padding 8 ] <| Element.text "Load Slipbox"
+    , label = Element.el [ Element.Font.underline ] <| Element.text "About"
     }
 
 -- SESSION VIEW
 
 sessionView : ( Int, Int ) -> Content -> Html.Html Msg
 sessionView deviceViewport content =
-  Element.layout 
-    [ Element.inFront header]
-    <| Element.column 
-      [ Element.width Element.fill
-      , Element.moveDown <| toFloat topHeaderHeight ]
-      [ tabHeader content.tab
-      , tabView deviceViewport content
-      , itemsView content
-      , Element.el [ Element.height <| Element.px <| barHeight * 2 ] Element.none
-      , contact
+  Html.div
+    [ Html.Attributes.style "height" "100%"
+    , Html.Attributes.style "width" "100%"
+    ]
+    [ FontAwesome.Styles.css
+    , Element.layout
+      [ Element.height Element.fill
+      , Element.width Element.fill
       ]
+      <| sessionNode deviceViewport content
+    ]
+
+sessionNode : ( Int, Int ) -> Content -> Element Msg
+sessionNode deviceViewport content =
+  Element.row
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    ]
+    [ leftNav content.sideNavState content.tab
+    , Element.el
+      [ Element.width biggerElement
+      , Element.height Element.fill]
+      <| tabView deviceViewport content
+    ]
 
 contact : Element Msg
 contact =
@@ -500,49 +528,96 @@ contactUrl = "https://github.com/varunbhoopalam/slipbox"
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content =
-  Element.el
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    , Element.Border.widthEach { bottom = 3, top = 0, right = 0, left = 0 }
-    , Element.Border.color Color.heliotropeGrayRegular
-    ]
-    <| case content.tab of
-        ExploreTab input viewport ->
-          Element.column
-            [ Element.width Element.fill
-            ]
-            [ exploreTabToolbar input
-            , graph deviceViewport viewport <| Slipbox.getNotesAndLinks ( searchConverter input ) content.slipbox
-            ]
+  case content.tab of
+    ExploreTab input viewport ->
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ exploreTabToolbar input
+        , graph deviceViewport viewport <| Slipbox.getGraphItems ( searchConverter input ) content.slipbox
+        ]
 
-        NotesTab input ->
-          Element.column
-            [ Element.width Element.fill
+    NotesTab input ->
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ noteTabToolbar input
+        , tabTextContentContainer
+          <| List.map ( \n -> Element.el
+            [ Element.width <| Element.minimum 300 Element.fill
+            , Element.alignTop
+            , Element.alignLeft
             ]
-            [ noteTabToolbar input
-            , tabTextContentContainer
-              <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
-                <| List.map ( toOpenNoteButton Nothing )
-                  <| Slipbox.getNotes ( searchConverter input ) content.slipbox
-            ]
+            n )
+            <| List.map ( toOpenNoteButton Nothing )
+              <| Slipbox.getNotes ( searchConverter input ) content.slipbox
+        ]
 
-        SourcesTab input ->
-          Element.column
-            [ Element.width Element.fill
+    SourcesTab input ->
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ sourceTabToolbar input
+        , tabTextContentContainer
+          <| List.map toOpenSourceButton
+            <| Slipbox.getSources ( searchConverter input ) content.slipbox
+        ]
+
+    WorkspaceTab ->
+      Element.column
+          [ Element.width Element.fill
+          , Element.height Element.fill
+          , Element.padding 8
+          , Element.spacingXY 8 8
+          ]
+          [ Element.el
+            [ Element.Font.heavy
+            , Element.Border.width 1
+            , Element.padding 4
+            , Element.Font.color Color.oldLavenderRegular
+            , Element.centerX
             ]
-            [ sourceTabToolbar input
-            , tabTextContentContainer
-              <| List.map toOpenSourceButton
-                <| Slipbox.getSources ( searchConverter input ) content.slipbox
+            <| Element.text "Workspace"
+          , Element.el [ Element.centerX ] <| buttonTray Nothing
+          , Element.column
+            [ Element.height Element.fill
+            , Element.padding 8
+            , Element.spacingXY 8 8
+            , Element.width Element.fill
+            , Element.scrollbarY
             ]
+            <| List.map ( toItemView content )
+              <| Slipbox.getItems content.slipbox
+          ]
+
+    QuestionsTab input ->
+        Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+          [ noteTabToolbar input
+          , tabTextContentContainer
+            <| List.map ( \n -> Element.el
+              [ Element.width <| Element.minimum 300 Element.fill
+              , Element.alignTop
+              , Element.alignLeft
+              ]
+              n )
+              <| List.map ( toOpenNoteButton Nothing )
+                <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
+          ]
 
 tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
 tabTextContentContainer contents =
   Element.wrappedRow
-    [ Element.scrollbarY
-    , Element.height <| Element.px 500
+    [ Element.height Element.fill
     , Element.padding 8
     , Element.spacingXY 8 8
+    , Element.width Element.fill
+    , Element.scrollbarY
     ]
     contents
 
@@ -555,37 +630,201 @@ searchConverter input =
 
 barHeight = 65
 
-tabHeader : Tab -> Element.Element Msg
-tabHeader tab =
+leftNav : SideNavState -> Tab -> Element.Element Msg
+leftNav sideNavState selectedTab =
   let
-    tab_ =
-      case tab of
-        ExploreTab _ _ -> Explore
-        NotesTab _ -> Notes
-        SourcesTab _ -> Sources
+    iconWidth = Element.width <| Element.px 35
+    iconHeight = Element.width <| Element.px 40
+    emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
   in
-  Element.row
-    [ Element.height <| Element.px barHeight
-    , Element.width Element.fill
-    , Element.Font.size 36
-    , Element.Font.heavy
-    ]
-    [ tabHeaderBuilder
-      { onPress = Just <| ChangeTab Explore
-      , label = Element.el [ Element.centerX ] <| Element.text "Explore"
-      }
-      ( tab_ == Explore )
-    , tabHeaderBuilder
-      { onPress = Just <| ChangeTab Notes
-      , label = Element.el [ Element.centerX ] <| Element.text "Notes"
-      }
-      ( tab_ == Notes )
-    , tabHeaderBuilder
-      { onPress = Just <| ChangeTab Sources
-      , label = Element.el [ Element.centerX ] <| Element.text "Sources"
-      }
-      ( tab_ == Sources )
-    ]
+  case sideNavState of
+    Expanded ->
+      let
+        buttonTabLambda =
+          \alignment icon text msg shouldHaveBackground ->
+            let
+              buttonAttributes =
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.Border.rounded 10
+                , Element.padding 1
+                ]
+              buttonAttributesMaybeWithBackground =
+                if shouldHaveBackground then
+                  Element.Background.color Color.heliotropeGrayRegular :: buttonAttributes
+                else
+                  buttonAttributes
+            in
+            Element.el
+              [ Element.width Element.fill
+              , alignment
+              ]
+              <| Element.Input.button
+                buttonAttributesMaybeWithBackground
+                { onPress = Just msg
+                , label =
+                  Element.row
+                    [ Element.spacingXY 16 0]
+                    [ icon
+                    , Element.text text
+                    ]
+                }
+      in
+      Element.column
+        [ Element.height Element.fill
+        , Element.width <| Element.px 200
+        , Element.padding 8
+        , Element.spacingXY 0 8
+        ]
+        [ Element.column
+          [ Element.height smallerElement
+          , Element.width Element.fill
+          , Element.spacingXY 0 8
+          ]
+          [ Element.row
+            [ Element.width Element.fill
+            , Element.spacingXY 16 0
+            ]
+            [ barsButton
+            , Element.el [ Element.centerY, Element.alignLeft ]
+              <| Element.text <| "Slipbox " ++ versionString
+            ]
+          , Element.row
+            [ Element.width Element.fill
+            , Element.spacingXY 16 0
+            ]
+            [ emptyIcon
+            , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
+            ]
+          , buttonTabLambda Element.alignBottom saveIcon "Save" FileDownload False
+          , buttonTabLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
+          ]
+        , Element.column
+          [ Element.height biggerElement
+          , Element.width Element.fill
+          , Element.spacingXY 0 8
+          ]
+          [ buttonTabLambda Element.alignLeft compassIcon "Explore" ( ChangeTab Explore ) <| sameTab selectedTab Explore
+          , buttonTabLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
+          , buttonTabLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
+          , buttonTabLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
+          , buttonTabLambda Element.alignLeft questionIcon "Questions" ( ChangeTab Questions ) <| sameTab selectedTab Questions
+          ]
+        ]
+    Contracted ->
+      let
+        iconLambda =
+          \alignment msg icon shouldHaveBackground ->
+            let
+              buttonAttributes =
+                if shouldHaveBackground then
+                  [ Element.Background.color Color.heliotropeGrayRegular ]
+                else
+                  []
+            in
+            Element.el [ alignment ]
+              <| Element.Input.button buttonAttributes
+                { onPress = Just msg
+                , label = icon
+                }
+      in
+      Element.column
+        [ Element.height Element.fill
+        , Element.width <| Element.px 100
+        , Element.padding 8
+        , Element.spacingXY 0 8
+        ]
+        [ Element.column
+          [ Element.height smallerElement
+          , Element.spacingXY 0 8
+          ]
+          [ barsButton
+          , iconLambda Element.alignBottom FileDownload saveIcon False
+          , iconLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
+          ]
+        , Element.column
+          [ Element.height biggerElement
+          , Element.spacingXY 0 8
+          ]
+          [ iconLambda Element.alignLeft ( ChangeTab Explore ) compassIcon <| sameTab selectedTab Explore
+          , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
+          , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
+          , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
+          , iconLambda Element.alignLeft ( ChangeTab Questions ) questionIcon <| sameTab selectedTab Questions
+          ]
+        ]
+
+sameTab : Tab -> Tab_ -> Bool
+sameTab tab tab_ =
+  case tab of
+    ExploreTab _ _ ->
+      case tab_ of
+        Explore -> True
+        _ -> False
+
+    NotesTab _ ->
+      case tab_ of
+        Notes -> True
+        _ -> False
+
+    SourcesTab _ ->
+      case tab_ of
+        Sources -> True
+        _ -> False
+
+    WorkspaceTab ->
+      case tab_ of
+        Workspace -> True
+        _ -> False
+
+    QuestionsTab _ ->
+      case tab_ of
+        Questions -> True
+        _ -> False
+
+iconBuilder : FontAwesome.Icon.Icon -> Element Msg
+iconBuilder icon =
+  Element.el []
+    <| Element.html
+      <| FontAwesome.Icon.viewStyled
+        [ FontAwesome.Attributes.fa2x
+        , FontAwesome.Attributes.fw
+        ]
+        icon
+
+plusIcon : Element Msg
+plusIcon = iconBuilder FontAwesome.Solid.plus
+
+saveIcon : Element Msg
+saveIcon = iconBuilder FontAwesome.Solid.save
+
+compassIcon : Element Msg
+compassIcon = iconBuilder FontAwesome.Solid.compass
+
+toolsIcon : Element Msg
+toolsIcon = iconBuilder FontAwesome.Solid.tools
+
+fileAltIcon : Element Msg
+fileAltIcon = iconBuilder FontAwesome.Solid.fileAlt
+
+scrollIcon : Element Msg
+scrollIcon = iconBuilder FontAwesome.Solid.scroll
+
+questionIcon : Element Msg
+questionIcon = iconBuilder FontAwesome.Solid.question
+
+barsButton : Element Msg
+barsButton =
+  Element.Input.button
+    []
+    { onPress = Just ToggleSideNav
+    , label = Element.el []
+      <| Element.html
+        <| FontAwesome.Icon.viewStyled
+          [ FontAwesome.Attributes.fa2x
+          ]
+          FontAwesome.Solid.bars
+    }
 
 tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
 tabHeaderBuilder content onTab =
@@ -607,30 +846,6 @@ tabHeaderBuilder content onTab =
   Element.Input.button attributes content
 
 -- ITEMS
-itemsView: Content -> Element Msg
-itemsView content =
-  let
-      items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
-  in
-    Element.column 
-      [ Element.centerX
-      , Element.padding 8
-      , Element.spacingXY 8 8
-      , Element.width Element.fill
-      , Element.height Element.fill
-      ]
-      <|
-      List.concat
-        [ [ Element.el
-          [ Element.Font.heavy
-          , Element.Border.width 1
-          , Element.padding 4
-          , Element.Font.color Color.oldLavenderRegular
-          , Element.centerX
-          ] <| Element.text "Workspace" ]
-        , [ buttonTray Nothing ]
-        , items
-        ]
 
 itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
 itemHeaderBuilder contents =
@@ -679,23 +894,33 @@ toItemView content item =
     itemContainerLambda =
       \contents ->
         Element.column
-          [ Element.spacingXY 4 4
+          [ Element.spacingXY 8 8
+          , Element.width Element.fill
           , Element.centerX
-          , Element.width <| Element.maximum 800 Element.fill
-          , Element.height Element.shrink
           ]
-          [ Element.column
-            containerAttributes
-            contents
+          [ Element.el
+            [ Element.width <| Element.maximum 600 Element.fill
+            , Element.centerX
+            ]
+            <| Element.column
+              containerAttributes
+              contents
           , onHoverButtonTray item
           ]
   in
   case item of
-    Item.Note _ _ note -> itemContainerLambda
-      [ normalItemHeader "Note" item
-      , toNoteRepresentationFromNote note
-      , linkedNotesNode item note content.slipbox
-      ]
+    Item.Note _ _ note ->
+      let
+        text =
+          case Note.getVariant note of
+            Note.Regular -> "Note"
+            Note.Question -> "Question"
+      in
+      itemContainerLambda
+        [ normalItemHeader text item
+        , toNoteRepresentationFromNote note
+        , linkedNotesNode item note content.slipbox
+        ]
 
 
     Item.NewNote itemId _ note -> itemContainerLambda
@@ -711,18 +936,32 @@ toItemView content item =
       ]
 
 
-    Item.EditingNote itemId _ _ noteWithEdits -> itemContainerLambda
-      [ submitItemHeader "Editing Note" item
-      , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
-      , linkedNotesNodeNoButtons noteWithEdits content.slipbox
-      ]
+    Item.EditingNote itemId _ _ noteWithEdits ->
+      let
+        text =
+          case Note.getVariant noteWithEdits of
+            Note.Regular -> "Editing Note"
+            Note.Question -> "Editing Question"
+      in
+      itemContainerLambda
+        [ submitItemHeader text item
+        , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
+        , linkedNotesNodeNoButtons noteWithEdits content.slipbox
+        ]
 
 
-    Item.ConfirmDeleteNote _ _ note -> itemContainerLambda
-      [ deleteItemHeader "Delete Note" item
-      , toNoteRepresentationFromNote note
-      , linkedNotesNodeNoButtons note content.slipbox
-      ]
+    Item.ConfirmDeleteNote _ _ note ->
+      let
+        text =
+          case Note.getVariant note of
+            Note.Regular -> "Delete Note"
+            Note.Question -> "Delete Question"
+      in
+      itemContainerLambda
+        [ deleteItemHeader text item
+        , toNoteRepresentationFromNote note
+        , linkedNotesNodeNoButtons note content.slipbox
+        ]
 
 
     Item.AddingLinkToNoteForm _ _ search note maybeNote ->
@@ -1102,10 +1341,10 @@ exploreTabToolbar input =
 graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
 graph deviceViewport viewport elements =
   Element.el
-    [ Element.height <| Element.px svgGraphHeight
-    , Element.width Element.fill
+    [ Element.width Element.fill
+    , Element.height Element.fill
     ]
-    <| Element.html 
+    <| Element.html
       <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
 
 graphWrapperAttributes : Viewport.Viewport -> ( List ( Html.Attribute Msg ) )
@@ -1123,8 +1362,6 @@ graph_ deviceViewport viewport (notes, links) =
       , maybePanningFrame viewport notes
       ]
 
-svgGraphHeight = 500
-
 graphAttributes : ( Int, Int ) -> Viewport.Viewport -> (List ( Svg.Attribute Msg ) )
 graphAttributes ( width, _ ) viewport =
   let
@@ -1132,21 +1369,20 @@ graphAttributes ( width, _ ) viewport =
         Json.Decode.map2 Viewport.MouseEvent
         ( Json.Decode.field "offsetX" Json.Decode.int )
         ( Json.Decode.field "offsetY" Json.Decode.int )
-      smallerWidthToAccountForPageWidening = ( width - 50 )
   in
   case Viewport.getState viewport of
     Viewport.Moving _ ->
-      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
-        , Svg.Attributes.height <| String.fromInt svgGraphHeight
-        , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
+      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
+        , Svg.Attributes.width "100%"
+        , Svg.Attributes.height "auto"
       ]
     Viewport.Stationary -> 
-      [ Svg.Attributes.width <| String.fromInt smallerWidthToAccountForPageWidening
-        , Svg.Attributes.height <| String.fromInt svgGraphHeight
-        , Svg.Attributes.viewBox <| Viewport.getViewbox viewport
+      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
+        , Svg.Attributes.width "100%"
+        , Svg.Attributes.height "auto"
       ]
 
 toGraphNote: Note.Note -> Svg.Svg Msg
@@ -1176,7 +1412,11 @@ toGraphNote note =
                 { onPress = Just <| CompressNote note
                 , label = Element.text "X"
                 }
-              , Element.Input.button [ Element.width Element.fill, Element.height Element.fill]
+              , Element.Input.button
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.Font.size 8
+                ]
                 { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
                 , label = Element.paragraph
                   [ Element.scrollbarY ]
@@ -1263,7 +1503,8 @@ toOpenNoteButton maybeItemOpenedFrom note =
     , Element.Border.width 4
     , Element.width Element.fill
     ] 
-    <| Element.Input.button []
+    <| Element.Input.button
+      [ Element.width Element.fill, Element.height Element.fill]
       { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
       , label = toNoteRepresentationFromNote note
       }
@@ -1552,5 +1793,13 @@ smallOldLavenderButton buttonFunction =
     , Element.height Element.fill
     , Element.padding 8
     , Element.Font.heavy
+    ]
+    buttonFunction
+
+buttonThatWillFillSpace : { onPress : Maybe Msg, label : Element Msg } -> Element Msg
+buttonThatWillFillSpace buttonFunction =
+  Element.Input.button
+    [ Element.width Element.fill
+    , Element.height Element.fill
     ]
     buttonFunction

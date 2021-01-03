@@ -17,6 +17,7 @@
             "elm/url": "1.0.0",
             "gampleman/elm-visualization": "2.1.1",
             "justinmimbs/date": "3.2.1",
+            "lattyware/elm-fontawesome": "5.0.0",
             "mdgriffith/elm-ui": "1.1.8"
         },
         "indirect": {
