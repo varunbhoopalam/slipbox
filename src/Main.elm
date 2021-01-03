@@ -625,16 +625,27 @@ leftNav sideNavState selectedTab =
   case sideNavState of
     Expanded ->
       let
-        buttonLambda =
-          \alignment icon text msg ->
+        buttonTabLambda =
+          \alignment icon text msg shouldHaveBackground ->
+            let
+              buttonAttributes =
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.Border.rounded 10
+                , Element.padding 1
+                ]
+              buttonAttributesMaybeWithBackground =
+                if shouldHaveBackground then
+                  Element.Background.color Color.heliotropeGrayRegular :: buttonAttributes
+                else
+                  buttonAttributes
+            in
             Element.el
               [ Element.width Element.fill
               , alignment
               ]
               <| Element.Input.button
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                ]
+                buttonAttributesMaybeWithBackground
                 { onPress = Just msg
                 , label =
                   Element.row
@@ -670,27 +681,34 @@ leftNav sideNavState selectedTab =
             [ emptyIcon
             , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
             ]
-          , buttonLambda Element.alignBottom saveIcon "Save" FileDownload
-          , buttonLambda Element.alignBottom plusIcon "Create Note" SideNavAddNote
+          , buttonTabLambda Element.alignBottom saveIcon "Save" FileDownload False
+          , buttonTabLambda Element.alignBottom plusIcon "Create Note" SideNavAddNote False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ buttonLambda Element.alignLeft compassIcon "Explore" <| ChangeTab Explore
-          , buttonLambda Element.alignLeft toolsIcon "Workspace" <| ChangeTab Workspace
-          , buttonLambda Element.alignLeft fileAltIcon "Notes" <| ChangeTab Notes
-          , buttonLambda Element.alignLeft scrollIcon "Sources" <| ChangeTab Sources
-          , buttonLambda Element.alignLeft questionIcon "Questions" <| ChangeTab Questions
+          [ buttonTabLambda Element.alignLeft compassIcon "Explore" ( ChangeTab Explore ) <| sameTab selectedTab Explore
+          , buttonTabLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
+          , buttonTabLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
+          , buttonTabLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
+          , buttonTabLambda Element.alignLeft questionIcon "Questions" ( ChangeTab Questions ) <| sameTab selectedTab Questions
           ]
         ]
     Contracted ->
       let
         iconLambda =
-          \alignment msg icon ->
+          \alignment msg icon shouldHaveBackground ->
+            let
+              buttonAttributes =
+                if shouldHaveBackground then
+                  [ Element.Background.color Color.heliotropeGrayRegular ]
+                else
+                  []
+            in
             Element.el [ alignment ]
-              <| Element.Input.button []
+              <| Element.Input.button buttonAttributes
                 { onPress = Just msg
                 , label = icon
                 }
@@ -706,20 +724,48 @@ leftNav sideNavState selectedTab =
           , Element.spacingXY 0 8
           ]
           [ barsButton
-          , iconLambda Element.alignBottom FileDownload saveIcon
-          , iconLambda Element.alignBottom SideNavAddNote plusIcon
+          , iconLambda Element.alignBottom FileDownload saveIcon False
+          , iconLambda Element.alignBottom SideNavAddNote plusIcon False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ iconLambda Element.alignLeft ( ChangeTab Explore ) compassIcon
-          , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon
-          , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon
-          , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon
-          , iconLambda Element.alignLeft ( ChangeTab Questions ) questionIcon
+          [ iconLambda Element.alignLeft ( ChangeTab Explore ) compassIcon <| sameTab selectedTab Explore
+          , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
+          , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
+          , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
+          , iconLambda Element.alignLeft ( ChangeTab Questions ) questionIcon <| sameTab selectedTab Questions
           ]
         ]
+
+sameTab : Tab -> Tab_ -> Bool
+sameTab tab tab_ =
+  case tab of
+    ExploreTab _ _ ->
+      case tab_ of
+        Explore -> True
+        _ -> False
+
+    NotesTab _ ->
+      case tab_ of
+        Notes -> True
+        _ -> False
+
+    SourcesTab _ ->
+      case tab_ of
+        Sources -> True
+        _ -> False
+
+    WorkspaceTab ->
+      case tab_ of
+        Workspace -> True
+        _ -> False
+
+    QuestionsTab _ ->
+      case tab_ of
+        Questions -> True
+        _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
 iconBuilder icon =
@@ -727,6 +773,7 @@ iconBuilder icon =
     <| Element.html
       <| FontAwesome.Icon.viewStyled
         [ FontAwesome.Attributes.fa2x
+        , FontAwesome.Attributes.fw
         ]
         icon
 
