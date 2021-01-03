@@ -10,6 +10,7 @@ import Element.Events
 import Element.Font
 import Element.Input
 import File.Download
+import FontAwesome.Solid
 import Html
 import Html.Events
 import Html.Attributes
@@ -30,6 +31,9 @@ import Source
 import Item
 import File
 import File.Select
+import FontAwesome.Icon
+import FontAwesome.Styles
+
 
 -- MAIN
 main =
@@ -375,6 +379,7 @@ maybeSubscribeOnAnimationFrame model =
 
 -- VIEW
 version = 0.1
+versionString = "0.1"
 smallerElement = Element.fillPortion 1000
 biggerElement = Element.fillPortion 1618
 
@@ -466,11 +471,14 @@ aboutButton =
 
 sessionView : ( Int, Int ) -> Content -> Html.Html Msg
 sessionView deviceViewport content =
-  Element.layout 
-    [ Element.height Element.fill
-    , Element.width Element.fill
+  Html.div []
+    [ FontAwesome.Styles.css
+    , Element.layout
+      [ Element.height Element.fill
+      , Element.width Element.fill
+      ]
+      <| sessionNode deviceViewport content
     ]
-    <| sessionNode deviceViewport content
 
 sessionNode : ( Int, Int ) -> Content -> Element Msg
 sessionNode deviceViewport content =
@@ -601,39 +609,45 @@ leftNav : SideNavState -> Tab -> Element.Element Msg
 leftNav sideNavState selectedTab =
   let
     buttonColumnWidth = Element.width <| Element.px 50
+    container =
+      \leftIcon rightElement ->
+        Element.row
+          [ Element.width Element.fill ]
+          [ Element.el
+            [ Element.centerX
+            , Element.centerY
+            , buttonColumnWidth
+            ]
+            leftIcon
+          , Element.el
+            [ Element.centerX
+            , Element.centerY
+            , Element.width Element.fill
+            ]
+            rightElement
+          ]
   in
   case sideNavState of
     Expanded ->
       Element.column
         [ Element.height Element.fill
         , Element.width smallerElement
+        , Element.explain Debug.todo
         ]
         [ Element.column
           [ Element.height smallerElement
           , Element.width Element.fill
           ]
-          [ Element.row
-            [ Element.width Element.fill ]
-            [ Element.el
-              [ Element.centerX
-              , Element.centerY
-              , buttonColumnWidth
-              ]
-              <| hamburgerMenuButton
-            , Element.el
-              [ Element.centerX
-              , Element.centerY
-              , Element.width Element.fill
-              , Element.Font.heavy
-              ]
-              <| Element.text <| "Slipbox v. " ++ ( String.fromFloat version )
-            ]
+          [ container
+              hamburgerMenuButton
+              <| Element.el [] <| Element.text <| "Slipbox " ++ versionString
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.width Element.fill
           ]
-          [ Element.text "Todo"]
+          [ Element.text "Todo"
+          ]
         ]
     Contracted ->
       Element.column
@@ -649,7 +663,7 @@ hamburgerMenuButton =
     []
     { onPress = Just ToggleSideNav
     -- TODO: How do I get icons in the app?
-    , label = Element.text "H"
+    , label = Element.el [] <| Element.html <| FontAwesome.Icon.viewIcon FontAwesome.Solid.bars
     }
 
 tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
