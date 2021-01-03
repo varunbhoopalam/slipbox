@@ -10,6 +10,7 @@ import Element.Events
 import Element.Font
 import Element.Input
 import File.Download
+import FontAwesome.Attributes
 import FontAwesome.Solid
 import Html
 import Html.Events
@@ -395,11 +396,14 @@ view model =
 
 setupView : ( Int, Int ) -> Html.Html Msg
 setupView deviceViewport =
-  Element.layout
-    [ Element.inFront setupOverlay ]
-    <| Element.el
-      [ Element.alpha 0.3 ]
-      <| sessionNode deviceViewport (newContent deviceViewport)
+  Html.div []
+    [ FontAwesome.Styles.css
+    , Element.layout
+      [ Element.inFront setupOverlay ]
+      <| Element.el
+        [ Element.alpha 0.3 ]
+        <| sessionNode deviceViewport (newContent deviceViewport)
+    ]
 
 setupOverlay : Element Msg
 setupOverlay =
@@ -454,13 +458,10 @@ setupOverlay =
 aboutButton : Element Msg
 aboutButton =
   Element.newTabLink
-    [ Element.alignRight
-    , Element.Font.color Color.white
-    , Element.Font.underline
-    , Element.centerY
+    [ Element.centerY
     ]
     { url = contactUrl
-    , label = Element.text "About"
+    , label = Element.el [ Element.Font.underline ] <| Element.text "About"
     }
 
 -- TODO
@@ -608,39 +609,38 @@ barHeight = 65
 leftNav : SideNavState -> Tab -> Element.Element Msg
 leftNav sideNavState selectedTab =
   let
-    buttonColumnWidth = Element.width <| Element.px 50
+    iconWidth = Element.width <| Element.px 35
+    iconHeight = Element.width <| Element.px 40
+    emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
     container =
       \leftIcon rightElement ->
         Element.row
-          [ Element.width Element.fill ]
-          [ Element.el
-            [ Element.centerX
-            , Element.centerY
-            , buttonColumnWidth
-            ]
-            leftIcon
-          , Element.el
-            [ Element.centerX
-            , Element.centerY
-            , Element.width Element.fill
-            ]
-            rightElement
+          [ Element.width Element.fill
+          , Element.spacingXY 16 0
+          ]
+          [ leftIcon
+          , rightElement
           ]
   in
   case sideNavState of
     Expanded ->
       Element.column
         [ Element.height Element.fill
-        , Element.width smallerElement
-        , Element.explain Debug.todo
+        , Element.width <| Element.px 200
+        , Element.padding 8
         ]
         [ Element.column
           [ Element.height smallerElement
           , Element.width Element.fill
+          , Element.spacingXY 0 8
           ]
           [ container
               hamburgerMenuButton
-              <| Element.el [] <| Element.text <| "Slipbox " ++ versionString
+              <| Element.el [ Element.centerY, Element.alignLeft ]
+                <| Element.text <| "Slipbox " ++ versionString
+          , container
+              emptyIcon
+              <| Element.el [ Element.centerY, Element.alignLeft ] aboutButton
           ]
         , Element.column
           [ Element.height biggerElement
@@ -651,8 +651,8 @@ leftNav sideNavState selectedTab =
         ]
     Contracted ->
       Element.column
-        [ buttonColumnWidth
-        , Element.height Element.fill
+        [ Element.height Element.fill
+        , Element.padding 8
         ]
         [ hamburgerMenuButton
         ]
@@ -662,8 +662,12 @@ hamburgerMenuButton =
   Element.Input.button
     []
     { onPress = Just ToggleSideNav
-    -- TODO: How do I get icons in the app?
-    , label = Element.el [] <| Element.html <| FontAwesome.Icon.viewIcon FontAwesome.Solid.bars
+    , label = Element.el []
+      <| Element.html
+        <| FontAwesome.Icon.viewStyled
+          [ FontAwesome.Attributes.fa2x
+          ]
+          FontAwesome.Solid.bars
     }
 
 tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
