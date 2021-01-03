@@ -525,76 +525,72 @@ contactUrl = "https://github.com/varunbhoopalam/slipbox"
 -- TAB
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content =
-  Element.el
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    , Element.Border.widthEach { bottom = 3, top = 0, right = 0, left = 0 }
-    , Element.Border.color Color.heliotropeGrayRegular
-    ]
-    <| case content.tab of
-        ExploreTab input viewport ->
-          Element.column
-            [ Element.width Element.fill
-            ]
-            [ exploreTabToolbar input
-            , graph deviceViewport viewport <| Slipbox.getGraphItems ( searchConverter input ) content.slipbox
+  case content.tab of
+    ExploreTab input viewport ->
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ exploreTabToolbar input
+        , graph deviceViewport viewport <| Slipbox.getGraphItems ( searchConverter input ) content.slipbox
+        ]
+
+    NotesTab input ->
+      Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ noteTabToolbar input
+        , tabTextContentContainer
+          <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
+            <| List.map ( toOpenNoteButton Nothing )
+              <| Slipbox.getNotes ( searchConverter input ) content.slipbox
+        ]
+
+    SourcesTab input ->
+      Element.column
+        [ Element.width Element.fill
+        ]
+        [ sourceTabToolbar input
+        , tabTextContentContainer
+          <| List.map toOpenSourceButton
+            <| Slipbox.getSources ( searchConverter input ) content.slipbox
+        ]
+
+    WorkspaceTab ->
+      let
+          items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
+      in
+        Element.column
+          [ Element.centerX
+          , Element.padding 8
+          , Element.spacingXY 8 8
+          , Element.width Element.fill
+          , Element.height Element.fill
+          ]
+          <|
+          List.concat
+            [ [ Element.el
+              [ Element.Font.heavy
+              , Element.Border.width 1
+              , Element.padding 4
+              , Element.Font.color Color.oldLavenderRegular
+              , Element.centerX
+              ] <| Element.text "Workspace" ]
+            , [ buttonTray Nothing ]
+            , items
             ]
 
-        NotesTab input ->
-          Element.column
-            [ Element.width Element.fill
-            ]
-            [ noteTabToolbar input
-            , tabTextContentContainer
-              <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
-                <| List.map ( toOpenNoteButton Nothing )
-                  <| Slipbox.getNotes ( searchConverter input ) content.slipbox
-            ]
-
-        SourcesTab input ->
-          Element.column
-            [ Element.width Element.fill
-            ]
-            [ sourceTabToolbar input
-            , tabTextContentContainer
-              <| List.map toOpenSourceButton
-                <| Slipbox.getSources ( searchConverter input ) content.slipbox
-            ]
-
-        WorkspaceTab ->
-          let
-              items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
-          in
-            Element.column
-              [ Element.centerX
-              , Element.padding 8
-              , Element.spacingXY 8 8
-              , Element.width Element.fill
-              , Element.height Element.fill
-              ]
-              <|
-              List.concat
-                [ [ Element.el
-                  [ Element.Font.heavy
-                  , Element.Border.width 1
-                  , Element.padding 4
-                  , Element.Font.color Color.oldLavenderRegular
-                  , Element.centerX
-                  ] <| Element.text "Workspace" ]
-                , [ buttonTray Nothing ]
-                , items
-                ]
-
-        QuestionsTab input ->
-            Element.column
-              [ Element.width Element.fill
-              ]
-              [ noteTabToolbar input
-              , tabTextContentContainer
-                <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
-                  <| List.map ( toOpenNoteButton Nothing )
-                    <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
-              ]
+    QuestionsTab input ->
+        Element.column
+          [ Element.width Element.fill
+          ]
+          [ noteTabToolbar input
+          , tabTextContentContainer
+            <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
+              <| List.map ( toOpenNoteButton Nothing )
+                <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
+          ]
 
 tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
 tabTextContentContainer contents =
@@ -1303,9 +1299,9 @@ graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) 
 graph deviceViewport viewport elements =
   Element.el
     [ Element.width Element.fill
-    , Element.width Element.fill
+    , Element.height Element.fill
     ]
-    <| Element.html 
+    <| Element.html
       <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
 
 graphWrapperAttributes : Viewport.Viewport -> ( List ( Html.Attribute Msg ) )
@@ -1373,7 +1369,11 @@ toGraphNote note =
                 { onPress = Just <| CompressNote note
                 , label = Element.text "X"
                 }
-              , Element.Input.button [ Element.width Element.fill, Element.height Element.fill]
+              , Element.Input.button
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.Font.size 8
+                ]
                 { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
                 , label = Element.paragraph
                   [ Element.scrollbarY ]
