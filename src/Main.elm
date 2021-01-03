@@ -593,8 +593,9 @@ tabView deviceViewport content =
 
     QuestionsTab input ->
         Element.column
-          [ Element.width Element.fill
-          ]
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
           [ noteTabToolbar input
           , tabTextContentContainer
             <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
@@ -891,7 +892,7 @@ toItemView content item =
           , Element.centerX
           ]
           [ Element.el
-            [ Element.width <| Element.maximum 400 Element.fill
+            [ Element.width <| Element.maximum 600 Element.fill
             , Element.centerX
             ]
             <| Element.column

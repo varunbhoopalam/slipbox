@@ -86,7 +86,7 @@ getNotes maybeSearch slipbox =
   in
   case maybeSearch of
     Just search -> List.filter isNote <| List.filter (Note.contains search) content.notes
-    Nothing -> content.notes
+    Nothing -> List.filter isNote content.notes
 
 getQuestions : (Maybe String) -> Slipbox -> (List Note.Note)
 getQuestions maybeSearch slipbox =
@@ -95,7 +95,7 @@ getQuestions maybeSearch slipbox =
   in
   case maybeSearch of
     Just search -> List.filter isQuestion <| List.filter (Note.contains search) content.notes
-    Nothing -> content.notes
+    Nothing -> List.filter isQuestion content.notes
 
 
 getSources : (Maybe String) -> Slipbox -> (List Source.Source)
