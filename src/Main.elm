@@ -548,7 +548,12 @@ tabView deviceViewport content =
         ]
         [ noteTabToolbar input
         , tabTextContentContainer
-          <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
+          <| List.map ( \n -> Element.el
+            [ Element.width <| Element.minimum 300 Element.fill
+            , Element.alignTop
+            , Element.alignLeft
+            ]
+            n )
             <| List.map ( toOpenNoteButton Nothing )
               <| Slipbox.getNotes ( searchConverter input ) content.slipbox
         ]
@@ -598,7 +603,12 @@ tabView deviceViewport content =
         ]
           [ noteTabToolbar input
           , tabTextContentContainer
-            <| List.map ( \n -> Element.el [ Element.width <| Element.minimum 300 Element.fill ] n )
+            <| List.map ( \n -> Element.el
+              [ Element.width <| Element.minimum 300 Element.fill
+              , Element.alignTop
+              , Element.alignLeft
+              ]
+              n )
               <| List.map ( toOpenNoteButton Nothing )
                 <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
           ]
@@ -1475,7 +1485,8 @@ toOpenNoteButton maybeItemOpenedFrom note =
     , Element.Border.width 4
     , Element.width Element.fill
     ] 
-    <| Element.Input.button []
+    <| Element.Input.button
+      [ Element.width Element.fill, Element.height Element.fill]
       { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
       , label = toNoteRepresentationFromNote note
       }
