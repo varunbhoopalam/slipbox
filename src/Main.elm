@@ -565,28 +565,31 @@ tabView deviceViewport content =
         ]
 
     WorkspaceTab ->
-      let
-          items = List.map ( toItemView content ) <| Slipbox.getItems content.slipbox
-      in
-        Element.column
-          [ Element.centerX
+      Element.column
+          [ Element.width Element.fill
+          , Element.height Element.fill
           , Element.padding 8
           , Element.spacingXY 8 8
-          , Element.width Element.fill
-          , Element.height Element.fill
           ]
-          <|
-          List.concat
-            [ [ Element.el
-              [ Element.Font.heavy
-              , Element.Border.width 1
-              , Element.padding 4
-              , Element.Font.color Color.oldLavenderRegular
-              , Element.centerX
-              ] <| Element.text "Workspace" ]
-            , [ buttonTray Nothing ]
-            , items
+          [ Element.el
+            [ Element.Font.heavy
+            , Element.Border.width 1
+            , Element.padding 4
+            , Element.Font.color Color.oldLavenderRegular
+            , Element.centerX
             ]
+            <| Element.text "Workspace"
+          , Element.el [ Element.centerX ] <| buttonTray Nothing
+          , Element.column
+            [ Element.height Element.fill
+            , Element.padding 8
+            , Element.spacingXY 8 8
+            , Element.width Element.fill
+            , Element.scrollbarY
+            ]
+            <| List.map ( toItemView content )
+              <| Slipbox.getItems content.slipbox
+          ]
 
     QuestionsTab input ->
         Element.column
@@ -883,14 +886,17 @@ toItemView content item =
     itemContainerLambda =
       \contents ->
         Element.column
-          [ Element.spacingXY 4 4
+          [ Element.spacingXY 8 8
+          , Element.width Element.fill
           , Element.centerX
-          , Element.width <| Element.maximum 800 Element.fill
-          , Element.height Element.shrink
           ]
-          [ Element.column
-            containerAttributes
-            contents
+          [ Element.el
+            [ Element.width <| Element.maximum 400 Element.fill
+            , Element.centerX
+            ]
+            <| Element.column
+              containerAttributes
+              contents
           , onHoverButtonTray item
           ]
   in
