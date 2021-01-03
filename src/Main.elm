@@ -912,11 +912,18 @@ toItemView content item =
           ]
   in
   case item of
-    Item.Note _ _ note -> itemContainerLambda
-      [ normalItemHeader "Note" item
-      , toNoteRepresentationFromNote note
-      , linkedNotesNode item note content.slipbox
-      ]
+    Item.Note _ _ note ->
+      let
+        text =
+          case Note.getVariant note of
+            Note.Regular -> "Note"
+            Note.Question -> "Question"
+      in
+      itemContainerLambda
+        [ normalItemHeader text item
+        , toNoteRepresentationFromNote note
+        , linkedNotesNode item note content.slipbox
+        ]
 
 
     Item.NewNote itemId _ note -> itemContainerLambda
@@ -932,18 +939,32 @@ toItemView content item =
       ]
 
 
-    Item.EditingNote itemId _ _ noteWithEdits -> itemContainerLambda
-      [ submitItemHeader "Editing Note" item
-      , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
-      , linkedNotesNodeNoButtons noteWithEdits content.slipbox
-      ]
+    Item.EditingNote itemId _ _ noteWithEdits ->
+      let
+        text =
+          case Note.getVariant noteWithEdits of
+            Note.Regular -> "Editing Note"
+            Note.Question -> "Editing Question"
+      in
+      itemContainerLambda
+        [ submitItemHeader text item
+        , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
+        , linkedNotesNodeNoButtons noteWithEdits content.slipbox
+        ]
 
 
-    Item.ConfirmDeleteNote _ _ note -> itemContainerLambda
-      [ deleteItemHeader "Delete Note" item
-      , toNoteRepresentationFromNote note
-      , linkedNotesNodeNoButtons note content.slipbox
-      ]
+    Item.ConfirmDeleteNote _ _ note ->
+      let
+        text =
+          case Note.getVariant note of
+            Note.Regular -> "Delete Note"
+            Note.Question -> "Delete Question"
+      in
+      itemContainerLambda
+        [ deleteItemHeader text item
+        , toNoteRepresentationFromNote note
+        , linkedNotesNodeNoButtons note content.slipbox
+        ]
 
 
     Item.AddingLinkToNoteForm _ _ search note maybeNote ->
