@@ -152,7 +152,6 @@ type Msg
   | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
-  | SideNavAddNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -207,12 +206,10 @@ update message model =
             _ -> ( model, Cmd.none)
         _ -> ( model, Cmd.none)
 
-    AddItem maybeItem addAction -> updateSlipboxWrapper <| Slipbox.addItem maybeItem addAction
-
-    SideNavAddNote ->
+    AddItem maybeItem addAction ->
       let
          modelWithUpdatedTab = updateTab WorkspaceTab model
-         addItemToSlipboxLambda = Slipbox.addItem Nothing Slipbox.NewNote
+         addItemToSlipboxLambda = Slipbox.addItem maybeItem addAction
       in
       case getSlipbox model of
         Just slipbox ->
@@ -700,7 +697,7 @@ leftNav sideNavState selectedTab =
             , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
             ]
           , buttonTabLambda Element.alignBottom saveIcon "Save" FileDownload False
-          , buttonTabLambda Element.alignBottom plusIcon "Create Note" SideNavAddNote False
+          , buttonTabLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
           ]
         , Element.column
           [ Element.height biggerElement
@@ -743,7 +740,7 @@ leftNav sideNavState selectedTab =
           ]
           [ barsButton
           , iconLambda Element.alignBottom FileDownload saveIcon False
-          , iconLambda Element.alignBottom SideNavAddNote plusIcon False
+          , iconLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
           ]
         , Element.column
           [ Element.height biggerElement
