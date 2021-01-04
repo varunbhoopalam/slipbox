@@ -5567,7 +5567,7 @@ var $author$project$Main$maybeSubscribeOnAnimationFrame = function (model) {
 	if (_v0.$ === 'Session') {
 		var content = _v0.a;
 		var _v1 = content.tab;
-		if (_v1.$ === 'ExploreTab') {
+		if (_v1.$ === 'BrainTab') {
 			return $author$project$Slipbox$simulationIsCompleted(content.slipbox) ? $elm$core$Platform$Sub$none : $elm$browser$Browser$Events$onAnimationFrame($author$project$Main$Tick);
 		} else {
 			return $elm$core$Platform$Sub$none;
@@ -6003,15 +6003,15 @@ var $author$project$Main$subscriptions = function (model) {
 				$author$project$Main$maybeSubscribeOnAnimationFrame(model)
 			]));
 };
+var $author$project$Main$BrainTab = F2(
+	function (a, b) {
+		return {$: 'BrainTab', a: a, b: b};
+	});
 var $author$project$Main$Content = F3(
 	function (tab, slipbox, sideNavState) {
 		return {sideNavState: sideNavState, slipbox: slipbox, tab: tab};
 	});
 var $author$project$Main$Expanded = {$: 'Expanded'};
-var $author$project$Main$ExploreTab = F2(
-	function (a, b) {
-		return {$: 'ExploreTab', a: a, b: b};
-	});
 var $author$project$Main$FailureToParse = {$: 'FailureToParse'};
 var $author$project$Main$FileLoaded = function (a) {
 	return {$: 'FileLoaded', a: a};
@@ -8253,7 +8253,7 @@ var $author$project$Main$handleWindowInfo = F2(
 		if (_v0.$ === 'Session') {
 			var content = _v0.a;
 			var _v1 = content.tab;
-			if (_v1.$ === 'ExploreTab') {
+			if (_v1.$ === 'BrainTab') {
 				var input = _v1.a;
 				var viewport = _v1.b;
 				return _Utils_update(
@@ -8265,7 +8265,7 @@ var $author$project$Main$handleWindowInfo = F2(
 								content,
 								{
 									tab: A2(
-										$author$project$Main$ExploreTab,
+										$author$project$Main$BrainTab,
 										input,
 										A2($author$project$Viewport$updateSvgContainerDimensions, windowInfo, viewport))
 								}))
@@ -8432,7 +8432,7 @@ var $author$project$Slipbox$new = function () {
 var $author$project$Main$newContent = function (deviceViewport) {
 	return A3(
 		$author$project$Main$Content,
-		A2($author$project$Main$ExploreTab, '', $author$project$Viewport$initialize),
+		A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize),
 		$author$project$Slipbox$new,
 		$author$project$Main$Expanded);
 };
@@ -9453,7 +9453,7 @@ var $author$project$Main$update = F2(
 			if (_v23.$ === 'Session') {
 				var content = _v23.a;
 				var _v24 = content.tab;
-				if (_v24.$ === 'ExploreTab') {
+				if (_v24.$ === 'BrainTab') {
 					var input = _v24.a;
 					var viewport = _v24.b;
 					return _Utils_Tuple2(
@@ -9465,7 +9465,7 @@ var $author$project$Main$update = F2(
 										content,
 										{
 											tab: A2(
-												$author$project$Main$ExploreTab,
+												$author$project$Main$BrainTab,
 												input,
 												toViewport(viewport))
 										}))
@@ -9489,12 +9489,12 @@ var $author$project$Main$update = F2(
 				if (_v1.$ === 'Session') {
 					var content = _v1.a;
 					var _v2 = content.tab;
-					if (_v2.$ === 'ExploreTab') {
+					if (_v2.$ === 'BrainTab') {
 						var viewport = _v2.b;
 						return _Utils_Tuple2(
 							A2(
 								$author$project$Main$updateTab,
-								A2($author$project$Main$ExploreTab, input, viewport),
+								A2($author$project$Main$BrainTab, input, viewport),
 								model),
 							$elm$core$Platform$Cmd$none);
 					} else {
@@ -9663,7 +9663,7 @@ var $author$project$Main$update = F2(
 									state: $author$project$Main$Session(
 										A3(
 											$author$project$Main$Content,
-											A2($author$project$Main$ExploreTab, '', $author$project$Viewport$initialize),
+											A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize),
 											slipbox,
 											$author$project$Main$Expanded))
 								}),
@@ -9711,9 +9711,9 @@ var $author$project$Main$update = F2(
 				if (_v16.$ === 'Session') {
 					var content = _v16.a;
 					switch (tab.$) {
-						case 'Explore':
+						case 'Brain':
 							var _v18 = content.tab;
-							if (_v18.$ === 'ExploreTab') {
+							if (_v18.$ === 'BrainTab') {
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							} else {
 								return _Utils_Tuple2(
@@ -9724,7 +9724,7 @@ var $author$project$Main$update = F2(
 												_Utils_update(
 													content,
 													{
-														tab: A2($author$project$Main$ExploreTab, '', $author$project$Viewport$initialize)
+														tab: A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize)
 													}))
 										}),
 									$elm$core$Platform$Cmd$none);
@@ -15508,10 +15508,10 @@ var $author$project$Main$AddItem = F2(
 	function (a, b) {
 		return {$: 'AddItem', a: a, b: b};
 	});
+var $author$project$Main$Brain = {$: 'Brain'};
 var $author$project$Main$ChangeTab = function (a) {
 	return {$: 'ChangeTab', a: a};
 };
-var $author$project$Main$Explore = {$: 'Explore'};
 var $author$project$Main$FileDownload = {$: 'FileDownload'};
 var $author$project$Slipbox$NewNote = {$: 'NewNote'};
 var $author$project$Main$Notes = {$: 'Notes'};
@@ -16183,6 +16183,27 @@ var $author$project$Main$barsButton = A2(
 					$lattyware$elm_fontawesome$FontAwesome$Solid$bars))),
 		onPress: $elm$core$Maybe$Just($author$project$Main$ToggleSideNav)
 	});
+var $lattyware$elm_fontawesome$FontAwesome$Solid$brain = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'brain',
+	576,
+	512,
+	_List_fromArray(
+		['M208 0c-29.9 0-54.7 20.5-61.8 48.2-.8 0-1.4-.2-2.2-.2-35.3 0-64 28.7-64 64 0 4.8.6 9.5 1.7 14C52.5 138 32 166.6 32 200c0 12.6 3.2 24.3 8.3 34.9C16.3 248.7 0 274.3 0 304c0 33.3 20.4 61.9 49.4 73.9-.9 4.6-1.4 9.3-1.4 14.1 0 39.8 32.2 72 72 72 4.1 0 8.1-.5 12-1.2 9.6 28.5 36.2 49.2 68 49.2 39.8 0 72-32.2 72-72V64c0-35.3-28.7-64-64-64zm368 304c0-29.7-16.3-55.3-40.3-69.1 5.2-10.6 8.3-22.3 8.3-34.9 0-33.4-20.5-62-49.7-74 1-4.5 1.7-9.2 1.7-14 0-35.3-28.7-64-64-64-.8 0-1.5.2-2.2.2C422.7 20.5 397.9 0 368 0c-35.3 0-64 28.6-64 64v376c0 39.8 32.2 72 72 72 31.8 0 58.4-20.7 68-49.2 3.9.7 7.9 1.2 12 1.2 39.8 0 72-32.2 72-72 0-4.8-.5-9.5-1.4-14.1 29-12 49.4-40.6 49.4-73.9z']));
+var $lattyware$elm_fontawesome$FontAwesome$Attributes$fw = $elm$svg$Svg$Attributes$class('fa-fw');
+var $author$project$Main$iconBuilder = function (icon) {
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_Nil,
+		$mdgriffith$elm_ui$Element$html(
+			A2(
+				$lattyware$elm_fontawesome$FontAwesome$Icon$viewStyled,
+				_List_fromArray(
+					[$lattyware$elm_fontawesome$FontAwesome$Attributes$fa2x, $lattyware$elm_fontawesome$FontAwesome$Attributes$fw]),
+				icon)));
+};
+var $author$project$Main$brainIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$brain);
 var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
 	return A2(
 		$mdgriffith$elm_ui$Internal$Model$StyleClass,
@@ -16213,27 +16234,6 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
-var $lattyware$elm_fontawesome$FontAwesome$Solid$compass = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'compass',
-	496,
-	512,
-	_List_fromArray(
-		['M225.38 233.37c-12.5 12.5-12.5 32.76 0 45.25 12.49 12.5 32.76 12.5 45.25 0 12.5-12.5 12.5-32.76 0-45.25-12.5-12.49-32.76-12.49-45.25 0zM248 8C111.03 8 0 119.03 0 256s111.03 248 248 248 248-111.03 248-248S384.97 8 248 8zm126.14 148.05L308.17 300.4a31.938 31.938 0 0 1-15.77 15.77l-144.34 65.97c-16.65 7.61-33.81-9.55-26.2-26.2l65.98-144.35a31.938 31.938 0 0 1 15.77-15.77l144.34-65.97c16.65-7.6 33.8 9.55 26.19 26.2z']));
-var $lattyware$elm_fontawesome$FontAwesome$Attributes$fw = $elm$svg$Svg$Attributes$class('fa-fw');
-var $author$project$Main$iconBuilder = function (icon) {
-	return A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_Nil,
-		$mdgriffith$elm_ui$Element$html(
-			A2(
-				$lattyware$elm_fontawesome$FontAwesome$Icon$viewStyled,
-				_List_fromArray(
-					[$lattyware$elm_fontawesome$FontAwesome$Attributes$fa2x, $lattyware$elm_fontawesome$FontAwesome$Attributes$fw]),
-				icon)));
-};
-var $author$project$Main$compassIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$compass);
 var $lattyware$elm_fontawesome$FontAwesome$Solid$fileAlt = A5(
 	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
 	'fas',
@@ -16325,8 +16325,8 @@ var $mdgriffith$elm_ui$Element$row = F2(
 var $author$project$Main$sameTab = F2(
 	function (tab, tab_) {
 		switch (tab.$) {
-			case 'ExploreTab':
-				if (tab_.$ === 'Explore') {
+			case 'BrainTab':
+				if (tab_.$ === 'Brain') {
 					return true;
 				} else {
 					return false;
@@ -16532,10 +16532,10 @@ var $author$project$Main$leftNav = F2(
 								A5(
 								buttonTabLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
-								$author$project$Main$compassIcon,
-								'Explore',
-								$author$project$Main$ChangeTab($author$project$Main$Explore),
-								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Explore)),
+								$author$project$Main$brainIcon,
+								'Brain',
+								$author$project$Main$ChangeTab($author$project$Main$Brain),
+								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Brain)),
 								A5(
 								buttonTabLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
@@ -16591,7 +16591,7 @@ var $author$project$Main$leftNav = F2(
 					[
 						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
 						$mdgriffith$elm_ui$Element$width(
-						$mdgriffith$elm_ui$Element$px(100)),
+						$mdgriffith$elm_ui$Element$px(64)),
 						$mdgriffith$elm_ui$Element$padding(8),
 						A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
 					]),
@@ -16627,9 +16627,9 @@ var $author$project$Main$leftNav = F2(
 								A4(
 								iconLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
-								$author$project$Main$ChangeTab($author$project$Main$Explore),
-								$author$project$Main$compassIcon,
-								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Explore)),
+								$author$project$Main$ChangeTab($author$project$Main$Brain),
+								$author$project$Main$brainIcon,
+								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Brain)),
 								A4(
 								iconLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
@@ -20151,7 +20151,7 @@ var $author$project$Main$tabView = F2(
 	function (deviceViewport, content) {
 		var _v0 = content.tab;
 		switch (_v0.$) {
-			case 'ExploreTab':
+			case 'BrainTab':
 				var input = _v0.a;
 				var viewport = _v0.b;
 				return A2(

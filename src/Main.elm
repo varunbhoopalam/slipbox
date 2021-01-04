@@ -103,14 +103,14 @@ toggle state =
 
 -- TAB
 type Tab
-  = ExploreTab String Viewport.Viewport
+  = BrainTab String Viewport.Viewport
   | NotesTab String
   | SourcesTab String
   | WorkspaceTab
   | QuestionsTab String
 
 type Tab_
-  = Explore
+  = Brain
   | Workspace
   | Notes
   | Sources
@@ -164,10 +164,10 @@ update message model =
       case model.state of
         Session content ->
           case content.tab of
-            ExploreTab input viewport ->
+            BrainTab input viewport ->
               ({ model | state = Session
                 { content | tab =
-                  ExploreTab input (toViewport viewport)
+                  BrainTab input (toViewport viewport)
                 }
               }, Cmd.none )
             _ -> ( model, Cmd.none )
@@ -183,8 +183,8 @@ update message model =
       case model.state of
         Session content ->
           case content.tab of
-            ExploreTab _ viewport ->
-              ( updateTab ( ExploreTab input viewport ) model, Cmd.none )
+            BrainTab _ viewport ->
+              ( updateTab ( BrainTab input viewport ) model, Cmd.none )
             _ -> ( model, Cmd.none)
         _ -> ( model, Cmd.none)
 
@@ -270,7 +270,7 @@ update message model =
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( ExploreTab "" Viewport.initialize ) slipbox Expanded }
+              ({ model | state = Session <| Content ( BrainTab "" Viewport.initialize ) slipbox Expanded }
               , Cmd.none
               )
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
@@ -294,12 +294,12 @@ update message model =
       case model.state of
         Session content ->
           case tab of
-            Explore ->
+            Brain ->
               case content.tab of
-                ExploreTab _ _ -> ( model, Cmd.none )
+                BrainTab _ _ -> ( model, Cmd.none )
                 _ ->
                   ( { model | state =
-                    Session { content | tab = ExploreTab "" Viewport.initialize }
+                    Session { content | tab = BrainTab "" Viewport.initialize }
                     }
                   , Cmd.none
                   )
@@ -349,7 +349,7 @@ update message model =
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
-    (ExploreTab "" Viewport.initialize )
+    (BrainTab "" Viewport.initialize )
     Slipbox.new
     Expanded
 
@@ -358,10 +358,10 @@ handleWindowInfo windowInfo model =
   case model.state of
     Session content ->
       case content.tab of
-        ExploreTab input viewport ->
+        BrainTab input viewport ->
           { model | deviceViewport = windowInfo
           , state = Session { content | tab =
-            ExploreTab input <| Viewport.updateSvgContainerDimensions windowInfo viewport
+            BrainTab input <| Viewport.updateSvgContainerDimensions windowInfo viewport
             }
           }
         _ -> { model | deviceViewport = windowInfo }
@@ -380,7 +380,7 @@ maybeSubscribeOnAnimationFrame model =
   case model.state of
     Session content ->
       case content.tab of
-        ExploreTab _ _ ->
+        BrainTab _ _ ->
           if Slipbox.simulationIsCompleted content.slipbox then
             Sub.none
           else
@@ -529,7 +529,7 @@ contactUrl = "https://github.com/varunbhoopalam/slipbox"
 tabView: ( Int, Int ) -> Content -> Element Msg
 tabView deviceViewport content =
   case content.tab of
-    ExploreTab input viewport ->
+    BrainTab input viewport ->
       Element.column
         [ Element.width Element.fill
         , Element.height Element.fill
@@ -704,7 +704,7 @@ leftNav sideNavState selectedTab =
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ buttonTabLambda Element.alignLeft compassIcon "Explore" ( ChangeTab Explore ) <| sameTab selectedTab Explore
+          [ buttonTabLambda Element.alignLeft brainIcon "Brain" ( ChangeTab Brain ) <| sameTab selectedTab Brain
           , buttonTabLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
           , buttonTabLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
           , buttonTabLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
@@ -730,7 +730,7 @@ leftNav sideNavState selectedTab =
       in
       Element.column
         [ Element.height Element.fill
-        , Element.width <| Element.px 100
+        , Element.width <| Element.px 64
         , Element.padding 8
         , Element.spacingXY 0 8
         ]
@@ -746,7 +746,7 @@ leftNav sideNavState selectedTab =
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ iconLambda Element.alignLeft ( ChangeTab Explore ) compassIcon <| sameTab selectedTab Explore
+          [ iconLambda Element.alignLeft ( ChangeTab Brain ) brainIcon <| sameTab selectedTab Brain
           , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
           , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
           , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
@@ -757,9 +757,9 @@ leftNav sideNavState selectedTab =
 sameTab : Tab -> Tab_ -> Bool
 sameTab tab tab_ =
   case tab of
-    ExploreTab _ _ ->
+    BrainTab _ _ ->
       case tab_ of
-        Explore -> True
+        Brain -> True
         _ -> False
 
     NotesTab _ ->
@@ -798,8 +798,8 @@ plusIcon = iconBuilder FontAwesome.Solid.plus
 saveIcon : Element Msg
 saveIcon = iconBuilder FontAwesome.Solid.save
 
-compassIcon : Element Msg
-compassIcon = iconBuilder FontAwesome.Solid.compass
+brainIcon : Element Msg
+brainIcon = iconBuilder FontAwesome.Solid.brain
 
 toolsIcon : Element Msg
 toolsIcon = iconBuilder FontAwesome.Solid.tools
