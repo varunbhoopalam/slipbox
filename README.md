@@ -64,9 +64,8 @@ Another option to contribute is to fill out issues with bugs, feature requests a
 ## Where can I get more help, if I need it?
 Please feel free to directly reach out to me at bhoopalam.varun@gmail.com
 
-## Vision
-
-I imagine a foundation set up to host people's data for free if they want to use this system from any device. Similarly, a solution is set up on any device to access and add notes or explore your own slipbox. Further, I think expanding the capabilities of the system, especially ways of collaborating, sensemaking, and sharing knowledge should be possible.
+## Mission
+This project is intended to help unlock someone's potential. People are capable of so much. People chasing their dreams often inspires me. This is why I want to help others, as thanks for the inspiration I've recieved in the past. I want to equip people with the tools to make their dreams a reality, empower people to solve problems that they face, and inspire them to action towards their own missions.
 
 ## Why open source?
 
