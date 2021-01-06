@@ -8,6 +8,9 @@ Click the link below to start your own slipbox!
 
 https://varunbhoopalam.github.io/slipbox/
 
+## Mission
+People are capable of so much. People chasing their dreams often inspires me. This is why I want to help others, as thanks for the inspiration I've recieved in the past. I want to equip people with the tools to make their dreams a reality, empower people to solve problems that they face, and inspire them to action towards their own missions.
+
 ## What does this project do?
 This is a note storage system inspired by the [Zettelkasten](https://en.wikipedia.org/wiki/Zettelkasten). It is an external mind storage that you can think inside of. It stores notes, links between notes, and sources for the notes. Slipbox makes using this system simple, convenient and fun while unlocking the benefits of using a Zettelkasten note storage system. Slipbox will also visualize the contents of your slipbox helping to find patterns that exist in the tree of notes that is a slipbox. [Here](https://observablehq.com/@d3/force-directed-graph) is an example of what that might look like. 
 
@@ -63,9 +66,6 @@ Another option to contribute is to fill out issues with bugs, feature requests a
 
 ## Where can I get more help, if I need it?
 Please feel free to directly reach out to me at bhoopalam.varun@gmail.com
-
-## Mission
-This project is intended to help unlock someone's potential. People are capable of so much. People chasing their dreams often inspires me. This is why I want to help others, as thanks for the inspiration I've recieved in the past. I want to equip people with the tools to make their dreams a reality, empower people to solve problems that they face, and inspire them to action towards their own missions.
 
 ## Why open source?
 
