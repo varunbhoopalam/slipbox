@@ -85,6 +85,8 @@ type State
   | Parsing 
   | FailureToParse 
   | Session Content
+  -- TODO
+  -- | Tutorial
 
 -- CONTENT
 type alias Content = 
