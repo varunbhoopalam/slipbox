@@ -23,17 +23,16 @@ type Tutorial
   | Three_PromptAddSourceToNote FirstNoteContent
   | Four_SourceInput FirstNoteContent Source
   | Five_ExplainNotes FirstNote
-  | Six_AddRelatedNotePrompt FirstNote
-  | Seven_NoteInput FirstNote SecondNoteContent Title
-  | Eight_SourceInput FirstNote SecondNoteContent Source
-  | Nine_AddLinkPrompt FirstNote SecondNoteContent ( Maybe Source )
-  | Ten_ExplainLinks FirstNote SecondNote
-  | Eleven_QuestionPrompt FirstNote SecondNote
-  | Twelve_QuestionInput FirstNote SecondNote Question
-  | Thirteen_ExplainQuestions FirstNote SecondNote ( Maybe Question )
-  | Fourteen_PracticeSaving FirstNote SecondNote ( Maybe Question )
-  | Fifteen_PracticeUploading FirstNote SecondNote ( Maybe Question )
-  | Sixteen_WorkflowSuggestionsAndFinish FirstNote SecondNote ( Maybe Question )
+  | Six_NoteInput FirstNote SecondNoteContent Title
+  | Seven_SourceInput FirstNote SecondNoteContent Source
+  | Eight_AddLinkPrompt FirstNote SecondNoteContent ( Maybe Source )
+  | Nine_ExplainLinks FirstNote SecondNote
+  | Ten_QuestionPrompt FirstNote SecondNote
+  | Eleven_QuestionInput FirstNote SecondNote Question
+  | Twelve_ExplainQuestions FirstNote SecondNote ( Maybe Question )
+  | Thirteen_PracticeSaving FirstNote SecondNote ( Maybe Question )
+  | Fourteen_PracticeUploading FirstNote SecondNote ( Maybe Question )
+  | Fifteen_WorkflowSuggestionsAndFinish FirstNote SecondNote ( Maybe Question )
 
 type FirstNote
   = WithSource String Source
@@ -64,7 +63,6 @@ type Step
   | PromptAddSourceToNote FirstNoteContent
   | SourceInput FirstNoteContent Title Author SourceContent
   | ExplainNotes
-  | AddRelatedNotePrompt FirstNoteContent
   | NoteInput FirstNoteContent SecondNoteContent Title
   | AddLinkPrompt FirstNoteContent SecondNoteContent
   | ExplainLinks
@@ -100,37 +98,34 @@ getStep tutorial =
     Five_ExplainNotes _ -> ExplainNotes
 
 
-    Six_AddRelatedNotePrompt firstNote -> AddRelatedNotePrompt <| getContent firstNote
+    Six_NoteInput firstNote content source -> NoteInput ( getContent firstNote ) content source
 
 
-    Seven_NoteInput firstNote content source -> NoteInput ( getContent firstNote ) content source
+    Seven_SourceInput _ string source -> SourceInput string source.title source.author source.content
 
 
-    Eight_SourceInput _ string source -> SourceInput string source.title source.author source.content
+    Eight_AddLinkPrompt firstNote string _ -> AddLinkPrompt ( getContent firstNote ) string
 
 
-    Nine_AddLinkPrompt firstNote string _ -> AddLinkPrompt ( getContent firstNote ) string
+    Nine_ExplainLinks _ _ -> ExplainLinks
 
 
-    Ten_ExplainLinks _ _ -> ExplainLinks
+    Ten_QuestionPrompt firstNote _ -> QuestionPrompt ( getContent firstNote )
 
 
-    Eleven_QuestionPrompt firstNote _ -> QuestionPrompt ( getContent firstNote )
+    Eleven_QuestionInput firstNote _ string -> QuestionInput ( getContent firstNote ) string
 
 
-    Twelve_QuestionInput firstNote _ string -> QuestionInput ( getContent firstNote ) string
+    Twelve_ExplainQuestions _ _ _ -> ExplainQuestions
 
 
-    Thirteen_ExplainQuestions _ _ _ -> ExplainQuestions
+    Thirteen_PracticeSaving firstNote secondNote string -> PracticeSaving <| toJsonString firstNote secondNote string
 
 
-    Fourteen_PracticeSaving firstNote secondNote string -> PracticeSaving <| toJsonString firstNote secondNote string
+    Fourteen_PracticeUploading _ _ _ -> PracticeUploading
 
 
-    Fifteen_PracticeUploading _ _ _ -> PracticeUploading
-
-
-    Sixteen_WorkflowSuggestionsAndFinish firstNote secondNote string -> WorkflowSuggestionsAndFinish
+    Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote string -> WorkflowSuggestionsAndFinish
 
 
 
@@ -151,23 +146,23 @@ update action tutorial =
       case tutorial of
         Two_CreateFirstNote _ -> Two_CreateFirstNote input
         Four_SourceInput firstNote source -> Four_SourceInput firstNote { source | content = input }
-        Eight_SourceInput firstNote secondNote source -> Eight_SourceInput firstNote secondNote { source | content = input}
-        Seven_NoteInput firstNote _ title -> Seven_NoteInput firstNote input title
-        Twelve_QuestionInput firstNote secondNote _ -> Twelve_QuestionInput firstNote secondNote input
+        Seven_SourceInput firstNote secondNote source -> Seven_SourceInput firstNote secondNote { source | content = input}
+        Six_NoteInput firstNote _ title -> Six_NoteInput firstNote input title
+        Eleven_QuestionInput firstNote secondNote _ -> Eleven_QuestionInput firstNote secondNote input
         _ -> tutorial
 
     Title input ->
       case tutorial of
         Four_SourceInput firstNote source -> Four_SourceInput firstNote { source | title = input }
-        Eight_SourceInput firstNote secondNote source -> Eight_SourceInput firstNote secondNote { source | title = input}
-        Seven_NoteInput firstNote secondNote _ -> Seven_NoteInput firstNote secondNote input
+        Seven_SourceInput firstNote secondNote source -> Seven_SourceInput firstNote secondNote { source | title = input}
+        Six_NoteInput firstNote secondNote _ -> Six_NoteInput firstNote secondNote input
         _ -> tutorial
 
 
     Author input ->
       case tutorial of
         Four_SourceInput firstNote source -> Four_SourceInput firstNote { source | author = input }
-        Eight_SourceInput firstNote secondNote source -> Eight_SourceInput firstNote secondNote { source | author = input}
+        Seven_SourceInput firstNote secondNote source -> Seven_SourceInput firstNote secondNote { source | author = input}
         _ -> tutorial
 
 -- TODO
@@ -186,45 +181,42 @@ skip tutorial =
     Four_SourceInput string _ -> Five_ExplainNotes <| WithoutSource string
 
 
-    Five_ExplainNotes firstNote -> Six_AddRelatedNotePrompt firstNote
+    Five_ExplainNotes _ -> tutorial
 
 
-    Six_AddRelatedNotePrompt firstNote -> Ten_ExplainLinks firstNote NoSecondNote
+    Six_NoteInput firstNote _ _ -> Nine_ExplainLinks firstNote NoSecondNote
 
 
-    Seven_NoteInput firstNote _ _ -> Ten_ExplainLinks firstNote NoSecondNote
+    Seven_SourceInput firstNote secondNoteContent source -> Eight_AddLinkPrompt firstNote secondNoteContent ( Just source )
 
 
-    Eight_SourceInput firstNote secondNoteContent source -> Nine_AddLinkPrompt firstNote secondNoteContent ( Just source )
-
-
-    Nine_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+    Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
       case maybeSource of
         Just source ->
-          Ten_ExplainLinks firstNote <| WithSourceNotLinked secondNoteContent source
+          Nine_ExplainLinks firstNote <| WithSourceNotLinked secondNoteContent source
         Nothing ->
-          Ten_ExplainLinks firstNote <| WithoutSourceNotLinked secondNoteContent
+          Nine_ExplainLinks firstNote <| WithoutSourceNotLinked secondNoteContent
 
 
-    Ten_ExplainLinks _ _ -> tutorial
+    Nine_ExplainLinks _ _ -> tutorial
 
 
-    Eleven_QuestionPrompt firstNote secondNote -> Thirteen_ExplainQuestions firstNote secondNote Nothing
+    Ten_QuestionPrompt firstNote secondNote -> Twelve_ExplainQuestions firstNote secondNote Nothing
 
 
-    Twelve_QuestionInput firstNote secondNote _ -> Thirteen_ExplainQuestions firstNote secondNote Nothing
+    Eleven_QuestionInput firstNote secondNote _ -> Twelve_ExplainQuestions firstNote secondNote Nothing
 
 
-    Thirteen_ExplainQuestions _ _ _ -> tutorial
+    Twelve_ExplainQuestions _ _ _ -> tutorial
 
 
-    Fourteen_PracticeSaving _ _ _ -> tutorial
+    Thirteen_PracticeSaving _ _ _ -> tutorial
 
 
-    Fifteen_PracticeUploading _ _ _ -> tutorial
+    Fourteen_PracticeUploading _ _ _ -> tutorial
 
 
-    Sixteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
+    Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
 
 -- TODO
 canContinue : Tutorial -> Bool
@@ -244,49 +236,46 @@ continue tutorial =
     Four_SourceInput string source -> Five_ExplainNotes <| WithSource string source
 
 
-    Five_ExplainNotes firstNote -> Six_AddRelatedNotePrompt firstNote
+    Five_ExplainNotes firstNote -> Six_NoteInput firstNote "" ""
 
 
-    Six_AddRelatedNotePrompt firstNote -> Seven_NoteInput firstNote "" ""
-
-
-    Seven_NoteInput firstNote content title ->
+    Six_NoteInput firstNote content title ->
       if titleIsValid title then
-        Eight_SourceInput firstNote content <| Source title "" ""
+        Seven_SourceInput firstNote content <| Source title "" ""
       else
-        Nine_AddLinkPrompt firstNote content Nothing
+        Eight_AddLinkPrompt firstNote content Nothing
 
 
-    Eight_SourceInput firstNote secondNoteContent source -> Nine_AddLinkPrompt firstNote secondNoteContent ( Just source )
+    Seven_SourceInput firstNote secondNoteContent source -> Eight_AddLinkPrompt firstNote secondNoteContent ( Just source )
 
 
-    Nine_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+    Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
       case maybeSource of
         Just source ->
-          Ten_ExplainLinks firstNote <| WithSourceAndLinked secondNoteContent source
+          Nine_ExplainLinks firstNote <| WithSourceAndLinked secondNoteContent source
         Nothing ->
-          Ten_ExplainLinks firstNote <| WithoutSourceAndLinked secondNoteContent
+          Nine_ExplainLinks firstNote <| WithoutSourceAndLinked secondNoteContent
 
 
-    Ten_ExplainLinks firstNote secondNote -> Eleven_QuestionPrompt firstNote secondNote
+    Nine_ExplainLinks firstNote secondNote -> Ten_QuestionPrompt firstNote secondNote
 
 
-    Eleven_QuestionPrompt firstNote secondNote -> Twelve_QuestionInput firstNote secondNote ""
+    Ten_QuestionPrompt firstNote secondNote -> Eleven_QuestionInput firstNote secondNote ""
 
 
-    Twelve_QuestionInput firstNote secondNote question -> Thirteen_ExplainQuestions firstNote secondNote ( Just question )
+    Eleven_QuestionInput firstNote secondNote question -> Twelve_ExplainQuestions firstNote secondNote ( Just question )
 
 
-    Thirteen_ExplainQuestions firstNote secondNote maybeQuestion -> Fourteen_PracticeSaving firstNote secondNote maybeQuestion
+    Twelve_ExplainQuestions firstNote secondNote maybeQuestion -> Thirteen_PracticeSaving firstNote secondNote maybeQuestion
 
 
-    Fourteen_PracticeSaving firstNote secondNote maybeQuestion -> Fifteen_PracticeUploading firstNote secondNote maybeQuestion
+    Thirteen_PracticeSaving firstNote secondNote maybeQuestion -> Fourteen_PracticeUploading firstNote secondNote maybeQuestion
 
 
-    Fifteen_PracticeUploading firstNote secondNote maybeQuestion -> Sixteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeQuestion
+    Fourteen_PracticeUploading firstNote secondNote maybeQuestion -> Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeQuestion
 
 
-    Sixteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
+    Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
 
 -- TODO
 toJsonString : FirstNote -> SecondNote -> ( Maybe String ) -> String
