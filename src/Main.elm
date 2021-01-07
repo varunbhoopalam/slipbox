@@ -155,6 +155,7 @@ type Msg
   | ChangeTab Tab_
   | ToggleSideNav
   | StartTutorial
+  | ContinueTutorial
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -357,6 +358,14 @@ update message model =
           )
         _ -> ( model, Cmd.none )
 
+    ContinueTutorial ->
+      case model.state of
+        Tutorial tutorial ->
+          ( { model | state = Tutorial <| Tutorial.continue tutorial }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
@@ -496,7 +505,7 @@ leftNavTutorial =
         , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
         ]
       , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" Nothing ( ShouldHighlight " <- Click create note to get started!")
+      , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" ( Just ContinueTutorial) ( ShouldHighlight " <- Click create note to get started!")
       ]
     , Element.column
       [ Element.height biggerElement
@@ -532,13 +541,32 @@ tutorialView tutorial =
             <| Element.text "Welcome to Slipbox!"
           , Element.el [ Element.centerX, Element.Font.bold ]
             <| Element.text "We're going to build your second brain one note at a time."
-
           ]
         ]
 
-    _ -> Element.none
 
-    --Tutorial.CreateFirstNote firstNoteContent ->
+    Tutorial.CreateFirstNote firstNoteContent ->
+      Element.text "We got here"
+      --Element.row
+      --  [ Element.width Element.fill
+      --  , Element.height Element.fill
+      --  ]
+      --  [ leftNavTutorial
+      --  , Element.column
+      --    [ Element.width biggerElement
+      --    , Element.height Element.fill
+      --    , Element.padding 16
+      --    , Element.spacingXY 0 16
+      --    ]
+      --    [ Element.el [ Element.alignRight ] <| Element.text "Finish Tutorial"
+      --    , Element.el [ Element.centerX, Element.Font.heavy ]
+      --      <| Element.text "Welcome to Slipbox!"
+      --    , Element.el [ Element.centerX, Element.Font.bold ]
+      --      <| Element.text "We're going to build your second brain one note at a time."
+      --    ]
+      --  ]
+
+    _ -> Element.none
     --
     --
     --Tutorial.PromptAddSourceToNote firstNoteContent ->

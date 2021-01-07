@@ -6,8 +6,8 @@ module Tutorial exposing
   , UpdateAction
   , getStep
   , skip
-  , submit
-  , canSubmit
+  , continue
+  , canContinue
   , init
   )
 
@@ -30,10 +30,10 @@ type Tutorial
   | Ten_ExplainLinks FirstNote SecondNote
   | Eleven_QuestionPrompt FirstNote SecondNote
   | Twelve_QuestionInput FirstNote SecondNote Question
-  | Thirteen_ExplainQuestions FirstNote SecondNote Question
-  | Fourteen_PracticeSaving FirstNote SecondNote Question
-  | Fifteen_PracticeUploading FirstNote SecondNote Question
-  | Sixteen_WorkflowSuggestionsAndFinish FirstNote SecondNote Question
+  | Thirteen_ExplainQuestions FirstNote SecondNote ( Maybe Question )
+  | Fourteen_PracticeSaving FirstNote SecondNote ( Maybe Question )
+  | Fifteen_PracticeUploading FirstNote SecondNote ( Maybe Question )
+  | Sixteen_WorkflowSuggestionsAndFinish FirstNote SecondNote ( Maybe Question )
 
 type FirstNote
   = WithSource String Source
@@ -175,14 +175,69 @@ skip : Tutorial -> Tutorial
 skip tutorial = tutorial
 
 -- TODO
-canSubmit : Tutorial -> Bool
-canSubmit tutorial = True
+canContinue : Tutorial -> Bool
+canContinue tutorial = True
 
 -- TODO
-submit : Tutorial -> Tutorial
-submit tutorial = tutorial
+continue : Tutorial -> Tutorial
+continue tutorial =
+  case tutorial of
+    One_Intro -> Two_CreateFirstNote ""
+
+    Two_CreateFirstNote string -> Three_PromptAddSourceToNote string
+
+
+    Three_PromptAddSourceToNote string -> Four_SourceInput string emptySource
+
+
+    Four_SourceInput string source -> Five_ExplainNotes <| WithSource string source
+
+
+    Five_ExplainNotes firstNote -> Six_AddRelatedNotePrompt firstNote
+
+
+    Six_AddRelatedNotePrompt firstNote -> Seven_NoteInput firstNote "" ""
+
+
+    Seven_NoteInput firstNote content title -> Eight_SourceInput firstNote content <| Source title "" ""
+
+
+    Eight_SourceInput firstNote secondNoteContent source -> Nine_AddLinkPrompt firstNote secondNoteContent ( Just source )
+
+
+    Nine_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+      case maybeSource of
+        Just source ->
+          Ten_ExplainLinks firstNote <| WithSourceAndLinked secondNoteContent source
+        Nothing ->
+          Ten_ExplainLinks firstNote <| WithoutSourceAndLinked secondNoteContent
+
+
+    Ten_ExplainLinks firstNote secondNote -> Eleven_QuestionPrompt firstNote secondNote
+
+
+    Eleven_QuestionPrompt firstNote secondNote -> Twelve_QuestionInput firstNote secondNote ""
+
+
+    Twelve_QuestionInput firstNote secondNote question -> Thirteen_ExplainQuestions firstNote secondNote ( Just question )
+
+
+    Thirteen_ExplainQuestions firstNote secondNote maybeQuestion -> Fourteen_PracticeSaving firstNote secondNote maybeQuestion
+
+
+    Fourteen_PracticeSaving firstNote secondNote maybeQuestion -> Fifteen_PracticeUploading firstNote secondNote maybeQuestion
+
+
+    Fifteen_PracticeUploading firstNote secondNote maybeQuestion -> Sixteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeQuestion
+
+
+    Sixteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
 
 -- TODO
-toJsonString : FirstNote -> SecondNote -> String -> String
+toJsonString : FirstNote -> SecondNote -> ( Maybe String ) -> String
 toJsonString firstNote secondNote question =
   ""
+
+emptySource : Source
+emptySource =
+  Source "" "" ""
