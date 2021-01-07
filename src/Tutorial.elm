@@ -172,13 +172,64 @@ update action tutorial =
 
 -- TODO
 skip : Tutorial -> Tutorial
-skip tutorial = tutorial
+skip tutorial =
+  case tutorial of
+    One_Intro -> tutorial
+
+
+    Two_CreateFirstNote _ -> tutorial
+
+
+    Three_PromptAddSourceToNote string -> Five_ExplainNotes <| WithoutSource string
+
+
+    Four_SourceInput string _ -> Five_ExplainNotes <| WithoutSource string
+
+
+    Five_ExplainNotes firstNote -> Six_AddRelatedNotePrompt firstNote
+
+
+    Six_AddRelatedNotePrompt firstNote -> Ten_ExplainLinks firstNote NoSecondNote
+
+
+    Seven_NoteInput firstNote _ _ -> Ten_ExplainLinks firstNote NoSecondNote
+
+
+    Eight_SourceInput firstNote secondNoteContent source -> Nine_AddLinkPrompt firstNote secondNoteContent ( Just source )
+
+
+    Nine_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+      case maybeSource of
+        Just source ->
+          Ten_ExplainLinks firstNote <| WithSourceNotLinked secondNoteContent source
+        Nothing ->
+          Ten_ExplainLinks firstNote <| WithoutSourceNotLinked secondNoteContent
+
+
+    Ten_ExplainLinks _ _ -> tutorial
+
+
+    Eleven_QuestionPrompt firstNote secondNote -> Thirteen_ExplainQuestions firstNote secondNote Nothing
+
+
+    Twelve_QuestionInput firstNote secondNote _ -> Thirteen_ExplainQuestions firstNote secondNote Nothing
+
+
+    Thirteen_ExplainQuestions _ _ _ -> tutorial
+
+
+    Fourteen_PracticeSaving _ _ _ -> tutorial
+
+
+    Fifteen_PracticeUploading _ _ _ -> tutorial
+
+
+    Sixteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
 
 -- TODO
 canContinue : Tutorial -> Bool
 canContinue tutorial = True
 
--- TODO
 continue : Tutorial -> Tutorial
 continue tutorial =
   case tutorial of
@@ -199,7 +250,11 @@ continue tutorial =
     Six_AddRelatedNotePrompt firstNote -> Seven_NoteInput firstNote "" ""
 
 
-    Seven_NoteInput firstNote content title -> Eight_SourceInput firstNote content <| Source title "" ""
+    Seven_NoteInput firstNote content title ->
+      if titleIsValid title then
+        Eight_SourceInput firstNote content <| Source title "" ""
+      else
+        Nine_AddLinkPrompt firstNote content Nothing
 
 
     Eight_SourceInput firstNote secondNoteContent source -> Nine_AddLinkPrompt firstNote secondNoteContent ( Just source )
@@ -241,3 +296,11 @@ toJsonString firstNote secondNote question =
 emptySource : Source
 emptySource =
   Source "" "" ""
+
+titleIsValid : Title -> Bool
+titleIsValid title =
+  let
+    notEmpty = not <| String.isEmpty title
+    notNA = title /= "n/a"
+  in
+  notEmpty && notNA
