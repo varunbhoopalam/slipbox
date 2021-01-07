@@ -8,9 +8,15 @@ module Tutorial exposing
   , skip
   , submit
   , canSubmit
+  , init
   )
 
 import Slipbox
+
+init : Tutorial
+init =
+  One_Intro
+
 type Tutorial
   = One_Intro
   | Two_CreateFirstNote FirstNoteContent
@@ -150,22 +156,31 @@ update action tutorial =
         Twelve_QuestionInput firstNote secondNote _ -> Twelve_QuestionInput firstNote secondNote input
         _ -> tutorial
 
-    Title string ->
+    Title input ->
+      case tutorial of
+        Four_SourceInput firstNote source -> Four_SourceInput firstNote { source | title = input }
+        Eight_SourceInput firstNote secondNote source -> Eight_SourceInput firstNote secondNote { source | title = input}
+        Seven_NoteInput firstNote secondNote _ -> Seven_NoteInput firstNote secondNote input
+        _ -> tutorial
 
 
-    Author string ->
+    Author input ->
+      case tutorial of
+        Four_SourceInput firstNote source -> Four_SourceInput firstNote { source | author = input }
+        Eight_SourceInput firstNote secondNote source -> Eight_SourceInput firstNote secondNote { source | author = input}
+        _ -> tutorial
 
 -- TODO
 skip : Tutorial -> Tutorial
-skip tutorial =
+skip tutorial = tutorial
 
 -- TODO
 canSubmit : Tutorial -> Bool
-canSubmit tutorial =
+canSubmit tutorial = True
 
 -- TODO
 submit : Tutorial -> Tutorial
-submit tutorial =
+submit tutorial = tutorial
 
 -- TODO
 toJsonString : FirstNote -> SecondNote -> String -> String

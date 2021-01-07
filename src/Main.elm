@@ -20,9 +20,10 @@ import Slipbox
 import Svg
 import Svg.Events
 import Svg.Attributes
-import Element exposing ( Element )
+import Element exposing (Element)
 import Json.Decode
 import Time
+import Tutorial
 import Viewport
 import Browser.Dom
 import Url
@@ -85,8 +86,7 @@ type State
   | Parsing 
   | FailureToParse 
   | Session Content
-  -- TODO
-  -- | Tutorial
+  | Tutorial Tutorial.Tutorial
 
 -- CONTENT
 type alias Content = 
@@ -154,6 +154,7 @@ type Msg
   | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
+  | StartTutorial
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -348,6 +349,14 @@ update message model =
 
         _ -> ( model, Cmd.none )
 
+    StartTutorial ->
+      case model.state of
+        Setup ->
+          ( { model | state = Tutorial Tutorial.init }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
@@ -393,18 +402,185 @@ maybeSubscribeOnAnimationFrame model =
 -- VIEW
 version = 0.1
 versionString = "0.1"
+webpageTitle = "Slipbox " ++ versionString
 smallerElement = Element.fillPortion 1000
 biggerElement = Element.fillPortion 1618
 
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> { title = String.fromFloat <| version, body = [ setupView model.deviceViewport ] }
-    Parsing -> { title = "Loading", body = [ Element.layout [] <| Element.text "Loading" ] }
-    FailureToParse -> { title = "Failure", body = [ Element.layout [] <| Element.text "Failure" ] }
-    Session content -> { title = "MySlipbox", body = [ sessionView model.deviceViewport content ] }
+    Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
+    Parsing -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Loading" ] }
+    FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure" ] }
+    Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }
+    Tutorial tutorial -> { title = webpageTitle, body = [ tutorialView tutorial ] }
 
--- SETUP VIEW
+type Highlight
+  = ShouldHighlight String
+  | ShouldNotHighlight
+
+leftNavTutorialButtonLambda : Element.Attribute Msg -> Element Msg -> String -> ( Maybe Msg ) -> Highlight -> Element Msg
+leftNavTutorialButtonLambda alignment icon text msg highlight =
+  let
+    buttonAttributes =
+      [ Element.width Element.fill
+      , Element.height Element.fill
+      , Element.Border.rounded 10
+      , Element.padding 1
+      ]
+    fadedAttributes =
+      [ Element.alpha 0.5
+      ]
+    highlightedAttributes =
+      \labelText ->
+      [ Element.Border.glow Color.yellow 2
+      , Element.onRight
+        <| Element.el
+          [ Element.centerY ]
+          <| Element.text labelText
+      ]
+
+    buttonAttributesHighlightOrFaded =
+      case highlight of
+        ShouldHighlight labelText -> List.concat [ buttonAttributes, highlightedAttributes labelText ]
+        ShouldNotHighlight -> List.concat [ buttonAttributes, fadedAttributes ]
+
+  in
+  Element.el
+    [ Element.width Element.fill
+    , alignment
+    ]
+    <| Element.Input.button
+      buttonAttributesHighlightOrFaded
+      { onPress = msg
+      , label =
+        Element.row
+          [ Element.spacingXY 16 0]
+          [ icon
+          , Element.text text
+          ]
+      }
+
+
+leftNavTutorial : Element.Element Msg
+leftNavTutorial =
+  let
+    iconWidth = Element.width <| Element.px 35
+    iconHeight = Element.width <| Element.px 40
+    emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
+  in
+  Element.column
+    [ Element.height Element.fill
+    , Element.width <| Element.px 200
+    , Element.padding 8
+    , Element.spacingXY 0 8
+    ]
+    [ Element.column
+      [ Element.height smallerElement
+      , Element.width Element.fill
+      , Element.spacingXY 0 8
+      ]
+      [ Element.row
+        [ Element.width Element.fill
+        , Element.spacingXY 16 0
+        ]
+        [ emptyIcon
+        , Element.el [ Element.centerY, Element.alignLeft ]
+          <| Element.text webpageTitle
+        ]
+      , Element.row
+        [ Element.width Element.fill
+        , Element.spacingXY 16 0
+        ]
+        [ emptyIcon
+        , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
+        ]
+      , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" Nothing ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" Nothing ( ShouldHighlight " <- Click create note to get started!")
+      ]
+    , Element.column
+      [ Element.height biggerElement
+      , Element.width Element.fill
+      , Element.spacingXY 0 8
+      ]
+      [ leftNavTutorialButtonLambda Element.alignLeft brainIcon "Brain" Nothing ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft toolsIcon "Workspace" Nothing ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft fileAltIcon "Notes" Nothing ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft scrollIcon "Sources" Nothing ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft questionIcon "Questions" Nothing ShouldNotHighlight
+      ]
+    ]
+
+
+tutorialView : Tutorial.Tutorial -> Html.Html Msg
+tutorialView tutorial =
+  layoutWithFontAwesomeStyles <| case Tutorial.getStep tutorial of
+    Tutorial.Intro ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ Element.el [ Element.alignRight ] <| Element.text "Finish Tutorial"
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Welcome to Slipbox!"
+          , Element.el [ Element.centerX, Element.Font.bold ]
+            <| Element.text "We're going to build your second brain one note at a time."
+
+          ]
+        ]
+
+    _ -> Element.none
+
+    --Tutorial.CreateFirstNote firstNoteContent ->
+    --
+    --
+    --Tutorial.PromptAddSourceToNote firstNoteContent ->
+    --
+    --
+    --Tutorial.SourceInput firstNoteContent title author sourceContent ->
+    --
+    --
+    --Tutorial.ExplainNotes ->
+    --
+    --
+    --Tutorial.AddRelatedNotePrompt firstNoteContent ->
+    --
+    --
+    --Tutorial.NoteInput firstNoteContent secondNoteContent title ->
+    --
+    --
+    --Tutorial.AddLinkPrompt firstNoteContent secondNoteContent ->
+    --
+    --
+    --Tutorial.ExplainLinks ->
+    --
+    --
+    --Tutorial.QuestionPrompt firstNoteContent ->
+    --
+    --
+    --Tutorial.QuestionInput firstNoteContent question ->
+    --
+    --
+    --Tutorial.ExplainQuestions ->
+    --
+    --
+    --Tutorial.PracticeSaving jsonFile ->
+    --
+    --
+    --Tutorial.PracticeUploading ->
+    --
+    --
+    --Tutorial.WorkflowSuggestionsAndFinish ->
+
+
+
 
 setupView : ( Int, Int ) -> Html.Html Msg
 setupView deviceViewport =
@@ -460,7 +636,7 @@ setupOverlay =
           , Element.Border.widthEach {right=1,top=0,bottom=0,left=0}
           ]
           <| buttonBuilder
-            { onPress = Just InitializeNewSlipbox
+            { onPress = Just StartTutorial
             , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Start New"
             }
         , Element.el [ Element.height Element.fill, Element.width Element.fill]
@@ -481,8 +657,8 @@ aboutButton =
 
 -- SESSION VIEW
 
-sessionView : ( Int, Int ) -> Content -> Html.Html Msg
-sessionView deviceViewport content =
+layoutWithFontAwesomeStyles : Element Msg -> Html.Html Msg
+layoutWithFontAwesomeStyles node =
   Html.div
     [ Html.Attributes.style "height" "100%"
     , Html.Attributes.style "width" "100%"
@@ -492,8 +668,12 @@ sessionView deviceViewport content =
       [ Element.height Element.fill
       , Element.width Element.fill
       ]
-      <| sessionNode deviceViewport content
+      node
     ]
+
+sessionView : ( Int, Int ) -> Content -> Html.Html Msg
+sessionView deviceViewport content =
+  layoutWithFontAwesomeStyles <| sessionNode deviceViewport content
 
 sessionNode : ( Int, Int ) -> Content -> Element Msg
 sessionNode deviceViewport content =
@@ -632,6 +812,51 @@ searchConverter input =
 
 barHeight = 65
 
+leftNavExpandedButtonLambda : Element.Attribute Msg -> Element Msg -> String -> Msg -> Bool -> Element Msg
+leftNavExpandedButtonLambda alignment icon text msg shouldHaveBackground =
+  let
+    buttonAttributes =
+      [ Element.width Element.fill
+      , Element.height Element.fill
+      , Element.Border.rounded 10
+      , Element.padding 1
+      ]
+    buttonAttributesMaybeWithBackground =
+      if shouldHaveBackground then
+        Element.Background.color Color.heliotropeGrayRegular :: buttonAttributes
+      else
+        buttonAttributes
+  in
+  Element.el
+    [ Element.width Element.fill
+    , alignment
+    ]
+    <| Element.Input.button
+      buttonAttributesMaybeWithBackground
+      { onPress = Just msg
+      , label =
+        Element.row
+          [ Element.spacingXY 16 0]
+          [ icon
+          , Element.text text
+          ]
+      }
+
+leftNavContractedButtonLambda : Element.Attribute Msg -> Msg -> Element Msg -> Bool -> Element Msg
+leftNavContractedButtonLambda alignment msg icon shouldHaveBackground =
+    let
+      buttonAttributes =
+        if shouldHaveBackground then
+          [ Element.Background.color Color.heliotropeGrayRegular ]
+        else
+          []
+    in
+    Element.el [ alignment ]
+      <| Element.Input.button buttonAttributes
+        { onPress = Just msg
+        , label = icon
+        }
+
 leftNav : SideNavState -> Tab -> Element.Element Msg
 leftNav sideNavState selectedTab =
   let
@@ -641,37 +866,6 @@ leftNav sideNavState selectedTab =
   in
   case sideNavState of
     Expanded ->
-      let
-        buttonTabLambda =
-          \alignment icon text msg shouldHaveBackground ->
-            let
-              buttonAttributes =
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.Border.rounded 10
-                , Element.padding 1
-                ]
-              buttonAttributesMaybeWithBackground =
-                if shouldHaveBackground then
-                  Element.Background.color Color.heliotropeGrayRegular :: buttonAttributes
-                else
-                  buttonAttributes
-            in
-            Element.el
-              [ Element.width Element.fill
-              , alignment
-              ]
-              <| Element.Input.button
-                buttonAttributesMaybeWithBackground
-                { onPress = Just msg
-                , label =
-                  Element.row
-                    [ Element.spacingXY 16 0]
-                    [ icon
-                    , Element.text text
-                    ]
-                }
-      in
       Element.column
         [ Element.height Element.fill
         , Element.width <| Element.px 200
@@ -698,38 +892,22 @@ leftNav sideNavState selectedTab =
             [ emptyIcon
             , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
             ]
-          , buttonTabLambda Element.alignBottom saveIcon "Save" FileDownload False
-          , buttonTabLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
+          , leftNavExpandedButtonLambda Element.alignBottom saveIcon "Save" FileDownload False
+          , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ buttonTabLambda Element.alignLeft brainIcon "Brain" ( ChangeTab Brain ) <| sameTab selectedTab Brain
-          , buttonTabLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
-          , buttonTabLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
-          , buttonTabLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
-          , buttonTabLambda Element.alignLeft questionIcon "Questions" ( ChangeTab Questions ) <| sameTab selectedTab Questions
+          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Brain" ( ChangeTab Brain ) <| sameTab selectedTab Brain
+          , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
+          , leftNavExpandedButtonLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
+          , leftNavExpandedButtonLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
+          , leftNavExpandedButtonLambda Element.alignLeft questionIcon "Questions" ( ChangeTab Questions ) <| sameTab selectedTab Questions
           ]
         ]
     Contracted ->
-      let
-        iconLambda =
-          \alignment msg icon shouldHaveBackground ->
-            let
-              buttonAttributes =
-                if shouldHaveBackground then
-                  [ Element.Background.color Color.heliotropeGrayRegular ]
-                else
-                  []
-            in
-            Element.el [ alignment ]
-              <| Element.Input.button buttonAttributes
-                { onPress = Just msg
-                , label = icon
-                }
-      in
       Element.column
         [ Element.height Element.fill
         , Element.width <| Element.px 64
@@ -741,18 +919,18 @@ leftNav sideNavState selectedTab =
           , Element.spacingXY 0 8
           ]
           [ barsButton
-          , iconLambda Element.alignBottom FileDownload saveIcon False
-          , iconLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
+          , leftNavContractedButtonLambda Element.alignBottom FileDownload saveIcon False
+          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ iconLambda Element.alignLeft ( ChangeTab Brain ) brainIcon <| sameTab selectedTab Brain
-          , iconLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
-          , iconLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
-          , iconLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
-          , iconLambda Element.alignLeft ( ChangeTab Questions ) questionIcon <| sameTab selectedTab Questions
+          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Brain ) brainIcon <| sameTab selectedTab Brain
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Questions ) questionIcon <| sameTab selectedTab Questions
           ]
         ]
 
