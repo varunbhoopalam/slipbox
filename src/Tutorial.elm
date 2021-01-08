@@ -168,19 +168,10 @@ update action tutorial =
 skip : Tutorial -> Tutorial
 skip tutorial =
   case tutorial of
-    One_Intro -> tutorial
-
-
-    Two_CreateFirstNote _ -> tutorial
-
-
     Three_PromptAddSourceToNote string -> Five_ExplainNotes <| WithoutSource string
 
 
     Four_SourceInput string _ -> Five_ExplainNotes <| WithoutSource string
-
-
-    Five_ExplainNotes _ -> tutorial
 
 
     Six_NoteInput firstNote _ _ -> Nine_ExplainLinks firstNote NoSecondNote
@@ -197,29 +188,28 @@ skip tutorial =
           Nine_ExplainLinks firstNote <| WithoutSourceNotLinked secondNoteContent
 
 
-    Nine_ExplainLinks _ _ -> tutorial
-
-
     Ten_QuestionPrompt firstNote secondNote -> Twelve_ExplainQuestions firstNote secondNote Nothing
 
 
     Eleven_QuestionInput firstNote secondNote _ -> Twelve_ExplainQuestions firstNote secondNote Nothing
 
+    _ -> tutorial
 
-    Twelve_ExplainQuestions _ _ _ -> tutorial
-
-
-    Thirteen_PracticeSaving _ _ _ -> tutorial
-
-
-    Fourteen_PracticeUploading _ _ _ -> tutorial
-
-
-    Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
-
--- TODO
 canContinue : Tutorial -> Bool
-canContinue tutorial = True
+canContinue tutorial =
+  case tutorial of
+    Two_CreateFirstNote firstNoteContent -> not <| String.isEmpty firstNoteContent
+
+    Four_SourceInput _ source -> not <| String.isEmpty source.title
+
+    Six_NoteInput firstNote secondNoteContent title -> not <| String.isEmpty secondNoteContent
+
+    Seven_SourceInput firstNote secondNoteContent source -> not <| String.isEmpty source.title
+
+    Eleven_QuestionInput firstNote secondNote question -> not <| String.isEmpty question
+
+    _ -> True
+
 
 continue : Tutorial -> Tutorial
 continue tutorial =
