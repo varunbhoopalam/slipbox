@@ -734,16 +734,122 @@ tutorialView tutorial =
           ]
         ]
 
+    Tutorial.ExplainNotes ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Bravo!"
+          , Element.el [ Element.centerX ]
+            <| Element.text "Your first entry into your second mind! Your new brain is expanding in size!"
+          , Element.textColumn [ Element.centerX ]
+            [ Element.paragraph
+              []
+              [ Element.text "Notes are the building blocks of your external brain."
+              , Element.text "These notes will be the medium in which you think through."
+              ]
+              --TODO Animation of note turning into a graph node
+            , Element.paragraph
+              []
+              [ Element.text "Notes are clear, concise ideas that can be understood outside of the context they were found in."
+              , Element.text "We have the option of recording where these ideas come from as this is often very useful information!"
+              , Element.text "For example, we can use this to site our sources."
+              ]
+            ]
+          , Element.Input.button [ Element.alignRight ]
+            { onPress = Just ContinueTutorial
+            , label = Element.el [] <| Element.text "Continue ->"
+            }
+          ]
+        ]
+
+    Tutorial.NoteInput firstNoteContent maybeFirstNoteTitle secondNoteContent secondNoteSourceTitle ->
+      let
+        sourceInputid = "Source: 1"
+        dataitemId = "Sources: 1"
+        suggestions =
+          case maybeFirstNoteTitle of
+            Just firstNoteTitle -> [ firstNoteTitle, "n/a" ]
+            Nothing -> [ "n/a" ]
+        continueNode =
+          if Tutorial.canContinue tutorial then
+            Element.Input.button []
+              { onPress = Just ContinueTutorial
+              , label = Element.el [] <| Element.text "Continue ->"
+              }
+          else
+            Element.none
+      in
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Want to add a related note?"
+          , Element.el [ Element.Border.width 1, Element.centerX ]
+            <| Element.text firstNoteContent
+          , Element.el [ Element.Border.width 1, Element.centerX ]
+            <| Element.text "Do you remember where you learned it?"
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
+            , text = secondNoteContent
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Add your knowledge here!"
+            , label = Element.Input.labelAbove [] <| Element.text "Content (required)"
+            , spellcheck = True
+            }
+          , Element.html
+            <| Html.div
+              []
+              [ Html.label
+                [ Html.Attributes.for sourceInputid ]
+                [ Html.text "Source Title (optional) " ]
+              , Html.input
+                [ Html.Attributes.list dataitemId
+                , Html.Attributes.name sourceInputid
+                , Html.Attributes.id sourceInputid
+                , Html.Attributes.value secondNoteSourceTitle
+                , Html.Events.onInput ( \s -> UpdateInputTutorial <| Tutorial.Title s )
+                ]
+                []
+              , Html.datalist
+                [ Html.Attributes.id dataitemId ]
+                <| List.map toHtmlOption suggestions
+              ]
+          , continueNode
+          , Element.Input.button []
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "I'll do it later"
+            }
+          ]
+        ]
+
+
     _ -> Element.none
     --
     --
-    --Tutorial.ExplainNotes ->
     --
     --
-    --Tutorial.AddRelatedNotePrompt firstNoteContent ->
     --
     --
-    --Tutorial.NoteInput firstNoteContent secondNoteContent title ->
+    --
     --
     --
     --Tutorial.AddLinkPrompt firstNoteContent secondNoteContent ->

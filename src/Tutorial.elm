@@ -44,6 +44,12 @@ getContent firstNote =
     WithSource string _ -> string
     WithoutSource string -> string
 
+getSourceTitle : FirstNote -> ( Maybe String )
+getSourceTitle firstNote =
+  case firstNote of
+    WithSource _ source -> Just source.title
+    WithoutSource _ -> Nothing
+
 type SecondNote
   = WithSourceAndLinked String Source
   | WithoutSourceAndLinked String
@@ -63,7 +69,7 @@ type Step
   | PromptAddSourceToNote FirstNoteContent
   | SourceInput FirstNoteContent Title Author SourceContent
   | ExplainNotes
-  | NoteInput FirstNoteContent SecondNoteContent Title
+  | NoteInput FirstNoteContent ( Maybe Title ) SecondNoteContent Title
   | AddLinkPrompt FirstNoteContent SecondNoteContent
   | ExplainLinks
   | QuestionPrompt FirstNoteContent
@@ -98,7 +104,7 @@ getStep tutorial =
     Five_ExplainNotes _ -> ExplainNotes
 
 
-    Six_NoteInput firstNote content source -> NoteInput ( getContent firstNote ) content source
+    Six_NoteInput firstNote content source -> NoteInput ( getContent firstNote ) ( getSourceTitle firstNote ) content source
 
 
     Seven_SourceInput _ string source -> SourceInput string source.title source.author source.content
