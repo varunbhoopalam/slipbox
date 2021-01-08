@@ -3,7 +3,7 @@ module Tutorial exposing
   , Step(..)
   , end
   , update
-  , UpdateAction
+  , UpdateAction(..)
   , getStep
   , skip
   , continue
@@ -86,10 +86,10 @@ getStep tutorial =
   case tutorial of
     One_Intro -> Intro
 
-    Two_CreateFirstNote string -> PromptAddSourceToNote string
+    Two_CreateFirstNote string -> CreateFirstNote string
 
 
-    Three_PromptAddSourceToNote string -> CreateFirstNote string
+    Three_PromptAddSourceToNote string -> PromptAddSourceToNote string
 
 
     Four_SourceInput string source -> SourceInput string source.title source.author source.content
@@ -165,7 +165,6 @@ update action tutorial =
         Seven_SourceInput firstNote secondNote source -> Seven_SourceInput firstNote secondNote { source | author = input}
         _ -> tutorial
 
--- TODO
 skip : Tutorial -> Tutorial
 skip tutorial =
   case tutorial of

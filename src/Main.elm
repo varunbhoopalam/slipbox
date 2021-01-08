@@ -156,6 +156,9 @@ type Msg
   | ToggleSideNav
   | StartTutorial
   | ContinueTutorial
+  | SkipTutorial
+  | UpdateInputTutorial Tutorial.UpdateAction
+  | EndTutorial
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -366,6 +369,35 @@ update message model =
           )
         _ -> ( model, Cmd.none )
 
+    SkipTutorial ->
+      case model.state of
+        Tutorial tutorial ->
+          ( { model | state = Tutorial <| Tutorial.skip tutorial }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    UpdateInputTutorial action ->
+      case model.state of
+        Tutorial tutorial ->
+          ( { model | state = Tutorial <| Tutorial.update action tutorial }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    EndTutorial ->
+      case model.state of
+        Tutorial tutorial ->
+          ( { model | state = Session <| Content
+            ( BrainTab "" Viewport.initialize )
+            ( Tutorial.end tutorial )
+            Expanded
+            }
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
@@ -425,11 +457,11 @@ view model =
     Tutorial tutorial -> { title = webpageTitle, body = [ tutorialView tutorial ] }
 
 type Highlight
-  = ShouldHighlight String
+  = ShouldHighlight String Msg
   | ShouldNotHighlight
 
-leftNavTutorialButtonLambda : Element.Attribute Msg -> Element Msg -> String -> ( Maybe Msg ) -> Highlight -> Element Msg
-leftNavTutorialButtonLambda alignment icon text msg highlight =
+leftNavTutorialButtonLambda : Element.Attribute Msg -> Element Msg -> String -> Highlight -> Element Msg
+leftNavTutorialButtonLambda alignment icon text highlight =
   let
     buttonAttributes =
       [ Element.width Element.fill
@@ -449,34 +481,63 @@ leftNavTutorialButtonLambda alignment icon text msg highlight =
           <| Element.text labelText
       ]
 
-    buttonAttributesHighlightOrFaded =
-      case highlight of
-        ShouldHighlight labelText -> List.concat [ buttonAttributes, highlightedAttributes labelText ]
-        ShouldNotHighlight -> List.concat [ buttonAttributes, fadedAttributes ]
-
   in
-  Element.el
-    [ Element.width Element.fill
-    , alignment
-    ]
-    <| Element.Input.button
-      buttonAttributesHighlightOrFaded
-      { onPress = msg
-      , label =
-        Element.row
-          [ Element.spacingXY 16 0]
-          [ icon
-          , Element.text text
-          ]
-      }
+  case highlight of
+    ShouldHighlight labelText msg ->
+      Element.el
+        [ Element.width Element.fill
+        , alignment
+        ]
+        <| Element.Input.button
+          ( List.concat [ buttonAttributes, highlightedAttributes labelText ] )
+          { onPress = Just msg
+          , label =
+            Element.row
+              [ Element.spacingXY 16 0]
+              [ icon
+              , Element.text text
+              ]
+          }
+
+    ShouldNotHighlight ->
+      Element.el
+        [ Element.width Element.fill
+        , alignment
+        ]
+        <| Element.Input.button
+          ( List.concat [ buttonAttributes, fadedAttributes ] )
+          { onPress = Nothing
+          , label =
+            Element.row
+              [ Element.spacingXY 16 0]
+              [ icon
+              , Element.text text
+              ]
+          }
 
 
-leftNavTutorial : Element.Element Msg
-leftNavTutorial =
+type HighlightTutorialNav
+  = HighlightCreateNote
+  | HighlightCreateSource
+  | NoHighlights
+
+leftNavTutorial : HighlightTutorialNav -> Element.Element Msg
+leftNavTutorial highlights =
   let
     iconWidth = Element.width <| Element.px 35
     iconHeight = Element.width <| Element.px 40
     emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
+    createNoteHighlight =
+      case highlights of
+        HighlightCreateNote -> ( ShouldHighlight " <- Click create note to get started!" ContinueTutorial )
+        HighlightCreateSource -> ShouldNotHighlight
+        NoHighlights -> ShouldNotHighlight
+    createSourceHighlight =
+      case highlights of
+        HighlightCreateNote -> ShouldNotHighlight
+        HighlightCreateSource -> ( ShouldHighlight " <- Click create source to add a source!" ContinueTutorial )
+        NoHighlights -> ShouldNotHighlight
+
   in
   Element.column
     [ Element.height Element.fill
@@ -504,22 +565,30 @@ leftNavTutorial =
         [ emptyIcon
         , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
         ]
-      , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" ( Just ContinueTutorial) ( ShouldHighlight " <- Click create note to get started!")
+      , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" createNoteHighlight
+      , leftNavTutorialButtonLambda Element.alignBottom newspaperIcon "Create Source" createSourceHighlight
       ]
     , Element.column
       [ Element.height biggerElement
       , Element.width Element.fill
       , Element.spacingXY 0 8
       ]
-      [ leftNavTutorialButtonLambda Element.alignLeft brainIcon "Brain" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignLeft toolsIcon "Workspace" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignLeft fileAltIcon "Notes" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignLeft scrollIcon "Sources" Nothing ShouldNotHighlight
-      , leftNavTutorialButtonLambda Element.alignLeft questionIcon "Questions" Nothing ShouldNotHighlight
+      [ leftNavTutorialButtonLambda Element.alignLeft brainIcon "Brain" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft toolsIcon "Workspace" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft fileAltIcon "Notes" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft scrollIcon "Sources" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignLeft questionIcon "Questions" ShouldNotHighlight
       ]
     ]
 
+finishTutorialButton : Element Msg
+finishTutorialButton =
+  Element.Input.button
+    [ Element.alignRight ]
+    { onPress = Just EndTutorial
+    , label = Element.el [] <| Element.text "Finish Tutorial"
+    }
 
 tutorialView : Tutorial.Tutorial -> Html.Html Msg
 tutorialView tutorial =
@@ -529,14 +598,14 @@ tutorialView tutorial =
         [ Element.width Element.fill
         , Element.height Element.fill
         ]
-        [ leftNavTutorial
+        [ leftNavTutorial HighlightCreateNote
         , Element.column
           [ Element.width biggerElement
           , Element.height Element.fill
           , Element.padding 16
           , Element.spacingXY 0 16
           ]
-          [ Element.el [ Element.alignRight ] <| Element.text "Finish Tutorial"
+          [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
             <| Element.text "Welcome to Slipbox!"
           , Element.el [ Element.centerX, Element.Font.bold ]
@@ -546,32 +615,71 @@ tutorialView tutorial =
 
 
     Tutorial.CreateFirstNote firstNoteContent ->
-      Element.text "We got here"
-      --Element.row
-      --  [ Element.width Element.fill
-      --  , Element.height Element.fill
-      --  ]
-      --  [ leftNavTutorial
-      --  , Element.column
-      --    [ Element.width biggerElement
-      --    , Element.height Element.fill
-      --    , Element.padding 16
-      --    , Element.spacingXY 0 16
-      --    ]
-      --    [ Element.el [ Element.alignRight ] <| Element.text "Finish Tutorial"
-      --    , Element.el [ Element.centerX, Element.Font.heavy ]
-      --      <| Element.text "Welcome to Slipbox!"
-      --    , Element.el [ Element.centerX, Element.Font.bold ]
-      --      <| Element.text "We're going to build your second brain one note at a time."
-      --    ]
-      --  ]
+      let
+        continueNode =
+          if Tutorial.canContinue tutorial then
+            Element.Input.button []
+              { onPress = Just ContinueTutorial
+              , label = Element.el [] <| Element.text "Continue ->"
+              }
+          else
+            Element.none
+      in
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "What is one thing you've learned recently?"
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
+            , text = firstNoteContent
+            , placeholder = Nothing
+            , label = Element.Input.labelAbove [] <| Element.text "Content"
+            , spellcheck = True
+            }
+          , continueNode
+          ]
+        ]
+
+
+    Tutorial.PromptAddSourceToNote firstNoteContent ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial HighlightCreateSource
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Awesome Note!"
+          , Element.el [ Element.Border.width 1, Element.centerX ] <| Element.text firstNoteContent
+          , Element.el [ Element.Border.width 1, Element.centerX ]
+            <| Element.text "Do you remember where you learned it?"
+          , Element.Input.button []
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "I'll do it later"
+            }
+          ]
+        ]
+
+
 
     _ -> Element.none
-    --
-    --
-    --Tutorial.PromptAddSourceToNote firstNoteContent ->
-    --
-    --
     --Tutorial.SourceInput firstNoteContent title author sourceContent ->
     --
     --
@@ -1002,6 +1110,9 @@ iconBuilder icon =
 
 plusIcon : Element Msg
 plusIcon = iconBuilder FontAwesome.Solid.plus
+
+newspaperIcon : Element Msg
+newspaperIcon = iconBuilder FontAwesome.Solid.newspaper
 
 saveIcon : Element Msg
 saveIcon = iconBuilder FontAwesome.Solid.save
