@@ -474,22 +474,22 @@ leftNavTutorialButtonLambda alignment icon text highlight =
       ]
     highlightedAttributes =
       \labelText ->
-      [ Element.Border.glow Color.yellow 2
-      , Element.onRight
-        <| Element.el
-          [ Element.centerY ]
-          <| Element.text labelText
-      ]
+        Element.onRight
+          <| Element.el
+            [ Element.centerY ]
+            <| Element.text labelText
 
   in
   case highlight of
     ShouldHighlight labelText msg ->
       Element.el
+        ( highlightedAttributes labelText ::
         [ Element.width Element.fill
         , alignment
         ]
+        )
         <| Element.Input.button
-          ( List.concat [ buttonAttributes, highlightedAttributes labelText ] )
+          ( Element.Border.glow Color.yellow 2 :: buttonAttributes )
           { onPress = Just msg
           , label =
             Element.row
@@ -541,7 +541,6 @@ leftNavTutorial highlights =
   in
   Element.column
     [ Element.height Element.fill
-    , Element.width <| Element.px 200
     , Element.padding 8
     , Element.spacingXY 0 8
     ]
@@ -643,7 +642,7 @@ tutorialView tutorial =
             []
             { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
             , text = firstNoteContent
-            , placeholder = Nothing
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Add your knowledge here!"
             , label = Element.Input.labelAbove [] <| Element.text "Content"
             , spellcheck = True
             }
@@ -677,10 +676,65 @@ tutorialView tutorial =
           ]
         ]
 
-
+    Tutorial.SourceInput firstNoteContent title author sourceContent ->
+      let
+        continueNode =
+          if Tutorial.canContinue tutorial then
+            Element.Input.button []
+              { onPress = Just ContinueTutorial
+              , label = Element.el [] <| Element.text "Continue ->"
+              }
+          else
+            Element.none
+      in
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Add more information about where you learned this!"
+          , Element.el [ Element.Border.width 1, Element.centerX ] <| Element.text firstNoteContent
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Title s )
+            , text = title
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Put the source's name here!"
+            , label = Element.Input.labelAbove [] <| Element.text "Title (required)"
+            , spellcheck = True
+            }
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Author s )
+            , text = author
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Put the source's creator here!"
+            , label = Element.Input.labelAbove [] <| Element.text "Author (optional)"
+            , spellcheck = True
+            }
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
+            , text = sourceContent
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Put any other information about the source here!"
+            , label = Element.Input.labelAbove [] <| Element.text "Content (optional)"
+            , spellcheck = True
+            }
+          , continueNode
+          , Element.Input.button []
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "I'll do it later"
+            }
+          ]
+        ]
 
     _ -> Element.none
-    --Tutorial.SourceInput firstNoteContent title author sourceContent ->
     --
     --
     --Tutorial.ExplainNotes ->
