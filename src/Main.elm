@@ -766,28 +766,30 @@ tutorialView tutorial =
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
             <| Element.text "Bravo! Your first entry into your second mind! Your new brain is expanding in size!"
-          , Element.textColumn [ Element.centerX ]
-            [ Element.textColumn
-              []
-              [ Element.paragraph []
-                [ Element.text "Every intellectual endeavor starts with writing. "
-                , Element.text "Writing helps us remember. Writing helps us organize the thoughts in our head. "
-                ]
-              , Element.paragraph []
-                [ Element.text "The notes you write are the building blocks of your external brain. "
-                  , Element.text "It is important for you to transfer ideas from the medium of your head to your new brain in concise note form. "
-                  , Element.text "This transfer from mind to written words is one of the hardest things tasks you do. "
-                  , Element.text "This is why we have a system to do this gradually over time and set future selves up for success! "
-                ]
-              , Element.paragraph []
-                [ Element.text "Imagine everything you know in your head! "
-                  , Element.text "Now imagine yourself writing a book or project outline and starting from scratch, staring at a blank sheet of paper. "
-                  , Element.text "It could take weeks, months, or even years from the time you start! "
-                  , Element.text "But, you've been learning for a long time leading up to this moment! "
-                  , Element.text "Now imagine when you sit down to start writing that book or project outline, you have a rough draft sitting in front of you rather than a blank sheet of paper. "
-                  , Element.text "This is a much nicer situation. Refining is much easier than starting from scratch. "
-                  , Element.text "The Slipbox app and practice can give you the tools to make the second situation your reality! "
-                ]
+          , Element.textColumn
+            [ Element.centerX
+            , Element.spacingXY 0 16
+            ]
+            [ Element.paragraph []
+              [ Element.text "Every intellectual endeavor starts with writing. "
+              , Element.text "Writing helps us remember. Writing helps us organize the thoughts in our head. "
+              ]
+            , Element.paragraph []
+              [ Element.text "The notes you write are the building blocks of your external brain. "
+              , Element.text "It is important for you to transfer ideas from the medium of your head to your new brain in concise note form. "
+              , Element.text "This transfer from mind to written words is one of the hardest things tasks you do. "
+              , Element.text "This is why we have a system to do this gradually over time and set future selves up for success! "
+              ]
+            , Element.paragraph []
+              [ Element.text "Imagine everything you know in your head! "
+              , Element.text "Now imagine yourself writing a book or project outline and starting from scratch, staring at a blank sheet of paper. "
+              , Element.text "It could take weeks, months, or even years from the time you start! "
+              , Element.text "But, you've been learning for a long time leading up to this moment! "
+              ]
+            , Element.paragraph []
+              [ Element.text "Now imagine when you sit down to start writing that book or project outline, you have a rough draft sitting in front of you rather than a blank sheet of paper. "
+              , Element.text "This is a much nicer situation. Refining is much easier than starting from scratch. "
+              , Element.text "The Slipbox app and practice are the tools to make the second situation your reality! "
               ]
             ]
           , Element.Input.button
