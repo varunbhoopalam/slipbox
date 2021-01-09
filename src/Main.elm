@@ -767,13 +767,27 @@ tutorialView tutorial =
           , Element.el [ Element.centerX, Element.Font.heavy ]
             <| Element.text "Bravo! Your first entry into your second mind! Your new brain is expanding in size!"
           , Element.textColumn [ Element.centerX ]
-            [ Element.paragraph
+            [ Element.textColumn
               []
-              [ Element.text "Notes are the building blocks of your external brain. "
-              , Element.text "These notes will be the medium in which you think through. "
-              , Element.text "Notes are clear, concise ideas that can be understood outside of the context they were found in. "
-              , Element.text "We have the option of recording where these ideas come from as this is often very useful information! "
-              , Element.text "For example, we can use this to site our sources."
+              [ Element.paragraph []
+                [ Element.text "Every intellectual endeavor starts with writing. "
+                , Element.text "Writing helps us remember. Writing helps us organize the thoughts in our head. "
+                ]
+              , Element.paragraph []
+                [ Element.text "The notes you write are the building blocks of your external brain. "
+                  , Element.text "It is important for you to transfer ideas from the medium of your head to your new brain in concise note form. "
+                  , Element.text "This transfer from mind to written words is one of the hardest things tasks you do. "
+                  , Element.text "This is why we have a system to do this gradually over time and set future selves up for success! "
+                ]
+              , Element.paragraph []
+                [ Element.text "Imagine everything you know in your head! "
+                  , Element.text "Now imagine yourself writing a book or project outline and starting from scratch, staring at a blank sheet of paper. "
+                  , Element.text "It could take weeks, months, or even years from the time you start! "
+                  , Element.text "But, you've been learning for a long time leading up to this moment! "
+                  , Element.text "Now imagine when you sit down to start writing that book or project outline, you have a rough draft sitting in front of you rather than a blank sheet of paper. "
+                  , Element.text "This is a much nicer situation. Refining is much easier than starting from scratch. "
+                  , Element.text "The Slipbox app and practice can give you the tools to make the second situation your reality! "
+                ]
               ]
             ]
           , Element.Input.button
@@ -863,40 +877,78 @@ tutorialView tutorial =
         ]
 
     Tutorial.AddLinkPrompt firstNoteContent secondNoteContent ->
-      --Element.row
-      --  [ Element.width Element.fill
-      --  , Element.height Element.fill
-      --  ]
-      --  [ leftNavTutorial HighlightCreateSource
-      --  , Element.column
-      --    [ Element.width biggerElement
-      --    , Element.height Element.fill
-      --    , Element.padding 16
-      --    , Element.spacingXY 0 16
-      --    ]
-      --    [ finishTutorialButton
-      --    , Element.el [ Element.centerX, Element.Font.heavy ]
-      --      <| Element.text "Awesome Note!"
-      --    , Element.el [ Element.centerX, Element.paddingEach paddingBottom ]
-      --      <| Element.text "Do you remember where you learned it?"
-      --    , Element.el [ Element.centerX ] <| Element.text firstNoteContent
-      --    , Element.Input.button
-      --      [ Element.Border.width 1
-      --      , Element.padding 3
-      --      , Element.centerX
-      --      ]
-      --      { onPress = Just SkipTutorial
-      --      , label = Element.el [] <| Element.text "I don't have a source ->"
-      --      }
-      --    ]
-      --  ]
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Are these notes related?"
+          , Element.el [ Element.centerX ] <| Element.text firstNoteContent
+          , Element.el [ Element.centerX ] <| Element.text secondNoteContent
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just ContinueTutorial
+            , label = Element.el [] <| Element.text "Link the notes together"
+            }
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "These notes aren't related"
+            }
+          ]
+        ]
+
+    Tutorial.ExplainLinks ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Organizing your ideas by linking them together is the foundation of this system."
+          , Element.textColumn [ Element.centerX ]
+            [ Element.paragraph
+              []
+              [ Element.text "Organizing your thoughts this way will give you a higher chance of success with projects in the future. "
+              , Element.text ""
+              , Element.text "Additionally, adding these links between notes also improves your ability to remember them. "
+              , Element.text "Linking knowledge to past knowledge improves your cognitive recall. "
+              ]
+            ]
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just ContinueTutorial
+            , label = Element.el [] <| Element.text "Continue ->"
+            }
+          ]
+        ]
 
     _ -> Element.none
 
-    --
-    --Tutorial.ExplainLinks ->
-    --
-    --
     --Tutorial.QuestionPrompt firstNoteContent ->
     --
     --
