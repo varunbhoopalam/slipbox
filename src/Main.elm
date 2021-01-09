@@ -515,6 +515,7 @@ leftNavTutorialButtonLambda alignment icon text highlight =
               ]
           }
 
+paddingBottom = {bottom = 16, top = 0, right = 0, left = 0}
 
 type HighlightTutorialNav
   = HighlightCreateNote
@@ -617,12 +618,16 @@ tutorialView tutorial =
       let
         continueNode =
           if Tutorial.canContinue tutorial then
-            Element.Input.button []
+            Element.Input.button
+              [ Element.Border.width 1
+              , Element.padding 3
+              , Element.centerX
+              ]
               { onPress = Just ContinueTutorial
               , label = Element.el [] <| Element.text "Continue ->"
               }
           else
-            Element.none
+            Element.el [ Element.height <| Element.px 28 ] Element.none
       in
       Element.row
         [ Element.width Element.fill
@@ -666,12 +671,16 @@ tutorialView tutorial =
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
             <| Element.text "Awesome Note!"
-          , Element.el [ Element.Border.width 1, Element.centerX ] <| Element.text firstNoteContent
-          , Element.el [ Element.Border.width 1, Element.centerX ]
+          , Element.el [ Element.centerX, Element.paddingEach paddingBottom ]
             <| Element.text "Do you remember where you learned it?"
-          , Element.Input.button []
+          , Element.el [ Element.centerX ] <| Element.text firstNoteContent
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
             { onPress = Just SkipTutorial
-            , label = Element.el [] <| Element.text "I'll do it later"
+            , label = Element.el [] <| Element.text "I don't have a source ->"
             }
           ]
         ]
@@ -680,12 +689,16 @@ tutorialView tutorial =
       let
         continueNode =
           if Tutorial.canContinue tutorial then
-            Element.Input.button []
+            Element.Input.button
+              [ Element.Border.width 1
+              , Element.padding 3
+              , Element.centerX
+              ]
               { onPress = Just ContinueTutorial
               , label = Element.el [] <| Element.text "Continue ->"
               }
           else
-            Element.none
+            Element.el [ Element.height <| Element.px 28 ] Element.none
       in
       Element.row
         [ Element.width Element.fill
@@ -700,8 +713,8 @@ tutorialView tutorial =
           ]
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
-            <| Element.text "Add more information about where you learned this!"
-          , Element.el [ Element.Border.width 1, Element.centerX ] <| Element.text firstNoteContent
+            <| Element.text "Add more information about this note's source!"
+          , Element.el [ Element.centerX ] <| Element.text firstNoteContent
           , Element.Input.multiline
             []
             { onChange = (\s -> UpdateInputTutorial <| Tutorial.Title s )
@@ -727,9 +740,13 @@ tutorialView tutorial =
             , spellcheck = True
             }
           , continueNode
-          , Element.Input.button []
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
             { onPress = Just SkipTutorial
-            , label = Element.el [] <| Element.text "I'll do it later"
+            , label = Element.el [] <| Element.text "I'll do it later ->"
             }
           ]
         ]
@@ -748,24 +765,22 @@ tutorialView tutorial =
           ]
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
-            <| Element.text "Bravo!"
-          , Element.el [ Element.centerX ]
-            <| Element.text "Your first entry into your second mind! Your new brain is expanding in size!"
+            <| Element.text "Bravo! Your first entry into your second mind! Your new brain is expanding in size!"
           , Element.textColumn [ Element.centerX ]
             [ Element.paragraph
               []
-              [ Element.text "Notes are the building blocks of your external brain."
-              , Element.text "These notes will be the medium in which you think through."
-              ]
-              --TODO Animation of note turning into a graph node
-            , Element.paragraph
-              []
-              [ Element.text "Notes are clear, concise ideas that can be understood outside of the context they were found in."
-              , Element.text "We have the option of recording where these ideas come from as this is often very useful information!"
+              [ Element.text "Notes are the building blocks of your external brain. "
+              , Element.text "These notes will be the medium in which you think through. "
+              , Element.text "Notes are clear, concise ideas that can be understood outside of the context they were found in. "
+              , Element.text "We have the option of recording where these ideas come from as this is often very useful information! "
               , Element.text "For example, we can use this to site our sources."
               ]
             ]
-          , Element.Input.button [ Element.alignRight ]
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
             { onPress = Just ContinueTutorial
             , label = Element.el [] <| Element.text "Continue ->"
             }
@@ -782,12 +797,16 @@ tutorialView tutorial =
             Nothing -> [ "n/a" ]
         continueNode =
           if Tutorial.canContinue tutorial then
-            Element.Input.button []
+            Element.Input.button
+              [ Element.Border.width 1
+              , Element.padding 3
+              , Element.centerX
+              ]
               { onPress = Just ContinueTutorial
               , label = Element.el [] <| Element.text "Continue ->"
               }
           else
-            Element.none
+            Element.el [ Element.height <| Element.px 28 ] Element.none
       in
       Element.row
         [ Element.width Element.fill
@@ -802,11 +821,9 @@ tutorialView tutorial =
           ]
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
-            <| Element.text "Want to add a related note?"
-          , Element.el [ Element.Border.width 1, Element.centerX ]
+            <| Element.text "Want to add a related note to your first?"
+          , Element.el [ Element.centerX, Element.paddingEach paddingBottom ]
             <| Element.text firstNoteContent
-          , Element.el [ Element.Border.width 1, Element.centerX ]
-            <| Element.text "Do you remember where you learned it?"
           , Element.Input.multiline
             []
             { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
@@ -815,7 +832,7 @@ tutorialView tutorial =
             , label = Element.Input.labelAbove [] <| Element.text "Content (required)"
             , spellcheck = True
             }
-          , Element.html
+          , Element.el [] <| Element.html
             <| Html.div
               []
               [ Html.label
@@ -834,26 +851,48 @@ tutorialView tutorial =
                 <| List.map toHtmlOption suggestions
               ]
           , continueNode
-          , Element.Input.button []
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
             { onPress = Just SkipTutorial
             , label = Element.el [] <| Element.text "I'll do it later"
             }
           ]
         ]
 
+    Tutorial.AddLinkPrompt firstNoteContent secondNoteContent ->
+      --Element.row
+      --  [ Element.width Element.fill
+      --  , Element.height Element.fill
+      --  ]
+      --  [ leftNavTutorial HighlightCreateSource
+      --  , Element.column
+      --    [ Element.width biggerElement
+      --    , Element.height Element.fill
+      --    , Element.padding 16
+      --    , Element.spacingXY 0 16
+      --    ]
+      --    [ finishTutorialButton
+      --    , Element.el [ Element.centerX, Element.Font.heavy ]
+      --      <| Element.text "Awesome Note!"
+      --    , Element.el [ Element.centerX, Element.paddingEach paddingBottom ]
+      --      <| Element.text "Do you remember where you learned it?"
+      --    , Element.el [ Element.centerX ] <| Element.text firstNoteContent
+      --    , Element.Input.button
+      --      [ Element.Border.width 1
+      --      , Element.padding 3
+      --      , Element.centerX
+      --      ]
+      --      { onPress = Just SkipTutorial
+      --      , label = Element.el [] <| Element.text "I don't have a source ->"
+      --      }
+      --    ]
+      --  ]
 
     _ -> Element.none
-    --
-    --
-    --
-    --
-    --
-    --
-    --
-    --
-    --
-    --Tutorial.AddLinkPrompt firstNoteContent secondNoteContent ->
-    --
+
     --
     --Tutorial.ExplainLinks ->
     --
