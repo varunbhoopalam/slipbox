@@ -789,7 +789,7 @@ tutorialView tutorial =
             , Element.paragraph []
               [ Element.text "Now imagine when you sit down to start writing that book or project outline, you have a rough draft sitting in front of you rather than a blank sheet of paper. "
               , Element.text "This is a much nicer situation. Refining is much easier than starting from scratch. "
-              , Element.text "The Slipbox app and practice are the tools to make the second situation your reality! "
+              , Element.text "The Slipbox app and practice are the tools to do this and it starts with what you just did, writing one note. "
               ]
             ]
           , Element.Input.button
@@ -928,14 +928,34 @@ tutorialView tutorial =
           ]
           [ finishTutorialButton
           , Element.el [ Element.centerX, Element.Font.heavy ]
-            <| Element.text "Organizing your ideas by linking them together is the foundation of this system."
-          , Element.textColumn [ Element.centerX ]
+            <| Element.text "Linking notes together is the foundation of Slipbox"
+          , Element.textColumn
+            [ Element.centerX
+            , Element.spacingXY 0 16
+            ]
             [ Element.paragraph
               []
-              [ Element.text "Organizing your thoughts this way will give you a higher chance of success with projects in the future. "
-              , Element.text ""
-              , Element.text "Additionally, adding these links between notes also improves your ability to remember them. "
-              , Element.text "Linking knowledge to past knowledge improves your cognitive recall. "
+              [ Element.text "Organizing your thoughts gives you a higher chance of success with projects in the future. "
+              , Element.text "Using systems of organization are limited by an individuals willpower. "
+              , Element.text "This system of organization moves past this limitation. "
+              ]
+            , Element.paragraph
+              []
+              [ Element.text "The slipbox system is more successful if you only do what you feel like doing in the moment. "
+              , Element.text "This does not require willpower! "
+              , Element.text "There are no restrictions or limitations on what you have to research or do with your time. "
+              ]
+            , Element.paragraph
+              []
+              [ Element.text "Slipbox is an application and a practice. "
+              , Element.text "This practice asks you to keep track of what you learn in a day. "
+              , Element.text "Then, take this knowledge and put it inside your second brain. "
+              , Element.text "While you're doing this, make connections between new knowledge and old knowledge. "
+              ]
+            , Element.paragraph []
+              [ Element.text "Trust that your natural curiosity will guide you towards the intellectual endeavors. "
+              , Element.text "You can count on your second brain to have a rough draft of your project waiting for you without any extra effort expended on your part. "
+              , Element.text "The only thing you are responsible for is following your interest and taking a few minutes each day to record where your interest took you! "
               ]
             ]
           , Element.Input.button
