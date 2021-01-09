@@ -969,9 +969,37 @@ tutorialView tutorial =
           ]
         ]
 
+    Tutorial.QuestionPrompt firstNoteContent ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial HighlightCreateQuestion
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Next we'll go over ways of conversing with your external brain"
+          , Element.el [ Element.centerX, Element.paddingEach paddingBottom ]
+            <| Element.text "Have a question you want to answer? If you want it can be related to your first note."
+          , Element.el [ Element.centerX ] <| Element.text firstNoteContent
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "I'll add a question later"
+            }
+          ]
+        ]
+
     _ -> Element.none
 
-    --Tutorial.QuestionPrompt firstNoteContent ->
     --
     --
     --Tutorial.QuestionInput firstNoteContent question ->
