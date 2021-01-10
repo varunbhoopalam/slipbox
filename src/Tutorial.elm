@@ -138,6 +138,50 @@ getStep tutorial =
 end : Tutorial -> Slipbox.Slipbox
 end tutorial =
   Slipbox.new
+  --case tutorial of
+  --  One_Intro -> Slipbox.new
+  --
+  --  Two_CreateFirstNote firstNoteContent -> Slipbox.new
+  --
+  --  Three_PromptAddSourceToNote firstNoteContent ->
+  --
+  --
+  --  Four_SourceInput firstNoteContent source ->
+  --
+  --
+  --  Five_ExplainNotes firstNote ->
+  --
+  --
+  --  Six_NoteInput firstNote secondNoteContent title ->
+  --
+  --
+  --  Seven_SourceInput firstNote secondNoteContent source ->
+  --
+  --
+  --  Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+  --
+  --
+  --  Nine_ExplainLinks firstNote secondNote ->
+  --
+  --
+  --  Ten_QuestionPrompt firstNote secondNote ->
+  --
+  --
+  --  Eleven_QuestionInput firstNote secondNote question ->
+  --
+  --
+  --  Twelve_ExplainQuestions firstNote secondNote maybeString ->
+  --
+  --
+  --  Thirteen_PracticeSaving firstNote secondNote maybeString ->
+  --
+  --
+  --  Fourteen_PracticeUploading firstNote secondNote maybeString ->
+  --
+  --
+  --  Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeString ->
+
+
 
 type UpdateAction
   = Content String

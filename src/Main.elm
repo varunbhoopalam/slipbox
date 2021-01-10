@@ -1114,7 +1114,7 @@ tutorialView tutorial =
         [ Element.width Element.fill
         , Element.height Element.fill
         ]
-        [ leftNavTutorial HighlightCreateSource
+        [ leftNavTutorial NoHighlights
         , Element.column
           [ Element.width biggerElement
           , Element.height Element.fill
@@ -1236,21 +1236,30 @@ tutorialView tutorial =
             , Element.padding 8
             , Element.spacingXY 0 16
             ]
-            [ Element.el [ Element.Font.heavy, Element.centerX ] <| Element.text "On Loading"
+            [ Element.el [ Element.Font.heavy, Element.centerX ] <| Element.text "Practice Loading Slipbox File"
             , Element.textColumn
               [ Element.centerX
               , Element.paddingXY 0 16
+              , Element.spacingXY 0 16
               ]
               [ Element.paragraph
                 []
-                [ Element.text "Practice loading your brain by uploading the slipbox file you downloaded!"
+                [ Element.text "Practice loading your brain by uploading the slipbox file you downloaded! "
+                , Element.text "This is how you'll start every session after you complete the tutorial."
                 ]
               , Element.paragraph
                 []
-                [ Element.text "The file is called "
+                [ Element.text "Click the Load Slipbox button below. This will bring up a file explorer."
+                ]
+              , Element.paragraph
+                []
+                [ Element.text "Look for a file called "
                 , Element.el [ Element.Font.underline ] <| Element.text "slipbox.json"
-                , Element.text ". "
-                , Element.text "Try looking in your Downloads folder if you can't find it!"
+                , Element.text ". Then select this file. "
+                , Element.text "If you have saved files like this before, it may be called "
+                , Element.el [ Element.Font.underline ] <| Element.text "slipbox (1).json"
+                , Element.text " or something similar. "
+                , Element.text "Try looking in your Downloads folder if you can't find the file at first!"
                 ]
               ]
             ]
@@ -1277,7 +1286,7 @@ tutorialView tutorial =
           , Element.padding 16
           , Element.spacingXY 0 16
           ]
-          [ finishTutorialButton
+          [ Element.el [ Element.height <| Element.px 20 ] Element.none
           , Element.el [ Element.centerX, Element.Font.heavy ]
             <| Element.text "That's it for the tutorial! Congratulations!"
           , Element.textColumn
@@ -1345,7 +1354,7 @@ setupOverlay =
     , Element.padding barHeight
     ]
     <| Element.el
-      [ Element.width <| Element.px 350
+      [ Element.width <| Element.px 450
       , Element.height <| Element.px 150
       , Element.centerX
       , Element.centerY
@@ -1365,7 +1374,7 @@ setupOverlay =
           ]
           <| buttonBuilder
             { onPress = Just StartTutorial
-            , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Start New"
+            , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Start New (Tutorial)"
             }
         , Element.el [ Element.height Element.fill, Element.width Element.fill]
           <| buttonBuilder
