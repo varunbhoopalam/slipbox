@@ -149,12 +149,15 @@ type Msg
   | InitializeNewSlipbox
   | FileRequested
   | FileSelected File.File
+  | FileRequestedTutorial
+  | FileSelectedTutorial File.File
   | FileLoaded String
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
   | StartTutorial
+  | ContinueTutorialAndDownloadFile String
   | ContinueTutorial
   | SkipTutorial
   | UpdateInputTutorial Tutorial.UpdateAction
@@ -269,6 +272,13 @@ update message model =
           )
         _ -> ( model, Cmd.none )
 
+    FileRequestedTutorial ->
+      case model.state of
+        Tutorial _ -> ( model, File.Select.file ["application/json"] FileSelectedTutorial )
+        _ -> ( model, Cmd.none )
+
+    FileSelectedTutorial _ -> update ContinueTutorial model
+
     FileLoaded fileContentAsString ->
       case model.state of
         Parsing ->
@@ -360,6 +370,15 @@ update message model =
           , Cmd.none
           )
         _ -> ( model, Cmd.none )
+
+    ContinueTutorialAndDownloadFile jsonFile ->
+      case model.state of
+        Tutorial tutorial ->
+          ( { model | state = Tutorial <| Tutorial.continue tutorial }
+          , File.Download.string "slipbox.json" "application/json" jsonFile
+          )
+        _ -> ( model, Cmd.none )
+
 
     ContinueTutorial ->
       case model.state of
@@ -520,6 +539,8 @@ paddingBottom = {bottom = 16, top = 0, right = 0, left = 0}
 type HighlightTutorialNav
   = HighlightCreateNote
   | HighlightCreateSource
+  | HighlightCreateQuestion
+  | HighlightSaveButton String
   | NoHighlights
 
 leftNavTutorial : HighlightTutorialNav -> Element.Element Msg
@@ -532,11 +553,29 @@ leftNavTutorial highlights =
       case highlights of
         HighlightCreateNote -> ( ShouldHighlight " <- Click create note to get started!" ContinueTutorial )
         HighlightCreateSource -> ShouldNotHighlight
+        HighlightCreateQuestion -> ShouldNotHighlight
+        HighlightSaveButton _ -> ShouldNotHighlight
         NoHighlights -> ShouldNotHighlight
     createSourceHighlight =
       case highlights of
         HighlightCreateNote -> ShouldNotHighlight
         HighlightCreateSource -> ( ShouldHighlight " <- Click create source to add a source!" ContinueTutorial )
+        HighlightCreateQuestion -> ShouldNotHighlight
+        HighlightSaveButton _ -> ShouldNotHighlight
+        NoHighlights -> ShouldNotHighlight
+    createQuestionHighlight =
+      case highlights of
+        HighlightCreateNote -> ShouldNotHighlight
+        HighlightCreateSource -> ShouldNotHighlight
+        HighlightCreateQuestion -> ( ShouldHighlight " <- Click create question to converse with your brain!" ContinueTutorial )
+        HighlightSaveButton _ -> ShouldNotHighlight
+        NoHighlights -> ShouldNotHighlight
+    saveButtonHighlight =
+      case highlights of
+        HighlightCreateNote -> ShouldNotHighlight
+        HighlightCreateSource -> ShouldNotHighlight
+        HighlightCreateQuestion -> ShouldNotHighlight
+        HighlightSaveButton jsonFile -> ( ShouldHighlight " <- Click here to save!" <| ContinueTutorialAndDownloadFile jsonFile )
         NoHighlights -> ShouldNotHighlight
 
   in
@@ -565,9 +604,10 @@ leftNavTutorial highlights =
         [ emptyIcon
         , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
         ]
-      , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" ShouldNotHighlight
+      , leftNavTutorialButtonLambda Element.alignBottom saveIcon "Save" saveButtonHighlight
       , leftNavTutorialButtonLambda Element.alignBottom plusIcon "Create Note" createNoteHighlight
       , leftNavTutorialButtonLambda Element.alignBottom newspaperIcon "Create Source" createSourceHighlight
+      , leftNavTutorialButtonLambda Element.alignBottom handPaperIcon "Create Question" createQuestionHighlight
       ]
     , Element.column
       [ Element.height biggerElement
@@ -581,6 +621,63 @@ leftNavTutorial highlights =
       , leftNavTutorialButtonLambda Element.alignLeft questionIcon "Questions" ShouldNotHighlight
       ]
     ]
+
+setupOverlayTutorial : Element Msg
+setupOverlayTutorial =
+  let
+    xButton =
+      Element.el
+        [ Element.width Element.fill
+        , Element.alpha 0.5
+        ]
+        <| Element.Input.button
+          [ Element.alignRight, Element.moveLeft 2]
+          { onPress = Nothing, label = Element.text "x" }
+    buttonBuilder =
+      \func ->
+        Element.Input.button
+          [ Element.centerX, Element.centerY ]
+          func
+
+  in
+  Element.el
+    [ Element.height Element.fill
+    , Element.width Element.fill
+    , Element.padding barHeight
+    ]
+    <| Element.el
+      [ Element.width <| Element.px 350
+      , Element.height <| Element.px 150
+      , Element.centerX
+      , Element.centerY
+      , Element.Border.width 1
+      , Element.Background.color Color.white
+      , Element.inFront xButton
+      , Element.paddingXY 0 16
+      ]
+      <| Element.row
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        ]
+        [ Element.el
+          [ Element.height Element.fill
+          , Element.width Element.fill
+          , Element.Border.widthEach {right=1,top=0,bottom=0,left=0}
+          ]
+          <| buttonBuilder
+            { onPress = Nothing
+            , label = Element.el [ Element.centerX, Element.Font.underline, Element.alpha 0.5 ] <| Element.text "Start New"
+            }
+        , Element.el
+          [ Element.height Element.fill
+          , Element.width Element.fill
+          , Element.Border.glow Color.yellow 1
+          ]
+          <| buttonBuilder
+            { onPress = Just FileRequestedTutorial
+            , label = Element.el [ Element.centerX, Element.Font.underline ] <| Element.text "Load Slipbox"
+            }
+        ]
 
 finishTutorialButton : Element Msg
 finishTutorialButton =
@@ -648,7 +745,7 @@ tutorialView tutorial =
             { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
             , text = firstNoteContent
             , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Add your knowledge here!"
-            , label = Element.Input.labelAbove [] <| Element.text "Content"
+            , label = Element.Input.labelAbove [] <| Element.text "Content (required)"
             , spellcheck = True
             }
           , continueNode
@@ -998,25 +1095,212 @@ tutorialView tutorial =
           ]
         ]
 
-    _ -> Element.none
+    Tutorial.QuestionInput firstNoteContent question ->
+      let
+        continueNode =
+          if Tutorial.canContinue tutorial then
+            Element.Input.button
+              [ Element.Border.width 1
+              , Element.padding 3
+              , Element.centerX
+              ]
+              { onPress = Just ContinueTutorial
+              , label = Element.el [] <| Element.text "Continue ->"
+              }
+          else
+            Element.el [ Element.height <| Element.px 28 ] Element.none
+      in
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial HighlightCreateSource
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "What do you want to ask your brain?"
+          , Element.el [ Element.centerX ] <| Element.text firstNoteContent
+          , Element.Input.multiline
+            []
+            { onChange = (\s -> UpdateInputTutorial <| Tutorial.Content s )
+            , text = question
+            , placeholder = Just <| Element.Input.placeholder [] <| Element.text "Ask a question here!"
+            , label = Element.Input.labelAbove [] <| Element.text "Question (required)"
+            , spellcheck = True
+            }
+          , continueNode
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just SkipTutorial
+            , label = Element.el [] <| Element.text "Actually, I'll converse with my brain another time ->"
+            }
+          ]
+        ]
 
-    --
-    --
-    --Tutorial.QuestionInput firstNoteContent question ->
-    --
-    --
-    --Tutorial.ExplainQuestions ->
-    --
-    --
-    --Tutorial.PracticeSaving jsonFile ->
-    --
-    --
-    --Tutorial.PracticeUploading ->
-    --
-    --
-    --Tutorial.WorkflowSuggestionsAndFinish ->
+    Tutorial.ExplainQuestions ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "Questions are how you converse with your mind!"
+          , Element.textColumn
+            [ Element.centerX
+            , Element.spacingXY 0 16
+            ]
+            [ Element.paragraph
+              []
+              [ Element.text "Adding a question to your slipbox can be a way of understanding how much you know on a topic. "
+              , Element.text "Questions can be linked to a few notes in your slipbox. "
+              , Element.text "These notes are linked to other notes. And those notes are linked to other notes! And so on. "
+              ]
+            , Element.paragraph
+              []
+              [ Element.text "See where we're going with this? "
+              , Element.text "Asking your mind questions often results in action. "
+              , Element.text "You can use the insight from this exercise to seek out information where your knowledge is lacking on a subject. "
+              , Element.text "Or you could use the complex theory laid out in front of you as the start of a paper or company! It's up to you. "
+              ]
+            , Element.paragraph
+              []
+              [ Element.text "This is pretty cool right? Our own minds are incapable of producing everything we know on a topic and all related information at a moments notice. "
+              ]
+            ]
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just ContinueTutorial
+            , label = Element.el [] <| Element.text "Continue ->"
+            }
+          ]
+        ]
+
+    Tutorial.PracticeSaving jsonFile ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial <| HighlightSaveButton jsonFile
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "On Saving"
+          , Element.textColumn
+            [ Element.centerX
+            , Element.spacingXY 0 16
+            ]
+            [ Element.paragraph
+              []
+              [ Element.text "When you're done adding notes, save your work! Slipbox application will save a file to your computer containing the contents of your mind. "
+              , Element.text "Back this file up somewhere easily accessible. It's great to have another place to store this information should something happen to the original file. "
+              , Element.text "This application can't remember the contents of your slipbox if you reload or navigate away from the page. "
+              ]
+            , Element.paragraph
+              []
+              [ Element.text "If you would be interested in us saving your brain for you and logging in to see it and add to it, please contact us! "
+              , Element.text "You can find information to contact the project founder by clicking about in the left navigation. "
+              ]
+            ]
+          ]
+        ]
 
 
+    Tutorial.PracticeUploading ->
+      Element.el
+        [ Element.inFront
+          <| Element.column
+            [ Element.centerX
+            , Element.padding 8
+            , Element.spacingXY 0 16
+            ]
+            [ Element.el [ Element.Font.heavy, Element.centerX ] <| Element.text "On Loading"
+            , Element.textColumn
+              [ Element.centerX
+              , Element.paddingXY 0 16
+              ]
+              [ Element.paragraph
+                []
+                [ Element.text "Practice loading your brain by uploading the slipbox file you downloaded!"
+                ]
+              , Element.paragraph
+                []
+                [ Element.text "The file is called "
+                , Element.el [ Element.Font.underline ] <| Element.text "slipbox.json"
+                , Element.text ". "
+                , Element.text "Try looking in your Downloads folder if you can't find it!"
+                ]
+              ]
+            ]
+        , Element.inFront setupOverlayTutorial
+        , Element.height Element.fill
+        , Element.width Element.fill
+        ]
+        <| Element.el
+          [ Element.alpha 0.3
+          , Element.height Element.fill
+          , Element.width Element.fill
+          ]
+          <| sessionNode ( 0,0 ) (newContent (0,0))
+
+    Tutorial.WorkflowSuggestionsAndFinish ->
+      Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        ]
+        [ leftNavTutorial NoHighlights
+        , Element.column
+          [ Element.width biggerElement
+          , Element.height Element.fill
+          , Element.padding 16
+          , Element.spacingXY 0 16
+          ]
+          [ finishTutorialButton
+          , Element.el [ Element.centerX, Element.Font.heavy ]
+            <| Element.text "That's it for the tutorial! Congratulations!"
+          , Element.textColumn
+            [ Element.centerX
+            , Element.spacingXY 0 16
+            ]
+            [ Element.paragraph
+              []
+              [ Element.text "The mission of this project is to help people achieve their goals. "
+              , Element.text "If this project helps you discover more about your goals or brings you closer to them tell us about it! "
+              , Element.text "We would love to hear your story. "
+              ]
+            ]
+          , Element.Input.button
+            [ Element.Border.width 1
+            , Element.padding 3
+            , Element.centerX
+            ]
+            { onPress = Just EndTutorial
+            , label = Element.el [] <| Element.text "Finish tutorial and take me to my second brain! "
+            }
+          ]
+        ]
 
 
 setupView : ( Int, Int ) -> Html.Html Msg
@@ -1414,6 +1698,9 @@ plusIcon = iconBuilder FontAwesome.Solid.plus
 
 newspaperIcon : Element Msg
 newspaperIcon = iconBuilder FontAwesome.Solid.newspaper
+
+handPaperIcon : Element Msg
+handPaperIcon = iconBuilder FontAwesome.Solid.handPaper
 
 saveIcon : Element Msg
 saveIcon = iconBuilder FontAwesome.Solid.save
