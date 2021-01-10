@@ -1290,6 +1290,13 @@ tutorialView tutorial =
               , Element.text "If this project helps you discover more about your goals or brings you closer to them tell us about it! "
               , Element.text "We would love to hear your story. "
               ]
+            , Element.el [ Element.Font.semiBold, Element.centerX ] <| Element.text "Workflow Suggestions"
+            , Element.paragraph
+              []
+              [ Element.text "Take notes any way convenient to you throughout the day. "
+              , Element.text "Pick a time at the end of the day and spend 15 minutes or less transferring notes from your temporary notes to your slipbox.  "
+              , Element.text "After saving the slipbox.json file to your local computer, back it up! Google drive is a common way to do this but there are many options! "
+              ]
             ]
           , Element.Input.button
             [ Element.Border.width 1

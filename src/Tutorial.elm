@@ -125,17 +125,16 @@ getStep tutorial =
     Twelve_ExplainQuestions _ _ _ -> ExplainQuestions
 
 
-    Thirteen_PracticeSaving firstNote secondNote string -> PracticeSaving <| toJsonString firstNote secondNote string
+    Thirteen_PracticeSaving _ _ _ -> PracticeSaving <| Slipbox.encode <| end tutorial
 
 
     Fourteen_PracticeUploading _ _ _ -> PracticeUploading
 
 
-    Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote string -> WorkflowSuggestionsAndFinish
+    Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> WorkflowSuggestionsAndFinish
 
 
 
--- TODO
 end : Tutorial -> Slipbox.Slipbox
 end tutorial =
   Slipbox.new
@@ -208,11 +207,11 @@ canContinue tutorial =
 
     Four_SourceInput _ source -> not <| String.isEmpty source.title
 
-    Six_NoteInput firstNote secondNoteContent title -> not <| String.isEmpty secondNoteContent
+    Six_NoteInput _ secondNoteContent _ -> not <| String.isEmpty secondNoteContent
 
-    Seven_SourceInput firstNote secondNoteContent source -> not <| String.isEmpty source.title
+    Seven_SourceInput _ _ source -> not <| String.isEmpty source.title
 
-    Eleven_QuestionInput firstNote secondNote question -> not <| String.isEmpty question
+    Eleven_QuestionInput _ _ question -> not <| String.isEmpty question
 
     _ -> True
 
@@ -272,10 +271,9 @@ continue tutorial =
 
     Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> tutorial
 
--- TODO
-toJsonString : FirstNote -> SecondNote -> ( Maybe String ) -> String
-toJsonString firstNote secondNote question =
-  ""
+toJsonString : Slipbox.Slipbox -> String
+toJsonString slipbox =
+  Slipbox.encode slipbox
 
 emptySource : Source
 emptySource =
