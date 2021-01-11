@@ -20,6 +20,8 @@ module Slipbox exposing
   , simulationIsCompleted
   , decode
   , encode
+  , endTutorial
+  , TutorialEnding(..)
   )
 
 import Note
@@ -479,6 +481,7 @@ updateItem item updateAction slipbox =
     CloseTray ->
       Slipbox { content | items = List.map ( updateLambda Item.is Item.closeTray item ) content.items }
 
+
 updateLambda : ( a -> a -> Bool ) -> ( a -> a ) -> a -> ( a -> a )
 updateLambda is update target =
   \maybeTarget ->
@@ -535,6 +538,387 @@ encode slipbox =
       , ( "sources", Json.Encode.list Source.encode info.sources )
       , ( "idGenerator", IdGenerator.encode info.idGenerator )
       ]
+
+type alias TutorialSource =  {title:String, author:String, content:String}
+type alias TutorialNote = { content : String, source : String}
+
+type TutorialEnding
+  = None
+  | OnlyFirstNote TutorialNote
+  | WithFirstSource TutorialNote TutorialSource
+  | WithSecondNote TutorialNote TutorialNote
+  | WithQuestion TutorialNote String
+  | WithFirstSourceSecondNote TutorialNote TutorialSource TutorialNote
+  | WithFirstSourceQuestion TutorialNote TutorialSource String
+  | WithSecondNoteSecondSource TutorialNote TutorialNote TutorialSource
+  | WithSecondNoteSecondSourceQuestion TutorialNote TutorialNote TutorialSource String
+  | WithSecondNoteLink TutorialNote TutorialNote
+  | WithSecondNoteQuestion TutorialNote TutorialNote String
+  | WithFirstSourceSecondNoteSecondSource TutorialNote TutorialSource TutorialNote TutorialSource
+  | WithFirstSourceSecondNoteLink TutorialNote TutorialSource TutorialNote
+  | WithFirstSourceSecondNoteQuestion TutorialNote TutorialSource TutorialNote String
+  | WithFirstSourceSecondNoteLinkQuestion TutorialNote TutorialSource TutorialNote String
+  | WithSecondNoteLinkQuestion TutorialNote TutorialNote String
+  | WithSecondNoteSecondSourceLink TutorialNote TutorialNote TutorialSource
+  | WithSecondNoteSecondSourceLinkQuestion TutorialNote TutorialNote TutorialSource String
+  | WithFirstSourceSecondNoteSecondSourceLink TutorialNote TutorialSource TutorialNote TutorialSource
+  | WithFirstSourceSecondNoteSecondSourceQuestion TutorialNote TutorialSource TutorialNote TutorialSource String
+  | WithFirstSourceSecondNoteSecondSourceLinkQuestion TutorialNote TutorialSource TutorialNote TutorialSource String
+
+endTutorial : TutorialEnding -> Slipbox
+endTutorial tutorialEnding =
+    let
+      toNoteLambda = \n -> { content = n.content, source = n.source, variant = Note.Regular }
+      toQuestionLambda = \q -> { content = q, source = "n/a", variant = Note.Question }
+      initLambda = \fn -> Note.create IdGenerator.init <| toNoteLambda fn
+    in
+    case tutorialEnding of
+      None -> new
+
+      OnlyFirstNote firstNote ->
+        let
+          (note, idGenerator) = initLambda firstNote
+          (state, notes) = simulation [note] []
+          content = getContent new
+        in
+          Slipbox
+            { content
+            | notes = notes
+            , state = state
+            , idGenerator = idGenerator
+            }
+
+      WithFirstSource firstNote firstSource ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (state, notes) = simulation [note] []
+          (source, idGenerator) = Source.createSource idGen1 firstSource
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNote firstNote secondNote ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGenerator) = Note.create idGen1 <| toNoteLambda secondNote
+          (state, notes) = simulation [note1,note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+
+      WithQuestion firstNote question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGenerator) = Note.create idGen1 <| toQuestionLambda question
+          (state, notes) = simulation [note1,note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNote firstNote firstSource secondNote ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGenerator) = Note.create idGen2 <| toNoteLambda secondNote
+          (state, notes) = simulation [note, note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceQuestion firstNote firstSource question ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGenerator) = Note.create idGen2 <| toQuestionLambda question
+          (state, notes) = simulation [note, note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteSecondSource firstNote secondNote secondSource ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (source, idGenerator) = Source.createSource idGen2 secondSource
+          (state, notes) = simulation [note1,note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , sources = [ source ]
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteSecondSourceQuestion firstNote secondNote secondSource question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (note3, idGen3) = Note.create idGen2 <| toQuestionLambda question
+          (source, idGenerator) = Source.createSource idGen3 secondSource
+          (state, notes) = simulation [note1,note2, note3] []
+          content = getContent new
+        in
+          Slipbox
+            { content
+            | notes = notes
+            , sources = [ source ]
+            , state = state
+            , idGenerator = idGenerator
+            }
+
+      WithSecondNoteLink firstNote secondNote ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (link, idGenerator) = Link.create idGen2 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1,note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteQuestion firstNote secondNote question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (note3, idGenerator) = Note.create idGen2 <| toQuestionLambda question
+          (state, notes) = simulation [note1,note2,note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteSecondSource firstNote firstSource secondNote secondSource ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (source2, idGenerator) = Source.createSource idGen3 secondSource
+          (state, notes) = simulation [note, note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source, source2 ]
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteLink firstNote firstSource secondNote ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (link, idGenerator) = Link.create idGen3 note note2
+          links = [ link ]
+          (state, notes) = simulation [note, note2] links
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteQuestion firstNote firstSource secondNote question ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (note3, idGenerator) = Note.create idGen3 <| toQuestionLambda question
+          (state, notes) = simulation [note, note2, note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteLinkQuestion firstNote firstSource secondNote question ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (note3, idGen4) = Note.create idGen3 <| toQuestionLambda question
+          (link, idGenerator) = Link.create idGen4 note note2
+          links = [ link ]
+          (state, notes) = simulation [note, note2, note3] links
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , sources = [ source ]
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteLinkQuestion firstNote secondNote question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (note3, idGen3) = Note.create idGen2 <| toQuestionLambda question
+          (link, idGenerator) = Link.create idGen3 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1,note2,note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteSecondSourceLink firstNote secondNote secondSource ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (source, idGen3) = Source.createSource idGen2 secondSource
+          (link, idGenerator) = Link.create idGen3 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1,note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , sources = [source]
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithSecondNoteSecondSourceLinkQuestion firstNote secondNote secondSource question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (note2, idGen2) = Note.create idGen1 <| toNoteLambda secondNote
+          (source, idGen3) = Source.createSource idGen2 secondSource
+          (note3, idGen4) = Note.create idGen3 <| toQuestionLambda question
+          (link, idGenerator) = Link.create idGen4 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1,note2,note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , sources = [source]
+          , state = state
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteSecondSourceLink firstNote firstSource secondNote secondSource ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (source2, idGen4) = Source.createSource idGen3 secondSource
+          (link, idGenerator) = Link.create idGen4 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1, note2] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , sources = [ source, source2 ]
+          , idGenerator = idGenerator
+          }
+
+      WithFirstSourceSecondNoteSecondSourceQuestion firstNote firstSource secondNote secondSource question ->
+        let
+          (note, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (source2, idGen4) = Source.createSource idGen3 secondSource
+          (note3, idGenerator) = Note.create idGen4 <| toQuestionLambda question
+          (state, notes) = simulation [note, note2, note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , state = state
+          , sources = [ source, source2 ]
+          , idGenerator = idGenerator
+          }
+
+
+      WithFirstSourceSecondNoteSecondSourceLinkQuestion firstNote firstSource secondNote secondSource question ->
+        let
+          (note1, idGen1) = initLambda firstNote
+          (source, idGen2) = Source.createSource idGen1 firstSource
+          (note2, idGen3) = Note.create idGen2 <| toNoteLambda secondNote
+          (source2, idGen4) = Source.createSource idGen3 secondSource
+          (note3, idGen5) = Note.create idGen4 <| toQuestionLambda question
+          (link, idGenerator) = Link.create idGen5 note1 note2
+          links = [ link ]
+          (state, notes) = simulation [note1, note2, note3] []
+          content = getContent new
+        in
+        Slipbox
+          { content
+          | notes = notes
+          , links = links
+          , state = state
+          , sources = [ source, source2 ]
+          , idGenerator = idGenerator
+          }
+
 
 -- Helper Functions
 slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox

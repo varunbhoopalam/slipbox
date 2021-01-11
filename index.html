@@ -6011,6 +6011,7 @@ var $author$project$Main$Content = F3(
 	function (tab, slipbox, sideNavState) {
 		return {sideNavState: sideNavState, slipbox: slipbox, tab: tab};
 	});
+var $author$project$Main$ContinueTutorial = {$: 'ContinueTutorial'};
 var $author$project$Main$Expanded = {$: 'Expanded'};
 var $author$project$Main$FailureToParse = {$: 'FailureToParse'};
 var $author$project$Main$FileLoaded = function (a) {
@@ -6018,6 +6019,9 @@ var $author$project$Main$FileLoaded = function (a) {
 };
 var $author$project$Main$FileSelected = function (a) {
 	return {$: 'FileSelected', a: a};
+};
+var $author$project$Main$FileSelectedTutorial = function (a) {
+	return {$: 'FileSelectedTutorial', a: a};
 };
 var $author$project$Main$NotesTab = function (a) {
 	return {$: 'NotesTab', a: a};
@@ -6031,6 +6035,9 @@ var $author$project$Main$Session = function (a) {
 };
 var $author$project$Main$SourcesTab = function (a) {
 	return {$: 'SourcesTab', a: a};
+};
+var $author$project$Main$Tutorial = function (a) {
+	return {$: 'Tutorial', a: a};
 };
 var $author$project$Main$WorkspaceTab = {$: 'WorkspaceTab'};
 var $author$project$Slipbox$Slipbox = function (a) {
@@ -7903,6 +7910,184 @@ var $author$project$Slipbox$compressNote = F2(
 				content,
 				{notes: notes, state: state}));
 	});
+var $author$project$Tutorial$Eight_AddLinkPrompt = F3(
+	function (a, b, c) {
+		return {$: 'Eight_AddLinkPrompt', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Eleven_QuestionInput = F3(
+	function (a, b, c) {
+		return {$: 'Eleven_QuestionInput', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Fifteen_WorkflowSuggestionsAndFinish = F3(
+	function (a, b, c) {
+		return {$: 'Fifteen_WorkflowSuggestionsAndFinish', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Five_ExplainNotes = function (a) {
+	return {$: 'Five_ExplainNotes', a: a};
+};
+var $author$project$Tutorial$Four_SourceInput = F2(
+	function (a, b) {
+		return {$: 'Four_SourceInput', a: a, b: b};
+	});
+var $author$project$Tutorial$Fourteen_PracticeUploading = F3(
+	function (a, b, c) {
+		return {$: 'Fourteen_PracticeUploading', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Nine_ExplainLinks = F2(
+	function (a, b) {
+		return {$: 'Nine_ExplainLinks', a: a, b: b};
+	});
+var $author$project$Tutorial$Seven_SourceInput = F3(
+	function (a, b, c) {
+		return {$: 'Seven_SourceInput', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Six_NoteInput = F3(
+	function (a, b, c) {
+		return {$: 'Six_NoteInput', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Source = F3(
+	function (title, author, content) {
+		return {author: author, content: content, title: title};
+	});
+var $author$project$Tutorial$Ten_QuestionPrompt = F2(
+	function (a, b) {
+		return {$: 'Ten_QuestionPrompt', a: a, b: b};
+	});
+var $author$project$Tutorial$Thirteen_PracticeSaving = F3(
+	function (a, b, c) {
+		return {$: 'Thirteen_PracticeSaving', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Three_PromptAddSourceToNote = function (a) {
+	return {$: 'Three_PromptAddSourceToNote', a: a};
+};
+var $author$project$Tutorial$Twelve_ExplainQuestions = F3(
+	function (a, b, c) {
+		return {$: 'Twelve_ExplainQuestions', a: a, b: b, c: c};
+	});
+var $author$project$Tutorial$Two_CreateFirstNote = function (a) {
+	return {$: 'Two_CreateFirstNote', a: a};
+};
+var $author$project$Tutorial$WithSource = F2(
+	function (a, b) {
+		return {$: 'WithSource', a: a, b: b};
+	});
+var $author$project$Tutorial$WithSourceAndLinked = F2(
+	function (a, b) {
+		return {$: 'WithSourceAndLinked', a: a, b: b};
+	});
+var $author$project$Tutorial$WithoutSourceAndLinked = function (a) {
+	return {$: 'WithoutSourceAndLinked', a: a};
+};
+var $author$project$Tutorial$emptySource = A3($author$project$Tutorial$Source, '', '', '');
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$Tutorial$titleIsValid = function (title) {
+	var notNA = title !== 'n/a';
+	var notEmpty = !$elm$core$String$isEmpty(title);
+	return notEmpty && notNA;
+};
+var $author$project$Tutorial$continue = function (tutorial) {
+	switch (tutorial.$) {
+		case 'One_Intro':
+			return $author$project$Tutorial$Two_CreateFirstNote('');
+		case 'Two_CreateFirstNote':
+			var string = tutorial.a;
+			return $author$project$Tutorial$Three_PromptAddSourceToNote(string);
+		case 'Three_PromptAddSourceToNote':
+			var string = tutorial.a;
+			return A2($author$project$Tutorial$Four_SourceInput, string, $author$project$Tutorial$emptySource);
+		case 'Four_SourceInput':
+			var string = tutorial.a;
+			var source = tutorial.b;
+			return $author$project$Tutorial$Five_ExplainNotes(
+				A2($author$project$Tutorial$WithSource, string, source));
+		case 'Five_ExplainNotes':
+			var firstNote = tutorial.a;
+			return A3($author$project$Tutorial$Six_NoteInput, firstNote, '', '');
+		case 'Six_NoteInput':
+			var firstNote = tutorial.a;
+			var content = tutorial.b;
+			var title = tutorial.c;
+			if ($author$project$Tutorial$titleIsValid(title)) {
+				return A3(
+					$author$project$Tutorial$Seven_SourceInput,
+					firstNote,
+					{content: content, source: title},
+					A3($author$project$Tutorial$Source, title, '', ''));
+			} else {
+				var blankToNaInvariant = function (t) {
+					return $elm$core$String$isEmpty(t) ? 'n/a' : t;
+				};
+				return A3(
+					$author$project$Tutorial$Eight_AddLinkPrompt,
+					firstNote,
+					{
+						content: content,
+						source: blankToNaInvariant(title)
+					},
+					$elm$core$Maybe$Nothing);
+			}
+		case 'Seven_SourceInput':
+			var firstNote = tutorial.a;
+			var secondNoteContent = tutorial.b;
+			var source = tutorial.c;
+			return A3(
+				$author$project$Tutorial$Eight_AddLinkPrompt,
+				firstNote,
+				secondNoteContent,
+				$elm$core$Maybe$Just(source));
+		case 'Eight_AddLinkPrompt':
+			var firstNote = tutorial.a;
+			var secondNoteContent = tutorial.b;
+			var maybeSource = tutorial.c;
+			if (maybeSource.$ === 'Just') {
+				var source = maybeSource.a;
+				return A2(
+					$author$project$Tutorial$Nine_ExplainLinks,
+					firstNote,
+					A2($author$project$Tutorial$WithSourceAndLinked, secondNoteContent.content, source));
+			} else {
+				return A2(
+					$author$project$Tutorial$Nine_ExplainLinks,
+					firstNote,
+					$author$project$Tutorial$WithoutSourceAndLinked(secondNoteContent));
+			}
+		case 'Nine_ExplainLinks':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			return A2($author$project$Tutorial$Ten_QuestionPrompt, firstNote, secondNote);
+		case 'Ten_QuestionPrompt':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			return A3($author$project$Tutorial$Eleven_QuestionInput, firstNote, secondNote, '');
+		case 'Eleven_QuestionInput':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			var question = tutorial.c;
+			return A3(
+				$author$project$Tutorial$Twelve_ExplainQuestions,
+				firstNote,
+				secondNote,
+				$elm$core$Maybe$Just(question));
+		case 'Twelve_ExplainQuestions':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			var maybeQuestion = tutorial.c;
+			return A3($author$project$Tutorial$Thirteen_PracticeSaving, firstNote, secondNote, maybeQuestion);
+		case 'Thirteen_PracticeSaving':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			var maybeQuestion = tutorial.c;
+			return A3($author$project$Tutorial$Fourteen_PracticeUploading, firstNote, secondNote, maybeQuestion);
+		case 'Fourteen_PracticeUploading':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			var maybeQuestion = tutorial.c;
+			return A3($author$project$Tutorial$Fifteen_WorkflowSuggestionsAndFinish, firstNote, secondNote, maybeQuestion);
+		default:
+			return tutorial;
+	}
+};
 var $author$project$IdGenerator$decode = A2($elm$json$Json$Decode$map, $author$project$IdGenerator$IdGenerator, $elm$json$Json$Decode$int);
 var $author$project$Link$Info = F3(
 	function (id, sourceId, targetId) {
@@ -8147,6 +8332,1422 @@ var $author$project$Slipbox$encode = function (slipbox) {
 					$author$project$IdGenerator$encode(info.idGenerator))
 				])));
 };
+var $author$project$Slipbox$None = {$: 'None'};
+var $author$project$Tutorial$NoteContent = F2(
+	function (content, source) {
+		return {content: content, source: source};
+	});
+var $author$project$Slipbox$OnlyFirstNote = function (a) {
+	return {$: 'OnlyFirstNote', a: a};
+};
+var $author$project$Slipbox$WithFirstSource = F2(
+	function (a, b) {
+		return {$: 'WithFirstSource', a: a, b: b};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNote = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceSecondNote', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteLink = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceSecondNoteLink', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSource = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteSecondSource', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceLink', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithSecondNote = F2(
+	function (a, b) {
+		return {$: 'WithSecondNote', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteLink = F2(
+	function (a, b) {
+		return {$: 'WithSecondNoteLink', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSource = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteSecondSource', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceLink = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteSecondSourceLink', a: a, b: b, c: c};
+	});
+var $author$project$Link$create = F3(
+	function (generator, sourceNote, targetNote) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		return _Utils_Tuple2(
+			$author$project$Link$Link(
+				A3(
+					$author$project$Link$Info,
+					id,
+					$author$project$Note$getId(sourceNote),
+					$author$project$Note$getId(targetNote))),
+			idGenerator);
+	});
+var $author$project$Note$create = F2(
+	function (generator, record) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		return _Utils_Tuple2(
+			A4(
+				$author$project$Note$note_,
+				id,
+				record.content,
+				record.source,
+				$author$project$Note$variantStringRepresentation(record.variant)),
+			idGenerator);
+	});
+var $author$project$Source$createSource = F2(
+	function (generator, content) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		var info = A4($author$project$Source$Info, id, content.title, content.author, content.content);
+		return _Utils_Tuple2(
+			$author$project$Source$Source(info),
+			idGenerator);
+	});
+var $author$project$IdGenerator$init = $author$project$IdGenerator$IdGenerator(0);
+var $author$project$Slipbox$new = function () {
+	var _v0 = A2($author$project$Slipbox$simulation, _List_Nil, _List_Nil);
+	var state = _v0.a;
+	return $author$project$Slipbox$Slipbox(
+		A6($author$project$Slipbox$Content, _List_Nil, _List_Nil, _List_Nil, _List_Nil, state, $author$project$IdGenerator$init));
+}();
+var $author$project$Slipbox$endTutorial = function (tutorialEnding) {
+	var toQuestionLambda = function (q) {
+		return {content: q, source: 'n/a', variant: $author$project$Note$Question};
+	};
+	var toNoteLambda = function (n) {
+		return {content: n.content, source: n.source, variant: $author$project$Note$Regular};
+	};
+	var initLambda = function (fn) {
+		return A2(
+			$author$project$Note$create,
+			$author$project$IdGenerator$init,
+			toNoteLambda(fn));
+	};
+	switch (tutorialEnding.$) {
+		case 'None':
+			return $author$project$Slipbox$new;
+		case 'OnlyFirstNote':
+			var firstNote = tutorialEnding.a;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v1 = initLambda(firstNote);
+			var note = _v1.a;
+			var idGenerator = _v1.b;
+			var _v2 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note]),
+				_List_Nil);
+			var state = _v2.a;
+			var notes = _v2.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSource':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v3 = initLambda(firstNote);
+			var note = _v3.a;
+			var idGen1 = _v3.b;
+			var _v4 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v4.a;
+			var idGenerator = _v4.b;
+			var _v5 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note]),
+				_List_Nil);
+			var state = _v5.a;
+			var notes = _v5.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNote':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v6 = initLambda(firstNote);
+			var note1 = _v6.a;
+			var idGen1 = _v6.b;
+			var _v7 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v7.a;
+			var idGenerator = _v7.b;
+			var _v8 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v8.a;
+			var notes = _v8.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithQuestion':
+			var firstNote = tutorialEnding.a;
+			var question = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v9 = initLambda(firstNote);
+			var note1 = _v9.a;
+			var idGen1 = _v9.b;
+			var _v10 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toQuestionLambda(question));
+			var note2 = _v10.a;
+			var idGenerator = _v10.b;
+			var _v11 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v11.a;
+			var notes = _v11.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSourceSecondNote':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v12 = initLambda(firstNote);
+			var note = _v12.a;
+			var idGen1 = _v12.b;
+			var _v13 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v13.a;
+			var idGen2 = _v13.b;
+			var _v14 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v14.a;
+			var idGenerator = _v14.b;
+			var _v15 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v15.a;
+			var notes = _v15.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v16 = initLambda(firstNote);
+			var note = _v16.a;
+			var idGen1 = _v16.b;
+			var _v17 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v17.a;
+			var idGen2 = _v17.b;
+			var _v18 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note2 = _v18.a;
+			var idGenerator = _v18.b;
+			var _v19 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v19.a;
+			var notes = _v19.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSource':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v20 = initLambda(firstNote);
+			var note1 = _v20.a;
+			var idGen1 = _v20.b;
+			var _v21 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v21.a;
+			var idGen2 = _v21.b;
+			var _v22 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v22.a;
+			var idGenerator = _v22.b;
+			var _v23 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v23.a;
+			var notes = _v23.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v24 = initLambda(firstNote);
+			var note1 = _v24.a;
+			var idGen1 = _v24.b;
+			var _v25 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v25.a;
+			var idGen2 = _v25.b;
+			var _v26 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v26.a;
+			var idGen3 = _v26.b;
+			var _v27 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source = _v27.a;
+			var idGenerator = _v27.b;
+			var _v28 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v28.a;
+			var notes = _v28.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteLink':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v29 = initLambda(firstNote);
+			var note1 = _v29.a;
+			var idGen1 = _v29.b;
+			var _v30 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v30.a;
+			var idGen2 = _v30.b;
+			var _v31 = A3($author$project$Link$create, idGen2, note1, note2);
+			var link = _v31.a;
+			var idGenerator = _v31.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v32 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v32.a;
+			var notes = _v32.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, links: links, notes: notes, state: state}));
+		case 'WithSecondNoteQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v33 = initLambda(firstNote);
+			var note1 = _v33.a;
+			var idGen1 = _v33.b;
+			var _v34 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v34.a;
+			var idGen2 = _v34.b;
+			var _v35 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v35.a;
+			var idGenerator = _v35.b;
+			var _v36 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v36.a;
+			var notes = _v36.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSourceSecondNoteSecondSource':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v37 = initLambda(firstNote);
+			var note = _v37.a;
+			var idGen1 = _v37.b;
+			var _v38 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v38.a;
+			var idGen2 = _v38.b;
+			var _v39 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v39.a;
+			var idGen3 = _v39.b;
+			var _v40 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v40.a;
+			var idGenerator = _v40.b;
+			var _v41 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v41.a;
+			var notes = _v41.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteLink':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v42 = initLambda(firstNote);
+			var note = _v42.a;
+			var idGen1 = _v42.b;
+			var _v43 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v43.a;
+			var idGen2 = _v43.b;
+			var _v44 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v44.a;
+			var idGen3 = _v44.b;
+			var _v45 = A3($author$project$Link$create, idGen3, note, note2);
+			var link = _v45.a;
+			var idGenerator = _v45.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v46 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				links);
+			var state = _v46.a;
+			var notes = _v46.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v47 = initLambda(firstNote);
+			var note = _v47.a;
+			var idGen1 = _v47.b;
+			var _v48 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v48.a;
+			var idGen2 = _v48.b;
+			var _v49 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v49.a;
+			var idGen3 = _v49.b;
+			var _v50 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v50.a;
+			var idGenerator = _v50.b;
+			var _v51 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				_List_Nil);
+			var state = _v51.a;
+			var notes = _v51.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v52 = initLambda(firstNote);
+			var note = _v52.a;
+			var idGen1 = _v52.b;
+			var _v53 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v53.a;
+			var idGen2 = _v53.b;
+			var _v54 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v54.a;
+			var idGen3 = _v54.b;
+			var _v55 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v55.a;
+			var idGen4 = _v55.b;
+			var _v56 = A3($author$project$Link$create, idGen4, note, note2);
+			var link = _v56.a;
+			var idGenerator = _v56.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v57 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				links);
+			var state = _v57.a;
+			var notes = _v57.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v58 = initLambda(firstNote);
+			var note1 = _v58.a;
+			var idGen1 = _v58.b;
+			var _v59 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v59.a;
+			var idGen2 = _v59.b;
+			var _v60 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v60.a;
+			var idGen3 = _v60.b;
+			var _v61 = A3($author$project$Link$create, idGen3, note1, note2);
+			var link = _v61.a;
+			var idGenerator = _v61.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v62 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v62.a;
+			var notes = _v62.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, links: links, notes: notes, state: state}));
+		case 'WithSecondNoteSecondSourceLink':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v63 = initLambda(firstNote);
+			var note1 = _v63.a;
+			var idGen1 = _v63.b;
+			var _v64 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v64.a;
+			var idGen2 = _v64.b;
+			var _v65 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v65.a;
+			var idGen3 = _v65.b;
+			var _v66 = A3($author$project$Link$create, idGen3, note1, note2);
+			var link = _v66.a;
+			var idGenerator = _v66.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v67 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v67.a;
+			var notes = _v67.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSourceLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v68 = initLambda(firstNote);
+			var note1 = _v68.a;
+			var idGen1 = _v68.b;
+			var _v69 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v69.a;
+			var idGen2 = _v69.b;
+			var _v70 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v70.a;
+			var idGen3 = _v70.b;
+			var _v71 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v71.a;
+			var idGen4 = _v71.b;
+			var _v72 = A3($author$project$Link$create, idGen4, note1, note2);
+			var link = _v72.a;
+			var idGenerator = _v72.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v73 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v73.a;
+			var notes = _v73.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteSecondSourceLink':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v74 = initLambda(firstNote);
+			var note1 = _v74.a;
+			var idGen1 = _v74.b;
+			var _v75 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v75.a;
+			var idGen2 = _v75.b;
+			var _v76 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v76.a;
+			var idGen3 = _v76.b;
+			var _v77 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v77.a;
+			var idGen4 = _v77.b;
+			var _v78 = A3($author$project$Link$create, idGen4, note1, note2);
+			var link = _v78.a;
+			var idGenerator = _v78.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v79 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v79.a;
+			var notes = _v79.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteSecondSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var question = tutorialEnding.e;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v80 = initLambda(firstNote);
+			var note = _v80.a;
+			var idGen1 = _v80.b;
+			var _v81 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v81.a;
+			var idGen2 = _v81.b;
+			var _v82 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v82.a;
+			var idGen3 = _v82.b;
+			var _v83 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v83.a;
+			var idGen4 = _v83.b;
+			var _v84 = A2(
+				$author$project$Note$create,
+				idGen4,
+				toQuestionLambda(question));
+			var note3 = _v84.a;
+			var idGenerator = _v84.b;
+			var _v85 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				_List_Nil);
+			var state = _v85.a;
+			var notes = _v85.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		default:
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var question = tutorialEnding.e;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v86 = initLambda(firstNote);
+			var note1 = _v86.a;
+			var idGen1 = _v86.b;
+			var _v87 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v87.a;
+			var idGen2 = _v87.b;
+			var _v88 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v88.a;
+			var idGen3 = _v88.b;
+			var _v89 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v89.a;
+			var idGen4 = _v89.b;
+			var _v90 = A2(
+				$author$project$Note$create,
+				idGen4,
+				toQuestionLambda(question));
+			var note3 = _v90.a;
+			var idGen5 = _v90.b;
+			var _v91 = A3($author$project$Link$create, idGen5, note1, note2);
+			var link = _v91.a;
+			var idGenerator = _v91.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v92 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v92.a;
+			var notes = _v92.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+	}
+};
+var $author$project$Slipbox$WithFirstSourceQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteLinkQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteLinkQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLinkQuestion = F5(
+	function (a, b, c, d, e) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceLinkQuestion', a: a, b: b, c: c, d: d, e: e};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceQuestion = F5(
+	function (a, b, c, d, e) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceQuestion', a: a, b: b, c: c, d: d, e: e};
+	});
+var $author$project$Slipbox$WithQuestion = F2(
+	function (a, b) {
+		return {$: 'WithQuestion', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteLinkQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteLinkQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceLinkQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithSecondNoteSecondSourceLinkQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithSecondNoteSecondSourceQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Tutorial$lastScenarioEndTutorial = F3(
+	function (firstNote, secondNote, maybeString) {
+		if (firstNote.$ === 'WithSource') {
+			var firstNoteContent = firstNote.a;
+			var source = firstNote.b;
+			switch (secondNote.$) {
+				case 'WithSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A5(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLinkQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteLinkQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				case 'WithSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A5(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNote,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				default:
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithFirstSourceQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithFirstSource,
+							{content: firstNoteContent, source: source.title},
+							source);
+					}
+			}
+		} else {
+			var firstNoteContent = firstNote.a;
+			switch (secondNote.$) {
+				case 'WithSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithSecondNoteSecondSourceLinkQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteLinkQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNoteLink,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				case 'WithSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithSecondNoteSecondSourceQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSource,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNote,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				default:
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A2(
+							$author$project$Slipbox$WithQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							question);
+					} else {
+						return $author$project$Slipbox$OnlyFirstNote(
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+			}
+		}
+	});
+var $author$project$Tutorial$end = function (tutorial) {
+	var tutorialEnding = function () {
+		switch (tutorial.$) {
+			case 'One_Intro':
+				return $author$project$Slipbox$None;
+			case 'Two_CreateFirstNote':
+				return $author$project$Slipbox$None;
+			case 'Three_PromptAddSourceToNote':
+				var firstNoteContent = tutorial.a;
+				return $author$project$Slipbox$OnlyFirstNote(
+					A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+			case 'Four_SourceInput':
+				var firstNoteContent = tutorial.a;
+				return $author$project$Slipbox$OnlyFirstNote(
+					A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+			case 'Five_ExplainNotes':
+				var firstNote = tutorial.a;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A2(
+						$author$project$Slipbox$WithFirstSource,
+						{content: firstNoteContent, source: source.title},
+						source);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return $author$project$Slipbox$OnlyFirstNote(
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+				}
+			case 'Six_NoteInput':
+				var firstNote = tutorial.a;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A2(
+						$author$project$Slipbox$WithFirstSource,
+						{content: firstNoteContent, source: source.title},
+						source);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return $author$project$Slipbox$OnlyFirstNote(
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+				}
+			case 'Seven_SourceInput':
+				var firstNote = tutorial.a;
+				var secondNoteContent = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A3(
+						$author$project$Slipbox$WithFirstSourceSecondNote,
+						{content: firstNoteContent, source: source.title},
+						source,
+						secondNoteContent);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return A2(
+						$author$project$Slipbox$WithSecondNote,
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+						secondNoteContent);
+				}
+			case 'Eight_AddLinkPrompt':
+				var firstNote = tutorial.a;
+				var secondNoteContent = tutorial.b;
+				var maybeSource = tutorial.c;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					if (maybeSource.$ === 'Just') {
+						var secondSource = maybeSource.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							secondSource);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNote,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					if (maybeSource.$ === 'Just') {
+						var secondSource = maybeSource.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSource,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							secondSource);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNote,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				}
+			case 'Nine_ExplainLinks':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Ten_QuestionPrompt':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Eleven_QuestionInput':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var question = tutorial.c;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Twelve_ExplainQuestions':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			case 'Thirteen_PracticeSaving':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			case 'Fourteen_PracticeUploading':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			default:
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+		}
+	}();
+	return $author$project$Slipbox$endTutorial(tutorialEnding);
+};
 var $author$project$Note$Expanded = F2(
 	function (a, b) {
 		return {$: 'Expanded', a: a, b: b};
@@ -8281,6 +9882,8 @@ var $author$project$Main$handleWindowInfo = F2(
 				{deviceViewport: windowInfo});
 		}
 	});
+var $author$project$Tutorial$One_Intro = {$: 'One_Intro'};
+var $author$project$Tutorial$init = $author$project$Tutorial$One_Intro;
 var $author$project$Viewport$Info = F2(
 	function (state, viewbox) {
 		return {state: state, viewbox: viewbox};
@@ -8422,13 +10025,6 @@ var $author$project$Viewport$move = F3(
 			return viewport;
 		}
 	});
-var $author$project$IdGenerator$init = $author$project$IdGenerator$IdGenerator(0);
-var $author$project$Slipbox$new = function () {
-	var _v0 = A2($author$project$Slipbox$simulation, _List_Nil, _List_Nil);
-	var state = _v0.a;
-	return $author$project$Slipbox$Slipbox(
-		A6($author$project$Slipbox$Content, _List_Nil, _List_Nil, _List_Nil, _List_Nil, state, $author$project$IdGenerator$init));
-}();
 var $author$project$Main$newContent = function (deviceViewport) {
 	return A3(
 		$author$project$Main$Content,
@@ -8437,8 +10033,68 @@ var $author$project$Main$newContent = function (deviceViewport) {
 		$author$project$Main$Expanded);
 };
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$Basics$not = _Basics_not;
 var $elm$core$Basics$round = _Basics_round;
+var $author$project$Tutorial$NoSecondNote = {$: 'NoSecondNote'};
+var $author$project$Tutorial$WithSourceNotLinked = F2(
+	function (a, b) {
+		return {$: 'WithSourceNotLinked', a: a, b: b};
+	});
+var $author$project$Tutorial$WithoutSource = function (a) {
+	return {$: 'WithoutSource', a: a};
+};
+var $author$project$Tutorial$WithoutSourceNotLinked = function (a) {
+	return {$: 'WithoutSourceNotLinked', a: a};
+};
+var $author$project$Tutorial$skip = function (tutorial) {
+	switch (tutorial.$) {
+		case 'Three_PromptAddSourceToNote':
+			var string = tutorial.a;
+			return $author$project$Tutorial$Five_ExplainNotes(
+				$author$project$Tutorial$WithoutSource(string));
+		case 'Four_SourceInput':
+			var string = tutorial.a;
+			return $author$project$Tutorial$Five_ExplainNotes(
+				$author$project$Tutorial$WithoutSource(string));
+		case 'Six_NoteInput':
+			var firstNote = tutorial.a;
+			return A2($author$project$Tutorial$Nine_ExplainLinks, firstNote, $author$project$Tutorial$NoSecondNote);
+		case 'Seven_SourceInput':
+			var firstNote = tutorial.a;
+			var secondNoteContent = tutorial.b;
+			var source = tutorial.c;
+			return A3(
+				$author$project$Tutorial$Eight_AddLinkPrompt,
+				firstNote,
+				secondNoteContent,
+				$elm$core$Maybe$Just(source));
+		case 'Eight_AddLinkPrompt':
+			var firstNote = tutorial.a;
+			var secondNoteContent = tutorial.b;
+			var maybeSource = tutorial.c;
+			if (maybeSource.$ === 'Just') {
+				var source = maybeSource.a;
+				return A2(
+					$author$project$Tutorial$Nine_ExplainLinks,
+					firstNote,
+					A2($author$project$Tutorial$WithSourceNotLinked, secondNoteContent.content, source));
+			} else {
+				return A2(
+					$author$project$Tutorial$Nine_ExplainLinks,
+					firstNote,
+					$author$project$Tutorial$WithoutSourceNotLinked(secondNoteContent));
+			}
+		case 'Ten_QuestionPrompt':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			return A3($author$project$Tutorial$Twelve_ExplainQuestions, firstNote, secondNote, $elm$core$Maybe$Nothing);
+		case 'Eleven_QuestionInput':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			return A3($author$project$Tutorial$Twelve_ExplainQuestions, firstNote, secondNote, $elm$core$Maybe$Nothing);
+		default:
+			return tutorial;
+	}
+};
 var $author$project$Viewport$Moving = function (a) {
 	return {$: 'Moving', a: a};
 };
@@ -8504,6 +10160,103 @@ var $author$project$Main$toggle = function (state) {
 		return $author$project$Main$Expanded;
 	}
 };
+var $author$project$Tutorial$update = F2(
+	function (action, tutorial) {
+		switch (action.$) {
+			case 'Content':
+				var input = action.a;
+				switch (tutorial.$) {
+					case 'Two_CreateFirstNote':
+						return $author$project$Tutorial$Two_CreateFirstNote(input);
+					case 'Four_SourceInput':
+						var firstNote = tutorial.a;
+						var source = tutorial.b;
+						return A2(
+							$author$project$Tutorial$Four_SourceInput,
+							firstNote,
+							_Utils_update(
+								source,
+								{content: input}));
+					case 'Seven_SourceInput':
+						var firstNote = tutorial.a;
+						var secondNote = tutorial.b;
+						var source = tutorial.c;
+						return A3(
+							$author$project$Tutorial$Seven_SourceInput,
+							firstNote,
+							secondNote,
+							_Utils_update(
+								source,
+								{content: input}));
+					case 'Six_NoteInput':
+						var firstNote = tutorial.a;
+						var title = tutorial.c;
+						return A3($author$project$Tutorial$Six_NoteInput, firstNote, input, title);
+					case 'Eleven_QuestionInput':
+						var firstNote = tutorial.a;
+						var secondNote = tutorial.b;
+						return A3($author$project$Tutorial$Eleven_QuestionInput, firstNote, secondNote, input);
+					default:
+						return tutorial;
+				}
+			case 'Title':
+				var input = action.a;
+				switch (tutorial.$) {
+					case 'Four_SourceInput':
+						var firstNote = tutorial.a;
+						var source = tutorial.b;
+						return A2(
+							$author$project$Tutorial$Four_SourceInput,
+							firstNote,
+							_Utils_update(
+								source,
+								{title: input}));
+					case 'Seven_SourceInput':
+						var firstNote = tutorial.a;
+						var secondNote = tutorial.b;
+						var source = tutorial.c;
+						return A3(
+							$author$project$Tutorial$Seven_SourceInput,
+							firstNote,
+							secondNote,
+							_Utils_update(
+								source,
+								{title: input}));
+					case 'Six_NoteInput':
+						var firstNote = tutorial.a;
+						var secondNote = tutorial.b;
+						return A3($author$project$Tutorial$Six_NoteInput, firstNote, secondNote, input);
+					default:
+						return tutorial;
+				}
+			default:
+				var input = action.a;
+				switch (tutorial.$) {
+					case 'Four_SourceInput':
+						var firstNote = tutorial.a;
+						var source = tutorial.b;
+						return A2(
+							$author$project$Tutorial$Four_SourceInput,
+							firstNote,
+							_Utils_update(
+								source,
+								{author: input}));
+					case 'Seven_SourceInput':
+						var firstNote = tutorial.a;
+						var secondNote = tutorial.b;
+						var source = tutorial.c;
+						return A3(
+							$author$project$Tutorial$Seven_SourceInput,
+							firstNote,
+							secondNote,
+							_Utils_update(
+								source,
+								{author: input}));
+					default:
+						return tutorial;
+				}
+		}
+	});
 var $author$project$Item$AddingLinkToNoteForm = F5(
 	function (a, b, c, d, e) {
 		return {$: 'AddingLinkToNoteForm', a: a, b: b, c: c, d: d, e: e};
@@ -8615,44 +10368,6 @@ var $author$project$Slipbox$conditionalUpdate = F2(
 		return function (i) {
 			return itemIdentifier(i) ? updatedItem : i;
 		};
-	});
-var $author$project$Link$create = F3(
-	function (generator, sourceNote, targetNote) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		return _Utils_Tuple2(
-			$author$project$Link$Link(
-				A3(
-					$author$project$Link$Info,
-					id,
-					$author$project$Note$getId(sourceNote),
-					$author$project$Note$getId(targetNote))),
-			idGenerator);
-	});
-var $author$project$Note$create = F2(
-	function (generator, record) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		return _Utils_Tuple2(
-			A4(
-				$author$project$Note$note_,
-				id,
-				record.content,
-				record.source,
-				$author$project$Note$variantStringRepresentation(record.variant)),
-			idGenerator);
-	});
-var $author$project$Source$createSource = F2(
-	function (generator, content) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		var info = A4($author$project$Source$Info, id, content.title, content.author, content.content);
-		return _Utils_Tuple2(
-			$author$project$Source$Source(info),
-			idGenerator);
 	});
 var $author$project$Slipbox$deleteNoteItemStateChange = F2(
 	function (deletedNote, item) {
@@ -9434,228 +11149,482 @@ var $author$project$Main$updateTab = F2(
 	});
 var $author$project$Main$update = F2(
 	function (message, model) {
-		var updateSlipboxWrapper = function (s) {
-			var _v25 = $author$project$Main$getSlipbox(model);
-			if (_v25.$ === 'Just') {
-				var slipbox = _v25.a;
-				return _Utils_Tuple2(
-					A2(
-						$author$project$Main$updateSlipbox,
-						s(slipbox),
-						model),
-					$elm$core$Platform$Cmd$none);
-			} else {
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			}
-		};
-		var updateExploreTabViewportLambda = function (toViewport) {
-			var _v23 = model.state;
-			if (_v23.$ === 'Session') {
-				var content = _v23.a;
-				var _v24 = content.tab;
-				if (_v24.$ === 'BrainTab') {
-					var input = _v24.a;
-					var viewport = _v24.b;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: $author$project$Main$Session(
-									_Utils_update(
-										content,
-										{
-											tab: A2(
-												$author$project$Main$BrainTab,
-												input,
-												toViewport(viewport))
-										}))
-							}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			} else {
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			}
-		};
-		switch (message.$) {
-			case 'LinkClicked':
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			case 'UrlChanged':
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			case 'ExploreTabUpdateInput':
-				var input = message.a;
-				var _v1 = model.state;
-				if (_v1.$ === 'Session') {
-					var content = _v1.a;
-					var _v2 = content.tab;
-					if (_v2.$ === 'BrainTab') {
-						var viewport = _v2.b;
-						return _Utils_Tuple2(
-							A2(
-								$author$project$Main$updateTab,
-								A2($author$project$Main$BrainTab, input, viewport),
-								model),
-							$elm$core$Platform$Cmd$none);
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'NoteTabUpdateInput':
-				var input = message.a;
-				var _v3 = model.state;
-				if (_v3.$ === 'Session') {
-					var content = _v3.a;
-					var _v4 = content.tab;
-					if (_v4.$ === 'NotesTab') {
-						return _Utils_Tuple2(
-							A2(
-								$author$project$Main$updateTab,
-								$author$project$Main$NotesTab(input),
-								model),
-							$elm$core$Platform$Cmd$none);
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'SourceTabUpdateInput':
-				var input = message.a;
-				var _v5 = model.state;
-				if (_v5.$ === 'Session') {
-					var content = _v5.a;
-					var _v6 = content.tab;
-					if (_v6.$ === 'SourcesTab') {
-						return _Utils_Tuple2(
-							A2(
-								$author$project$Main$updateTab,
-								$author$project$Main$SourcesTab(input),
-								model),
-							$elm$core$Platform$Cmd$none);
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'AddItem':
-				var maybeItem = message.a;
-				var addAction = message.b;
-				var modelWithUpdatedTab = A2($author$project$Main$updateTab, $author$project$Main$WorkspaceTab, model);
-				var addItemToSlipboxLambda = A2($author$project$Slipbox$addItem, maybeItem, addAction);
-				var _v7 = $author$project$Main$getSlipbox(model);
-				if (_v7.$ === 'Just') {
-					var slipbox = _v7.a;
+		update:
+		while (true) {
+			var updateSlipboxWrapper = function (s) {
+				var _v32 = $author$project$Main$getSlipbox(model);
+				if (_v32.$ === 'Just') {
+					var slipbox = _v32.a;
 					return _Utils_Tuple2(
 						A2(
 							$author$project$Main$updateSlipbox,
-							addItemToSlipboxLambda(slipbox),
-							modelWithUpdatedTab),
+							s(slipbox),
+							model),
 						$elm$core$Platform$Cmd$none);
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 'CompressNote':
-				var note = message.a;
-				return updateSlipboxWrapper(
-					$author$project$Slipbox$compressNote(note));
-			case 'ExpandNote':
-				var note = message.a;
-				return updateSlipboxWrapper(
-					$author$project$Slipbox$expandNote(note));
-			case 'UpdateItem':
-				var item = message.a;
-				var updateAction = message.b;
-				return updateSlipboxWrapper(
-					A2($author$project$Slipbox$updateItem, item, updateAction));
-			case 'DismissItem':
-				var item = message.a;
-				return updateSlipboxWrapper(
-					$author$project$Slipbox$dismissItem(item));
-			case 'StartMoveView':
-				var mouseEvent = message.a;
-				return updateExploreTabViewportLambda(
-					$author$project$Viewport$startMove(mouseEvent));
-			case 'MoveView':
-				var mouseEvent = message.a;
-				var _v8 = $author$project$Main$getSlipbox(model);
-				if (_v8.$ === 'Just') {
-					var slipbox = _v8.a;
+			};
+			var updateExploreTabViewportLambda = function (toViewport) {
+				var _v30 = model.state;
+				if (_v30.$ === 'Session') {
+					var content = _v30.a;
+					var _v31 = content.tab;
+					if (_v31.$ === 'BrainTab') {
+						var input = _v31.a;
+						var viewport = _v31.b;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Session(
+										_Utils_update(
+											content,
+											{
+												tab: A2(
+													$author$project$Main$BrainTab,
+													input,
+													toViewport(viewport))
+											}))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
+			};
+			switch (message.$) {
+				case 'LinkClicked':
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				case 'UrlChanged':
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				case 'ExploreTabUpdateInput':
+					var input = message.a;
+					var _v1 = model.state;
+					if (_v1.$ === 'Session') {
+						var content = _v1.a;
+						var _v2 = content.tab;
+						if (_v2.$ === 'BrainTab') {
+							var viewport = _v2.b;
+							return _Utils_Tuple2(
+								A2(
+									$author$project$Main$updateTab,
+									A2($author$project$Main$BrainTab, input, viewport),
+									model),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'NoteTabUpdateInput':
+					var input = message.a;
+					var _v3 = model.state;
+					if (_v3.$ === 'Session') {
+						var content = _v3.a;
+						var _v4 = content.tab;
+						if (_v4.$ === 'NotesTab') {
+							return _Utils_Tuple2(
+								A2(
+									$author$project$Main$updateTab,
+									$author$project$Main$NotesTab(input),
+									model),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'SourceTabUpdateInput':
+					var input = message.a;
+					var _v5 = model.state;
+					if (_v5.$ === 'Session') {
+						var content = _v5.a;
+						var _v6 = content.tab;
+						if (_v6.$ === 'SourcesTab') {
+							return _Utils_Tuple2(
+								A2(
+									$author$project$Main$updateTab,
+									$author$project$Main$SourcesTab(input),
+									model),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'AddItem':
+					var maybeItem = message.a;
+					var addAction = message.b;
+					var modelWithUpdatedTab = A2($author$project$Main$updateTab, $author$project$Main$WorkspaceTab, model);
+					var addItemToSlipboxLambda = A2($author$project$Slipbox$addItem, maybeItem, addAction);
+					var _v7 = $author$project$Main$getSlipbox(model);
+					if (_v7.$ === 'Just') {
+						var slipbox = _v7.a;
+						return _Utils_Tuple2(
+							A2(
+								$author$project$Main$updateSlipbox,
+								addItemToSlipboxLambda(slipbox),
+								modelWithUpdatedTab),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'CompressNote':
+					var note = message.a;
+					return updateSlipboxWrapper(
+						$author$project$Slipbox$compressNote(note));
+				case 'ExpandNote':
+					var note = message.a;
+					return updateSlipboxWrapper(
+						$author$project$Slipbox$expandNote(note));
+				case 'UpdateItem':
+					var item = message.a;
+					var updateAction = message.b;
+					return updateSlipboxWrapper(
+						A2($author$project$Slipbox$updateItem, item, updateAction));
+				case 'DismissItem':
+					var item = message.a;
+					return updateSlipboxWrapper(
+						$author$project$Slipbox$dismissItem(item));
+				case 'StartMoveView':
+					var mouseEvent = message.a;
 					return updateExploreTabViewportLambda(
-						A2(
-							$author$project$Viewport$move,
-							mouseEvent,
-							A2($author$project$Slipbox$getNotes, $elm$core$Maybe$Nothing, slipbox)));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'StopMoveView':
-				return updateExploreTabViewportLambda($author$project$Viewport$stopMove);
-			case 'GotViewport':
-				var viewport = message.a;
-				var windowInfo = _Utils_Tuple2(
-					$elm$core$Basics$round(viewport.viewport.width),
-					$elm$core$Basics$round(viewport.viewport.height));
-				return _Utils_Tuple2(
-					A2($author$project$Main$handleWindowInfo, windowInfo, model),
-					$elm$core$Platform$Cmd$none);
-			case 'GotWindowResize':
-				var windowInfo = message.a;
-				return _Utils_Tuple2(
-					A2($author$project$Main$handleWindowInfo, windowInfo, model),
-					$elm$core$Platform$Cmd$none);
-			case 'InitializeNewSlipbox':
-				var _v9 = model.state;
-				if (_v9.$ === 'Setup') {
+						$author$project$Viewport$startMove(mouseEvent));
+				case 'MoveView':
+					var mouseEvent = message.a;
+					var _v8 = $author$project$Main$getSlipbox(model);
+					if (_v8.$ === 'Just') {
+						var slipbox = _v8.a;
+						return updateExploreTabViewportLambda(
+							A2(
+								$author$project$Viewport$move,
+								mouseEvent,
+								A2($author$project$Slipbox$getNotes, $elm$core$Maybe$Nothing, slipbox)));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'StopMoveView':
+					return updateExploreTabViewportLambda($author$project$Viewport$stopMove);
+				case 'GotViewport':
+					var viewport = message.a;
+					var windowInfo = _Utils_Tuple2(
+						$elm$core$Basics$round(viewport.viewport.width),
+						$elm$core$Basics$round(viewport.viewport.height));
 					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: $author$project$Main$Session(
-									$author$project$Main$newContent(model.deviceViewport))
-							}),
+						A2($author$project$Main$handleWindowInfo, windowInfo, model),
 						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'FileRequested':
-				var _v10 = model.state;
-				if (_v10.$ === 'Setup') {
+				case 'GotWindowResize':
+					var windowInfo = message.a;
 					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$file$File$Select$file,
-							_List_fromArray(
-								['application/json']),
-							$author$project$Main$FileSelected));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'FileSelected':
-				var file = message.a;
-				var _v11 = model.state;
-				if (_v11.$ === 'Setup') {
-					return _Utils_Tuple2(
-						_Utils_update(
+						A2($author$project$Main$handleWindowInfo, windowInfo, model),
+						$elm$core$Platform$Cmd$none);
+				case 'InitializeNewSlipbox':
+					var _v9 = model.state;
+					if (_v9.$ === 'Setup') {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Session(
+										$author$project$Main$newContent(model.deviceViewport))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'FileRequested':
+					var _v10 = model.state;
+					if (_v10.$ === 'Setup') {
+						return _Utils_Tuple2(
 							model,
-							{state: $author$project$Main$Parsing}),
-						A2(
-							$elm$core$Task$perform,
-							$author$project$Main$FileLoaded,
-							$elm$file$File$toString(file)));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'FileLoaded':
-				var fileContentAsString = message.a;
-				var _v12 = model.state;
-				if (_v12.$ === 'Parsing') {
-					var maybeSlipbox = A2($elm$json$Json$Decode$decodeString, $author$project$Slipbox$decode, fileContentAsString);
-					if (maybeSlipbox.$ === 'Ok') {
-						var slipbox = maybeSlipbox.a;
+							A2(
+								$elm$file$File$Select$file,
+								_List_fromArray(
+									['application/json']),
+								$author$project$Main$FileSelected));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'FileSelected':
+					var file = message.a;
+					var _v11 = model.state;
+					if (_v11.$ === 'Setup') {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{state: $author$project$Main$Parsing}),
+							A2(
+								$elm$core$Task$perform,
+								$author$project$Main$FileLoaded,
+								$elm$file$File$toString(file)));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'FileRequestedTutorial':
+					var _v12 = model.state;
+					if (_v12.$ === 'Tutorial') {
+						return _Utils_Tuple2(
+							model,
+							A2(
+								$elm$file$File$Select$file,
+								_List_fromArray(
+									['application/json']),
+								$author$project$Main$FileSelectedTutorial));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'FileSelectedTutorial':
+					var $temp$message = $author$project$Main$ContinueTutorial,
+						$temp$model = model;
+					message = $temp$message;
+					model = $temp$model;
+					continue update;
+				case 'FileLoaded':
+					var fileContentAsString = message.a;
+					var _v13 = model.state;
+					if (_v13.$ === 'Parsing') {
+						var maybeSlipbox = A2($elm$json$Json$Decode$decodeString, $author$project$Slipbox$decode, fileContentAsString);
+						if (maybeSlipbox.$ === 'Ok') {
+							var slipbox = maybeSlipbox.a;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										state: $author$project$Main$Session(
+											A3(
+												$author$project$Main$Content,
+												A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize),
+												slipbox,
+												$author$project$Main$Expanded))
+									}),
+								$elm$core$Platform$Cmd$none);
+						} else {
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{state: $author$project$Main$FailureToParse}),
+								$elm$core$Platform$Cmd$none);
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'FileDownload':
+					var _v15 = $author$project$Main$getSlipbox(model);
+					if (_v15.$ === 'Just') {
+						var slipbox = _v15.a;
+						return _Utils_Tuple2(
+							model,
+							A3(
+								$elm$file$File$Download$string,
+								'slipbox.json',
+								'application/json',
+								$author$project$Slipbox$encode(slipbox)));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'Tick':
+					var _v16 = $author$project$Main$getSlipbox(model);
+					if (_v16.$ === 'Just') {
+						var slipbox = _v16.a;
+						return (!$author$project$Slipbox$simulationIsCompleted(slipbox)) ? _Utils_Tuple2(
+							A2(
+								$author$project$Main$updateSlipbox,
+								$author$project$Slipbox$tick(slipbox),
+								model),
+							$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'ChangeTab':
+					var tab = message.a;
+					var _v17 = model.state;
+					if (_v17.$ === 'Session') {
+						var content = _v17.a;
+						switch (tab.$) {
+							case 'Brain':
+								var _v19 = content.tab;
+								if (_v19.$ === 'BrainTab') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												state: $author$project$Main$Session(
+													_Utils_update(
+														content,
+														{
+															tab: A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize)
+														}))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'Notes':
+								var _v20 = content.tab;
+								if (_v20.$ === 'NotesTab') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												state: $author$project$Main$Session(
+													_Utils_update(
+														content,
+														{
+															tab: $author$project$Main$NotesTab('')
+														}))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'Sources':
+								var _v21 = content.tab;
+								if (_v21.$ === 'SourcesTab') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												state: $author$project$Main$Session(
+													_Utils_update(
+														content,
+														{
+															tab: $author$project$Main$SourcesTab('')
+														}))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+							case 'Workspace':
+								return _Utils_Tuple2(
+									A2($author$project$Main$updateTab, $author$project$Main$WorkspaceTab, model),
+									$elm$core$Platform$Cmd$none);
+							default:
+								var _v22 = content.tab;
+								if (_v22.$ === 'QuestionsTab') {
+									return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+								} else {
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												state: $author$project$Main$Session(
+													_Utils_update(
+														content,
+														{
+															tab: $author$project$Main$QuestionsTab('')
+														}))
+											}),
+										$elm$core$Platform$Cmd$none);
+								}
+						}
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'ToggleSideNav':
+					var _v23 = model.state;
+					if (_v23.$ === 'Session') {
+						var content = _v23.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Session(
+										_Utils_update(
+											content,
+											{
+												sideNavState: $author$project$Main$toggle(content.sideNavState)
+											}))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'StartTutorial':
+					var _v24 = model.state;
+					if (_v24.$ === 'Setup') {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Tutorial($author$project$Tutorial$init)
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'ContinueTutorialAndDownloadFile':
+					var jsonFile = message.a;
+					var _v25 = model.state;
+					if (_v25.$ === 'Tutorial') {
+						var tutorial = _v25.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Tutorial(
+										$author$project$Tutorial$continue(tutorial))
+								}),
+							A3($elm$file$File$Download$string, 'slipbox.json', 'application/json', jsonFile));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'ContinueTutorial':
+					var _v26 = model.state;
+					if (_v26.$ === 'Tutorial') {
+						var tutorial = _v26.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Tutorial(
+										$author$project$Tutorial$continue(tutorial))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'SkipTutorial':
+					var _v27 = model.state;
+					if (_v27.$ === 'Tutorial') {
+						var tutorial = _v27.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Tutorial(
+										$author$project$Tutorial$skip(tutorial))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				case 'UpdateInputTutorial':
+					var action = message.a;
+					var _v28 = model.state;
+					if (_v28.$ === 'Tutorial') {
+						var tutorial = _v28.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									state: $author$project$Main$Tutorial(
+										A2($author$project$Tutorial$update, action, tutorial))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				default:
+					var _v29 = model.state;
+					if (_v29.$ === 'Tutorial') {
+						var tutorial = _v29.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -9664,155 +11633,16 @@ var $author$project$Main$update = F2(
 										A3(
 											$author$project$Main$Content,
 											A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize),
-											slipbox,
+											$author$project$Tutorial$end(tutorial),
 											$author$project$Main$Expanded))
 								}),
 							$elm$core$Platform$Cmd$none);
 					} else {
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{state: $author$project$Main$FailureToParse}),
-							$elm$core$Platform$Cmd$none);
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'FileDownload':
-				var _v14 = $author$project$Main$getSlipbox(model);
-				if (_v14.$ === 'Just') {
-					var slipbox = _v14.a;
-					return _Utils_Tuple2(
-						model,
-						A3(
-							$elm$file$File$Download$string,
-							'slipbox.json',
-							'application/json',
-							$author$project$Slipbox$encode(slipbox)));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'Tick':
-				var _v15 = $author$project$Main$getSlipbox(model);
-				if (_v15.$ === 'Just') {
-					var slipbox = _v15.a;
-					return (!$author$project$Slipbox$simulationIsCompleted(slipbox)) ? _Utils_Tuple2(
-						A2(
-							$author$project$Main$updateSlipbox,
-							$author$project$Slipbox$tick(slipbox),
-							model),
-						$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'ChangeTab':
-				var tab = message.a;
-				var _v16 = model.state;
-				if (_v16.$ === 'Session') {
-					var content = _v16.a;
-					switch (tab.$) {
-						case 'Brain':
-							var _v18 = content.tab;
-							if (_v18.$ === 'BrainTab') {
-								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-							} else {
-								return _Utils_Tuple2(
-									_Utils_update(
-										model,
-										{
-											state: $author$project$Main$Session(
-												_Utils_update(
-													content,
-													{
-														tab: A2($author$project$Main$BrainTab, '', $author$project$Viewport$initialize)
-													}))
-										}),
-									$elm$core$Platform$Cmd$none);
-							}
-						case 'Notes':
-							var _v19 = content.tab;
-							if (_v19.$ === 'NotesTab') {
-								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-							} else {
-								return _Utils_Tuple2(
-									_Utils_update(
-										model,
-										{
-											state: $author$project$Main$Session(
-												_Utils_update(
-													content,
-													{
-														tab: $author$project$Main$NotesTab('')
-													}))
-										}),
-									$elm$core$Platform$Cmd$none);
-							}
-						case 'Sources':
-							var _v20 = content.tab;
-							if (_v20.$ === 'SourcesTab') {
-								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-							} else {
-								return _Utils_Tuple2(
-									_Utils_update(
-										model,
-										{
-											state: $author$project$Main$Session(
-												_Utils_update(
-													content,
-													{
-														tab: $author$project$Main$SourcesTab('')
-													}))
-										}),
-									$elm$core$Platform$Cmd$none);
-							}
-						case 'Workspace':
-							return _Utils_Tuple2(
-								A2($author$project$Main$updateTab, $author$project$Main$WorkspaceTab, model),
-								$elm$core$Platform$Cmd$none);
-						default:
-							var _v21 = content.tab;
-							if (_v21.$ === 'QuestionsTab') {
-								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-							} else {
-								return _Utils_Tuple2(
-									_Utils_update(
-										model,
-										{
-											state: $author$project$Main$Session(
-												_Utils_update(
-													content,
-													{
-														tab: $author$project$Main$QuestionsTab('')
-													}))
-										}),
-									$elm$core$Platform$Cmd$none);
-							}
-					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			default:
-				var _v22 = model.state;
-				if (_v22.$ === 'Session') {
-					var content = _v22.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								state: $author$project$Main$Session(
-									_Utils_update(
-										content,
-										{
-											sideNavState: $author$project$Main$toggle(content.sideNavState)
-										}))
-							}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
+			}
 		}
 	});
-var $elm$core$String$fromFloat = _String_fromNumber;
 var $mdgriffith$elm_ui$Internal$Style$classes = {above: 'a', active: 'atv', alignBottom: 'ab', alignCenterX: 'cx', alignCenterY: 'cy', alignContainerBottom: 'acb', alignContainerCenterX: 'accx', alignContainerCenterY: 'accy', alignContainerRight: 'acr', alignLeft: 'al', alignRight: 'ar', alignTop: 'at', alignedHorizontally: 'ah', alignedVertically: 'av', any: 's', behind: 'bh', below: 'b', bold: 'w7', borderDashed: 'bd', borderDotted: 'bdt', borderNone: 'bn', borderSolid: 'bs', capturePointerEvents: 'cpe', clip: 'cp', clipX: 'cpx', clipY: 'cpy', column: 'c', container: 'ctr', contentBottom: 'cb', contentCenterX: 'ccx', contentCenterY: 'ccy', contentLeft: 'cl', contentRight: 'cr', contentTop: 'ct', cursorPointer: 'cptr', cursorText: 'ctxt', focus: 'fcs', focusedWithin: 'focus-within', fullSize: 'fs', grid: 'g', hasBehind: 'hbh', heightContent: 'hc', heightExact: 'he', heightFill: 'hf', heightFillPortion: 'hfp', hover: 'hv', imageContainer: 'ic', inFront: 'fr', inputLabel: 'lbl', inputMultiline: 'iml', inputMultilineFiller: 'imlf', inputMultilineParent: 'imlp', inputMultilineWrapper: 'implw', inputText: 'it', italic: 'i', link: 'lnk', nearby: 'nb', noTextSelection: 'notxt', onLeft: 'ol', onRight: 'or', opaque: 'oq', overflowHidden: 'oh', page: 'pg', paragraph: 'p', passPointerEvents: 'ppe', root: 'ui', row: 'r', scrollbars: 'sb', scrollbarsX: 'sbx', scrollbarsY: 'sby', seButton: 'sbt', single: 'e', sizeByCapital: 'cap', spaceEvenly: 'sev', strike: 'sk', text: 't', textCenter: 'tc', textExtraBold: 'w8', textExtraLight: 'w2', textHeavy: 'w9', textJustify: 'tj', textJustifyAll: 'tja', textLeft: 'tl', textLight: 'w3', textMedium: 'w5', textNormalWeight: 'w4', textRight: 'tr', textSemiBold: 'w6', textThin: 'w1', textUnitalicized: 'tun', transition: 'ts', transparent: 'clr', underline: 'u', widthContent: 'wc', widthExact: 'we', widthFill: 'wf', widthFillPortion: 'wfp', wrapped: 'wrp'};
 var $mdgriffith$elm_ui$Internal$Model$Attr = function (a) {
 	return {$: 'Attr', a: a};
@@ -10150,6 +11980,7 @@ var $mdgriffith$elm_ui$Internal$Model$Style = F2(
 var $mdgriffith$elm_ui$Internal$Style$dot = function (c) {
 	return '.' + c;
 };
+var $elm$core$String$fromFloat = _String_fromNumber;
 var $mdgriffith$elm_ui$Internal$Model$formatColor = function (_v0) {
 	var red = _v0.a;
 	var green = _v0.b;
@@ -13127,7 +14958,6 @@ var $mdgriffith$elm_ui$Internal$Model$adjust = F3(
 	function (size, height, vertical) {
 		return {height: height / size, size: size, vertical: vertical};
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $mdgriffith$elm_ui$Internal$Model$convertAdjustment = function (adjustment) {
 	var lines = _List_fromArray(
 		[adjustment.capital, adjustment.baseline, adjustment.descender, adjustment.lowercase]);
@@ -15479,14 +17309,37 @@ var $mdgriffith$elm_ui$Internal$Model$Height = function (a) {
 	return {$: 'Height', a: a};
 };
 var $mdgriffith$elm_ui$Element$height = $mdgriffith$elm_ui$Internal$Model$Height;
-var $mdgriffith$elm_ui$Element$fillPortion = $mdgriffith$elm_ui$Internal$Model$Fill;
-var $author$project$Main$biggerElement = $mdgriffith$elm_ui$Element$fillPortion(1618);
-var $mdgriffith$elm_ui$Internal$Model$Content = {$: 'Content'};
-var $mdgriffith$elm_ui$Element$shrink = $mdgriffith$elm_ui$Internal$Model$Content;
+var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $mdgriffith$elm_ui$Internal$Model$Width = function (a) {
 	return {$: 'Width', a: a};
 };
 var $mdgriffith$elm_ui$Element$width = $mdgriffith$elm_ui$Internal$Model$Width;
+var $author$project$Main$layoutWithFontAwesomeStyles = function (node) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'height', '100%'),
+				A2($elm$html$Html$Attributes$style, 'width', '100%')
+			]),
+		_List_fromArray(
+			[
+				$lattyware$elm_fontawesome$FontAwesome$Styles$css,
+				A2(
+				$mdgriffith$elm_ui$Element$layout,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					]),
+				node)
+			]));
+};
+var $mdgriffith$elm_ui$Element$fillPortion = $mdgriffith$elm_ui$Internal$Model$Fill;
+var $author$project$Main$biggerElement = $mdgriffith$elm_ui$Element$fillPortion(1618);
+var $mdgriffith$elm_ui$Internal$Model$Content = {$: 'Content'};
+var $mdgriffith$elm_ui$Element$shrink = $mdgriffith$elm_ui$Internal$Model$Content;
 var $mdgriffith$elm_ui$Element$el = F2(
 	function (attrs, child) {
 		return A4(
@@ -16204,16 +18057,6 @@ var $author$project$Main$iconBuilder = function (icon) {
 				icon)));
 };
 var $author$project$Main$brainIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$brain);
-var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$bgColor,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$Colored,
-			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
-			'background-color',
-			clr));
-};
 var $mdgriffith$elm_ui$Internal$Model$AsColumn = {$: 'AsColumn'};
 var $mdgriffith$elm_ui$Internal$Model$asColumn = $mdgriffith$elm_ui$Internal$Model$AsColumn;
 var $mdgriffith$elm_ui$Element$column = F2(
@@ -16243,14 +18086,40 @@ var $lattyware$elm_fontawesome$FontAwesome$Solid$fileAlt = A5(
 	_List_fromArray(
 		['M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z']));
 var $author$project$Main$fileAltIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$fileAlt);
+var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$bgColor,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Colored,
+			'bg-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(clr),
+			'background-color',
+			clr));
+};
 var $mdgriffith$elm_ui$Element$rgba255 = F4(
 	function (red, green, blue, a) {
 		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, a);
 	});
 var $author$project$Color$heliotropeGray = A3($mdgriffith$elm_ui$Element$rgba255, 187, 172, 193);
 var $author$project$Color$heliotropeGrayRegular = $author$project$Color$heliotropeGray(1.0);
-var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
-var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
+var $author$project$Main$leftNavContractedButtonLambda = F4(
+	function (alignment, msg, icon, shouldHaveBackground) {
+		var buttonAttributes = shouldHaveBackground ? _List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$Background$color($author$project$Color$heliotropeGrayRegular)
+			]) : _List_Nil;
+		return A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_fromArray(
+				[alignment]),
+			A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				buttonAttributes,
+				{
+					label: icon,
+					onPress: $elm$core$Maybe$Just(msg)
+				}));
+	});
 var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
 	function (a, b, c, d, e) {
 		return {$: 'PaddingStyle', a: a, b: b, c: c, d: d, e: e};
@@ -16269,28 +18138,6 @@ var $mdgriffith$elm_ui$Element$padding = function (x) {
 			f,
 			f));
 };
-var $lattyware$elm_fontawesome$FontAwesome$Solid$plus = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'plus',
-	448,
-	512,
-	_List_fromArray(
-		['M416 208H272V64c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v144H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v144c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h144c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z']));
-var $author$project$Main$plusIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$plus);
-var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
-	return {$: 'Px', a: a};
-};
-var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
-var $lattyware$elm_fontawesome$FontAwesome$Solid$question = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'question',
-	384,
-	512,
-	_List_fromArray(
-		['M202.021 0C122.202 0 70.503 32.703 29.914 91.026c-7.363 10.58-5.093 25.086 5.178 32.874l43.138 32.709c10.373 7.865 25.132 6.026 33.253-4.148 25.049-31.381 43.63-49.449 82.757-49.449 30.764 0 68.816 19.799 68.816 49.631 0 22.552-18.617 34.134-48.993 51.164-35.423 19.86-82.299 44.576-82.299 106.405V320c0 13.255 10.745 24 24 24h72.471c13.255 0 24-10.745 24-24v-5.773c0-42.86 125.268-44.645 125.268-160.627C377.504 66.256 286.902 0 202.021 0zM192 373.459c-38.196 0-69.271 31.075-69.271 69.271 0 38.195 31.075 69.27 69.271 69.27s69.271-31.075 69.271-69.271-31.075-69.27-69.271-69.27z']));
-var $author$project$Main$questionIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$question);
 var $mdgriffith$elm_ui$Internal$Flag$borderRound = $mdgriffith$elm_ui$Internal$Flag$flag(17);
 var $mdgriffith$elm_ui$Element$Border$rounded = function (radius) {
 	return A2(
@@ -16322,6 +18169,88 @@ var $mdgriffith$elm_ui$Element$row = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
+var $mdgriffith$elm_ui$Internal$Model$SpacingStyle = F3(
+	function (a, b, c) {
+		return {$: 'SpacingStyle', a: a, b: b, c: c};
+	});
+var $mdgriffith$elm_ui$Internal$Flag$spacing = $mdgriffith$elm_ui$Internal$Flag$flag(3);
+var $mdgriffith$elm_ui$Internal$Model$spacingName = F2(
+	function (x, y) {
+		return 'spacing-' + ($elm$core$String$fromInt(x) + ('-' + $elm$core$String$fromInt(y)));
+	});
+var $mdgriffith$elm_ui$Element$spacingXY = F2(
+	function (x, y) {
+		return A2(
+			$mdgriffith$elm_ui$Internal$Model$StyleClass,
+			$mdgriffith$elm_ui$Internal$Flag$spacing,
+			A3(
+				$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
+				A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, y),
+				x,
+				y));
+	});
+var $author$project$Main$leftNavExpandedButtonLambda = F5(
+	function (alignment, icon, text, msg, shouldHaveBackground) {
+		var buttonAttributes = _List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$Border$rounded(10),
+				$mdgriffith$elm_ui$Element$padding(1)
+			]);
+		var buttonAttributesMaybeWithBackground = shouldHaveBackground ? A2(
+			$elm$core$List$cons,
+			$mdgriffith$elm_ui$Element$Background$color($author$project$Color$heliotropeGrayRegular),
+			buttonAttributes) : buttonAttributes;
+		return A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+					alignment
+				]),
+			A2(
+				$mdgriffith$elm_ui$Element$Input$button,
+				buttonAttributesMaybeWithBackground,
+				{
+					label: A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
+							]),
+						_List_fromArray(
+							[
+								icon,
+								$mdgriffith$elm_ui$Element$text(text)
+							])),
+					onPress: $elm$core$Maybe$Just(msg)
+				}));
+	});
+var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
+var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
+var $lattyware$elm_fontawesome$FontAwesome$Solid$plus = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'plus',
+	448,
+	512,
+	_List_fromArray(
+		['M416 208H272V64c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v144H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v144c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h144c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z']));
+var $author$project$Main$plusIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$plus);
+var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
+	return {$: 'Px', a: a};
+};
+var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
+var $lattyware$elm_fontawesome$FontAwesome$Solid$question = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'question',
+	384,
+	512,
+	_List_fromArray(
+		['M202.021 0C122.202 0 70.503 32.703 29.914 91.026c-7.363 10.58-5.093 25.086 5.178 32.874l43.138 32.709c10.373 7.865 25.132 6.026 33.253-4.148 25.049-31.381 43.63-49.449 82.757-49.449 30.764 0 68.816 19.799 68.816 49.631 0 22.552-18.617 34.134-48.993 51.164-35.423 19.86-82.299 44.576-82.299 106.405V320c0 13.255 10.745 24 24 24h72.471c13.255 0 24-10.745 24-24v-5.773c0-42.86 125.268-44.645 125.268-160.627C377.504 66.256 286.902 0 202.021 0zM192 373.459c-38.196 0-69.271 31.075-69.271 69.271 0 38.195 31.075 69.27 69.271 69.27s69.271-31.075 69.271-69.271-31.075-69.27-69.271-69.27z']));
+var $author$project$Main$questionIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$question);
 var $author$project$Main$sameTab = F2(
 	function (tab, tab_) {
 		switch (tab.$) {
@@ -16376,26 +18305,6 @@ var $lattyware$elm_fontawesome$FontAwesome$Solid$scroll = A5(
 		['M48 0C21.53 0 0 21.53 0 48v64c0 8.84 7.16 16 16 16h80V48C96 21.53 74.47 0 48 0zm208 412.57V352h288V96c0-52.94-43.06-96-96-96H111.59C121.74 13.41 128 29.92 128 48v368c0 38.87 34.65 69.65 74.75 63.12C234.22 474 256 444.46 256 412.57zM288 384v32c0 52.93-43.06 96-96 96h336c61.86 0 112-50.14 112-112 0-8.84-7.16-16-16-16H288z']));
 var $author$project$Main$scrollIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$scroll);
 var $author$project$Main$smallerElement = $mdgriffith$elm_ui$Element$fillPortion(1000);
-var $mdgriffith$elm_ui$Internal$Model$SpacingStyle = F3(
-	function (a, b, c) {
-		return {$: 'SpacingStyle', a: a, b: b, c: c};
-	});
-var $mdgriffith$elm_ui$Internal$Flag$spacing = $mdgriffith$elm_ui$Internal$Flag$flag(3);
-var $mdgriffith$elm_ui$Internal$Model$spacingName = F2(
-	function (x, y) {
-		return 'spacing-' + ($elm$core$String$fromInt(x) + ('-' + $elm$core$String$fromInt(y)));
-	});
-var $mdgriffith$elm_ui$Element$spacingXY = F2(
-	function (x, y) {
-		return A2(
-			$mdgriffith$elm_ui$Internal$Model$StyleClass,
-			$mdgriffith$elm_ui$Internal$Flag$spacing,
-			A3(
-				$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
-				A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, y),
-				x,
-				y));
-	});
 var $lattyware$elm_fontawesome$FontAwesome$Solid$tools = A5(
 	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
 	'fas',
@@ -16418,44 +18327,6 @@ var $author$project$Main$leftNav = F2(
 				[iconWidth, iconHeight]),
 			$mdgriffith$elm_ui$Element$none);
 		if (sideNavState.$ === 'Expanded') {
-			var buttonTabLambda = F5(
-				function (alignment, icon, text, msg, shouldHaveBackground) {
-					var buttonAttributes = _List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Element$Border$rounded(10),
-							$mdgriffith$elm_ui$Element$padding(1)
-						]);
-					var buttonAttributesMaybeWithBackground = shouldHaveBackground ? A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$Background$color($author$project$Color$heliotropeGrayRegular),
-						buttonAttributes) : buttonAttributes;
-					return A2(
-						$mdgriffith$elm_ui$Element$el,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								alignment
-							]),
-						A2(
-							$mdgriffith$elm_ui$Element$Input$button,
-							buttonAttributesMaybeWithBackground,
-							{
-								label: A2(
-									$mdgriffith$elm_ui$Element$row,
-									_List_fromArray(
-										[
-											A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
-										]),
-									_List_fromArray(
-										[
-											icon,
-											$mdgriffith$elm_ui$Element$text(text)
-										])),
-								onPress: $elm$core$Maybe$Just(msg)
-							}));
-				});
 			return A2(
 				$mdgriffith$elm_ui$Element$column,
 				_List_fromArray(
@@ -16510,9 +18381,9 @@ var $author$project$Main$leftNav = F2(
 											[$mdgriffith$elm_ui$Element$centerY, $mdgriffith$elm_ui$Element$alignLeft]),
 										$author$project$Main$aboutButton)
 									])),
-								A5(buttonTabLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$saveIcon, 'Save', $author$project$Main$FileDownload, false),
+								A5($author$project$Main$leftNavExpandedButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$saveIcon, 'Save', $author$project$Main$FileDownload, false),
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignBottom,
 								$author$project$Main$plusIcon,
 								'Create Note',
@@ -16530,35 +18401,35 @@ var $author$project$Main$leftNav = F2(
 						_List_fromArray(
 							[
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$brainIcon,
 								'Brain',
 								$author$project$Main$ChangeTab($author$project$Main$Brain),
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Brain)),
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$toolsIcon,
 								'Workspace',
 								$author$project$Main$ChangeTab($author$project$Main$Workspace),
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Workspace)),
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$fileAltIcon,
 								'Notes',
 								$author$project$Main$ChangeTab($author$project$Main$Notes),
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Notes)),
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$scrollIcon,
 								'Sources',
 								$author$project$Main$ChangeTab($author$project$Main$Sources),
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Sources)),
 								A5(
-								buttonTabLambda,
+								$author$project$Main$leftNavExpandedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$questionIcon,
 								'Questions',
@@ -16567,24 +18438,6 @@ var $author$project$Main$leftNav = F2(
 							]))
 					]));
 		} else {
-			var iconLambda = F4(
-				function (alignment, msg, icon, shouldHaveBackground) {
-					var buttonAttributes = shouldHaveBackground ? _List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$Background$color($author$project$Color$heliotropeGrayRegular)
-						]) : _List_Nil;
-					return A2(
-						$mdgriffith$elm_ui$Element$el,
-						_List_fromArray(
-							[alignment]),
-						A2(
-							$mdgriffith$elm_ui$Element$Input$button,
-							buttonAttributes,
-							{
-								label: icon,
-								onPress: $elm$core$Maybe$Just(msg)
-							}));
-				});
 			return A2(
 				$mdgriffith$elm_ui$Element$column,
 				_List_fromArray(
@@ -16607,9 +18460,9 @@ var $author$project$Main$leftNav = F2(
 						_List_fromArray(
 							[
 								$author$project$Main$barsButton,
-								A4(iconLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$FileDownload, $author$project$Main$saveIcon, false),
+								A4($author$project$Main$leftNavContractedButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$FileDownload, $author$project$Main$saveIcon, false),
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignBottom,
 								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewNote),
 								$author$project$Main$plusIcon,
@@ -16625,31 +18478,31 @@ var $author$project$Main$leftNav = F2(
 						_List_fromArray(
 							[
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$ChangeTab($author$project$Main$Brain),
 								$author$project$Main$brainIcon,
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Brain)),
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$ChangeTab($author$project$Main$Workspace),
 								$author$project$Main$toolsIcon,
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Workspace)),
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$ChangeTab($author$project$Main$Notes),
 								$author$project$Main$fileAltIcon,
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Notes)),
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$ChangeTab($author$project$Main$Sources),
 								$author$project$Main$scrollIcon,
 								A2($author$project$Main$sameTab, selectedTab, $author$project$Main$Sources)),
 								A4(
-								iconLambda,
+								$author$project$Main$leftNavContractedButtonLambda,
 								$mdgriffith$elm_ui$Element$alignLeft,
 								$author$project$Main$ChangeTab($author$project$Main$Questions),
 								$author$project$Main$questionIcon,
@@ -17325,8 +19178,6 @@ var $mdgriffith$elm_ui$Internal$Model$paddingNameFloat = F4(
 	function (top, right, bottom, left) {
 		return 'pad-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(top) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(right) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(bottom) + ('-' + $mdgriffith$elm_ui$Internal$Model$floatClass(left)))))));
 	});
-var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 	function (isMultiline, stacked, attr, els) {
 		switch (attr.$) {
@@ -20333,28 +22184,12 @@ var $author$project$Main$sessionNode = F2(
 	});
 var $author$project$Main$sessionView = F2(
 	function (deviceViewport, content) {
-		return A2(
-			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					A2($elm$html$Html$Attributes$style, 'height', '100%'),
-					A2($elm$html$Html$Attributes$style, 'width', '100%')
-				]),
-			_List_fromArray(
-				[
-					$lattyware$elm_fontawesome$FontAwesome$Styles$css,
-					A2(
-					$mdgriffith$elm_ui$Element$layout,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					A2($author$project$Main$sessionNode, deviceViewport, content))
-				]));
+		return $author$project$Main$layoutWithFontAwesomeStyles(
+			A2($author$project$Main$sessionNode, deviceViewport, content));
 	});
 var $author$project$Main$FileRequested = {$: 'FileRequested'};
 var $author$project$Main$InitializeNewSlipbox = {$: 'InitializeNewSlipbox'};
+var $author$project$Main$StartTutorial = {$: 'StartTutorial'};
 var $mdgriffith$elm_ui$Internal$Model$MoveX = function (a) {
 	return {$: 'MoveX', a: a};
 };
@@ -20382,6 +22217,600 @@ var $author$project$Main$setupOverlay = function () {
 			{
 				label: $mdgriffith$elm_ui$Element$text('x'),
 				onPress: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+			}));
+	var buttonBuilder = function (func) {
+		return A2(
+			$mdgriffith$elm_ui$Element$Input$button,
+			_List_fromArray(
+				[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$centerY]),
+			func);
+	};
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$padding($author$project$Main$barHeight)
+			]),
+		A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$width(
+					$mdgriffith$elm_ui$Element$px(450)),
+					$mdgriffith$elm_ui$Element$height(
+					$mdgriffith$elm_ui$Element$px(150)),
+					$mdgriffith$elm_ui$Element$centerX,
+					$mdgriffith$elm_ui$Element$centerY,
+					$mdgriffith$elm_ui$Element$Border$width(1),
+					$mdgriffith$elm_ui$Element$Background$color($author$project$Color$white),
+					$mdgriffith$elm_ui$Element$inFront(xButton),
+					A2($mdgriffith$elm_ui$Element$paddingXY, 0, 16)
+				]),
+			A2(
+				$mdgriffith$elm_ui$Element$row,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$Border$widthEach(
+								{bottom: 0, left: 0, right: 1, top: 0})
+							]),
+						buttonBuilder(
+							{
+								label: A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
+									$mdgriffith$elm_ui$Element$text('Start New (Tutorial)')),
+								onPress: $elm$core$Maybe$Just($author$project$Main$StartTutorial)
+							})),
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						buttonBuilder(
+							{
+								label: A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
+									$mdgriffith$elm_ui$Element$text('Load Slipbox')),
+								onPress: $elm$core$Maybe$Just($author$project$Main$FileRequested)
+							}))
+					]))));
+}();
+var $author$project$Main$setupView = function (deviceViewport) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'height', '100%'),
+				A2($elm$html$Html$Attributes$style, 'width', '100%')
+			]),
+		_List_fromArray(
+			[
+				$lattyware$elm_fontawesome$FontAwesome$Styles$css,
+				A2(
+				$mdgriffith$elm_ui$Element$layout,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$inFront($author$project$Main$setupOverlay)
+					]),
+				A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$alpha(0.3),
+							$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+						]),
+					A2(
+						$author$project$Main$sessionNode,
+						deviceViewport,
+						$author$project$Main$newContent(deviceViewport))))
+			]));
+};
+var $author$project$Tutorial$Author = function (a) {
+	return {$: 'Author', a: a};
+};
+var $author$project$Tutorial$Content = function (a) {
+	return {$: 'Content', a: a};
+};
+var $author$project$Main$EndTutorial = {$: 'EndTutorial'};
+var $author$project$Main$HighlightCreateNote = {$: 'HighlightCreateNote'};
+var $author$project$Main$HighlightCreateQuestion = {$: 'HighlightCreateQuestion'};
+var $author$project$Main$HighlightCreateSource = {$: 'HighlightCreateSource'};
+var $author$project$Main$HighlightSaveButton = function (a) {
+	return {$: 'HighlightSaveButton', a: a};
+};
+var $author$project$Main$NoHighlights = {$: 'NoHighlights'};
+var $author$project$Main$SkipTutorial = {$: 'SkipTutorial'};
+var $author$project$Tutorial$Title = function (a) {
+	return {$: 'Title', a: a};
+};
+var $author$project$Main$UpdateInputTutorial = function (a) {
+	return {$: 'UpdateInputTutorial', a: a};
+};
+var $mdgriffith$elm_ui$Element$Font$bold = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.bold);
+var $author$project$Tutorial$canContinue = function (tutorial) {
+	switch (tutorial.$) {
+		case 'Two_CreateFirstNote':
+			var firstNoteContent = tutorial.a;
+			return !$elm$core$String$isEmpty(firstNoteContent);
+		case 'Four_SourceInput':
+			var source = tutorial.b;
+			return !$elm$core$String$isEmpty(source.title);
+		case 'Six_NoteInput':
+			var secondNoteContent = tutorial.b;
+			return !$elm$core$String$isEmpty(secondNoteContent);
+		case 'Seven_SourceInput':
+			var source = tutorial.c;
+			return !$elm$core$String$isEmpty(source.title);
+		case 'Eleven_QuestionInput':
+			var question = tutorial.c;
+			return !$elm$core$String$isEmpty(question);
+		default:
+			return true;
+	}
+};
+var $author$project$Main$finishTutorialButton = A2(
+	$mdgriffith$elm_ui$Element$Input$button,
+	_List_fromArray(
+		[$mdgriffith$elm_ui$Element$alignRight]),
+	{
+		label: A2(
+			$mdgriffith$elm_ui$Element$el,
+			_List_Nil,
+			$mdgriffith$elm_ui$Element$text('Finish Tutorial')),
+		onPress: $elm$core$Maybe$Just($author$project$Main$EndTutorial)
+	});
+var $author$project$Tutorial$AddLinkPrompt = F2(
+	function (a, b) {
+		return {$: 'AddLinkPrompt', a: a, b: b};
+	});
+var $author$project$Tutorial$CreateFirstNote = function (a) {
+	return {$: 'CreateFirstNote', a: a};
+};
+var $author$project$Tutorial$ExplainLinks = {$: 'ExplainLinks'};
+var $author$project$Tutorial$ExplainNotes = {$: 'ExplainNotes'};
+var $author$project$Tutorial$ExplainQuestions = {$: 'ExplainQuestions'};
+var $author$project$Tutorial$Intro = {$: 'Intro'};
+var $author$project$Tutorial$NoteInput = F4(
+	function (a, b, c, d) {
+		return {$: 'NoteInput', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Tutorial$PracticeSaving = function (a) {
+	return {$: 'PracticeSaving', a: a};
+};
+var $author$project$Tutorial$PracticeUploading = {$: 'PracticeUploading'};
+var $author$project$Tutorial$PromptAddSourceToNote = function (a) {
+	return {$: 'PromptAddSourceToNote', a: a};
+};
+var $author$project$Tutorial$QuestionInput = F2(
+	function (a, b) {
+		return {$: 'QuestionInput', a: a, b: b};
+	});
+var $author$project$Tutorial$QuestionPrompt = function (a) {
+	return {$: 'QuestionPrompt', a: a};
+};
+var $author$project$Tutorial$SourceInput = F4(
+	function (a, b, c, d) {
+		return {$: 'SourceInput', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Tutorial$WorkflowSuggestionsAndFinish = {$: 'WorkflowSuggestionsAndFinish'};
+var $author$project$Tutorial$getContent = function (firstNote) {
+	if (firstNote.$ === 'WithSource') {
+		var string = firstNote.a;
+		return string;
+	} else {
+		var string = firstNote.a;
+		return string;
+	}
+};
+var $author$project$Tutorial$getSourceTitle = function (firstNote) {
+	if (firstNote.$ === 'WithSource') {
+		var source = firstNote.b;
+		return $elm$core$Maybe$Just(source.title);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Tutorial$getStep = function (tutorial) {
+	switch (tutorial.$) {
+		case 'One_Intro':
+			return $author$project$Tutorial$Intro;
+		case 'Two_CreateFirstNote':
+			var string = tutorial.a;
+			return $author$project$Tutorial$CreateFirstNote(string);
+		case 'Three_PromptAddSourceToNote':
+			var string = tutorial.a;
+			return $author$project$Tutorial$PromptAddSourceToNote(string);
+		case 'Four_SourceInput':
+			var string = tutorial.a;
+			var source = tutorial.b;
+			return A4($author$project$Tutorial$SourceInput, string, source.title, source.author, source.content);
+		case 'Five_ExplainNotes':
+			return $author$project$Tutorial$ExplainNotes;
+		case 'Six_NoteInput':
+			var firstNote = tutorial.a;
+			var content = tutorial.b;
+			var source = tutorial.c;
+			return A4(
+				$author$project$Tutorial$NoteInput,
+				$author$project$Tutorial$getContent(firstNote),
+				$author$project$Tutorial$getSourceTitle(firstNote),
+				content,
+				source);
+		case 'Seven_SourceInput':
+			var string = tutorial.b;
+			var source = tutorial.c;
+			return A4($author$project$Tutorial$SourceInput, string.content, source.title, source.author, source.content);
+		case 'Eight_AddLinkPrompt':
+			var firstNote = tutorial.a;
+			var secondNote = tutorial.b;
+			return A2(
+				$author$project$Tutorial$AddLinkPrompt,
+				$author$project$Tutorial$getContent(firstNote),
+				secondNote.content);
+		case 'Nine_ExplainLinks':
+			return $author$project$Tutorial$ExplainLinks;
+		case 'Ten_QuestionPrompt':
+			var firstNote = tutorial.a;
+			return $author$project$Tutorial$QuestionPrompt(
+				$author$project$Tutorial$getContent(firstNote));
+		case 'Eleven_QuestionInput':
+			var firstNote = tutorial.a;
+			var string = tutorial.c;
+			return A2(
+				$author$project$Tutorial$QuestionInput,
+				$author$project$Tutorial$getContent(firstNote),
+				string);
+		case 'Twelve_ExplainQuestions':
+			return $author$project$Tutorial$ExplainQuestions;
+		case 'Thirteen_PracticeSaving':
+			return $author$project$Tutorial$PracticeSaving(
+				$author$project$Slipbox$encode(
+					$author$project$Tutorial$end(tutorial)));
+		case 'Fourteen_PracticeUploading':
+			return $author$project$Tutorial$PracticeUploading;
+		default:
+			return $author$project$Tutorial$WorkflowSuggestionsAndFinish;
+	}
+};
+var $author$project$Main$ContinueTutorialAndDownloadFile = function (a) {
+	return {$: 'ContinueTutorialAndDownloadFile', a: a};
+};
+var $author$project$Main$ShouldHighlight = F2(
+	function (a, b) {
+		return {$: 'ShouldHighlight', a: a, b: b};
+	});
+var $author$project$Main$ShouldNotHighlight = {$: 'ShouldNotHighlight'};
+var $lattyware$elm_fontawesome$FontAwesome$Solid$handPaper = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'hand-paper',
+	448,
+	512,
+	_List_fromArray(
+		['M408.781 128.007C386.356 127.578 368 146.36 368 168.79V256h-8V79.79c0-22.43-18.356-41.212-40.781-40.783C297.488 39.423 280 57.169 280 79v177h-8V40.79C272 18.36 253.644-.422 231.219.007 209.488.423 192 18.169 192 40v216h-8V80.79c0-22.43-18.356-41.212-40.781-40.783C121.488 40.423 104 58.169 104 80v235.992l-31.648-43.519c-12.993-17.866-38.009-21.817-55.877-8.823-17.865 12.994-21.815 38.01-8.822 55.877l125.601 172.705A48 48 0 0 0 172.073 512h197.59c22.274 0 41.622-15.324 46.724-37.006l26.508-112.66a192.011 192.011 0 0 0 5.104-43.975V168c.001-21.831-17.487-39.577-39.218-39.993z']));
+var $author$project$Main$handPaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$handPaper);
+var $mdgriffith$elm_ui$Internal$Model$boxShadowClass = function (shadow) {
+	return $elm$core$String$concat(
+		_List_fromArray(
+			[
+				shadow.inset ? 'box-inset' : 'box-',
+				$mdgriffith$elm_ui$Internal$Model$floatClass(shadow.offset.a) + 'px',
+				$mdgriffith$elm_ui$Internal$Model$floatClass(shadow.offset.b) + 'px',
+				$mdgriffith$elm_ui$Internal$Model$floatClass(shadow.blur) + 'px',
+				$mdgriffith$elm_ui$Internal$Model$floatClass(shadow.size) + 'px',
+				$mdgriffith$elm_ui$Internal$Model$formatColorClass(shadow.color)
+			]));
+};
+var $mdgriffith$elm_ui$Internal$Flag$shadows = $mdgriffith$elm_ui$Internal$Flag$flag(19);
+var $mdgriffith$elm_ui$Element$Border$shadow = function (almostShade) {
+	var shade = {blur: almostShade.blur, color: almostShade.color, inset: false, offset: almostShade.offset, size: almostShade.size};
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$shadows,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Single,
+			$mdgriffith$elm_ui$Internal$Model$boxShadowClass(shade),
+			'box-shadow',
+			$mdgriffith$elm_ui$Internal$Model$formatBoxShadow(shade)));
+};
+var $mdgriffith$elm_ui$Element$Border$glow = F2(
+	function (clr, size) {
+		return $mdgriffith$elm_ui$Element$Border$shadow(
+			{
+				blur: size * 2,
+				color: clr,
+				offset: _Utils_Tuple2(0, 0),
+				size: size
+			});
+	});
+var $mdgriffith$elm_ui$Internal$Model$OnRight = {$: 'OnRight'};
+var $mdgriffith$elm_ui$Element$onRight = function (element) {
+	return A2($mdgriffith$elm_ui$Element$createNearby, $mdgriffith$elm_ui$Internal$Model$OnRight, element);
+};
+var $author$project$Color$yellow = A3($mdgriffith$elm_ui$Element$rgb255, 255, 255, 0);
+var $author$project$Main$leftNavTutorialButtonLambda = F4(
+	function (alignment, icon, text, highlight) {
+		var highlightedAttributes = function (labelText) {
+			return $mdgriffith$elm_ui$Element$onRight(
+				A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[$mdgriffith$elm_ui$Element$centerY]),
+					$mdgriffith$elm_ui$Element$text(labelText)));
+		};
+		var fadedAttributes = _List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$alpha(0.5)
+			]);
+		var buttonAttributes = _List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$Border$rounded(10),
+				$mdgriffith$elm_ui$Element$padding(1)
+			]);
+		if (highlight.$ === 'ShouldHighlight') {
+			var labelText = highlight.a;
+			var msg = highlight.b;
+			return A2(
+				$mdgriffith$elm_ui$Element$el,
+				A2(
+					$elm$core$List$cons,
+					highlightedAttributes(labelText),
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+							alignment
+						])),
+				A2(
+					$mdgriffith$elm_ui$Element$Input$button,
+					A2(
+						$elm$core$List$cons,
+						A2($mdgriffith$elm_ui$Element$Border$glow, $author$project$Color$yellow, 2),
+						buttonAttributes),
+					{
+						label: A2(
+							$mdgriffith$elm_ui$Element$row,
+							_List_fromArray(
+								[
+									A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
+								]),
+							_List_fromArray(
+								[
+									icon,
+									$mdgriffith$elm_ui$Element$text(text)
+								])),
+						onPress: $elm$core$Maybe$Just(msg)
+					}));
+		} else {
+			return A2(
+				$mdgriffith$elm_ui$Element$el,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+						alignment
+					]),
+				A2(
+					$mdgriffith$elm_ui$Element$Input$button,
+					$elm$core$List$concat(
+						_List_fromArray(
+							[buttonAttributes, fadedAttributes])),
+					{
+						label: A2(
+							$mdgriffith$elm_ui$Element$row,
+							_List_fromArray(
+								[
+									A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
+								]),
+							_List_fromArray(
+								[
+									icon,
+									$mdgriffith$elm_ui$Element$text(text)
+								])),
+						onPress: $elm$core$Maybe$Nothing
+					}));
+		}
+	});
+var $lattyware$elm_fontawesome$FontAwesome$Solid$newspaper = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'newspaper',
+	576,
+	512,
+	_List_fromArray(
+		['M552 64H88c-13.255 0-24 10.745-24 24v8H24c-13.255 0-24 10.745-24 24v272c0 30.928 25.072 56 56 56h472c26.51 0 48-21.49 48-48V88c0-13.255-10.745-24-24-24zM56 400a8 8 0 0 1-8-8V144h16v248a8 8 0 0 1-8 8zm236-16H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm-208-96H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm0-96H140c-6.627 0-12-5.373-12-12v-40c0-6.627 5.373-12 12-12h360c6.627 0 12 5.373 12 12v40c0 6.627-5.373 12-12 12z']));
+var $author$project$Main$newspaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$newspaper);
+var $author$project$Main$webpageTitle = 'Slipbox ' + $author$project$Main$versionString;
+var $author$project$Main$leftNavTutorial = function (highlights) {
+	var saveButtonHighlight = function () {
+		switch (highlights.$) {
+			case 'HighlightCreateNote':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateSource':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateQuestion':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightSaveButton':
+				var jsonFile = highlights.a;
+				return A2(
+					$author$project$Main$ShouldHighlight,
+					' <- Click here to save!',
+					$author$project$Main$ContinueTutorialAndDownloadFile(jsonFile));
+			default:
+				return $author$project$Main$ShouldNotHighlight;
+		}
+	}();
+	var iconWidth = $mdgriffith$elm_ui$Element$width(
+		$mdgriffith$elm_ui$Element$px(35));
+	var iconHeight = $mdgriffith$elm_ui$Element$width(
+		$mdgriffith$elm_ui$Element$px(40));
+	var emptyIcon = A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[iconWidth, iconHeight]),
+		$mdgriffith$elm_ui$Element$none);
+	var createSourceHighlight = function () {
+		switch (highlights.$) {
+			case 'HighlightCreateNote':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateSource':
+				return A2($author$project$Main$ShouldHighlight, ' <- Click create source to add a source!', $author$project$Main$ContinueTutorial);
+			case 'HighlightCreateQuestion':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightSaveButton':
+				return $author$project$Main$ShouldNotHighlight;
+			default:
+				return $author$project$Main$ShouldNotHighlight;
+		}
+	}();
+	var createQuestionHighlight = function () {
+		switch (highlights.$) {
+			case 'HighlightCreateNote':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateSource':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateQuestion':
+				return A2($author$project$Main$ShouldHighlight, ' <- Click create question to converse with your brain!', $author$project$Main$ContinueTutorial);
+			case 'HighlightSaveButton':
+				return $author$project$Main$ShouldNotHighlight;
+			default:
+				return $author$project$Main$ShouldNotHighlight;
+		}
+	}();
+	var createNoteHighlight = function () {
+		switch (highlights.$) {
+			case 'HighlightCreateNote':
+				return A2($author$project$Main$ShouldHighlight, ' <- Click create note to get started!', $author$project$Main$ContinueTutorial);
+			case 'HighlightCreateSource':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightCreateQuestion':
+				return $author$project$Main$ShouldNotHighlight;
+			case 'HighlightSaveButton':
+				return $author$project$Main$ShouldNotHighlight;
+			default:
+				return $author$project$Main$ShouldNotHighlight;
+		}
+	}();
+	return A2(
+		$mdgriffith$elm_ui$Element$column,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$padding(8),
+				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$mdgriffith$elm_ui$Element$column,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$height($author$project$Main$smallerElement),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+						A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
+							]),
+						_List_fromArray(
+							[
+								emptyIcon,
+								A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[$mdgriffith$elm_ui$Element$centerY, $mdgriffith$elm_ui$Element$alignLeft]),
+								$mdgriffith$elm_ui$Element$text($author$project$Main$webpageTitle))
+							])),
+						A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								A2($mdgriffith$elm_ui$Element$spacingXY, 16, 0)
+							]),
+						_List_fromArray(
+							[
+								emptyIcon,
+								A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[$mdgriffith$elm_ui$Element$centerY, $mdgriffith$elm_ui$Element$alignLeft]),
+								$author$project$Main$aboutButton)
+							])),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$saveIcon, 'Save', saveButtonHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$plusIcon, 'Create Note', createNoteHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$newspaperIcon, 'Create Source', createSourceHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$handPaperIcon, 'Create Question', createQuestionHighlight)
+					])),
+				A2(
+				$mdgriffith$elm_ui$Element$column,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$height($author$project$Main$biggerElement),
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+						A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
+					]),
+				_List_fromArray(
+					[
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignLeft, $author$project$Main$brainIcon, 'Brain', $author$project$Main$ShouldNotHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignLeft, $author$project$Main$toolsIcon, 'Workspace', $author$project$Main$ShouldNotHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignLeft, $author$project$Main$fileAltIcon, 'Notes', $author$project$Main$ShouldNotHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignLeft, $author$project$Main$scrollIcon, 'Sources', $author$project$Main$ShouldNotHighlight),
+						A4($author$project$Main$leftNavTutorialButtonLambda, $mdgriffith$elm_ui$Element$alignLeft, $author$project$Main$questionIcon, 'Questions', $author$project$Main$ShouldNotHighlight)
+					]))
+			]));
+};
+var $author$project$Main$paddingBottom = {bottom: 16, left: 0, right: 0, top: 0};
+var $mdgriffith$elm_ui$Element$Input$Placeholder = F2(
+	function (a, b) {
+		return {$: 'Placeholder', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$Input$placeholder = $mdgriffith$elm_ui$Element$Input$Placeholder;
+var $mdgriffith$elm_ui$Element$Font$semiBold = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.textSemiBold);
+var $author$project$Main$FileRequestedTutorial = {$: 'FileRequestedTutorial'};
+var $author$project$Main$setupOverlayTutorial = function () {
+	var xButton = A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				$mdgriffith$elm_ui$Element$alpha(0.5)
+			]),
+		A2(
+			$mdgriffith$elm_ui$Element$Input$button,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$alignRight,
+					$mdgriffith$elm_ui$Element$moveLeft(2)
+				]),
+			{
+				label: $mdgriffith$elm_ui$Element$text('x'),
+				onPress: $elm$core$Maybe$Nothing
 			}));
 	var buttonBuilder = function (func) {
 		return A2(
@@ -20436,16 +22865,21 @@ var $author$project$Main$setupOverlay = function () {
 								label: A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
-										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$Font$underline,
+											$mdgriffith$elm_ui$Element$alpha(0.5)
+										]),
 									$mdgriffith$elm_ui$Element$text('Start New')),
-								onPress: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+								onPress: $elm$core$Maybe$Nothing
 							})),
 						A2(
 						$mdgriffith$elm_ui$Element$el,
 						_List_fromArray(
 							[
 								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								A2($mdgriffith$elm_ui$Element$Border$glow, $author$project$Color$yellow, 1)
 							]),
 						buttonBuilder(
 							{
@@ -20454,42 +22888,1198 @@ var $author$project$Main$setupOverlay = function () {
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
 									$mdgriffith$elm_ui$Element$text('Load Slipbox')),
-								onPress: $elm$core$Maybe$Just($author$project$Main$FileRequested)
+								onPress: $elm$core$Maybe$Just($author$project$Main$FileRequestedTutorial)
 							}))
 					]))));
 }();
-var $author$project$Main$setupView = function (deviceViewport) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				A2($elm$html$Html$Attributes$style, 'height', '100%'),
-				A2($elm$html$Html$Attributes$style, 'width', '100%')
-			]),
-		_List_fromArray(
-			[
-				$lattyware$elm_fontawesome$FontAwesome$Styles$css,
-				A2(
-				$mdgriffith$elm_ui$Element$layout,
-				_List_fromArray(
-					[
-						$mdgriffith$elm_ui$Element$inFront($author$project$Main$setupOverlay)
-					]),
-				A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$alpha(0.3),
-							$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					A2(
-						$author$project$Main$sessionNode,
-						deviceViewport,
-						$author$project$Main$newContent(deviceViewport))))
-			]));
+var $author$project$Main$tutorialView = function (tutorial) {
+	return $author$project$Main$layoutWithFontAwesomeStyles(
+		function () {
+			var _v0 = $author$project$Tutorial$getStep(tutorial);
+			switch (_v0.$) {
+				case 'Intro':
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$HighlightCreateNote),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Welcome to Slipbox!')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$bold]),
+										$mdgriffith$elm_ui$Element$text('We\'re going to build your second brain one note at a time.'))
+									]))
+							]));
+				case 'CreateFirstNote':
+					var firstNoteContent = _v0.a;
+					var continueNode = $author$project$Tutorial$canContinue(tutorial) ? A2(
+						$mdgriffith$elm_ui$Element$Input$button,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Border$width(1),
+								$mdgriffith$elm_ui$Element$padding(3),
+								$mdgriffith$elm_ui$Element$centerX
+							]),
+						{
+							label: A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_Nil,
+								$mdgriffith$elm_ui$Element$text('Continue ->')),
+							onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+						}) : A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height(
+								$mdgriffith$elm_ui$Element$px(28))
+							]),
+						$mdgriffith$elm_ui$Element$none);
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('What is one thing you\'ve learned recently?')),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Content (required)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Content(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Add your knowledge here!'))),
+											spellcheck: true,
+											text: firstNoteContent
+										}),
+										continueNode
+									]))
+							]));
+				case 'PromptAddSourceToNote':
+					var firstNoteContent = _v0.a;
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$HighlightCreateSource),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Awesome Note!')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												$mdgriffith$elm_ui$Element$paddingEach($author$project$Main$paddingBottom)
+											]),
+										$mdgriffith$elm_ui$Element$text('Do you remember where you learned it?')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('I don\'t have a source ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'SourceInput':
+					var firstNoteContent = _v0.a;
+					var title = _v0.b;
+					var author = _v0.c;
+					var sourceContent = _v0.d;
+					var continueNode = $author$project$Tutorial$canContinue(tutorial) ? A2(
+						$mdgriffith$elm_ui$Element$Input$button,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Border$width(1),
+								$mdgriffith$elm_ui$Element$padding(3),
+								$mdgriffith$elm_ui$Element$centerX
+							]),
+						{
+							label: A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_Nil,
+								$mdgriffith$elm_ui$Element$text('Continue ->')),
+							onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+						}) : A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height(
+								$mdgriffith$elm_ui$Element$px(28))
+							]),
+						$mdgriffith$elm_ui$Element$none);
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Add more information about this note\'s source!')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Title (required)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Title(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Put the source\'s name here!'))),
+											spellcheck: true,
+											text: title
+										}),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Author (optional)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Author(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Put the source\'s creator here!'))),
+											spellcheck: true,
+											text: author
+										}),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Content (optional)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Content(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Put any other information about the source here!'))),
+											spellcheck: true,
+											text: sourceContent
+										}),
+										continueNode,
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('I\'ll do it later ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'ExplainNotes':
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Bravo! Your first entry into your second mind! Your new brain is expanding in size!')),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Every intellectual endeavor starts with writing. '),
+														$mdgriffith$elm_ui$Element$text('Writing helps us remember. Writing helps us organize the thoughts in our head. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('The notes you write are the building blocks of your external brain. '),
+														$mdgriffith$elm_ui$Element$text('It is important for you to transfer ideas from the medium of your head to your new brain in concise note form. '),
+														$mdgriffith$elm_ui$Element$text('This transfer from mind to written words is one of the hardest things tasks you do. '),
+														$mdgriffith$elm_ui$Element$text('This is why we have a system to do this gradually over time and set future selves up for success! ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Imagine everything you know in your head! '),
+														$mdgriffith$elm_ui$Element$text('Now imagine yourself writing a book or project outline and starting from scratch, staring at a blank sheet of paper. '),
+														$mdgriffith$elm_ui$Element$text('It could take weeks, months, or even years from the time you start! '),
+														$mdgriffith$elm_ui$Element$text('But, you\'ve been learning for a long time leading up to this moment! ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Now imagine when you sit down to start writing that book or project outline, you have a rough draft sitting in front of you rather than a blank sheet of paper. '),
+														$mdgriffith$elm_ui$Element$text('This is a much nicer situation. Refining is much easier than starting from scratch. '),
+														$mdgriffith$elm_ui$Element$text('The Slipbox app and practice are the tools to do this and it starts with what you just did, writing one note. ')
+													]))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Continue ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+										})
+									]))
+							]));
+				case 'NoteInput':
+					var firstNoteContent = _v0.a;
+					var maybeFirstNoteTitle = _v0.b;
+					var secondNoteContent = _v0.c;
+					var secondNoteSourceTitle = _v0.d;
+					var suggestions = function () {
+						if (maybeFirstNoteTitle.$ === 'Just') {
+							var firstNoteTitle = maybeFirstNoteTitle.a;
+							return _List_fromArray(
+								[firstNoteTitle, 'n/a']);
+						} else {
+							return _List_fromArray(
+								['n/a']);
+						}
+					}();
+					var sourceInputid = 'Source: 1';
+					var dataitemId = 'Sources: 1';
+					var continueNode = $author$project$Tutorial$canContinue(tutorial) ? A2(
+						$mdgriffith$elm_ui$Element$Input$button,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Border$width(1),
+								$mdgriffith$elm_ui$Element$padding(3),
+								$mdgriffith$elm_ui$Element$centerX
+							]),
+						{
+							label: A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_Nil,
+								$mdgriffith$elm_ui$Element$text('Continue ->')),
+							onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+						}) : A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height(
+								$mdgriffith$elm_ui$Element$px(28))
+							]),
+						$mdgriffith$elm_ui$Element$none);
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Want to add a related note to your first?')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												$mdgriffith$elm_ui$Element$paddingEach($author$project$Main$paddingBottom)
+											]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Content (required)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Content(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Add your knowledge here!'))),
+											spellcheck: true,
+											text: secondNoteContent
+										}),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_Nil,
+										$mdgriffith$elm_ui$Element$html(
+											A2(
+												$elm$html$Html$div,
+												_List_Nil,
+												_List_fromArray(
+													[
+														A2(
+														$elm$html$Html$label,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$for(sourceInputid)
+															]),
+														_List_fromArray(
+															[
+																$elm$html$Html$text('Source Title (optional) ')
+															])),
+														A2(
+														$elm$html$Html$input,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$list(dataitemId),
+																$elm$html$Html$Attributes$name(sourceInputid),
+																$elm$html$Html$Attributes$id(sourceInputid),
+																$elm$html$Html$Attributes$value(secondNoteSourceTitle),
+																$elm$html$Html$Events$onInput(
+																function (s) {
+																	return $author$project$Main$UpdateInputTutorial(
+																		$author$project$Tutorial$Title(s));
+																})
+															]),
+														_List_Nil),
+														A2(
+														$elm$html$Html$datalist,
+														_List_fromArray(
+															[
+																$elm$html$Html$Attributes$id(dataitemId)
+															]),
+														A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestions))
+													])))),
+										continueNode,
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('I\'ll do it later')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'AddLinkPrompt':
+					var firstNoteContent = _v0.a;
+					var secondNoteContent = _v0.b;
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Are these notes related?')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(secondNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Link the notes together')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+										}),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('These notes aren\'t related')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'ExplainLinks':
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Linking notes together is the foundation of Slipbox')),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Organizing your thoughts gives you a higher chance of success with projects in the future. '),
+														$mdgriffith$elm_ui$Element$text('Using systems of organization are limited by an individuals willpower. '),
+														$mdgriffith$elm_ui$Element$text('This system of organization moves past this limitation. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('The slipbox system is more successful if you only do what you feel like doing in the moment. '),
+														$mdgriffith$elm_ui$Element$text('This does not require willpower! '),
+														$mdgriffith$elm_ui$Element$text('There are no restrictions or limitations on what you have to research or do with your time. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Slipbox is an application and a practice. '),
+														$mdgriffith$elm_ui$Element$text('This practice asks you to keep track of what you learn in a day. '),
+														$mdgriffith$elm_ui$Element$text('Then, take this knowledge and put it inside your second brain. '),
+														$mdgriffith$elm_ui$Element$text('While you\'re doing this, make connections between new knowledge and old knowledge. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Trust that your natural curiosity will guide you towards the intellectual endeavors. '),
+														$mdgriffith$elm_ui$Element$text('You can count on your second brain to have a rough draft of your project waiting for you without any extra effort expended on your part. '),
+														$mdgriffith$elm_ui$Element$text('The only thing you are responsible for is following your interest and taking a few minutes each day to record where your interest took you! ')
+													]))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Continue ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+										})
+									]))
+							]));
+				case 'QuestionPrompt':
+					var firstNoteContent = _v0.a;
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$HighlightCreateQuestion),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Next we\'ll go over ways of conversing with your external brain')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												$mdgriffith$elm_ui$Element$paddingEach($author$project$Main$paddingBottom)
+											]),
+										$mdgriffith$elm_ui$Element$text('Have a question you want to answer? If you want it can be related to your first note.')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('I\'ll add a question later')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'QuestionInput':
+					var firstNoteContent = _v0.a;
+					var question = _v0.b;
+					var continueNode = $author$project$Tutorial$canContinue(tutorial) ? A2(
+						$mdgriffith$elm_ui$Element$Input$button,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Border$width(1),
+								$mdgriffith$elm_ui$Element$padding(3),
+								$mdgriffith$elm_ui$Element$centerX
+							]),
+						{
+							label: A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_Nil,
+								$mdgriffith$elm_ui$Element$text('Continue ->')),
+							onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+						}) : A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height(
+								$mdgriffith$elm_ui$Element$px(28))
+							]),
+						$mdgriffith$elm_ui$Element$none);
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('What do you want to ask your brain?')),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX]),
+										$mdgriffith$elm_ui$Element$text(firstNoteContent)),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$multiline,
+										_List_Nil,
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$Input$labelAbove,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Question (required)')),
+											onChange: function (s) {
+												return $author$project$Main$UpdateInputTutorial(
+													$author$project$Tutorial$Content(s));
+											},
+											placeholder: $elm$core$Maybe$Just(
+												A2(
+													$mdgriffith$elm_ui$Element$Input$placeholder,
+													_List_Nil,
+													$mdgriffith$elm_ui$Element$text('Ask a question here!'))),
+											spellcheck: true,
+											text: question
+										}),
+										continueNode,
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Actually, I\'ll converse with my brain another time ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$SkipTutorial)
+										})
+									]))
+							]));
+				case 'ExplainQuestions':
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('Questions are how you converse with your mind!')),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Adding a question to your slipbox can be a way of understanding how much you know on a topic. '),
+														$mdgriffith$elm_ui$Element$text('Questions can be linked to a few notes in your slipbox. '),
+														$mdgriffith$elm_ui$Element$text('These notes are linked to other notes. And those notes are linked to other notes! And so on. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('See where we\'re going with this? '),
+														$mdgriffith$elm_ui$Element$text('Asking your mind questions often results in action. '),
+														$mdgriffith$elm_ui$Element$text('You can use the insight from this exercise to seek out information where your knowledge is lacking on a subject. '),
+														$mdgriffith$elm_ui$Element$text('Or you could use the complex theory laid out in front of you as the start of a paper or company! It\'s up to you. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('This is pretty cool right? Our own minds are incapable of producing everything we know on a topic and all related information at a moments notice. ')
+													]))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Continue ->')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$ContinueTutorial)
+										})
+									]))
+							]));
+				case 'PracticeSaving':
+					var jsonFile = _v0.a;
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial(
+								$author$project$Main$HighlightSaveButton(jsonFile)),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('On Saving')),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('When you\'re done adding notes, save your work! Slipbox application will save a file to your computer containing the contents of your mind. '),
+														$mdgriffith$elm_ui$Element$text('Back this file up somewhere easily accessible. It\'s great to have another place to store this information should something happen to the original file. '),
+														$mdgriffith$elm_ui$Element$text('This application can\'t remember the contents of your slipbox if you reload or navigate away from the page. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('If you would be interested in us saving your brain for you and logging in to see it and add to it, please contact us! '),
+														$mdgriffith$elm_ui$Element$text('You can find information to contact the project founder by clicking about in the left navigation. ')
+													]))
+											]))
+									]))
+							]));
+				case 'PracticeUploading':
+					return A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$inFront(
+								A2(
+									$mdgriffith$elm_ui$Element$column,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$padding(8),
+											A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+										]),
+									_List_fromArray(
+										[
+											A2(
+											$mdgriffith$elm_ui$Element$el,
+											_List_fromArray(
+												[$mdgriffith$elm_ui$Element$Font$heavy, $mdgriffith$elm_ui$Element$centerX]),
+											$mdgriffith$elm_ui$Element$text('Practice Loading Slipbox File')),
+											A2(
+											$mdgriffith$elm_ui$Element$textColumn,
+											_List_fromArray(
+												[
+													$mdgriffith$elm_ui$Element$centerX,
+													A2($mdgriffith$elm_ui$Element$paddingXY, 0, 16),
+													A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Practice loading your brain by uploading the slipbox file you downloaded! '),
+															$mdgriffith$elm_ui$Element$text('This is how you\'ll start every session after you complete the tutorial.')
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Click the Load Slipbox button below. This will bring up a file explorer.')
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Look for a file called '),
+															A2(
+															$mdgriffith$elm_ui$Element$el,
+															_List_fromArray(
+																[$mdgriffith$elm_ui$Element$Font$underline]),
+															$mdgriffith$elm_ui$Element$text('slipbox.json')),
+															$mdgriffith$elm_ui$Element$text('. Then select this file. '),
+															$mdgriffith$elm_ui$Element$text('If you have saved files like this before, it may be called '),
+															A2(
+															$mdgriffith$elm_ui$Element$el,
+															_List_fromArray(
+																[$mdgriffith$elm_ui$Element$Font$underline]),
+															$mdgriffith$elm_ui$Element$text('slipbox (1).json')),
+															$mdgriffith$elm_ui$Element$text(' or something similar. '),
+															$mdgriffith$elm_ui$Element$text('Try looking in your Downloads folder if you can\'t find the file at first!')
+														]))
+												]))
+										]))),
+								$mdgriffith$elm_ui$Element$inFront($author$project$Main$setupOverlayTutorial),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						A2(
+							$mdgriffith$elm_ui$Element$el,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$alpha(0.3),
+									$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+								]),
+							A2(
+								$author$project$Main$sessionNode,
+								_Utils_Tuple2(0, 0),
+								$author$project$Main$newContent(
+									_Utils_Tuple2(0, 0)))));
+				default:
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(16),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$height(
+												$mdgriffith$elm_ui$Element$px(20))
+											]),
+										$mdgriffith$elm_ui$Element$none),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+										$mdgriffith$elm_ui$Element$text('That\'s it for the tutorial! Congratulations!')),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$centerX,
+												A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('The mission of this project is to help people achieve their goals. '),
+														$mdgriffith$elm_ui$Element$text('If this project helps you discover more about your goals or brings you closer to them tell us about it! '),
+														$mdgriffith$elm_ui$Element$text('We would love to hear your story. ')
+													])),
+												A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_fromArray(
+													[$mdgriffith$elm_ui$Element$Font$semiBold, $mdgriffith$elm_ui$Element$centerX]),
+												$mdgriffith$elm_ui$Element$text('Workflow Suggestions')),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text('Take notes any way convenient to you throughout the day. '),
+														$mdgriffith$elm_ui$Element$text('Pick a time at the end of the day and spend 15 minutes or less transferring notes from your temporary notes to your slipbox.  '),
+														$mdgriffith$elm_ui$Element$text('After saving the slipbox.json file to your local computer, back it up! Google drive is a common way to do this but there are many options! ')
+													]))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(3),
+												$mdgriffith$elm_ui$Element$centerX
+											]),
+										{
+											label: A2(
+												$mdgriffith$elm_ui$Element$el,
+												_List_Nil,
+												$mdgriffith$elm_ui$Element$text('Finish tutorial and take me to my second brain! ')),
+											onPress: $elm$core$Maybe$Just($author$project$Main$EndTutorial)
+										})
+									]))
+							]));
+			}
+		}());
 };
-var $author$project$Main$version = 0.1;
 var $author$project$Main$view = function (model) {
 	var _v0 = model.state;
 	switch (_v0.$) {
@@ -20499,7 +24089,7 @@ var $author$project$Main$view = function (model) {
 					[
 						$author$project$Main$setupView(model.deviceViewport)
 					]),
-				title: $elm$core$String$fromFloat($author$project$Main$version)
+				title: $author$project$Main$webpageTitle
 			};
 		case 'Parsing':
 			return {
@@ -20510,7 +24100,7 @@ var $author$project$Main$view = function (model) {
 						_List_Nil,
 						$mdgriffith$elm_ui$Element$text('Loading'))
 					]),
-				title: 'Loading'
+				title: $author$project$Main$webpageTitle
 			};
 		case 'FailureToParse':
 			return {
@@ -20521,16 +24111,25 @@ var $author$project$Main$view = function (model) {
 						_List_Nil,
 						$mdgriffith$elm_ui$Element$text('Failure'))
 					]),
-				title: 'Failure'
+				title: $author$project$Main$webpageTitle
 			};
-		default:
+		case 'Session':
 			var content = _v0.a;
 			return {
 				body: _List_fromArray(
 					[
 						A2($author$project$Main$sessionView, model.deviceViewport, content)
 					]),
-				title: 'MySlipbox'
+				title: $author$project$Main$webpageTitle
+			};
+		default:
+			var tutorial = _v0.a;
+			return {
+				body: _List_fromArray(
+					[
+						$author$project$Main$tutorialView(tutorial)
+					]),
+				title: $author$project$Main$webpageTitle
 			};
 	}
 };

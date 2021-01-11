@@ -9,6 +9,7 @@ artichoke = Element.rgba255 144 149 128
 ebony = Element.rgba255 84 86 67
 white = Element.rgb255 255 255 255
 black = Element.rgb255 0 0 0
+yellow = Element.rgb255 255 255 0
 
 mistyRoseHighlighted = mistyRose 0.5
 mistyRoseRegular = mistyRose 1.0
