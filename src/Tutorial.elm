@@ -24,8 +24,8 @@ type Tutorial
   | Four_SourceInput FirstNoteContent Source
   | Five_ExplainNotes FirstNote
   | Six_NoteInput FirstNote SecondNoteContent Title
-  | Seven_SourceInput FirstNote SecondNoteContent Source
-  | Eight_AddLinkPrompt FirstNote SecondNoteContent ( Maybe Source )
+  | Seven_SourceInput FirstNote NoteContent Source
+  | Eight_AddLinkPrompt FirstNote NoteContent ( Maybe Source )
   | Nine_ExplainLinks FirstNote SecondNote
   | Ten_QuestionPrompt FirstNote SecondNote
   | Eleven_QuestionInput FirstNote SecondNote Question
@@ -52,9 +52,9 @@ getSourceTitle firstNote =
 
 type SecondNote
   = WithSourceAndLinked String Source
-  | WithoutSourceAndLinked String
+  | WithoutSourceAndLinked NoteContent
   | WithSourceNotLinked String Source
-  | WithoutSourceNotLinked String
+  | WithoutSourceNotLinked NoteContent
   | NoSecondNote
 
 type alias Source =
@@ -86,6 +86,7 @@ type alias SourceContent = String
 type alias SecondNoteContent = String
 type alias Question = String
 type alias JsonFile = String
+type alias NoteContent = { content: String, source: String}
 
 getStep : Tutorial -> Step
 getStep tutorial =
@@ -107,10 +108,10 @@ getStep tutorial =
     Six_NoteInput firstNote content source -> NoteInput ( getContent firstNote ) ( getSourceTitle firstNote ) content source
 
 
-    Seven_SourceInput _ string source -> SourceInput string source.title source.author source.content
+    Seven_SourceInput _ string source -> SourceInput string.content source.title source.author source.content
 
 
-    Eight_AddLinkPrompt firstNote string _ -> AddLinkPrompt ( getContent firstNote ) string
+    Eight_AddLinkPrompt firstNote secondNote _ -> AddLinkPrompt ( getContent firstNote ) secondNote.content
 
 
     Nine_ExplainLinks _ _ -> ExplainLinks
@@ -133,55 +134,290 @@ getStep tutorial =
 
     Fifteen_WorkflowSuggestionsAndFinish _ _ _ -> WorkflowSuggestionsAndFinish
 
-
-
 end : Tutorial -> Slipbox.Slipbox
 end tutorial =
-  Slipbox.new
-  --case tutorial of
-  --  One_Intro -> Slipbox.new
-  --
-  --  Two_CreateFirstNote firstNoteContent -> Slipbox.new
-  --
-  --  Three_PromptAddSourceToNote firstNoteContent ->
-  --
-  --
-  --  Four_SourceInput firstNoteContent source ->
-  --
-  --
-  --  Five_ExplainNotes firstNote ->
-  --
-  --
-  --  Six_NoteInput firstNote secondNoteContent title ->
-  --
-  --
-  --  Seven_SourceInput firstNote secondNoteContent source ->
-  --
-  --
-  --  Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
-  --
-  --
-  --  Nine_ExplainLinks firstNote secondNote ->
-  --
-  --
-  --  Ten_QuestionPrompt firstNote secondNote ->
-  --
-  --
-  --  Eleven_QuestionInput firstNote secondNote question ->
-  --
-  --
-  --  Twelve_ExplainQuestions firstNote secondNote maybeString ->
-  --
-  --
-  --  Thirteen_PracticeSaving firstNote secondNote maybeString ->
-  --
-  --
-  --  Fourteen_PracticeUploading firstNote secondNote maybeString ->
-  --
-  --
-  --  Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeString ->
+  let
+    tutorialEnding = case tutorial of
+      One_Intro -> Slipbox.None
+
+      Two_CreateFirstNote _ -> Slipbox.None
+
+      Three_PromptAddSourceToNote firstNoteContent ->
+        Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Four_SourceInput firstNoteContent _ ->
+        Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Five_ExplainNotes firstNote ->
+        case firstNote of
+          WithSource firstNoteContent source ->
+            Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+          WithoutSource firstNoteContent ->
+            Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Six_NoteInput firstNote _ _ ->
+        case firstNote of
+          WithSource firstNoteContent source ->
+            Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+          WithoutSource firstNoteContent ->
+            Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Seven_SourceInput firstNote secondNoteContent _ ->
+        case firstNote of
+          WithSource firstNoteContent source ->
+            Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+          WithoutSource firstNoteContent ->
+            Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
 
 
+      Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
+        case firstNote of
+          WithSource firstNoteContent source ->
+
+            case maybeSource of
+
+              Just secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSource {content=firstNoteContent,source=source.title} source secondNoteContent secondSource
+
+              Nothing ->
+                Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+          WithoutSource firstNoteContent ->
+            case maybeSource of
+              Just secondSource ->
+                Slipbox.WithSecondNoteSecondSource (NoteContent firstNoteContent "n/a") secondNoteContent secondSource
+
+              Nothing ->
+                Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
+
+
+      Nine_ExplainLinks firstNote secondNote ->
+        case firstNote of
+
+          WithSource firstNoteContent source ->
+
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSourceLink
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNoteLink
+                  {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSource
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              NoSecondNote ->
+                Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+          WithoutSource firstNoteContent ->
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSourceLink
+                    (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithSecondNoteLink
+                    (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSource
+                  (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              NoSecondNote ->
+                Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Ten_QuestionPrompt firstNote secondNote ->
+        case firstNote of
+
+          WithSource firstNoteContent source ->
+
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSourceLink
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNoteLink
+                  {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSource
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              NoSecondNote ->
+                Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+          WithoutSource firstNoteContent ->
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSourceLink
+                    (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithSecondNoteLink
+                    (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSource
+                  (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              NoSecondNote ->
+                Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Eleven_QuestionInput firstNote secondNote question ->
+        case firstNote of
+
+          WithSource firstNoteContent source ->
+
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSourceLink
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNoteLink
+                  {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithFirstSourceSecondNoteSecondSource
+                  {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+              NoSecondNote -> Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+          WithoutSource firstNoteContent ->
+            case secondNote of
+              WithSourceAndLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSourceLink
+                    (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceAndLinked secondNoteContent ->
+                Slipbox.WithSecondNoteLink
+                    (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              WithSourceNotLinked secondNoteContent secondSource ->
+                Slipbox.WithSecondNoteSecondSource
+                  (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+              WithoutSourceNotLinked secondNoteContent ->
+                Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
+
+              NoSecondNote -> Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
+
+      Twelve_ExplainQuestions firstNote secondNote maybeString -> lastScenarioEndTutorial firstNote secondNote maybeString
+      Thirteen_PracticeSaving firstNote secondNote maybeString -> lastScenarioEndTutorial firstNote secondNote maybeString
+      Fourteen_PracticeUploading firstNote secondNote maybeString -> lastScenarioEndTutorial firstNote secondNote maybeString
+      Fifteen_WorkflowSuggestionsAndFinish firstNote secondNote maybeString -> lastScenarioEndTutorial firstNote secondNote maybeString
+  in
+  Slipbox.endTutorial tutorialEnding
+
+lastScenarioEndTutorial : FirstNote -> SecondNote -> ( Maybe String ) -> Slipbox.TutorialEnding
+lastScenarioEndTutorial firstNote secondNote maybeString =
+  case firstNote of
+    WithSource firstNoteContent source ->
+
+      case secondNote of
+        WithSourceAndLinked secondNoteContent secondSource ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithFirstSourceSecondNoteSecondSourceLinkQuestion
+                {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource question
+
+            Nothing ->
+              Slipbox.WithFirstSourceSecondNoteSecondSourceLink
+                {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+        WithoutSourceAndLinked secondNoteContent ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithFirstSourceSecondNoteLinkQuestion
+                {content=firstNoteContent,source=source.title} source secondNoteContent question
+
+            Nothing ->
+              Slipbox.WithFirstSourceSecondNoteLink
+                {content=firstNoteContent,source=source.title} source secondNoteContent
+
+        WithSourceNotLinked secondNoteContent secondSource ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithFirstSourceSecondNoteSecondSourceQuestion
+                {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource question
+
+            Nothing ->
+              Slipbox.WithFirstSourceSecondNoteSecondSource
+                {content=firstNoteContent,source=source.title} source {content=secondNoteContent,source=secondSource.title} secondSource
+
+        WithoutSourceNotLinked secondNoteContent ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithFirstSourceSecondNoteQuestion {content=firstNoteContent,source=source.title} source secondNoteContent question
+            Nothing ->
+              Slipbox.WithFirstSourceSecondNote {content=firstNoteContent,source=source.title} source secondNoteContent
+
+        NoSecondNote ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithFirstSourceQuestion {content=firstNoteContent,source=source.title} source question
+            Nothing ->
+              Slipbox.WithFirstSource {content=firstNoteContent,source=source.title} source
+
+    WithoutSource firstNoteContent ->
+      case secondNote of
+        WithSourceAndLinked secondNoteContent secondSource ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithSecondNoteSecondSourceLinkQuestion
+                  (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource question
+            Nothing ->
+              Slipbox.WithSecondNoteSecondSourceLink
+                  (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+        WithoutSourceAndLinked secondNoteContent ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithSecondNoteLinkQuestion (NoteContent firstNoteContent "n/a") secondNoteContent question
+            Nothing ->
+              Slipbox.WithSecondNoteLink (NoteContent firstNoteContent "n/a") secondNoteContent
+
+        WithSourceNotLinked secondNoteContent secondSource ->
+          case maybeString of
+            Just question ->
+              Slipbox.WithSecondNoteSecondSourceQuestion
+                (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource question
+
+            Nothing ->
+              Slipbox.WithSecondNoteSecondSource
+                (NoteContent firstNoteContent "n/a") {content=secondNoteContent,source=secondSource.title} secondSource
+
+        WithoutSourceNotLinked secondNoteContent ->
+          case maybeString of
+            Just question -> Slipbox.WithSecondNoteQuestion (NoteContent firstNoteContent "n/a") secondNoteContent question
+            Nothing -> Slipbox.WithSecondNote (NoteContent firstNoteContent "n/a") secondNoteContent
+
+        NoSecondNote ->
+          case maybeString of
+            Just question -> Slipbox.WithQuestion (NoteContent firstNoteContent "n/a") question
+            Nothing -> Slipbox.OnlyFirstNote (NoteContent firstNoteContent "n/a")
 
 type UpdateAction
   = Content String
@@ -232,7 +468,8 @@ skip tutorial =
     Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
       case maybeSource of
         Just source ->
-          Nine_ExplainLinks firstNote <| WithSourceNotLinked secondNoteContent source
+          Nine_ExplainLinks firstNote
+            <| WithSourceNotLinked secondNoteContent.content source
         Nothing ->
           Nine_ExplainLinks firstNote <| WithoutSourceNotLinked secondNoteContent
 
@@ -279,9 +516,16 @@ continue tutorial =
 
     Six_NoteInput firstNote content title ->
       if titleIsValid title then
-        Seven_SourceInput firstNote content <| Source title "" ""
+        Seven_SourceInput firstNote { content=content,source=title } <| Source title "" ""
       else
-        Eight_AddLinkPrompt firstNote content Nothing
+        let
+          blankToNaInvariant = \t ->
+            if String.isEmpty t then
+              "n/a"
+            else
+              t
+        in
+        Eight_AddLinkPrompt firstNote { content=content,source=blankToNaInvariant title } Nothing
 
 
     Seven_SourceInput firstNote secondNoteContent source -> Eight_AddLinkPrompt firstNote secondNoteContent ( Just source )
@@ -290,7 +534,7 @@ continue tutorial =
     Eight_AddLinkPrompt firstNote secondNoteContent maybeSource ->
       case maybeSource of
         Just source ->
-          Nine_ExplainLinks firstNote <| WithSourceAndLinked secondNoteContent source
+          Nine_ExplainLinks firstNote <| WithSourceAndLinked secondNoteContent.content source
         Nothing ->
           Nine_ExplainLinks firstNote <| WithoutSourceAndLinked secondNoteContent
 
