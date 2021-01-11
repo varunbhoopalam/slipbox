@@ -8008,11 +8008,25 @@ var $author$project$Tutorial$continue = function (tutorial) {
 			var firstNote = tutorial.a;
 			var content = tutorial.b;
 			var title = tutorial.c;
-			return $author$project$Tutorial$titleIsValid(title) ? A3(
-				$author$project$Tutorial$Seven_SourceInput,
-				firstNote,
-				content,
-				A3($author$project$Tutorial$Source, title, '', '')) : A3($author$project$Tutorial$Eight_AddLinkPrompt, firstNote, content, $elm$core$Maybe$Nothing);
+			if ($author$project$Tutorial$titleIsValid(title)) {
+				return A3(
+					$author$project$Tutorial$Seven_SourceInput,
+					firstNote,
+					{content: content, source: title},
+					A3($author$project$Tutorial$Source, title, '', ''));
+			} else {
+				var blankToNaInvariant = function (t) {
+					return $elm$core$String$isEmpty(t) ? 'n/a' : t;
+				};
+				return A3(
+					$author$project$Tutorial$Eight_AddLinkPrompt,
+					firstNote,
+					{
+						content: content,
+						source: blankToNaInvariant(title)
+					},
+					$elm$core$Maybe$Nothing);
+			}
 		case 'Seven_SourceInput':
 			var firstNote = tutorial.a;
 			var secondNoteContent = tutorial.b;
@@ -8031,7 +8045,7 @@ var $author$project$Tutorial$continue = function (tutorial) {
 				return A2(
 					$author$project$Tutorial$Nine_ExplainLinks,
 					firstNote,
-					A2($author$project$Tutorial$WithSourceAndLinked, secondNoteContent, source));
+					A2($author$project$Tutorial$WithSourceAndLinked, secondNoteContent.content, source));
 			} else {
 				return A2(
 					$author$project$Tutorial$Nine_ExplainLinks,
@@ -8318,6 +8332,88 @@ var $author$project$Slipbox$encode = function (slipbox) {
 					$author$project$IdGenerator$encode(info.idGenerator))
 				])));
 };
+var $author$project$Slipbox$None = {$: 'None'};
+var $author$project$Tutorial$NoteContent = F2(
+	function (content, source) {
+		return {content: content, source: source};
+	});
+var $author$project$Slipbox$OnlyFirstNote = function (a) {
+	return {$: 'OnlyFirstNote', a: a};
+};
+var $author$project$Slipbox$WithFirstSource = F2(
+	function (a, b) {
+		return {$: 'WithFirstSource', a: a, b: b};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNote = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceSecondNote', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteLink = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceSecondNoteLink', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSource = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteSecondSource', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceLink', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithSecondNote = F2(
+	function (a, b) {
+		return {$: 'WithSecondNote', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteLink = F2(
+	function (a, b) {
+		return {$: 'WithSecondNoteLink', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSource = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteSecondSource', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceLink = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteSecondSourceLink', a: a, b: b, c: c};
+	});
+var $author$project$Link$create = F3(
+	function (generator, sourceNote, targetNote) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		return _Utils_Tuple2(
+			$author$project$Link$Link(
+				A3(
+					$author$project$Link$Info,
+					id,
+					$author$project$Note$getId(sourceNote),
+					$author$project$Note$getId(targetNote))),
+			idGenerator);
+	});
+var $author$project$Note$create = F2(
+	function (generator, record) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		return _Utils_Tuple2(
+			A4(
+				$author$project$Note$note_,
+				id,
+				record.content,
+				record.source,
+				$author$project$Note$variantStringRepresentation(record.variant)),
+			idGenerator);
+	});
+var $author$project$Source$createSource = F2(
+	function (generator, content) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		var info = A4($author$project$Source$Info, id, content.title, content.author, content.content);
+		return _Utils_Tuple2(
+			$author$project$Source$Source(info),
+			idGenerator);
+	});
 var $author$project$IdGenerator$init = $author$project$IdGenerator$IdGenerator(0);
 var $author$project$Slipbox$new = function () {
 	var _v0 = A2($author$project$Slipbox$simulation, _List_Nil, _List_Nil);
@@ -8325,8 +8421,1332 @@ var $author$project$Slipbox$new = function () {
 	return $author$project$Slipbox$Slipbox(
 		A6($author$project$Slipbox$Content, _List_Nil, _List_Nil, _List_Nil, _List_Nil, state, $author$project$IdGenerator$init));
 }();
+var $author$project$Slipbox$endTutorial = function (tutorialEnding) {
+	var toQuestionLambda = function (q) {
+		return {content: q, source: 'n/a', variant: $author$project$Note$Question};
+	};
+	var toNoteLambda = function (n) {
+		return {content: n.content, source: n.source, variant: $author$project$Note$Regular};
+	};
+	var initLambda = function (fn) {
+		return A2(
+			$author$project$Note$create,
+			$author$project$IdGenerator$init,
+			toNoteLambda(fn));
+	};
+	switch (tutorialEnding.$) {
+		case 'None':
+			return $author$project$Slipbox$new;
+		case 'OnlyFirstNote':
+			var firstNote = tutorialEnding.a;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v1 = initLambda(firstNote);
+			var note = _v1.a;
+			var idGenerator = _v1.b;
+			var _v2 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note]),
+				_List_Nil);
+			var state = _v2.a;
+			var notes = _v2.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSource':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v3 = initLambda(firstNote);
+			var note = _v3.a;
+			var idGen1 = _v3.b;
+			var _v4 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v4.a;
+			var idGenerator = _v4.b;
+			var _v5 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note]),
+				_List_Nil);
+			var state = _v5.a;
+			var notes = _v5.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNote':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v6 = initLambda(firstNote);
+			var note1 = _v6.a;
+			var idGen1 = _v6.b;
+			var _v7 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v7.a;
+			var idGenerator = _v7.b;
+			var _v8 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v8.a;
+			var notes = _v8.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithQuestion':
+			var firstNote = tutorialEnding.a;
+			var question = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v9 = initLambda(firstNote);
+			var note1 = _v9.a;
+			var idGen1 = _v9.b;
+			var _v10 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toQuestionLambda(question));
+			var note2 = _v10.a;
+			var idGenerator = _v10.b;
+			var _v11 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v11.a;
+			var notes = _v11.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSourceSecondNote':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v12 = initLambda(firstNote);
+			var note = _v12.a;
+			var idGen1 = _v12.b;
+			var _v13 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v13.a;
+			var idGen2 = _v13.b;
+			var _v14 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v14.a;
+			var idGenerator = _v14.b;
+			var _v15 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v15.a;
+			var notes = _v15.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v16 = initLambda(firstNote);
+			var note = _v16.a;
+			var idGen1 = _v16.b;
+			var _v17 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v17.a;
+			var idGen2 = _v17.b;
+			var _v18 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note2 = _v18.a;
+			var idGenerator = _v18.b;
+			var _v19 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v19.a;
+			var notes = _v19.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSource':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v20 = initLambda(firstNote);
+			var note1 = _v20.a;
+			var idGen1 = _v20.b;
+			var _v21 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v21.a;
+			var idGen2 = _v21.b;
+			var _v22 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v22.a;
+			var idGenerator = _v22.b;
+			var _v23 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v23.a;
+			var notes = _v23.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v24 = initLambda(firstNote);
+			var note1 = _v24.a;
+			var idGen1 = _v24.b;
+			var _v25 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v25.a;
+			var idGen2 = _v25.b;
+			var _v26 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v26.a;
+			var idGen3 = _v26.b;
+			var _v27 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source = _v27.a;
+			var idGenerator = _v27.b;
+			var _v28 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v28.a;
+			var notes = _v28.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteLink':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v29 = initLambda(firstNote);
+			var note1 = _v29.a;
+			var idGen1 = _v29.b;
+			var _v30 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v30.a;
+			var idGen2 = _v30.b;
+			var _v31 = A3($author$project$Link$create, idGen2, note1, note2);
+			var link = _v31.a;
+			var idGenerator = _v31.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v32 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v32.a;
+			var notes = _v32.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, links: links, notes: notes, state: state}));
+		case 'WithSecondNoteQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v33 = initLambda(firstNote);
+			var note1 = _v33.a;
+			var idGen1 = _v33.b;
+			var _v34 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v34.a;
+			var idGen2 = _v34.b;
+			var _v35 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v35.a;
+			var idGenerator = _v35.b;
+			var _v36 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v36.a;
+			var notes = _v36.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, notes: notes, state: state}));
+		case 'WithFirstSourceSecondNoteSecondSource':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v37 = initLambda(firstNote);
+			var note = _v37.a;
+			var idGen1 = _v37.b;
+			var _v38 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v38.a;
+			var idGen2 = _v38.b;
+			var _v39 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v39.a;
+			var idGen3 = _v39.b;
+			var _v40 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v40.a;
+			var idGenerator = _v40.b;
+			var _v41 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				_List_Nil);
+			var state = _v41.a;
+			var notes = _v41.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteLink':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v42 = initLambda(firstNote);
+			var note = _v42.a;
+			var idGen1 = _v42.b;
+			var _v43 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v43.a;
+			var idGen2 = _v43.b;
+			var _v44 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v44.a;
+			var idGen3 = _v44.b;
+			var _v45 = A3($author$project$Link$create, idGen3, note, note2);
+			var link = _v45.a;
+			var idGenerator = _v45.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v46 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2]),
+				links);
+			var state = _v46.a;
+			var notes = _v46.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v47 = initLambda(firstNote);
+			var note = _v47.a;
+			var idGen1 = _v47.b;
+			var _v48 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v48.a;
+			var idGen2 = _v48.b;
+			var _v49 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v49.a;
+			var idGen3 = _v49.b;
+			var _v50 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v50.a;
+			var idGenerator = _v50.b;
+			var _v51 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				_List_Nil);
+			var state = _v51.a;
+			var notes = _v51.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v52 = initLambda(firstNote);
+			var note = _v52.a;
+			var idGen1 = _v52.b;
+			var _v53 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v53.a;
+			var idGen2 = _v53.b;
+			var _v54 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v54.a;
+			var idGen3 = _v54.b;
+			var _v55 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v55.a;
+			var idGen4 = _v55.b;
+			var _v56 = A3($author$project$Link$create, idGen4, note, note2);
+			var link = _v56.a;
+			var idGenerator = _v56.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v57 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				links);
+			var state = _v57.a;
+			var notes = _v57.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var question = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v58 = initLambda(firstNote);
+			var note1 = _v58.a;
+			var idGen1 = _v58.b;
+			var _v59 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v59.a;
+			var idGen2 = _v59.b;
+			var _v60 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toQuestionLambda(question));
+			var note3 = _v60.a;
+			var idGen3 = _v60.b;
+			var _v61 = A3($author$project$Link$create, idGen3, note1, note2);
+			var link = _v61.a;
+			var idGenerator = _v61.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v62 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v62.a;
+			var notes = _v62.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{idGenerator: idGenerator, links: links, notes: notes, state: state}));
+		case 'WithSecondNoteSecondSourceLink':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v63 = initLambda(firstNote);
+			var note1 = _v63.a;
+			var idGen1 = _v63.b;
+			var _v64 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v64.a;
+			var idGen2 = _v64.b;
+			var _v65 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v65.a;
+			var idGen3 = _v65.b;
+			var _v66 = A3($author$project$Link$create, idGen3, note1, note2);
+			var link = _v66.a;
+			var idGenerator = _v66.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v67 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v67.a;
+			var notes = _v67.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithSecondNoteSecondSourceLinkQuestion':
+			var firstNote = tutorialEnding.a;
+			var secondNote = tutorialEnding.b;
+			var secondSource = tutorialEnding.c;
+			var question = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v68 = initLambda(firstNote);
+			var note1 = _v68.a;
+			var idGen1 = _v68.b;
+			var _v69 = A2(
+				$author$project$Note$create,
+				idGen1,
+				toNoteLambda(secondNote));
+			var note2 = _v69.a;
+			var idGen2 = _v69.b;
+			var _v70 = A2($author$project$Source$createSource, idGen2, secondSource);
+			var source = _v70.a;
+			var idGen3 = _v70.b;
+			var _v71 = A2(
+				$author$project$Note$create,
+				idGen3,
+				toQuestionLambda(question));
+			var note3 = _v71.a;
+			var idGen4 = _v71.b;
+			var _v72 = A3($author$project$Link$create, idGen4, note1, note2);
+			var link = _v72.a;
+			var idGenerator = _v72.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v73 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v73.a;
+			var notes = _v73.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteSecondSourceLink':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v74 = initLambda(firstNote);
+			var note1 = _v74.a;
+			var idGen1 = _v74.b;
+			var _v75 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v75.a;
+			var idGen2 = _v75.b;
+			var _v76 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v76.a;
+			var idGen3 = _v76.b;
+			var _v77 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v77.a;
+			var idGen4 = _v77.b;
+			var _v78 = A3($author$project$Link$create, idGen4, note1, note2);
+			var link = _v78.a;
+			var idGenerator = _v78.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v79 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2]),
+				_List_Nil);
+			var state = _v79.a;
+			var notes = _v79.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		case 'WithFirstSourceSecondNoteSecondSourceQuestion':
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var question = tutorialEnding.e;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v80 = initLambda(firstNote);
+			var note = _v80.a;
+			var idGen1 = _v80.b;
+			var _v81 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v81.a;
+			var idGen2 = _v81.b;
+			var _v82 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v82.a;
+			var idGen3 = _v82.b;
+			var _v83 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v83.a;
+			var idGen4 = _v83.b;
+			var _v84 = A2(
+				$author$project$Note$create,
+				idGen4,
+				toQuestionLambda(question));
+			var note3 = _v84.a;
+			var idGenerator = _v84.b;
+			var _v85 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note, note2, note3]),
+				_List_Nil);
+			var state = _v85.a;
+			var notes = _v85.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+		default:
+			var firstNote = tutorialEnding.a;
+			var firstSource = tutorialEnding.b;
+			var secondNote = tutorialEnding.c;
+			var secondSource = tutorialEnding.d;
+			var question = tutorialEnding.e;
+			var content = $author$project$Slipbox$getContent($author$project$Slipbox$new);
+			var _v86 = initLambda(firstNote);
+			var note1 = _v86.a;
+			var idGen1 = _v86.b;
+			var _v87 = A2($author$project$Source$createSource, idGen1, firstSource);
+			var source = _v87.a;
+			var idGen2 = _v87.b;
+			var _v88 = A2(
+				$author$project$Note$create,
+				idGen2,
+				toNoteLambda(secondNote));
+			var note2 = _v88.a;
+			var idGen3 = _v88.b;
+			var _v89 = A2($author$project$Source$createSource, idGen3, secondSource);
+			var source2 = _v89.a;
+			var idGen4 = _v89.b;
+			var _v90 = A2(
+				$author$project$Note$create,
+				idGen4,
+				toQuestionLambda(question));
+			var note3 = _v90.a;
+			var idGen5 = _v90.b;
+			var _v91 = A3($author$project$Link$create, idGen5, note1, note2);
+			var link = _v91.a;
+			var idGenerator = _v91.b;
+			var links = _List_fromArray(
+				[link]);
+			var _v92 = A2(
+				$author$project$Slipbox$simulation,
+				_List_fromArray(
+					[note1, note2, note3]),
+				_List_Nil);
+			var state = _v92.a;
+			var notes = _v92.b;
+			return $author$project$Slipbox$Slipbox(
+				_Utils_update(
+					content,
+					{
+						idGenerator: idGenerator,
+						links: links,
+						notes: notes,
+						sources: _List_fromArray(
+							[source, source2]),
+						state: state
+					}));
+	}
+};
+var $author$project$Slipbox$WithFirstSourceQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithFirstSourceQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteLinkQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteLinkQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithFirstSourceSecondNoteQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLinkQuestion = F5(
+	function (a, b, c, d, e) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceLinkQuestion', a: a, b: b, c: c, d: d, e: e};
+	});
+var $author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceQuestion = F5(
+	function (a, b, c, d, e) {
+		return {$: 'WithFirstSourceSecondNoteSecondSourceQuestion', a: a, b: b, c: c, d: d, e: e};
+	});
+var $author$project$Slipbox$WithQuestion = F2(
+	function (a, b) {
+		return {$: 'WithQuestion', a: a, b: b};
+	});
+var $author$project$Slipbox$WithSecondNoteLinkQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteLinkQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteQuestion = F3(
+	function (a, b, c) {
+		return {$: 'WithSecondNoteQuestion', a: a, b: b, c: c};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceLinkQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithSecondNoteSecondSourceLinkQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Slipbox$WithSecondNoteSecondSourceQuestion = F4(
+	function (a, b, c, d) {
+		return {$: 'WithSecondNoteSecondSourceQuestion', a: a, b: b, c: c, d: d};
+	});
+var $author$project$Tutorial$lastScenarioEndTutorial = F3(
+	function (firstNote, secondNote, maybeString) {
+		if (firstNote.$ === 'WithSource') {
+			var firstNoteContent = firstNote.a;
+			var source = firstNote.b;
+			switch (secondNote.$) {
+				case 'WithSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A5(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLinkQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteLinkQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				case 'WithSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A5(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+							{content: firstNoteContent, source: source.title},
+							source,
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNote,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				default:
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithFirstSourceQuestion,
+							{content: firstNoteContent, source: source.title},
+							source,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithFirstSource,
+							{content: firstNoteContent, source: source.title},
+							source);
+					}
+			}
+		} else {
+			var firstNoteContent = firstNote.a;
+			switch (secondNote.$) {
+				case 'WithSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithSecondNoteSecondSourceLinkQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceAndLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteLinkQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNoteLink,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				case 'WithSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					var secondSource = secondNote.b;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A4(
+							$author$project$Slipbox$WithSecondNoteSecondSourceQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource,
+							question);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSource,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							{content: secondNoteContent, source: secondSource.title},
+							secondSource);
+					}
+				case 'WithoutSourceNotLinked':
+					var secondNoteContent = secondNote.a;
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							question);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNote,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				default:
+					if (maybeString.$ === 'Just') {
+						var question = maybeString.a;
+						return A2(
+							$author$project$Slipbox$WithQuestion,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							question);
+					} else {
+						return $author$project$Slipbox$OnlyFirstNote(
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+			}
+		}
+	});
 var $author$project$Tutorial$end = function (tutorial) {
-	return $author$project$Slipbox$new;
+	var tutorialEnding = function () {
+		switch (tutorial.$) {
+			case 'One_Intro':
+				return $author$project$Slipbox$None;
+			case 'Two_CreateFirstNote':
+				return $author$project$Slipbox$None;
+			case 'Three_PromptAddSourceToNote':
+				var firstNoteContent = tutorial.a;
+				return $author$project$Slipbox$OnlyFirstNote(
+					A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+			case 'Four_SourceInput':
+				var firstNoteContent = tutorial.a;
+				return $author$project$Slipbox$OnlyFirstNote(
+					A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+			case 'Five_ExplainNotes':
+				var firstNote = tutorial.a;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A2(
+						$author$project$Slipbox$WithFirstSource,
+						{content: firstNoteContent, source: source.title},
+						source);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return $author$project$Slipbox$OnlyFirstNote(
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+				}
+			case 'Six_NoteInput':
+				var firstNote = tutorial.a;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A2(
+						$author$project$Slipbox$WithFirstSource,
+						{content: firstNoteContent, source: source.title},
+						source);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return $author$project$Slipbox$OnlyFirstNote(
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+				}
+			case 'Seven_SourceInput':
+				var firstNote = tutorial.a;
+				var secondNoteContent = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					return A3(
+						$author$project$Slipbox$WithFirstSourceSecondNote,
+						{content: firstNoteContent, source: source.title},
+						source,
+						secondNoteContent);
+				} else {
+					var firstNoteContent = firstNote.a;
+					return A2(
+						$author$project$Slipbox$WithSecondNote,
+						A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+						secondNoteContent);
+				}
+			case 'Eight_AddLinkPrompt':
+				var firstNote = tutorial.a;
+				var secondNoteContent = tutorial.b;
+				var maybeSource = tutorial.c;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					if (maybeSource.$ === 'Just') {
+						var secondSource = maybeSource.a;
+						return A4(
+							$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent,
+							secondSource);
+					} else {
+						return A3(
+							$author$project$Slipbox$WithFirstSourceSecondNote,
+							{content: firstNoteContent, source: source.title},
+							source,
+							secondNoteContent);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					if (maybeSource.$ === 'Just') {
+						var secondSource = maybeSource.a;
+						return A3(
+							$author$project$Slipbox$WithSecondNoteSecondSource,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent,
+							secondSource);
+					} else {
+						return A2(
+							$author$project$Slipbox$WithSecondNote,
+							A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+							secondNoteContent);
+					}
+				}
+			case 'Nine_ExplainLinks':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Ten_QuestionPrompt':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Eleven_QuestionInput':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var question = tutorial.c;
+				if (firstNote.$ === 'WithSource') {
+					var firstNoteContent = firstNote.a;
+					var source = firstNote.b;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSourceLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNoteLink,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A4(
+								$author$project$Slipbox$WithFirstSourceSecondNoteSecondSource,
+								{content: firstNoteContent, source: source.title},
+								source,
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A3(
+								$author$project$Slipbox$WithFirstSourceSecondNote,
+								{content: firstNoteContent, source: source.title},
+								source,
+								secondNoteContent);
+						default:
+							return A2(
+								$author$project$Slipbox$WithFirstSource,
+								{content: firstNoteContent, source: source.title},
+								source);
+					}
+				} else {
+					var firstNoteContent = firstNote.a;
+					switch (secondNote.$) {
+						case 'WithSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSourceLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceAndLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNoteLink,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						case 'WithSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							var secondSource = secondNote.b;
+							return A3(
+								$author$project$Slipbox$WithSecondNoteSecondSource,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								{content: secondNoteContent, source: secondSource.title},
+								secondSource);
+						case 'WithoutSourceNotLinked':
+							var secondNoteContent = secondNote.a;
+							return A2(
+								$author$project$Slipbox$WithSecondNote,
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'),
+								secondNoteContent);
+						default:
+							return $author$project$Slipbox$OnlyFirstNote(
+								A2($author$project$Tutorial$NoteContent, firstNoteContent, 'n/a'));
+					}
+				}
+			case 'Twelve_ExplainQuestions':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			case 'Thirteen_PracticeSaving':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			case 'Fourteen_PracticeUploading':
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+			default:
+				var firstNote = tutorial.a;
+				var secondNote = tutorial.b;
+				var maybeString = tutorial.c;
+				return A3($author$project$Tutorial$lastScenarioEndTutorial, firstNote, secondNote, maybeString);
+		}
+	}();
+	return $author$project$Slipbox$endTutorial(tutorialEnding);
 };
 var $author$project$Note$Expanded = F2(
 	function (a, b) {
@@ -8656,7 +10076,7 @@ var $author$project$Tutorial$skip = function (tutorial) {
 				return A2(
 					$author$project$Tutorial$Nine_ExplainLinks,
 					firstNote,
-					A2($author$project$Tutorial$WithSourceNotLinked, secondNoteContent, source));
+					A2($author$project$Tutorial$WithSourceNotLinked, secondNoteContent.content, source));
 			} else {
 				return A2(
 					$author$project$Tutorial$Nine_ExplainLinks,
@@ -8948,44 +10368,6 @@ var $author$project$Slipbox$conditionalUpdate = F2(
 		return function (i) {
 			return itemIdentifier(i) ? updatedItem : i;
 		};
-	});
-var $author$project$Link$create = F3(
-	function (generator, sourceNote, targetNote) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		return _Utils_Tuple2(
-			$author$project$Link$Link(
-				A3(
-					$author$project$Link$Info,
-					id,
-					$author$project$Note$getId(sourceNote),
-					$author$project$Note$getId(targetNote))),
-			idGenerator);
-	});
-var $author$project$Note$create = F2(
-	function (generator, record) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		return _Utils_Tuple2(
-			A4(
-				$author$project$Note$note_,
-				id,
-				record.content,
-				record.source,
-				$author$project$Note$variantStringRepresentation(record.variant)),
-			idGenerator);
-	});
-var $author$project$Source$createSource = F2(
-	function (generator, content) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		var info = A4($author$project$Source$Info, id, content.title, content.author, content.content);
-		return _Utils_Tuple2(
-			$author$project$Source$Source(info),
-			idGenerator);
 	});
 var $author$project$Slipbox$deleteNoteItemStateChange = F2(
 	function (deletedNote, item) {
@@ -20856,7 +22238,7 @@ var $author$project$Main$setupOverlay = function () {
 			_List_fromArray(
 				[
 					$mdgriffith$elm_ui$Element$width(
-					$mdgriffith$elm_ui$Element$px(350)),
+					$mdgriffith$elm_ui$Element$px(450)),
 					$mdgriffith$elm_ui$Element$height(
 					$mdgriffith$elm_ui$Element$px(150)),
 					$mdgriffith$elm_ui$Element$centerX,
@@ -20890,7 +22272,7 @@ var $author$project$Main$setupOverlay = function () {
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
-									$mdgriffith$elm_ui$Element$text('Start New')),
+									$mdgriffith$elm_ui$Element$text('Start New (Tutorial)')),
 								onPress: $elm$core$Maybe$Just($author$project$Main$StartTutorial)
 							})),
 						A2(
@@ -21076,14 +22458,14 @@ var $author$project$Tutorial$getStep = function (tutorial) {
 		case 'Seven_SourceInput':
 			var string = tutorial.b;
 			var source = tutorial.c;
-			return A4($author$project$Tutorial$SourceInput, string, source.title, source.author, source.content);
+			return A4($author$project$Tutorial$SourceInput, string.content, source.title, source.author, source.content);
 		case 'Eight_AddLinkPrompt':
 			var firstNote = tutorial.a;
-			var string = tutorial.b;
+			var secondNote = tutorial.b;
 			return A2(
 				$author$project$Tutorial$AddLinkPrompt,
 				$author$project$Tutorial$getContent(firstNote),
-				string);
+				secondNote.content);
 		case 'Nine_ExplainLinks':
 			return $author$project$Tutorial$ExplainLinks;
 		case 'Ten_QuestionPrompt':
@@ -22323,7 +23705,7 @@ var $author$project$Main$tutorialView = function (tutorial) {
 							]),
 						_List_fromArray(
 							[
-								$author$project$Main$leftNavTutorial($author$project$Main$HighlightCreateSource),
+								$author$project$Main$leftNavTutorial($author$project$Main$NoHighlights),
 								A2(
 								$mdgriffith$elm_ui$Element$column,
 								_List_fromArray(
@@ -22544,13 +23926,14 @@ var $author$project$Main$tutorialView = function (tutorial) {
 											$mdgriffith$elm_ui$Element$el,
 											_List_fromArray(
 												[$mdgriffith$elm_ui$Element$Font$heavy, $mdgriffith$elm_ui$Element$centerX]),
-											$mdgriffith$elm_ui$Element$text('On Loading')),
+											$mdgriffith$elm_ui$Element$text('Practice Loading Slipbox File')),
 											A2(
 											$mdgriffith$elm_ui$Element$textColumn,
 											_List_fromArray(
 												[
 													$mdgriffith$elm_ui$Element$centerX,
-													A2($mdgriffith$elm_ui$Element$paddingXY, 0, 16)
+													A2($mdgriffith$elm_ui$Element$paddingXY, 0, 16),
+													A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
 												]),
 											_List_fromArray(
 												[
@@ -22559,21 +23942,36 @@ var $author$project$Main$tutorialView = function (tutorial) {
 													_List_Nil,
 													_List_fromArray(
 														[
-															$mdgriffith$elm_ui$Element$text('Practice loading your brain by uploading the slipbox file you downloaded!')
+															$mdgriffith$elm_ui$Element$text('Practice loading your brain by uploading the slipbox file you downloaded! '),
+															$mdgriffith$elm_ui$Element$text('This is how you\'ll start every session after you complete the tutorial.')
 														])),
 													A2(
 													$mdgriffith$elm_ui$Element$paragraph,
 													_List_Nil,
 													_List_fromArray(
 														[
-															$mdgriffith$elm_ui$Element$text('The file is called '),
+															$mdgriffith$elm_ui$Element$text('Click the Load Slipbox button below. This will bring up a file explorer.')
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Look for a file called '),
 															A2(
 															$mdgriffith$elm_ui$Element$el,
 															_List_fromArray(
 																[$mdgriffith$elm_ui$Element$Font$underline]),
 															$mdgriffith$elm_ui$Element$text('slipbox.json')),
-															$mdgriffith$elm_ui$Element$text('. '),
-															$mdgriffith$elm_ui$Element$text('Try looking in your Downloads folder if you can\'t find it!')
+															$mdgriffith$elm_ui$Element$text('. Then select this file. '),
+															$mdgriffith$elm_ui$Element$text('If you have saved files like this before, it may be called '),
+															A2(
+															$mdgriffith$elm_ui$Element$el,
+															_List_fromArray(
+																[$mdgriffith$elm_ui$Element$Font$underline]),
+															$mdgriffith$elm_ui$Element$text('slipbox (1).json')),
+															$mdgriffith$elm_ui$Element$text(' or something similar. '),
+															$mdgriffith$elm_ui$Element$text('Try looking in your Downloads folder if you can\'t find the file at first!')
 														]))
 												]))
 										]))),
@@ -22616,7 +24014,14 @@ var $author$project$Main$tutorialView = function (tutorial) {
 									]),
 								_List_fromArray(
 									[
-										$author$project$Main$finishTutorialButton,
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$height(
+												$mdgriffith$elm_ui$Element$px(20))
+											]),
+										$mdgriffith$elm_ui$Element$none),
 										A2(
 										$mdgriffith$elm_ui$Element$el,
 										_List_fromArray(
