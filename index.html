@@ -17367,6 +17367,8 @@ var $author$project$Main$ChangeTab = function (a) {
 };
 var $author$project$Main$FileDownload = {$: 'FileDownload'};
 var $author$project$Slipbox$NewNote = {$: 'NewNote'};
+var $author$project$Slipbox$NewQuestion = {$: 'NewQuestion'};
+var $author$project$Slipbox$NewSource = {$: 'NewSource'};
 var $author$project$Main$Notes = {$: 'Notes'};
 var $author$project$Main$Questions = {$: 'Questions'};
 var $author$project$Main$Sources = {$: 'Sources'};
@@ -18086,6 +18088,15 @@ var $lattyware$elm_fontawesome$FontAwesome$Solid$fileAlt = A5(
 	_List_fromArray(
 		['M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z']));
 var $author$project$Main$fileAltIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$fileAlt);
+var $lattyware$elm_fontawesome$FontAwesome$Solid$handPaper = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'hand-paper',
+	448,
+	512,
+	_List_fromArray(
+		['M408.781 128.007C386.356 127.578 368 146.36 368 168.79V256h-8V79.79c0-22.43-18.356-41.212-40.781-40.783C297.488 39.423 280 57.169 280 79v177h-8V40.79C272 18.36 253.644-.422 231.219.007 209.488.423 192 18.169 192 40v216h-8V80.79c0-22.43-18.356-41.212-40.781-40.783C121.488 40.423 104 58.169 104 80v235.992l-31.648-43.519c-12.993-17.866-38.009-21.817-55.877-8.823-17.865 12.994-21.815 38.01-8.822 55.877l125.601 172.705A48 48 0 0 0 172.073 512h197.59c22.274 0 41.622-15.324 46.724-37.006l26.508-112.66a192.011 192.011 0 0 0 5.104-43.975V168c.001-21.831-17.487-39.577-39.218-39.993z']));
+var $author$project$Main$handPaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$handPaper);
 var $mdgriffith$elm_ui$Element$Background$color = function (clr) {
 	return A2(
 		$mdgriffith$elm_ui$Internal$Model$StyleClass,
@@ -18227,6 +18238,15 @@ var $author$project$Main$leftNavExpandedButtonLambda = F5(
 					onPress: $elm$core$Maybe$Just(msg)
 				}));
 	});
+var $lattyware$elm_fontawesome$FontAwesome$Solid$newspaper = A5(
+	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
+	'fas',
+	'newspaper',
+	576,
+	512,
+	_List_fromArray(
+		['M552 64H88c-13.255 0-24 10.745-24 24v8H24c-13.255 0-24 10.745-24 24v272c0 30.928 25.072 56 56 56h472c26.51 0 48-21.49 48-48V88c0-13.255-10.745-24-24-24zM56 400a8 8 0 0 1-8-8V144h16v248a8 8 0 0 1-8 8zm236-16H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm-208-96H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm0-96H140c-6.627 0-12-5.373-12-12v-40c0-6.627 5.373-12 12-12h360c6.627 0 12 5.373 12 12v40c0 6.627-5.373 12-12 12z']));
+var $author$project$Main$newspaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$newspaper);
 var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
 var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
 var $lattyware$elm_fontawesome$FontAwesome$Solid$plus = A5(
@@ -18333,7 +18353,7 @@ var $author$project$Main$leftNav = F2(
 					[
 						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
 						$mdgriffith$elm_ui$Element$width(
-						$mdgriffith$elm_ui$Element$px(200)),
+						$mdgriffith$elm_ui$Element$px(250)),
 						$mdgriffith$elm_ui$Element$padding(8),
 						A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8)
 					]),
@@ -18388,6 +18408,20 @@ var $author$project$Main$leftNav = F2(
 								$author$project$Main$plusIcon,
 								'Create Note',
 								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewNote),
+								false),
+								A5(
+								$author$project$Main$leftNavExpandedButtonLambda,
+								$mdgriffith$elm_ui$Element$alignBottom,
+								$author$project$Main$newspaperIcon,
+								'Create Source',
+								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewSource),
+								false),
+								A5(
+								$author$project$Main$leftNavExpandedButtonLambda,
+								$mdgriffith$elm_ui$Element$alignBottom,
+								$author$project$Main$handPaperIcon,
+								'Create Question',
+								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewQuestion),
 								false)
 							])),
 						A2(
@@ -18466,6 +18500,18 @@ var $author$project$Main$leftNav = F2(
 								$mdgriffith$elm_ui$Element$alignBottom,
 								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewNote),
 								$author$project$Main$plusIcon,
+								false),
+								A4(
+								$author$project$Main$leftNavContractedButtonLambda,
+								$mdgriffith$elm_ui$Element$alignBottom,
+								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewSource),
+								$author$project$Main$newspaperIcon,
+								false),
+								A4(
+								$author$project$Main$leftNavContractedButtonLambda,
+								$mdgriffith$elm_ui$Element$alignBottom,
+								A2($author$project$Main$AddItem, $elm$core$Maybe$Nothing, $author$project$Slipbox$NewQuestion),
+								$author$project$Main$handPaperIcon,
 								false)
 							])),
 						A2(
@@ -18708,7 +18754,6 @@ var $author$project$Main$createNoteButton = function (maybeItem) {
 				A2($author$project$Main$AddItem, maybeItem, $author$project$Slipbox$NewNote))
 		});
 };
-var $author$project$Slipbox$NewQuestion = {$: 'NewQuestion'};
 var $author$project$Main$createQuestionButton = function (maybeItem) {
 	return $author$project$Main$smallOldLavenderButton(
 		{
@@ -18726,7 +18771,6 @@ var $author$project$Main$createQuestionButton = function (maybeItem) {
 				A2($author$project$Main$AddItem, maybeItem, $author$project$Slipbox$NewQuestion))
 		});
 };
-var $author$project$Slipbox$NewSource = {$: 'NewSource'};
 var $author$project$Main$createSourceButton = function (maybeItem) {
 	return $author$project$Main$smallOldLavenderButton(
 		{
@@ -22499,15 +22543,6 @@ var $author$project$Main$ShouldHighlight = F2(
 		return {$: 'ShouldHighlight', a: a, b: b};
 	});
 var $author$project$Main$ShouldNotHighlight = {$: 'ShouldNotHighlight'};
-var $lattyware$elm_fontawesome$FontAwesome$Solid$handPaper = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'hand-paper',
-	448,
-	512,
-	_List_fromArray(
-		['M408.781 128.007C386.356 127.578 368 146.36 368 168.79V256h-8V79.79c0-22.43-18.356-41.212-40.781-40.783C297.488 39.423 280 57.169 280 79v177h-8V40.79C272 18.36 253.644-.422 231.219.007 209.488.423 192 18.169 192 40v216h-8V80.79c0-22.43-18.356-41.212-40.781-40.783C121.488 40.423 104 58.169 104 80v235.992l-31.648-43.519c-12.993-17.866-38.009-21.817-55.877-8.823-17.865 12.994-21.815 38.01-8.822 55.877l125.601 172.705A48 48 0 0 0 172.073 512h197.59c22.274 0 41.622-15.324 46.724-37.006l26.508-112.66a192.011 192.011 0 0 0 5.104-43.975V168c.001-21.831-17.487-39.577-39.218-39.993z']));
-var $author$project$Main$handPaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$handPaper);
 var $mdgriffith$elm_ui$Internal$Model$boxShadowClass = function (shadow) {
 	return $elm$core$String$concat(
 		_List_fromArray(
@@ -22630,15 +22665,6 @@ var $author$project$Main$leftNavTutorialButtonLambda = F4(
 					}));
 		}
 	});
-var $lattyware$elm_fontawesome$FontAwesome$Solid$newspaper = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'newspaper',
-	576,
-	512,
-	_List_fromArray(
-		['M552 64H88c-13.255 0-24 10.745-24 24v8H24c-13.255 0-24 10.745-24 24v272c0 30.928 25.072 56 56 56h472c26.51 0 48-21.49 48-48V88c0-13.255-10.745-24-24-24zM56 400a8 8 0 0 1-8-8V144h16v248a8 8 0 0 1-8 8zm236-16H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm-208-96H140c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm208 0H348c-6.627 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h152c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12zm0-96H140c-6.627 0-12-5.373-12-12v-40c0-6.627 5.373-12 12-12h360c6.627 0 12 5.373 12 12v40c0 6.627-5.373 12-12 12z']));
-var $author$project$Main$newspaperIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$newspaper);
 var $author$project$Main$webpageTitle = 'Slipbox ' + $author$project$Main$versionString;
 var $author$project$Main$leftNavTutorial = function (highlights) {
 	var saveButtonHighlight = function () {
