@@ -11,7 +11,7 @@ https://varunbhoopalam.github.io/slipbox/
 ## Mission
 People are capable of so much. People chasing their dreams often inspires me. This is why I want to help others, as thanks for the inspiration I've recieved in the past. I want to equip people with the tools to make their dreams a reality, empower people to solve problems that they face, and inspire them to action towards their own missions.
 
-**We will measure success of this project by counting the number of people this project can help. Helping means that they progress on their project or discover more about what they would like to work on.**
+**We will measure success of this project by counting the number of people this project can help with their big, intellectual endeavors.**
 
 **Our end of year target is 100 people**
 
