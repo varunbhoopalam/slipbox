@@ -1853,7 +1853,7 @@ toItemView content item =
     Item.NewNote itemId _ note -> itemContainerLambda
       [ conditionalSubmitItemHeader "New Note" ( Item.noteCanSubmit note ) item
       , toEditingNoteRepresentation
-        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source
+        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source Note.Regular
       ]
 
 
@@ -1873,7 +1873,6 @@ toItemView content item =
       itemContainerLambda
         [ submitItemHeader text item
         , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
-        , linkedNotesNodeNoButtons noteWithEdits content.slipbox
         ]
 
 
@@ -1887,7 +1886,6 @@ toItemView content item =
       itemContainerLambda
         [ deleteItemHeader text item
         , toNoteRepresentationFromNote note
-        , linkedNotesNodeNoButtons note content.slipbox
         ]
 
 
@@ -1963,14 +1961,12 @@ toItemView content item =
             ( Source.titleIsValid existingTitlesExcludingThisSourcesTitle ( Source.getTitle sourceWithEdits ) )
             item
           , toEditingSourceRepresentationFromItemSource item sourceWithEdits existingTitlesExcludingThisSourcesTitle
-          , associatedNotesNode item sourceWithEdits content.slipbox
           ]
 
 
     Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
       [ deleteItemHeader "Confirm Delete Source" item
       , toSourceRepresentationFromSource source
-      , associatedNotesNode item source content.slipbox
       ]
 
 
@@ -2127,22 +2123,6 @@ removeLinkButton item linkedNote link =
     , label = Element.text "Remove Link"
     }
 
-linkedNotesNodeNoButtons : Note.Note -> Slipbox.Slipbox -> Element Msg
-linkedNotesNodeNoButtons noteWithEdits slipbox =
-    let
-      linkedNotes = Slipbox.getLinkedNotes noteWithEdits slipbox
-      noLinkedNotes = List.isEmpty linkedNotes
-    in
-    if noLinkedNotes then
-      Element.none
-    else
-      Element.column []
-        [ Element.text "Linked Notes"
-        , Element.column
-          []
-          <| List.map toNoteRepresentationFromNote <| List.map Tuple.first linkedNotes
-        ]
-
 contentContainer : ( List ( Element Msg ) ) -> Element Msg
 contentContainer contents =
   Element.column
@@ -2194,13 +2174,20 @@ toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
     ( List.map Source.getTitle <| Slipbox.getSources Nothing slipbox )
     ( Note.getContent note )
     ( Note.getSource note )
+    ( Note.getVariant note )
 
-toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Element Msg
-toEditingNoteRepresentation itemId item titles content source =
-  contentContainer
-    [ Element.el [ Element.width Element.fill ] <| contentInput item content
-    , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
-    ]
+toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
+toEditingNoteRepresentation itemId item titles content source variant =
+  case variant of
+    Note.Regular ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill ] <| contentInput item content
+        , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
+        ]
+    Note.Question ->
+      contentContainer
+        [ Element.el [ Element.width Element.fill ] <| contentInput item content
+        ]
 
 toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
 toNoteDetailAddingLinkForm item note =

@@ -21151,25 +21151,6 @@ var $author$project$Main$linkedNotesNode = F3(
 					linkedNotesDomRep
 				])));
 	});
-var $author$project$Main$linkedNotesNodeNoButtons = F2(
-	function (noteWithEdits, slipbox) {
-		var linkedNotes = A2($author$project$Slipbox$getLinkedNotes, noteWithEdits, slipbox);
-		var noLinkedNotes = $elm$core$List$isEmpty(linkedNotes);
-		return noLinkedNotes ? $mdgriffith$elm_ui$Element$none : A2(
-			$mdgriffith$elm_ui$Element$column,
-			_List_Nil,
-			_List_fromArray(
-				[
-					$mdgriffith$elm_ui$Element$text('Linked Notes'),
-					A2(
-					$mdgriffith$elm_ui$Element$column,
-					_List_Nil,
-					A2(
-						$elm$core$List$map,
-						$author$project$Main$toNoteRepresentationFromNote,
-						A2($elm$core$List$map, $elm$core$Tuple$first, linkedNotes)))
-				]));
-	});
 var $author$project$Slipbox$PromptConfirmDelete = {$: 'PromptConfirmDelete'};
 var $author$project$Main$deleteButton = function (item) {
 	return $author$project$Main$smallRedButton(
@@ -21479,30 +21460,44 @@ var $author$project$Main$sourceInput = F4(
 						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestionsWithNA))
 					])));
 	});
-var $author$project$Main$toEditingNoteRepresentation = F5(
-	function (itemId, item, titles, content, source) {
-		return $author$project$Main$contentContainer(
-			_List_fromArray(
-				[
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					A2($author$project$Main$contentInput, item, content)),
-					A2(
-					$mdgriffith$elm_ui$Element$el,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-						]),
-					A4($author$project$Main$sourceInput, itemId, item, source, titles))
-				]));
+var $author$project$Main$toEditingNoteRepresentation = F6(
+	function (itemId, item, titles, content, source, variant) {
+		if (variant.$ === 'Regular') {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						A2($author$project$Main$contentInput, item, content)),
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						A4($author$project$Main$sourceInput, itemId, item, source, titles))
+					]));
+		} else {
+			return $author$project$Main$contentContainer(
+				_List_fromArray(
+					[
+						A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						A2($author$project$Main$contentInput, item, content))
+					]));
+		}
 	});
 var $author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox = F4(
 	function (itemId, item, note, slipbox) {
-		return A5(
+		return A6(
 			$author$project$Main$toEditingNoteRepresentation,
 			itemId,
 			item,
@@ -21511,7 +21506,8 @@ var $author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox = F4(
 				$author$project$Source$getTitle,
 				A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, slipbox)),
 			$author$project$Note$getContent(note),
-			$author$project$Note$getSource(note));
+			$author$project$Note$getSource(note),
+			$author$project$Note$getVariant(note));
 	});
 var $author$project$Slipbox$UpdateAuthor = function (a) {
 	return {$: 'UpdateAuthor', a: a};
@@ -21767,7 +21763,7 @@ var $author$project$Main$toItemView = F2(
 							'New Note',
 							$author$project$Item$noteCanSubmit(note),
 							item),
-							A5(
+							A6(
 							$author$project$Main$toEditingNoteRepresentation,
 							itemId,
 							item,
@@ -21776,7 +21772,8 @@ var $author$project$Main$toItemView = F2(
 								$author$project$Source$getTitle,
 								A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.slipbox)),
 							note.content,
-							note.source)
+							note.source,
+							$author$project$Note$Regular)
 						]));
 			case 'ConfirmDiscardNewNoteForm':
 				var note = item.c;
@@ -21801,8 +21798,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A2($author$project$Main$submitItemHeader, text, item),
-							A4($author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox, itemId, item, noteWithEdits, content.slipbox),
-							A2($author$project$Main$linkedNotesNodeNoButtons, noteWithEdits, content.slipbox)
+							A4($author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox, itemId, item, noteWithEdits, content.slipbox)
 						]));
 			case 'ConfirmDeleteNote':
 				var note = item.c;
@@ -21818,8 +21814,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A2($author$project$Main$deleteItemHeader, text, item),
-							$author$project$Main$toNoteRepresentationFromNote(note),
-							A2($author$project$Main$linkedNotesNodeNoButtons, note, content.slipbox)
+							$author$project$Main$toNoteRepresentationFromNote(note)
 						]));
 			case 'AddingLinkToNoteForm':
 				var search = item.c;
@@ -21955,8 +21950,7 @@ var $author$project$Main$toItemView = F2(
 								existingTitlesExcludingThisSourcesTitle,
 								$author$project$Source$getTitle(sourceWithEdits)),
 							item),
-							A3($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits, existingTitlesExcludingThisSourcesTitle),
-							A3($author$project$Main$associatedNotesNode, item, sourceWithEdits, content.slipbox)
+							A3($author$project$Main$toEditingSourceRepresentationFromItemSource, item, sourceWithEdits, existingTitlesExcludingThisSourcesTitle)
 						]));
 			case 'ConfirmDeleteSource':
 				var source = item.c;
@@ -21964,8 +21958,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A2($author$project$Main$deleteItemHeader, 'Confirm Delete Source', item),
-							$author$project$Main$toSourceRepresentationFromSource(source),
-							A3($author$project$Main$associatedNotesNode, item, source, content.slipbox)
+							$author$project$Main$toSourceRepresentationFromSource(source)
 						]));
 			case 'ConfirmDeleteLink':
 				var note = item.c;
