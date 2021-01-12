@@ -1605,7 +1605,7 @@ leftNav sideNavState selectedTab =
     Expanded ->
       Element.column
         [ Element.height Element.fill
-        , Element.width <| Element.px 200
+        , Element.width <| Element.px 250
         , Element.padding 8
         , Element.spacingXY 0 8
         ]
@@ -1631,6 +1631,8 @@ leftNav sideNavState selectedTab =
             ]
           , leftNavExpandedButtonLambda Element.alignBottom saveIcon "Save" FileDownload False
           , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
+          , leftNavExpandedButtonLambda Element.alignBottom newspaperIcon "Create Source" ( AddItem Nothing Slipbox.NewSource ) False
+          , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Question" ( AddItem Nothing Slipbox.NewQuestion ) False
           ]
         , Element.column
           [ Element.height biggerElement
@@ -1658,6 +1660,8 @@ leftNav sideNavState selectedTab =
           [ barsButton
           , leftNavContractedButtonLambda Element.alignBottom FileDownload saveIcon False
           , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
+          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewSource ) newspaperIcon False
+          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewQuestion ) handPaperIcon False
           ]
         , Element.column
           [ Element.height biggerElement
