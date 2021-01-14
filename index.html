@@ -20332,11 +20332,11 @@ var $author$project$Main$graph_ = F3(
 			$elm$core$List$concat(
 				_List_fromArray(
 					[
-						A2($elm$core$List$map, $author$project$Main$toGraphNote, notes),
 						A2(
 						$elm$core$List$filterMap,
 						$author$project$Main$toGraphLink(notes),
 						links),
+						A2($elm$core$List$map, $author$project$Main$toGraphNote, notes),
 						A2($author$project$Main$maybePanningFrame, viewport, notes)
 					])));
 	});
