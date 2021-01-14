@@ -10420,6 +10420,21 @@ var $author$project$Slipbox$isAssociated = F2(
 	function (note, link) {
 		return A2($author$project$Link$isSource, link, note) || A2($author$project$Link$isTarget, link, note);
 	});
+var $author$project$Item$isEmpty = function (item) {
+	switch (item.$) {
+		case 'NewNote':
+			var newNoteContent = item.c;
+			return $elm$core$String$isEmpty(newNoteContent.content) && $elm$core$String$isEmpty(newNoteContent.source);
+		case 'NewSource':
+			var newSourceContent = item.c;
+			return $elm$core$String$isEmpty(newSourceContent.title) && ($elm$core$String$isEmpty(newSourceContent.author) && $elm$core$String$isEmpty(newSourceContent.content));
+		case 'NewQuestion':
+			var string = item.c;
+			return $elm$core$String$isEmpty(string);
+		default:
+			return false;
+	}
+};
 var $author$project$Item$Open = {$: 'Open'};
 var $author$project$Item$openTray = function (item) {
 	return A2($author$project$Item$setTray, $author$project$Item$Open, item);
@@ -10773,12 +10788,15 @@ var $author$project$Slipbox$updateItem = F3(
 					return slipbox;
 				}
 			case 'Cancel':
+				var conditionallyDismissOrTransformLambda = function (transformation) {
+					return $author$project$Item$isEmpty(item) ? A2($author$project$Slipbox$dismissItem, item, slipbox) : update(transformation);
+				};
 				switch (item.$) {
 					case 'NewNote':
 						var itemId = item.a;
 						var tray = item.b;
 						var note = item.c;
-						return update(
+						return conditionallyDismissOrTransformLambda(
 							A3($author$project$Item$ConfirmDiscardNewNoteForm, itemId, tray, note));
 					case 'ConfirmDiscardNewNoteForm':
 						var itemId = item.a;
@@ -10808,7 +10826,7 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var source = item.c;
-						return update(
+						return conditionallyDismissOrTransformLambda(
 							A3($author$project$Item$ConfirmDiscardNewSourceForm, itemId, tray, source));
 					case 'ConfirmDiscardNewSourceForm':
 						var itemId = item.a;
@@ -10838,7 +10856,7 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var question = item.c;
-						return update(
+						return conditionallyDismissOrTransformLambda(
 							A3($author$project$Item$ConfirmDiscardNewQuestion, itemId, tray, question));
 					case 'ConfirmDiscardNewQuestion':
 						var itemId = item.a;

@@ -16,6 +16,7 @@ module Item exposing
   , closeTray
   , ButtonTray
   , isTrayOpen
+  , isEmpty
   )
 
 import Note
@@ -193,3 +194,20 @@ setTray tray item =
     ConfirmDeleteNote id _ note -> ConfirmDeleteNote id tray note
     ConfirmDeleteSource id _ source -> ConfirmDeleteSource id tray source
     ConfirmDeleteLink id _ note linkedNote link -> ConfirmDeleteLink id tray note linkedNote link
+
+isEmpty : Item -> Bool
+isEmpty item =
+  case item of
+    NewNote _ _ newNoteContent ->
+      String.isEmpty newNoteContent.content && String.isEmpty newNoteContent.source
+
+    NewSource _ _ newSourceContent ->
+      String.isEmpty newSourceContent.title &&
+      String.isEmpty newSourceContent.author &&
+      String.isEmpty newSourceContent.content
+
+    NewQuestion _ _ string ->
+      String.isEmpty string
+
+    _ -> False
+

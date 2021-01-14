@@ -332,9 +332,17 @@ updateItem item updateAction slipbox =
         _ -> slipbox
     
     Cancel ->
+      let
+        conditionallyDismissOrTransformLambda =
+          \transformation ->
+            if Item.isEmpty item then
+              dismissItem item slipbox
+            else
+              update transformation
+      in
       case item of
         Item.NewNote itemId tray note ->
-          update <| Item.ConfirmDiscardNewNoteForm itemId tray note
+          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewNoteForm itemId tray note
         Item.ConfirmDiscardNewNoteForm itemId tray note ->
           update <| Item.NewNote itemId tray note
         Item.EditingNote itemId tray originalNote _ ->
@@ -344,7 +352,7 @@ updateItem item updateAction slipbox =
         Item.AddingLinkToNoteForm itemId tray _ note _ ->
           update <| Item.Note itemId tray note
         Item.NewSource itemId tray source ->
-          update <| Item.ConfirmDiscardNewSourceForm itemId tray source
+          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewSourceForm itemId tray source
         Item.ConfirmDiscardNewSourceForm itemId tray source ->
           update <| Item.NewSource itemId tray source
         Item.EditingSource itemId tray originalSource _ ->
@@ -354,7 +362,7 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteLink itemId tray note _ _ ->
           update <| Item.Note itemId tray note
         Item.NewQuestion itemId tray question ->
-          update <| Item.ConfirmDiscardNewQuestion itemId tray question
+          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewQuestion itemId tray question
         Item.ConfirmDiscardNewQuestion itemId tray question ->
           update <| Item.ConfirmDiscardNewQuestion itemId tray question
         _ -> slipbox
