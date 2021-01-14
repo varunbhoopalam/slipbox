@@ -10912,10 +10912,11 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var noteContent = item.c;
+						var source = $elm$core$String$isEmpty(noteContent.source) ? 'n/a' : noteContent.source;
 						var _v14 = A2(
 							$author$project$Note$create,
 							content.idGenerator,
-							{content: noteContent.content, source: noteContent.source, variant: $author$project$Note$Regular});
+							{content: noteContent.content, source: source, variant: $author$project$Note$Regular});
 						var note = _v14.a;
 						var idGenerator = _v14.b;
 						var _v15 = A2(
@@ -21229,7 +21230,7 @@ var $author$project$Main$normalItemHeader = F2(
 				]));
 	});
 var $author$project$Item$noteCanSubmit = function (newNoteContent) {
-	return (!$elm$core$String$isEmpty(newNoteContent.source)) && (!$elm$core$String$isEmpty(newNoteContent.content));
+	return !$elm$core$String$isEmpty(newNoteContent.content);
 };
 var $author$project$Slipbox$CloseTray = {$: 'CloseTray'};
 var $author$project$Slipbox$OpenTray = {$: 'OpenTray'};
