@@ -19941,7 +19941,7 @@ var $author$project$Main$graphAttributes = F2(
 					A2($elm$json$Json$Decode$map, $author$project$Main$MoveView, mouseEventDecoder)),
 					$elm$svg$Svg$Events$onMouseUp($author$project$Main$StopMoveView),
 					$elm$svg$Svg$Attributes$width('100%'),
-					$elm$svg$Svg$Attributes$height('auto')
+					$elm$svg$Svg$Attributes$height('100%')
 				]);
 		} else {
 			return _List_fromArray(
@@ -19953,7 +19953,7 @@ var $author$project$Main$graphAttributes = F2(
 					'mousedown',
 					A2($elm$json$Json$Decode$map, $author$project$Main$StartMoveView, mouseEventDecoder)),
 					$elm$svg$Svg$Attributes$width('100%'),
-					$elm$svg$Svg$Attributes$height('auto')
+					$elm$svg$Svg$Attributes$height('100%')
 				]);
 		}
 	});
@@ -21616,9 +21616,19 @@ var $author$project$Main$toQuestionRepresentation = function (question) {
 var $author$project$Main$sourceAuthorView = function (sourceAuthor) {
 	return A2($author$project$Main$labeledViewBuilder, 'Author', sourceAuthor);
 };
-var $author$project$Main$sourceContentView = function (noteContent) {
+var $elm$core$String$lines = _String_lines;
+var $author$project$Main$toParagraph = function (content) {
 	return A2(
-		$mdgriffith$elm_ui$Element$textColumn,
+		$mdgriffith$elm_ui$Element$paragraph,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$text(content)
+			]));
+};
+var $author$project$Main$sourceContentView = function (sourceContent) {
+	return A2(
+		$mdgriffith$elm_ui$Element$column,
 		_List_fromArray(
 			[
 				A2($mdgriffith$elm_ui$Element$spacingXY, 0, 8),
@@ -21634,12 +21644,15 @@ var $author$project$Main$sourceContentView = function (noteContent) {
 					[$mdgriffith$elm_ui$Element$Font$underline]),
 				$mdgriffith$elm_ui$Element$text('Content')),
 				A2(
-				$mdgriffith$elm_ui$Element$paragraph,
-				_List_Nil,
+				$mdgriffith$elm_ui$Element$textColumn,
 				_List_fromArray(
 					[
-						$mdgriffith$elm_ui$Element$text(noteContent)
-					]))
+						A2($mdgriffith$elm_ui$Element$spacingXY, 0, 16)
+					]),
+				A2(
+					$elm$core$List$map,
+					$author$project$Main$toParagraph,
+					$elm$core$String$lines(sourceContent)))
 			]));
 };
 var $author$project$Main$sourceTitleView = function (sourceTitle) {
