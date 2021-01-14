@@ -2271,8 +2271,8 @@ graph_ : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link))
 graph_ deviceViewport viewport (notes, links) =
   Svg.svg ( graphAttributes deviceViewport viewport )
     <| List.concat
-      [ List.map toGraphNote notes
-      , List.filterMap (toGraphLink notes) links
+      [ List.filterMap (toGraphLink notes) links
+      , List.map toGraphNote notes
       , maybePanningFrame viewport notes
       ]
 
