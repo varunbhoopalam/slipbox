@@ -2290,13 +2290,13 @@ graphAttributes ( width, _ ) viewport =
         , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
         , Svg.Events.onMouseUp StopMoveView
         , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "auto"
+        , Svg.Attributes.height "100%"
       ]
     Viewport.Stationary -> 
       [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
         , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
         , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "auto"
+        , Svg.Attributes.height "100%"
       ]
 
 toGraphNote: Note.Note -> Svg.Svg Msg
@@ -2650,6 +2650,10 @@ authorInput item input =
 
 -- MISC VIEW FUNCTIONS
 
+toParagraph : String -> Element Msg
+toParagraph content =
+  Element.paragraph [] [ Element.text content ]
+
 labeledViewBuilder : String -> String -> Element Msg
 labeledViewBuilder label content =
   Element.textColumn
@@ -2673,14 +2677,17 @@ sourceAuthorView : String -> Element Msg
 sourceAuthorView sourceAuthor = labeledViewBuilder "Author" sourceAuthor
 
 sourceContentView : String -> Element Msg
-sourceContentView noteContent =
-  Element.textColumn
+sourceContentView sourceContent =
+  Element.column
     [ Element.spacingXY 0 8
     , Element.scrollbarY
     , Element.height <| Element.maximum 300 Element.fill
     ]
     [ Element.el [ Element.Font.underline ] <| Element.text "Content"
-    , Element.paragraph [] [ Element.text noteContent ] ]
+    , Element.textColumn
+      [ Element.spacingXY 0 16]
+      ( List.map toParagraph <| String.lines sourceContent )
+    ]
 
 -- VIEW BUTTON BUILDER
 
