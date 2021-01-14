@@ -80,7 +80,7 @@ newNote generator =
 
 noteCanSubmit : NewNoteContent -> Bool
 noteCanSubmit newNoteContent =
-  ( not <| String.isEmpty newNoteContent.source ) && ( not <| String.isEmpty newNoteContent.content )
+  ( not <| String.isEmpty newNoteContent.content )
 
 newSource : IdGenerator.IdGenerator -> ( Item, IdGenerator.IdGenerator)
 newSource generator =

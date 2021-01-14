@@ -390,8 +390,13 @@ updateItem item updateAction slipbox =
 
         Item.NewNote itemId tray noteContent ->
           let
+              source =
+                if String.isEmpty noteContent.source then
+                  "n/a"
+                else
+                  noteContent.source
               (note, idGenerator) = Note.create content.idGenerator
-                <| { content = noteContent.content, source = noteContent.source, variant = Note.Regular }
+                <| { content = noteContent.content, source = source, variant = Note.Regular }
               (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
