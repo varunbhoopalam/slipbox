@@ -22,6 +22,8 @@ module Slipbox exposing
   , encode
   , endTutorial
   , TutorialEnding(..)
+  , unsavedChanges
+  , saveChanges
   )
 
 import Note
@@ -43,6 +45,7 @@ type alias Content =
   , sources: List Source.Source
   , state: State Int
   , idGenerator: IdGenerator.IdGenerator
+  , unsavedChanges: Bool
   }
 
 getContent : Slipbox -> Content
@@ -57,7 +60,7 @@ new  =
   let
     ( state, _ ) = simulation [] []
   in
-  Slipbox <| Content [] [] [] [] state IdGenerator.init
+  Slipbox <| Content [] [] [] [] state IdGenerator.init False
 
 getGraphItems : (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
 getGraphItems maybeSearch slipbox =
@@ -380,12 +383,14 @@ updateItem item updateAction slipbox =
             , links = links
             , items = List.map (deleteNoteItemStateChange noteToDelete) <| removeItemFromList item content.items
             , state = state
+            , unsavedChanges = True
             }
 
         Item.ConfirmDeleteSource _ _ source ->
           Slipbox
             { content | sources = List.filter (isNotLambda Source.is source) content.sources
             , items = removeItemFromList item content.items
+            , unsavedChanges = True
             }
 
         Item.NewNote itemId tray noteContent ->
@@ -404,6 +409,7 @@ updateItem item updateAction slipbox =
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
             , idGenerator = idGenerator
+            , unsavedChanges = True
             }
 
         Item.NewSource itemId tray sourceContent ->
@@ -414,15 +420,17 @@ updateItem item updateAction slipbox =
             { content | sources = source :: content.sources
             , items = List.map (\i -> if Item.is item i then Item.Source itemId tray source else i) content.items
             , idGenerator = generator
+            , unsavedChanges = True
             }
 
-        Item.EditingNote itemId tray originalNote editingNote ->
+        Item.EditingNote itemId tray _ editingNote ->
           let
               conditionallyUpdateTargetNoteWithEdits = updateLambda Note.is ( updateNoteEdits editingNote ) editingNote
           in
           Slipbox
             { content | notes = List.map conditionallyUpdateTargetNoteWithEdits content.notes
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray editingNote else i) content.items
+            , unsavedChanges = True
             }
 
         Item.EditingSource itemId tray _ sourceWithEdits ->
@@ -432,6 +440,7 @@ updateItem item updateAction slipbox =
           Slipbox
             { content | sources = List.map conditionallyUpdateTargetSourceWithEdits content.sources
             , items = List.map (\i -> if Item.is item i then Item.Source itemId tray sourceWithEdits else i) content.items
+            , unsavedChanges = True
             }
 
         Item.AddingLinkToNoteForm itemId tray _ note maybeNoteToBeLinked ->
@@ -448,6 +457,7 @@ updateItem item updateAction slipbox =
                 , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
                 , state = state
                 , idGenerator = idGenerator
+                , unsavedChanges = True
                 }
             _ -> slipbox
 
@@ -462,6 +472,7 @@ updateItem item updateAction slipbox =
             , links = links
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
+            , unsavedChanges = True
             }
 
         Item.ConfirmDiscardNewNoteForm _ _ _ ->
@@ -481,6 +492,7 @@ updateItem item updateAction slipbox =
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
             , state = state
             , idGenerator = idGenerator
+            , unsavedChanges = True
             }
 
         Item.ConfirmDiscardNewQuestion _ _ _ ->
@@ -551,6 +563,16 @@ encode slipbox =
       , ( "sources", Json.Encode.list Source.encode info.sources )
       , ( "idGenerator", IdGenerator.encode info.idGenerator )
       ]
+
+unsavedChanges : Slipbox -> Bool
+unsavedChanges slipbox =
+  case slipbox of
+    Slipbox content -> content.unsavedChanges
+
+saveChanges : Slipbox -> Slipbox
+saveChanges slipbox =
+  case slipbox of
+    Slipbox content -> Slipbox { content | unsavedChanges = False }
 
 type alias TutorialSource =  {title:String, author:String, content:String}
 type alias TutorialNote = { content : String, source : String}
@@ -939,7 +961,7 @@ slipbox_ notesBeforeSimulation links sources idGenerator =
   let
     ( state, notes ) = simulation notesBeforeSimulation links
   in
-  Slipbox <| Content notes links [] sources state idGenerator
+  Slipbox <| Content notes links [] sources state idGenerator False
 
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
 buildItemList itemToMatch itemToAdd =
