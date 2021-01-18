@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Browser.Events
@@ -148,10 +148,11 @@ type Msg
   | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
   | FileRequested
-  | FileSelected File.File
+  --| FileSelected File.File
   | FileRequestedTutorial
   | FileSelectedTutorial File.File
   | FileLoaded String
+  | FileSaved Int
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
@@ -261,16 +262,16 @@ update message model =
 
     FileRequested ->
       case model.state of
-        Setup -> ( model, File.Select.file ["application/json"] FileSelected )
+        Setup -> ( model, open () )
         _ -> ( model, Cmd.none )
 
-    FileSelected file ->
-      case model.state of
-        Setup ->
-          ({ model | state = Parsing}
-          , Task.perform FileLoaded (File.toString file)
-          )
-        _ -> ( model, Cmd.none )
+    --FileSelected file ->
+    --  case model.state of
+    --    Setup ->
+    --      ({ model | state = Parsing}
+    --      , Task.perform FileLoaded (File.toString file)
+    --      )
+    --    _ -> ( model, Cmd.none )
 
     FileRequestedTutorial ->
       case model.state of
@@ -281,7 +282,7 @@ update message model =
 
     FileLoaded fileContentAsString ->
       case model.state of
-        Parsing ->
+        Setup ->
           let
             maybeSlipbox = Json.Decode.decodeString Slipbox.decode fileContentAsString
           in
@@ -293,9 +294,20 @@ update message model =
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
         _ -> ( model, Cmd.none )
 
+    FileSaved _ ->
+      case getSlipbox model of
+        Just slipbox ->
+          ( updateSlipbox ( Slipbox.saveChanges slipbox ) model
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+
     FileDownload ->
       case getSlipbox model of
-        Just slipbox -> ( model, File.Download.string "slipbox.json" "application/json" <| Slipbox.encode slipbox )
+        Just slipbox ->
+          ( model
+          , save <| Slipbox.encode slipbox
+          )
         Nothing -> ( model, Cmd.none )
 
     Tick _ ->
@@ -438,12 +450,21 @@ handleWindowInfo windowInfo model =
         _ -> { model | deviceViewport = windowInfo }
     _ -> { model | deviceViewport = windowInfo }
 
+-- PORTS
+
+port open : () -> Cmd msg
+port save : String -> Cmd msg
+port fileContent : (String -> msg) -> Sub msg
+port fileSaved : (Int -> msg) -> Sub msg
+
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
     , maybeSubscribeOnAnimationFrame model
+    , fileContent FileLoaded
+    , fileSaved FileSaved
     ]
 
 maybeSubscribeOnAnimationFrame : Model -> Sub Msg
@@ -1418,7 +1439,7 @@ sessionNode deviceViewport content =
     [ Element.width Element.fill
     , Element.height Element.fill
     ]
-    [ leftNav content.sideNavState content.tab
+    [ leftNav content.sideNavState content.tab content.slipbox
     , Element.el
       [ Element.width biggerElement
       , Element.height Element.fill]
@@ -1594,12 +1615,22 @@ leftNavContractedButtonLambda alignment msg icon shouldHaveBackground =
         , label = icon
         }
 
-leftNav : SideNavState -> Tab -> Element.Element Msg
-leftNav sideNavState selectedTab =
+leftNav : SideNavState -> Tab -> Slipbox.Slipbox -> Element.Element Msg
+leftNav sideNavState selectedTab slipbox =
   let
     iconWidth = Element.width <| Element.px 35
     iconHeight = Element.width <| Element.px 40
     emptyIcon = Element.el [ iconWidth, iconHeight ] Element.none
+    unsavedChangesNode =
+      if Slipbox.unsavedChanges slipbox then
+        Element.el
+          [Element.Font.size 12
+          , Element.moveRight 6.0
+          , Element.moveDown 14.0
+          ]
+          <| Element.text "unsaved changes"
+      else
+        Element.none
   in
   case sideNavState of
     Expanded ->
@@ -1629,7 +1660,24 @@ leftNav sideNavState selectedTab =
             [ emptyIcon
             , Element.el [ Element.centerY, Element.alignLeft ] aboutButton
             ]
-          , leftNavExpandedButtonLambda Element.alignBottom saveIcon "Save" FileDownload False
+          , Element.el
+            [ Element.width Element.fill
+            , Element.alignBottom
+            ]
+            <| Element.Input.button
+              [ Element.width Element.fill
+              , Element.height Element.fill
+              , Element.Border.rounded 10
+              , Element.padding 1
+              ]
+              { onPress = Just FileDownload
+              , label =
+                Element.row
+                  [ Element.spacingXY 16 0, Element.onRight unsavedChangesNode ]
+                  [ saveIcon
+                  , Element.text "Save"
+                  ]
+              }
           , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
           , leftNavExpandedButtonLambda Element.alignBottom newspaperIcon "Create Source" ( AddItem Nothing Slipbox.NewSource ) False
           , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Question" ( AddItem Nothing Slipbox.NewQuestion ) False
