@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Browser.Events
@@ -148,10 +148,11 @@ type Msg
   | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
   | FileRequested
-  | FileSelected File.File
+  --| FileSelected File.File
   | FileRequestedTutorial
   | FileSelectedTutorial File.File
   | FileLoaded String
+  | FileSaved Int
   | FileDownload
   | Tick Time.Posix
   | ChangeTab Tab_
@@ -261,16 +262,16 @@ update message model =
 
     FileRequested ->
       case model.state of
-        Setup -> ( model, File.Select.file ["application/json"] FileSelected )
+        Setup -> ( model, open () )
         _ -> ( model, Cmd.none )
 
-    FileSelected file ->
-      case model.state of
-        Setup ->
-          ({ model | state = Parsing}
-          , Task.perform FileLoaded (File.toString file)
-          )
-        _ -> ( model, Cmd.none )
+    --FileSelected file ->
+    --  case model.state of
+    --    Setup ->
+    --      ({ model | state = Parsing}
+    --      , Task.perform FileLoaded (File.toString file)
+    --      )
+    --    _ -> ( model, Cmd.none )
 
     FileRequestedTutorial ->
       case model.state of
@@ -281,7 +282,7 @@ update message model =
 
     FileLoaded fileContentAsString ->
       case model.state of
-        Parsing ->
+        Setup ->
           let
             maybeSlipbox = Json.Decode.decodeString Slipbox.decode fileContentAsString
           in
@@ -293,12 +294,19 @@ update message model =
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
         _ -> ( model, Cmd.none )
 
-    FileDownload ->
+    FileSaved _ ->
       case getSlipbox model of
         Just slipbox ->
           ( updateSlipbox ( Slipbox.saveChanges slipbox ) model
-          , File.Download.string "slipbox.json" "application/json"
-            <| Slipbox.encode slipbox
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+
+    FileDownload ->
+      case getSlipbox model of
+        Just slipbox ->
+          ( model
+          , save <| Slipbox.encode slipbox
           )
         Nothing -> ( model, Cmd.none )
 
@@ -442,12 +450,21 @@ handleWindowInfo windowInfo model =
         _ -> { model | deviceViewport = windowInfo }
     _ -> { model | deviceViewport = windowInfo }
 
+-- PORTS
+
+port open : () -> Cmd msg
+port save : String -> Cmd msg
+port fileContent : (String -> msg) -> Sub msg
+port fileSaved : (Int -> msg) -> Sub msg
+
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
     , maybeSubscribeOnAnimationFrame model
+    , fileContent FileLoaded
+    , fileSaved FileSaved
     ]
 
 maybeSubscribeOnAnimationFrame : Model -> Sub Msg
