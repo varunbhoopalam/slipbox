@@ -491,6 +491,7 @@ view: Model -> Browser.Document Msg
 view model =
   case model.state of
     Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
+    -- TODO : Investigate and remove Parsing form state
     Parsing -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Loading" ] }
     FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure" ] }
     Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }

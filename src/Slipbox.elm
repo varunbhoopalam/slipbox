@@ -24,6 +24,7 @@ module Slipbox exposing
   , TutorialEnding(..)
   , unsavedChanges
   , saveChanges
+  , getAllNotesAndLinksInQuestionTree
   )
 
 import Note
@@ -573,6 +574,94 @@ saveChanges : Slipbox -> Slipbox
 saveChanges slipbox =
   case slipbox of
     Slipbox content -> Slipbox { content | unsavedChanges = False }
+
+{-| This will get all linked notes to a question and all linked notes to those linked notes
+except for if the note is a question. Confusing I know but perhaps this is a confusing feature.
+-}
+getAllNotesAndLinksInQuestionTree : Note.Note -> Slipbox -> ( List Note.Note, List Link.Link )
+getAllNotesAndLinksInQuestionTree question slipbox =
+  let
+    content = getContent slipbox
+    noteLinkTuples = getAllNotesInQuestionTreeRecursion question content.notes content.links
+  in
+  ( question :: List.map Tuple.first noteLinkTuples, List.map Tuple.second noteLinkTuples )
+
+getAllNotesInQuestionTreeRecursion : Note.Note -> ( List Note.Note ) -> ( List Link.Link) -> List ( Note.Note, Link.Link )
+getAllNotesInQuestionTreeRecursion note notes links =
+  let
+    linkNoteTuples = getLinkedNotesWithoutQuestions note notes links
+    linksAlreadyAccountedFor = List.map Tuple.second linkNoteTuples
+    remainingLinks =
+      List.filter
+        ( \l ->
+          if List.any ( Link.is l ) linksAlreadyAccountedFor then
+            False
+          else
+            True
+        )
+        links
+    recursedLinkNoteTuples =
+      List.map
+        ( \linkedNote ->
+          getAllNotesInQuestionTreeRecursion
+            linkedNote
+            ( removeNoteFromList linkedNote notes )
+            remainingLinks
+        )
+        ( List.map Tuple.first linkNoteTuples )
+  in
+   List.concat
+    [ linkNoteTuples
+    , flatten2D recursedLinkNoteTuples
+    ]
+
+flatten2D : List (List a) -> List a
+flatten2D list =
+  List.foldr (++) [] list
+
+removeNoteFromList : Note.Note -> ( List Note.Note ) -> ( List Note.Note )
+removeNoteFromList note notes =
+  List.filter (\n -> not <| Note.is note n ) notes
+
+getLinkedNotesWithoutQuestions : Note.Note -> ( List Note.Note ) -> ( List Link.Link ) -> ( List ( Note.Note, Link.Link ) )
+getLinkedNotesWithoutQuestions note notes links =
+  let
+      relevantLinks = List.filter ( isAssociated note ) links
+  in
+  List.filterMap ( convertLinktoLinkNoteTupleNoQ note notes ) relevantLinks
+
+convertLinktoLinkNoteTupleNoQ : Note.Note -> ( List Note.Note ) -> Link.Link -> ( Maybe ( Note.Note, Link.Link ) )
+convertLinktoLinkNoteTupleNoQ targetNote notes link =
+  if Link.isTarget link targetNote then
+    case List.head <| List.filter ( Link.isSource link ) notes of
+
+      Just note ->
+
+        case Note.getVariant note of
+
+          Note.Question -> Nothing
+
+          Note.Regular -> Just ( note, link )
+
+      Nothing -> Nothing
+
+  else if Link.isSource link targetNote then
+
+    case List.head <| List.filter ( Link.isTarget link ) notes of
+
+      Just note ->
+
+        case Note.getVariant note of
+
+            Note.Question -> Nothing
+
+            Note.Regular -> Just ( note, link )
+
+      Nothing -> Nothing
+
+  else
+
+    Nothing
 
 type alias TutorialSource =  {title:String, author:String, content:String}
 type alias TutorialNote = { content : String, source : String}
