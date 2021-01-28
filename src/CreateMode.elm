@@ -681,7 +681,16 @@ radioOptionNode : SelectedNote -> LinksCreated -> Element Msg
 radioOptionNode selectedNote linksCreated =
   let
     maybeLinkCreatedForSelectedNote = getLinkForSelectedNote selectedNote linksCreated
-    ifBridgeCreatedNode = ""
+    (selected, bridgeNode) =
+      case maybeLinkCreatedForSelectedNote of
+        Just link ->
+          case getBridgeNoteFromLink link of
+            Just bridgeNote ->
+              ( Just OpenBridgeModal
+              , Element.text bridgeNote
+              )
+            Nothing -> ( Just CreateLink, Element.none )
+        Nothing -> ( Nothing, Element.none )
   in
   Element.column
     []
@@ -698,13 +707,26 @@ radioOptionNode selectedNote linksCreated =
         [ Element.Input.option CreateLink <| Element.text "Directly Link"
         , Element.Input.option OpenBridgeModal <| Element.text "Link with a Bridge note"
         ]
-      , selected = convertToLinkRadioOption selectedNote <| getCreatedLinks createModeInternal
+      , selected = selected
       }
-    , ifBridgeCreatedNode
+    , bridgeNode
     ]
 
--- If someone selects link, the model should create a link
--- If someone selects bridge, the model should open the bridgeModal
+legend : Element Msg
+legend =
+  Element.wrappedRow
+    []
+    [ Element.row
+      []
+      [ starIcon
+      , Element.text "Currently Selected Note"
+      ]
+    , Element.row
+      []
+      [ linkIcon
+      , Element.text "Note Marked to link"
+      ]
+    ]
 
 -- ICONS
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -719,3 +741,6 @@ iconBuilder icon =
 
 starIcon = iconBuilder FontAwesome.Solid.star
 starSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.star
+
+linkIcon = iconBuilder FontAwesome.Solid.link
+linkSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.link
