@@ -15,6 +15,9 @@ import Html
 import Element exposing (Element)
 import Element.Input
 import Element.Font
+import Svg
+import Svg.Attributes
+import Svg.Events
 
 -- MAIN
 
@@ -26,7 +29,7 @@ main =
 type Model
   = NoteInput CoachingModal Slipbox.Slipbox CreateModeInternal
   | ChooseQuestion CoachingModal Slipbox.Slipbox CreateModeInternal
-  | FindLinksForQuestion CoachingModal Graph BridgeModal Slipbox.Slipbox CreateModeInternal Question SelectedNote
+  | FindLinksForQuestion CoachingModal Graph LinkModal Slipbox.Slipbox CreateModeInternal Question SelectedNote
   | ChooseSourceCategory CoachingModal Slipbox.Slipbox CreateModeInternal
   | ChooseExistingSource CoachingModal Slipbox.Slipbox CreateModeInternal
   | CreateNewSource CoachingModal Slipbox.Slipbox CreateModeInternal
@@ -161,12 +164,40 @@ createLink note internal =
   in
   setCreatedLinks updatedCreatedLinks internal
 
+createBridge : Note.Note -> String -> CreateModeInternal -> CreateModeInternal
+createBridge note bridgeNote internal =
+  let
+    links = getCreatedLinks internal
+    linkIdentifier = ( linkIsForNote note )
+    linkToNoteAlreadyExists = List.any linkIdentifier links
+    newLink = makeBridge note bridgeNote
+    updatedCreatedLinks =
+      if linkToNoteAlreadyExists then
+        List.map
+          ( \link ->
+            if linkIdentifier link then
+              newLink
+            else
+              link
+          )
+          links
+      else
+        newLink :: links
+  in
+  setCreatedLinks updatedCreatedLinks internal
+
 type alias Note = String
 -- TODO: This data structure allows for duplicate questions, is that okay?
 -- We can prevent this with logic but perhaps a set would be a better structure
 type alias QuestionsRead = ( List Note.Note )
 
 type alias LinksCreated = ( List Link )
+
+removeLinkAssociatedWithNote : Note.Note -> LinksCreated -> LinksCreated
+removeLinkAssociatedWithNote note linksCreated =
+  List.filter
+    (\l -> not <| linkIsForNote note l )
+    linksCreated
 
 type Link
   = Link Note.Note
@@ -181,6 +212,10 @@ getBridgeNoteFromLink link =
 makeLink : Note.Note -> Link
 makeLink note =
   Link note
+
+makeBridge : Note.Note -> String -> Link
+makeBridge note bridgeNote =
+  Bridge note bridgeNote
 
 linkIsForNote : Note.Note -> Link -> Bool
 linkIsForNote note link =
@@ -224,29 +259,30 @@ type alias Title = String
 type alias Author = String
 type alias Content = String
 
-type BridgeModal
+type LinkModal
   = Closed
-  | Open Note.Note Note String
+  | Open String
 
-openBridgeModal : Note.Note -> Note -> String -> BridgeModal
-openBridgeModal selectedNote writtenNote bridgeNote =
-  Open selectedNote writtenNote bridgeNote
+openLinkModal : String -> LinkModal
+openLinkModal bridgeNote =
+  Open bridgeNote
 
-bridgeModalIsClosed : BridgeModal -> Bool
-bridgeModalIsClosed bridgeModal =
+closeLinkModal : LinkModal
+closeLinkModal = Closed
+
+linkModalIsClosed : LinkModal -> Bool
+linkModalIsClosed bridgeModal =
   case bridgeModal of
     Closed -> True
-    Open _ _ _ -> False
-
-
+    Open _ -> False
 
 -- TODO: Do I need to include links in here as well to represent them on the graph?
 type alias Graph =
-  { positions :  List NotePositions
+  { positions :  List NotePosition
   , links : List Link.Link
   }
 
-type alias NotePositions =
+type alias NotePosition =
   { id : Int
   , note : Note.Note
   , x : Float
@@ -270,7 +306,10 @@ type Msg
   | ToFindLinksForQuestion Note.Note
   | ToChooseQuestion
   | CreateLinkForSelectedNote
-  | OpenBridgeModalForSelectedNote
+  | CreateBridgeForSelectedNote
+  | CancelCreateLink
+  | LinkCheckboxToggled Bool
+  | SelectNote SelectedNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -323,35 +362,87 @@ update msg model =
 
     CreateLinkForSelectedNote ->
       case model of
-        FindLinksForQuestion _ _ _ _ createModeInternal _ selectedNote ->
-          ( setInternal ( createLink selectedNote createModeInternal ) model
-          , Cmd.none
-          )
+        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
+          if linkModalIsClosed linkModal then
+            ( model, Cmd.none )
+          else
+            ( FindLinksForQuestion
+              coachingModal
+              graph
+              closeLinkModal
+              slipbox
+              ( createLink selectedNote createModeInternal )
+              question
+              selectedNote
+            , Cmd.none
+            )
         _ -> ( model, Cmd.none )
 
-    OpenBridgeModalForSelectedNote ->
+    CreateBridgeForSelectedNote ->
       case model of
-        FindLinksForQuestion coachingModal graph bridgeModal slipbox createModeInternal question selectedNote ->
-          let
-            maybeBridgeNote =
-              getLinkForSelectedNoteIfBridge selectedNote <|
-                getCreatedLinks createModeInternal
-            updatedBridgeModal =
-              if bridgeModalIsClosed bridgeModal then
-                case maybeBridgeNote of
-                  Just bridgeNote ->
-                    openBridgeModal selectedNote ( getNote createModeInternal ) bridgeNote
-                  Nothing ->
-                    openBridgeModal selectedNote ( getNote createModeInternal ) ""
-              else
-                bridgeModal
-          in
-          ( FindLinksForQuestion coachingModal graph updatedBridgeModal slipbox createModeInternal question selectedNote
+        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
+          case linkModal of
+            Closed -> ( model, Cmd.none )
+            Open bridgeNote ->
+              ( FindLinksForQuestion
+                coachingModal
+                graph
+                closeLinkModal
+                slipbox
+                ( createBridge selectedNote bridgeNote createModeInternal )
+                question
+                selectedNote
+              , Cmd.none
+              )
+        _ -> ( model, Cmd.none )
+
+    CancelCreateLink ->
+      case model of
+        FindLinksForQuestion coachingModal graph _ slipbox createModeInternal question selectedNote ->
+          ( FindLinksForQuestion coachingModal graph closeLinkModal slipbox createModeInternal question selectedNote
           , Cmd.none
           )
         _ -> ( model, Cmd.none )
 
-simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePositions, List Link.Link )
+    LinkCheckboxToggled _ ->
+      case model of
+        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
+          let
+            createdLinks = getCreatedLinks createModeInternal
+          in
+          case getLinkForSelectedNote selectedNote createdLinks of
+            Just _ ->
+              let
+                updatedCreatedLinks = removeLinkAssociatedWithNote selectedNote createdLinks
+                updatedCreateModeInternal = setCreatedLinks updatedCreatedLinks createModeInternal
+              in
+              ( FindLinksForQuestion coachingModal graph linkModal slipbox updatedCreateModeInternal question selectedNote
+              , Cmd.none
+              )
+            Nothing ->
+              let
+                updatedLinkModal =
+                  if linkModalIsClosed linkModal then
+                    openLinkModal ""
+                  else
+                    linkModal
+              in
+              ( FindLinksForQuestion coachingModal graph updatedLinkModal slipbox createModeInternal question selectedNote
+              , Cmd.none
+              )
+
+
+        _ -> ( model, Cmd.none )
+
+    SelectNote newSelectedNote ->
+      case model of
+        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question _ ->
+          ( FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question newSelectedNote
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
 simulatePositions (notes, links) =
   let
     entities = List.map toEntity notes
@@ -518,9 +609,9 @@ view model =
             }
           ]
 
-    FindLinksForQuestion coachingModal graph bridgeModal slipbox createModeInternal question selectedNote ->
+    FindLinksForQuestion _ graph linkModal _ createModeInternal question selectedNote ->
       Element.layout
-        [ Element.inFront <| doneOrBridgeModal bridgeModal
+        [ Element.inFront <| doneOrLinkModal selectedNote ( getNote createModeInternal ) linkModal
         , Element.width Element.fill
         , Element.height Element.fill
         ] <|
@@ -538,17 +629,35 @@ view model =
               []
               [ Element.el [ Element.alignRight ] starIcon
               , Element.el [] <| Element.text <| Note.getContent selectedNote
-              , radioOptionNode selectedNote <| getCreatedLinks createModeInternal
+              , linkCheckbox selectedNote <| getCreatedLinks createModeInternal
               ]
             ]
           , Element.column
             [ Element.width biggerElement
             , Element.height Element.fill
             ]
-            [ graph
-            , Element.row
-              [ legend
-              , coaching
+            [ viewGraph graph createModeInternal selectedNote
+            , Element.wrappedRow
+              [ Element.width Element.fill
+              , Element.height Element.shrink
+              , Element.padding 8
+              , Element.spacingXY 8 8
+              ]
+              [ Element.row
+                []
+                [ starIcon
+                , Element.text "Currently Selected Note"
+                ]
+              , Element.row
+                []
+                [ linkIcon
+                , Element.text "Note Marked to link (if not selected)"
+                ]
+              , Element.row
+                []
+                [ questionIcon
+                , Element.text "Question (if not selected)"
+                ]
               ]
             ]
           ]
@@ -618,8 +727,8 @@ questionTabularData internal slipbox =
   in
   List.map toQuestionRecord slipboxQuestions
 
-doneOrBridgeModal : BridgeModal -> Element Msg
-doneOrBridgeModal bridgeModal =
+doneOrLinkModal : SelectedNote -> Note -> LinkModal -> Element Msg
+doneOrLinkModal selectedNote createdNote bridgeModal =
   case bridgeModal of
     Closed ->
       Element.el
@@ -632,101 +741,245 @@ doneOrBridgeModal bridgeModal =
           { onPress = Just ToChooseQuestion
           , label = Element.text "Done"
           }
+    Open input ->
+      linkModalView selectedNote createdNote input
 
-    Open selectedNote createdNote input ->
-      let
-        submitNode =
-          if String.isEmpty input then
-            Element.none
-          else
-            Element.Input.button
-              []
-              -- TODO
-              { onPress = Nothing
-              , label = Element.text "Create Bridge Note"
-              }
-      in
-      Element.column
-        [ Element.height Element.fill
-        , Element.width Element.fill
-        ]
-        [ instructions
-        , Element.row
+
+linkModalView : Note.Note -> Note -> String -> Element Msg
+linkModalView selectedNote createdNote input =
+  let
+    submitNode =
+      if String.isEmpty input then
+        Element.none
+      else
+        Element.Input.button
           []
-          [ Element.el [ Element.width Element.fill, Element.height Element.fill ]
-            <| Element.text createdNote
-          , Element.el [ Element.width Element.fill, Element.height Element.fill ]
-            <| Element.text <| Note.getContent selectedNote
-          ]
-        , Element.Input.multiline
-          []
-          { onChange = UpdateNote
-          , text = input
-          , placeholder = Nothing
-          , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
-          , spellcheck = True
+          { onPress = Just CreateBridgeForSelectedNote
+          , label = Element.text "Create Bridged Link with Note"
           }
-        , Element.row
-          []
-          [ discard
-          , submitNode
-          ]
-        ]
+  in
+  Element.column
+    [ Element.height Element.fill
+    , Element.width Element.fill
+    ]
+    [ Element.row
+      []
+      [ Element.el [ Element.width Element.fill, Element.height Element.fill ]
+        <| Element.text createdNote
+      , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+        <| Element.text <| Note.getContent selectedNote
+      ]
+    , Element.Input.button
+      []
+      { onPress = Just CreateLinkForSelectedNote
+      , label = Element.text "Create Link"}
+    , Element.column
+      []
+      [ Element.Input.multiline
+        []
+        { onChange = UpdateNote
+        , text = input
+        , placeholder = Nothing
+        , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
+        , spellcheck = True
+        }
+      , submitNode
+      ]
+    , Element.Input.button
+      []
+      { onPress = Just CancelCreateLink
+      , label = Element.text "Cancel"
+      }
+    ]
 
-type LinkRadioOption
-  = CreateLink
-  | OpenBridgeModal
 
-radioOptionNode : SelectedNote -> LinksCreated -> Element Msg
-radioOptionNode selectedNote linksCreated =
+linkCheckbox : SelectedNote -> LinksCreated -> Element Msg
+linkCheckbox selectedNote linksCreated =
   let
     maybeLinkCreatedForSelectedNote = getLinkForSelectedNote selectedNote linksCreated
-    (selected, bridgeNode) =
+    (checked, bridgeNode) =
       case maybeLinkCreatedForSelectedNote of
         Just link ->
           case getBridgeNoteFromLink link of
             Just bridgeNote ->
-              ( Just OpenBridgeModal
-              , Element.text bridgeNote
+              ( True
+              , Element.text <| "Link Bridged With:" ++ bridgeNote
               )
-            Nothing -> ( Just CreateLink, Element.none )
-        Nothing -> ( Nothing, Element.none )
+            Nothing -> ( True, Element.none )
+        Nothing -> ( False, Element.none )
   in
   Element.column
     []
-    [ Element.Input.radio
+    [ Element.Input.checkbox
       []
-      { onChange =
-        ( \option ->
-          case option of
-            CreateLink -> CreateLinkForSelectedNote
-            OpenBridgeModal -> OpenBridgeModalForSelectedNote
-        )
+      { onChange = LinkCheckboxToggled
+      , icon = Element.Input.defaultCheckbox
       , label = Element.Input.labelAbove [] <| Element.text "Link Options"
-      , options =
-        [ Element.Input.option CreateLink <| Element.text "Directly Link"
-        , Element.Input.option OpenBridgeModal <| Element.text "Link with a Bridge note"
-        ]
-      , selected = selected
+      , checked = checked
       }
     , bridgeNode
     ]
 
-legend : Element Msg
-legend =
-  Element.wrappedRow
-    []
-    [ Element.row
-      []
-      [ starIcon
-      , Element.text "Currently Selected Note"
-      ]
-    , Element.row
-      []
-      [ linkIcon
-      , Element.text "Note Marked to link"
-      ]
+type GraphNote
+  = Selected Note.Note X Y
+  | Linked Note.Note X Y
+  | Question Note.Note X Y
+  | Regular Note.Note X Y
+
+type alias X = String
+type alias Y = String
+
+toGraphNote : CreateModeInternal -> SelectedNote -> NotePosition -> GraphNote
+toGraphNote internal selectedNote notePosition =
+  let
+    note = notePosition.note
+    isSelectedNote = Note.is note selectedNote
+    isQuestion = Note.getVariant note == Note.Question
+    maybeHasLink = getLinkForSelectedNote note <| getCreatedLinks internal
+    x = String.fromFloat notePosition.x
+    y = String.fromFloat notePosition.y
+  in
+  if isSelectedNote then
+    Selected note x y
+  else
+    if isQuestion then
+      Question note x y
+    else
+      case maybeHasLink of
+        Just _ -> Linked note x y
+        Nothing -> Regular note x y
+
+viewGraphNote : GraphNote -> Svg.Svg Msg
+viewGraphNote graphNote =
+  case graphNote of
+    Selected note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ starSvg
+        ]
+
+    Linked note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ linkSvg
+        ]
+
+    Question note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ questionSvg
+        ]
+
+    Regular note x y ->
+      Svg.circle
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        , Svg.Attributes.r "5"
+        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        []
+
+
+
+viewGraph : Graph -> CreateModeInternal -> Note.Note -> Element Msg
+viewGraph graph createModeInternal selectedNote =
+  Element.html <|
+    Svg.svg
+      [ Svg.Attributes.width "100%"
+      , Svg.Attributes.height "100%"
+      , Svg.Attributes.viewBox <| computeViewbox graph.positions
+      ] <|
+      List.concat
+        [ List.filterMap (toGraphLink graph.positions) graph.links
+        , List.map viewGraphNote <| List.map ( toGraphNote createModeInternal selectedNote ) graph.positions
+        ]
+
+type alias PositionExtremes =
+  { minX : Float
+  , minY : Float
+  , maxX : Float
+  , maxY : Float
+  }
+
+computeViewbox : ( List NotePosition ) -> String
+computeViewbox notePositions =
+  let
+    xList = List.map (.x) notePositions
+    yList = List.map (.y) notePositions
+    maybeExtremes =
+      Maybe.map4
+        PositionExtremes
+        ( List.minimum xList )
+        ( List.minimum yList )
+        ( List.maximum xList )
+        ( List.maximum yList )
+    padding = 25
+  in
+  case maybeExtremes of
+    Just extremes ->
+      formatViewbox
+        { minX = extremes.minX - padding
+        , minY = extremes.minY - padding
+        , width = ( extremes.maxX - extremes.minX ) + ( padding * 2 )
+        , height = ( extremes.maxY - extremes.minY ) + ( padding * 2 )
+        }
+
+    Nothing ->
+      formatViewbox {minX=100,minY=100,width=100,height=100}
+
+formatViewbox : { minX: Float, minY: Float, width: Float, height: Float} -> String
+formatViewbox record =
+  String.fromFloat record.minX
+  ++ " " ++  String.fromFloat record.minY
+  ++ " " ++  String.fromFloat record.width
+  ++ " " ++  String.fromFloat record.height
+
+
+toGraphLink: (List NotePosition) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
+toGraphLink notePositions link =
+  let
+    maybeGetNoteByIdentifier =
+      \identifier ->
+        List.head <|
+          List.filter
+          ( \notePosition ->
+            identifier link notePosition.note
+          )
+          notePositions
+  in
+  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
+
+svgLine : NotePosition -> NotePosition -> Svg.Svg Msg
+svgLine note1 note2 =
+  Svg.line
+    [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+    , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+    , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+    , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+    , Svg.Attributes.stroke "rgb(0,0,0)"
+    , Svg.Attributes.strokeWidth "2"
     ]
+    []
 
 -- ICONS
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -744,3 +997,6 @@ starSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.star
 
 linkIcon = iconBuilder FontAwesome.Solid.link
 linkSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.link
+
+questionIcon = iconBuilder FontAwesome.Solid.questionCircle
+questionSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.questionCircle
