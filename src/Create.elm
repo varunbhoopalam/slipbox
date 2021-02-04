@@ -2,6 +2,10 @@ module Create exposing
   ( Create
   )
 
+import Note
+import Link
+import Source
+
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseQuestion CoachingModal CreateModeInternal
@@ -15,7 +19,7 @@ type CoachingModal = CoachingModalOpen | CoachingModalClosed
 
 -- COACHINGMODEINTERNAL
 type CreateModeInternal
-  = CreateModeInternal Note QuestionsRead LinksCreated Source
+  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source
 
 -- GRAPH
 type alias Graph =
@@ -36,3 +40,30 @@ type alias NotePosition =
 type LinkModal
   = Closed
   | Open String
+
+-- CREATEMODESOURCE
+type Source
+  = None
+  | New Title Author Content
+  | Existing Source.Source
+
+-- QUESTIONSREAD
+type alias QuestionsRead = ( List Note.Note )
+
+-- LINKSCREATED
+type alias LinksCreated = ( List Link )
+
+-- CREATEMODELINK
+type Link
+  = Link Note.Note
+  | Bridge Note.Note CreatedNote
+
+-- MISC
+type alias Question = Note.Note
+type alias SelectedNote = Note.Note
+type alias Title = String
+type alias Author = String
+type alias Content = String
+type alias CreatedNote = String
+
+
