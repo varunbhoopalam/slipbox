@@ -6,6 +6,8 @@ import FontAwesome.Attributes
 import FontAwesome.Icon
 import FontAwesome.Solid
 import FontAwesome.Svg
+import Html.Attributes
+import Html.Events
 import Link
 import Slipbox
 import Note
@@ -21,6 +23,8 @@ import Svg.Events
 
 -- MAIN
 
+-- TODO: Use replaceURL to turn this into a SPA?
+
 main =
   Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
 
@@ -30,10 +34,9 @@ type Model
   = NoteInput CoachingModal Slipbox.Slipbox CreateModeInternal
   | ChooseQuestion CoachingModal Slipbox.Slipbox CreateModeInternal
   | FindLinksForQuestion CoachingModal Graph LinkModal Slipbox.Slipbox CreateModeInternal Question SelectedNote
-  | ChooseSourceCategory CoachingModal Slipbox.Slipbox CreateModeInternal
-  | ChooseExistingSource CoachingModal Slipbox.Slipbox CreateModeInternal
-  | CreateNewSource CoachingModal Slipbox.Slipbox CreateModeInternal
-  | PromptCreateAnotherOrFinish Slipbox.Slipbox CreateModeInternal
+  | ChooseSourceCategory CoachingModal Slipbox.Slipbox CreateModeInternal String
+  | CreateNewSource CoachingModal Slipbox.Slipbox CreateModeInternal Title Author Content
+  | PromptCreateAnother Slipbox.Slipbox CreateModeInternal
 
 type alias Question = Note.Note
 type alias SelectedNote = Note.Note
@@ -44,10 +47,9 @@ getCoachingModal model =
     NoteInput coachingModal _ _ -> Just coachingModal
     ChooseQuestion coachingModal _ _ -> Just coachingModal
     FindLinksForQuestion coachingModal _ _ _ _ _ _ -> Just coachingModal
-    ChooseSourceCategory coachingModal _ _ -> Just coachingModal
-    ChooseExistingSource coachingModal _ _ -> Just coachingModal
-    CreateNewSource coachingModal _ _ -> Just coachingModal
-    PromptCreateAnotherOrFinish _ _ -> Nothing
+    ChooseSourceCategory coachingModal _ _ _ -> Just coachingModal
+    CreateNewSource coachingModal _ _ _ _ _ -> Just coachingModal
+    PromptCreateAnother _ _ -> Nothing
 
 setCoachingModal : CoachingModal -> Model -> Model
 setCoachingModal coachingModal model =
@@ -56,10 +58,9 @@ setCoachingModal coachingModal model =
      ChooseQuestion _ slipbox internal -> ChooseQuestion coachingModal slipbox internal
      FindLinksForQuestion _ graph bridgeModal slipbox internal question selectedNote ->
       FindLinksForQuestion coachingModal graph bridgeModal slipbox internal question selectedNote
-     ChooseSourceCategory _ slipbox internal -> ChooseSourceCategory coachingModal slipbox internal
-     ChooseExistingSource _ slipbox internal -> ChooseExistingSource coachingModal slipbox internal
-     CreateNewSource _ slipbox internal -> CreateNewSource coachingModal slipbox internal
-     PromptCreateAnotherOrFinish _ _ -> model
+     ChooseSourceCategory _ slipbox internal input -> ChooseSourceCategory coachingModal slipbox internal input
+     CreateNewSource _ slipbox internal title author content -> CreateNewSource coachingModal slipbox internal title author content
+     PromptCreateAnother _ _ -> model
 
 getInternal : Model -> CreateModeInternal
 getInternal model =
@@ -67,10 +68,9 @@ getInternal model =
     NoteInput _ _ createModeInternal -> createModeInternal
     ChooseQuestion _ _ createModeInternal -> createModeInternal
     FindLinksForQuestion _ _ _ _ createModeInternal _ _ -> createModeInternal
-    ChooseSourceCategory _ _ createModeInternal -> createModeInternal
-    ChooseExistingSource _ _ createModeInternal -> createModeInternal
-    CreateNewSource _ _ createModeInternal -> createModeInternal
-    PromptCreateAnotherOrFinish _ createModeInternal -> createModeInternal
+    ChooseSourceCategory _ _ createModeInternal _ -> createModeInternal
+    CreateNewSource _ _ createModeInternal _ _ _ -> createModeInternal
+    PromptCreateAnother _ createModeInternal -> createModeInternal
 
 setInternal : CreateModeInternal -> Model -> Model
 setInternal createModeInternal model =
@@ -79,23 +79,16 @@ setInternal createModeInternal model =
     ChooseQuestion coachingModal slipbox _ -> ChooseQuestion coachingModal slipbox createModeInternal
     FindLinksForQuestion coachingModal graph bridgeModal slipbox _ question selectedNote ->
       FindLinksForQuestion coachingModal graph bridgeModal slipbox createModeInternal question selectedNote
-    ChooseSourceCategory coachingModal slipbox _ -> ChooseSourceCategory coachingModal slipbox createModeInternal
-    ChooseExistingSource coachingModal slipbox _ -> ChooseExistingSource coachingModal slipbox createModeInternal
-    CreateNewSource coachingModal slipbox _ -> CreateNewSource coachingModal slipbox createModeInternal
-    PromptCreateAnotherOrFinish slipbox _ -> PromptCreateAnotherOrFinish slipbox createModeInternal
+    ChooseSourceCategory coachingModal slipbox _ input -> ChooseSourceCategory coachingModal slipbox createModeInternal input
+    CreateNewSource coachingModal slipbox _ title author content -> CreateNewSource coachingModal slipbox createModeInternal title author content
+    PromptCreateAnother slipbox _ -> PromptCreateAnother slipbox createModeInternal
 
 nextStep : Model -> Model
 nextStep model =
   case model of
     NoteInput coachingModal slipbox createModeInternal -> ChooseQuestion coachingModal slipbox createModeInternal
-    ChooseQuestion coachingModal slipbox createModeInternal -> ChooseSourceCategory coachingModal slipbox createModeInternal
+    ChooseQuestion coachingModal slipbox createModeInternal -> ChooseSourceCategory coachingModal slipbox createModeInternal ""
     _ -> model
-    --FindLinksForQuestion coachingModal graph bridgeModal slipbox createModeInternal ->
-    --ChooseSourceCategory coachingModal slipbox createModeInternal ->
-    --ChooseExistingSource coachingModal slipbox createModeInternal ->
-    --CreateNewSource coachingModal slipbox createModeInternal ->
-    --PromptCreateAnotherOrFinish slipbox createModeInternal ->
-
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
@@ -105,6 +98,18 @@ type Source
   = None
   | New Title Author Content
   | Existing Source.Source
+
+setExistingSource : Source.Source -> CreateModeInternal -> CreateModeInternal
+setExistingSource source internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated _ ->
+      CreateModeInternal note questionsRead linksCreated <| Existing source
+
+setNewSource : Title -> Author -> Content -> CreateModeInternal -> CreateModeInternal
+setNewSource title author content internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated _ ->
+      CreateModeInternal note questionsRead linksCreated <| New title author content
 
 setNote : Note -> CreateModeInternal -> CreateModeInternal
 setNote note internal =
@@ -292,6 +297,7 @@ type alias NotePosition =
   }
 
 -- INIT
+-- TODO: Refactor to take a slipbox
 init : () -> ( Model, Cmd Msg)
 init _ =
   ( NoteInput CoachingModalClosed Slipbox.new createModeInternalInit
@@ -310,6 +316,15 @@ type Msg
   | CancelCreateLink
   | LinkCheckboxToggled Bool
   | SelectNote SelectedNote
+  | ExistingSourceInputChanged String
+  | ContinueWithSelectedSource Source.Source
+  | NoSource
+  | NewSource
+  | SubmitNewSource
+  | UpdateNewSourceTitle String
+  | UpdateNewSourceAuthor String
+  | UpdateNewSourceContent String
+  | CreateAnotherNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -431,7 +446,6 @@ update msg model =
               , Cmd.none
               )
 
-
         _ -> ( model, Cmd.none )
 
     SelectNote newSelectedNote ->
@@ -441,6 +455,83 @@ update msg model =
           , Cmd.none
           )
         _ -> ( model, Cmd.none )
+
+    ExistingSourceInputChanged input ->
+      case model of
+        ChooseSourceCategory coachingModal slipbox internal _ ->
+          ( ChooseSourceCategory coachingModal slipbox internal input
+          , Cmd.none
+          )
+        _ -> ( model,Cmd.none )
+
+    ContinueWithSelectedSource source ->
+      case model of
+        ChooseSourceCategory _ slipbox internal _ ->
+          let
+            updatedInternal = setExistingSource source internal
+          in
+          ( PromptCreateAnother (alterSlipbox updatedInternal slipbox) updatedInternal
+          , Cmd.none
+          )
+        _ -> ( model,Cmd.none )
+
+    NoSource ->
+      case model of
+        ChooseSourceCategory _ slipbox internal _ ->
+          ( PromptCreateAnother (alterSlipbox internal slipbox) internal
+          , Cmd.none
+          )
+        _ -> ( model,Cmd.none )
+
+    NewSource ->
+      case model of
+        ChooseSourceCategory coachingModal slipbox internal _ ->
+          ( CreateNewSource coachingModal slipbox internal "" "" ""
+          , Cmd.none
+          )
+        _ -> ( model,Cmd.none )
+
+    SubmitNewSource ->
+      case model of
+        CreateNewSource _ slipbox internal title author content ->
+          let
+            updatedInternal = setNewSource title author content internal
+          in
+          ( PromptCreateAnother (alterSlipbox updatedInternal slipbox) updatedInternal
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    UpdateNewSourceTitle title ->
+      case model of
+        CreateNewSource coachingModal slipbox internal _ author content ->
+          ( CreateNewSource coachingModal slipbox internal title author content
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    UpdateNewSourceAuthor author ->
+      case model of
+        CreateNewSource coachingModal slipbox internal title _ content ->
+          ( CreateNewSource coachingModal slipbox internal title author content
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    UpdateNewSourceContent content ->
+      case model of
+        CreateNewSource coachingModal slipbox internal title author _ ->
+          ( CreateNewSource coachingModal slipbox internal title author content
+          , Cmd.none
+          )
+        _ -> ( model, Cmd.none )
+
+    CreateAnotherNote ->
+      case model of
+        PromptCreateAnother slipbox internal ->
+          init ()
+        _ -> ( model, Cmd.none )
+
 
 simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
 simulatePositions (notes, links) =
@@ -662,18 +753,121 @@ view model =
             ]
           ]
 
-    _ -> Html.div [] []
-    --
-    --ChooseSourceCategory coachingModal slipbox createModeInternal ->
-    --
-    --
-    --ChooseExistingSource coachingModal slipbox createModeInternal ->
-    --
-    --
-    --CreateNewSource coachingModal slipbox createModeInternal ->
-    --
-    --
-    --PromptCreateAnotherOrFinish slipbox createModeInternal ->
+    ChooseSourceCategory _ slipbox createModeInternal input ->
+      let
+        existingSources = Slipbox.getSources Nothing slipbox
+        maybeSourceSelected = List.head <| List.filter ( \source -> Source.getTitle source == input ) existingSources
+        useExistingSourceNode =
+          case maybeSourceSelected of
+            Just source ->
+              Element.Input.button
+                []
+                { onPress = Just <| ContinueWithSelectedSource source
+                , label = Element.text "Use Selected Source"
+                }
+            Nothing ->
+              Element.none
+      in
+      Element.layout
+        [ Element.inFront cancel
+        , Element.width Element.fill
+        , Element.height Element.fill
+        ] <|
+        Element.column
+          []
+          [ Element.text <| getNote createModeInternal
+          , Element.row
+            []
+            [ sourceInput input <| List.map Source.getTitle existingSources
+            , useExistingSourceNode
+            ]
+          , Element.Input.button
+            []
+            { onPress = Just NoSource
+            , label = Element.text "No Source"
+            }
+          , Element.Input.button
+            []
+            { onPress = Just NewSource
+            , label = Element.text "New Source"
+            }
+          ]
+    CreateNewSource coachingModal slipbox createModeInternal title author content ->
+      let
+        existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
+        ( titleLabel, submitNode ) =
+          if Source.titleIsValid existingTitles title then
+            ( Element.text "Title (required)"
+            , Element.Input.button
+              []
+              { onPress = Just SubmitNewSource
+              , label = Element.text "Submit New Source"
+              }
+            )
+          else
+            if String.isEmpty title then
+              ( Element.text "Title (required)"
+              , Element.none
+              )
+            else
+              ( Element.text "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
+              , Element.none
+              )
+      in
+      Element.layout
+        [ Element.inFront cancel
+        , Element.width Element.fill
+        , Element.height Element.fill
+        ] <|
+        Element.column
+          []
+          [ Element.text <| getNote createModeInternal
+          , Element.Input.multiline
+            []
+            { onChange = UpdateNewSourceTitle
+            , text = title
+            , placeholder = Nothing
+            , label = Element.Input.labelAbove [] titleLabel
+            , spellcheck = True
+            }
+          , Element.Input.multiline
+            []
+            { onChange = UpdateNewSourceAuthor
+            , text = author
+            , placeholder = Nothing
+            , label = Element.Input.labelAbove [] <|
+              Element.text "Author (not required)"
+            , spellcheck = True
+            }
+          , Element.Input.multiline
+            []
+            { onChange = UpdateNewSourceContent
+            , text = content
+            , placeholder = Nothing
+            , label = Element.Input.labelAbove [] <|
+              Element.text "Content (not required)"
+            , spellcheck = True
+            }
+          , submitNode
+          ]
+
+    PromptCreateAnother _ createModeInternal ->
+      Element.layout
+        [ Element.inFront cancel
+        , Element.width Element.fill
+        , Element.height Element.fill
+        ] <|
+        Element.column
+          []
+          [ Element.text "New Note is Created!"
+          , Element.text <| getNote createModeInternal
+          , Element.Input.button
+            []
+            { onPress = Just CreateAnotherNote
+            , label = Element.text "Create Another Note?"
+            }
+          ]
+
 
 cancel : Element Msg
 cancel =
@@ -980,6 +1174,35 @@ svgLine note1 note2 =
     , Svg.Attributes.strokeWidth "2"
     ]
     []
+
+sourceInput: String -> (List String) -> Element Msg
+sourceInput input suggestions =
+  let
+    sourceInputid = "Source: 1"
+    dataitemId = "Sources: 2"
+  in
+    Element.html
+      <| Html.div
+        []
+        [ Html.label
+          [ Html.Attributes.for sourceInputid ]
+          [ Html.text "Source: " ]
+        , Html.input
+          [ Html.Attributes.list dataitemId
+          , Html.Attributes.name sourceInputid
+          , Html.Attributes.id sourceInputid
+          , Html.Attributes.value input
+          , Html.Events.onInput ExistingSourceInputChanged
+          ]
+          []
+        , Html.datalist
+          [ Html.Attributes.id dataitemId ]
+          <| List.map toHtmlOption suggestions
+        ]
+
+toHtmlOption: String -> Html.Html Msg
+toHtmlOption value =
+  Html.option [ Html.Attributes.value value ] []
 
 -- ICONS
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
