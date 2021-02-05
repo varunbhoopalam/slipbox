@@ -20,6 +20,7 @@ import Element.Font
 import Svg
 import Svg.Attributes
 import Svg.Events
+import Create
 
 -- MAIN
 
@@ -30,37 +31,25 @@ main =
 
 -- MODEL
 
-type Model
-  = NoteInput CoachingModal Slipbox.Slipbox CreateModeInternal
-  | ChooseQuestion CoachingModal Slipbox.Slipbox CreateModeInternal
-  | FindLinksForQuestion CoachingModal Graph LinkModal Slipbox.Slipbox CreateModeInternal Question SelectedNote
-  | ChooseSourceCategory CoachingModal Slipbox.Slipbox CreateModeInternal String
-  | CreateNewSource CoachingModal Slipbox.Slipbox CreateModeInternal Title Author Content
-  | PromptCreateAnother Slipbox.Slipbox CreateModeInternal
+type Model = Model Slipbox.Slipbox Create.Create
+
+getCreate : Model -> Create.Create
+getCreate model =
+  case model of
+    Model _ create -> create
+
+setCreate : Create.Create -> Model -> Model
+setCreate create model =
+  case model of
+    Model slipbox _ -> Model slipbox create
+
+getSlipbox : Model -> Slipbox.Slipbox
+getSlipbox model =
+  case model of
+    Model slipbox _ -> slipbox
 
 type alias Question = Note.Note
 type alias SelectedNote = Note.Note
-
-getCoachingModal : Model -> ( Maybe CoachingModal )
-getCoachingModal model =
-  case model of
-    NoteInput coachingModal _ _ -> Just coachingModal
-    ChooseQuestion coachingModal _ _ -> Just coachingModal
-    FindLinksForQuestion coachingModal _ _ _ _ _ _ -> Just coachingModal
-    ChooseSourceCategory coachingModal _ _ _ -> Just coachingModal
-    CreateNewSource coachingModal _ _ _ _ _ -> Just coachingModal
-    PromptCreateAnother _ _ -> Nothing
-
-setCoachingModal : CoachingModal -> Model -> Model
-setCoachingModal coachingModal model =
-   case model of
-     NoteInput _ slipbox internal -> NoteInput coachingModal slipbox internal
-     ChooseQuestion _ slipbox internal -> ChooseQuestion coachingModal slipbox internal
-     FindLinksForQuestion _ graph bridgeModal slipbox internal question selectedNote ->
-      FindLinksForQuestion coachingModal graph bridgeModal slipbox internal question selectedNote
-     ChooseSourceCategory _ slipbox internal input -> ChooseSourceCategory coachingModal slipbox internal input
-     CreateNewSource _ slipbox internal title author content -> CreateNewSource coachingModal slipbox internal title author content
-     PromptCreateAnother _ _ -> model
 
 getInternal : Model -> CreateModeInternal
 getInternal model =
@@ -82,13 +71,6 @@ setInternal createModeInternal model =
     ChooseSourceCategory coachingModal slipbox _ input -> ChooseSourceCategory coachingModal slipbox createModeInternal input
     CreateNewSource coachingModal slipbox _ title author content -> CreateNewSource coachingModal slipbox createModeInternal title author content
     PromptCreateAnother slipbox _ -> PromptCreateAnother slipbox createModeInternal
-
-nextStep : Model -> Model
-nextStep model =
-  case model of
-    NoteInput coachingModal slipbox createModeInternal -> ChooseQuestion coachingModal slipbox createModeInternal
-    ChooseQuestion coachingModal slipbox createModeInternal -> ChooseSourceCategory coachingModal slipbox createModeInternal ""
-    _ -> model
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
@@ -115,10 +97,6 @@ setNote : Note -> CreateModeInternal -> CreateModeInternal
 setNote note internal =
   case internal of
     CreateModeInternal _ questionsRead linksCreated source -> CreateModeInternal note questionsRead linksCreated source
-
-createModeInternalInit : CreateModeInternal
-createModeInternalInit =
-  CreateModeInternal "" [] [] None
 
 getNote : CreateModeInternal -> String
 getNote internal =
@@ -249,17 +227,6 @@ getLinkForSelectedNoteIfBridge note linksCreated =
         ( linkIsForNote note )
         linksCreated
 
--- COACHINGMODAL
-type CoachingModal = CoachingModalOpen | CoachingModalClosed
-
-toggle : CoachingModal -> CoachingModal
-toggle modal =
-  case modal of
-    CoachingModalOpen -> CoachingModalClosed
-    CoachingModalClosed -> CoachingModalOpen
-
-
-
 type alias Title = String
 type alias Author = String
 type alias Content = String
@@ -298,171 +265,99 @@ type alias NotePosition =
 
 -- INIT
 -- TODO: Refactor to take a slipbox
-init : () -> ( Model, Cmd Msg)
-init _ =
-  ( NoteInput CoachingModalClosed Slipbox.new createModeInternalInit
+init : Slipbox.Slipbox -> ( Model, Cmd Msg)
+init slipbox =
+  ( Model slipbox Create.init
   , Cmd.none
   )
 
 -- UPDATE
 type Msg
   = ToggleCoaching
-  | UpdateNote String
   | NextStep
   | ToFindLinksForQuestion Note.Note
   | ToChooseQuestion
   | CreateLinkForSelectedNote
   | CreateBridgeForSelectedNote
-  | CancelCreateLink
-  | LinkCheckboxToggled Bool
+  | ToggleLinkModal
+  | RemoveLink
   | SelectNote SelectedNote
-  | ExistingSourceInputChanged String
   | ContinueWithSelectedSource Source.Source
   | NoSource
   | NewSource
   | SubmitNewSource
-  | UpdateNewSourceTitle String
-  | UpdateNewSourceAuthor String
-  | UpdateNewSourceContent String
+  | UpdateInput Create.Input
   | CreateAnotherNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
     ToggleCoaching ->
-      ( case getCoachingModal model of
-        Just coachingModal ->
-          setCoachingModal ( toggle coachingModal ) model
-        Nothing ->
-          model
-      , Cmd.none
-      )
-    UpdateNote noteInput ->
-      let
-        updatedCreateModeInternal = setNote noteInput <| getInternal model
-      in
-      ( setInternal updatedCreateModeInternal model
+      ( setCreate
+        ( getCreate model |> Create.toggleCoachingModal )
+        model
       , Cmd.none
       )
     NextStep ->
-      ( nextStep model
+      ( setCreate
+        ( getCreate model |> Create.next )
+        model
       , Cmd.none
       )
     ToFindLinksForQuestion question ->
-      case model of
-        ChooseQuestion coachingModal slipbox createModeInternal ->
-          let
-            (notePositions, links) = simulatePositions
-              <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox
-            updatedInternal = markQuestionAsRead question createModeInternal
-          in
-          ( FindLinksForQuestion
-            coachingModal
-            (Graph notePositions links)
-            Closed
-            slipbox
-            updatedInternal
-            question
-            question
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.toAddLinkState question ( getSlipbox model ) )
+        model
+      , Cmd.none
+      )
     ToChooseQuestion ->
-      case model of
-        FindLinksForQuestion coachingModal _ _ slipbox createModeInternal _ _ ->
-          ( ChooseQuestion coachingModal slipbox createModeInternal
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.toChooseQuestionState )
+        model
+      , Cmd.none
+      )
 
     CreateLinkForSelectedNote ->
-      case model of
-        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
-          if linkModalIsClosed linkModal then
-            ( model, Cmd.none )
-          else
-            ( FindLinksForQuestion
-              coachingModal
-              graph
-              closeLinkModal
-              slipbox
-              ( createLink selectedNote createModeInternal )
-              question
-              selectedNote
-            , Cmd.none
-            )
-        _ -> ( model, Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.createLink )
+        model
+      , Cmd.none
+      )
 
     CreateBridgeForSelectedNote ->
-      case model of
-        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
-          case linkModal of
-            Closed -> ( model, Cmd.none )
-            Open bridgeNote ->
-              ( FindLinksForQuestion
-                coachingModal
-                graph
-                closeLinkModal
-                slipbox
-                ( createBridge selectedNote bridgeNote createModeInternal )
-                question
-                selectedNote
-              , Cmd.none
-              )
-        _ -> ( model, Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.createBridge )
+        model
+      , Cmd.none
+      )
 
-    CancelCreateLink ->
-      case model of
-        FindLinksForQuestion coachingModal graph _ slipbox createModeInternal question selectedNote ->
-          ( FindLinksForQuestion coachingModal graph closeLinkModal slipbox createModeInternal question selectedNote
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
+    ToggleLinkModal ->
+      ( setCreate
+        ( getCreate model |> Create.toggleLinkModal )
+        model
+      , Cmd.none
+      )
 
-    LinkCheckboxToggled _ ->
-      case model of
-        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question selectedNote ->
-          let
-            createdLinks = getCreatedLinks createModeInternal
-          in
-          case getLinkForSelectedNote selectedNote createdLinks of
-            Just _ ->
-              let
-                updatedCreatedLinks = removeLinkAssociatedWithNote selectedNote createdLinks
-                updatedCreateModeInternal = setCreatedLinks updatedCreatedLinks createModeInternal
-              in
-              ( FindLinksForQuestion coachingModal graph linkModal slipbox updatedCreateModeInternal question selectedNote
-              , Cmd.none
-              )
-            Nothing ->
-              let
-                updatedLinkModal =
-                  if linkModalIsClosed linkModal then
-                    openLinkModal ""
-                  else
-                    linkModal
-              in
-              ( FindLinksForQuestion coachingModal graph updatedLinkModal slipbox createModeInternal question selectedNote
-              , Cmd.none
-              )
-
-        _ -> ( model, Cmd.none )
+    RemoveLink ->
+      ( setCreate
+        ( getCreate model |> Create.removeLink )
+        model
+      , Cmd.none
+      )
 
     SelectNote newSelectedNote ->
-      case model of
-        FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question _ ->
-          ( FindLinksForQuestion coachingModal graph linkModal slipbox createModeInternal question newSelectedNote
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.selectNote newSelectedNote )
+        model
+      , Cmd.none
+      )
 
-    ExistingSourceInputChanged input ->
-      case model of
-        ChooseSourceCategory coachingModal slipbox internal _ ->
-          ( ChooseSourceCategory coachingModal slipbox internal input
-          , Cmd.none
-          )
-        _ -> ( model,Cmd.none )
+    UpdateInput input ->
+      ( setCreate
+        ( getCreate model |> Create.updateInput input )
+        model
+      , Cmd.none
+      )
 
     ContinueWithSelectedSource source ->
       case model of
@@ -502,29 +397,7 @@ update msg model =
           )
         _ -> ( model, Cmd.none )
 
-    UpdateNewSourceTitle title ->
-      case model of
-        CreateNewSource coachingModal slipbox internal _ author content ->
-          ( CreateNewSource coachingModal slipbox internal title author content
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
 
-    UpdateNewSourceAuthor author ->
-      case model of
-        CreateNewSource coachingModal slipbox internal title _ content ->
-          ( CreateNewSource coachingModal slipbox internal title author content
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
-
-    UpdateNewSourceContent content ->
-      case model of
-        CreateNewSource coachingModal slipbox internal title author _ ->
-          ( CreateNewSource coachingModal slipbox internal title author content
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
 
     CreateAnotherNote ->
       case model of
@@ -532,32 +405,9 @@ update msg model =
           init ()
         _ -> ( model, Cmd.none )
 
-
-simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
-simulatePositions (notes, links) =
-  let
-    entities = List.map toEntity notes
-    state = stateBuilder entities links
-    notePositions = Force.computeSimulation state entities
-  in
-  ( notePositions, links )
-
-stateBuilder : ( List (Force.Entity Int { note : Note.Note })) -> ( List Link.Link ) -> Force.State Int
-stateBuilder entities links =
-  Force.simulation
-    [ Force.manyBodyStrength -15 (List.map (\n -> n.id) entities)
-    , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
-    , Force.center 0 0
-    ]
-
-toEntity : Note.Note -> (Force.Entity Int { note : Note.Note })
-toEntity note =
-  { id = Note.getId note, x = Note.getX note, y = Note.getY note, vx = Note.getVx note, vy = Note.getVy note, note = note }
-
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
 subscriptions model = Sub.none
-
 
 -- VIEW
 smallerElement = Element.fillPortion 1000
@@ -565,6 +415,8 @@ biggerElement = Element.fillPortion 1618
       -- TODO Change to layoutWith when it is hooked up to main
       --Element.layoutWith
       --{ options = [ Element.noStaticStyleSheet ] }
+
+-- toView function from create should not expose internals but only the exact data needed to make the view
 view : Model -> Html.Html Msg
 view model =
   case model of
@@ -593,8 +445,7 @@ view model =
             Element.none
       in
       Element.layout
-        [ Element.inFront cancel
-        , Element.width Element.fill
+        [ Element.width Element.fill
         , Element.height Element.fill
         ]
         <| Element.column
@@ -650,8 +501,7 @@ view model =
               }
       in
       Element.layout
-        [ Element.inFront cancel
-        , Element.width Element.fill
+        [ Element.width Element.fill
         , Element.height Element.fill
         ]
         <| Element.column
@@ -769,8 +619,7 @@ view model =
               Element.none
       in
       Element.layout
-        [ Element.inFront cancel
-        , Element.width Element.fill
+        [ Element.width Element.fill
         , Element.height Element.fill
         ] <|
         Element.column
@@ -815,8 +664,7 @@ view model =
               )
       in
       Element.layout
-        [ Element.inFront cancel
-        , Element.width Element.fill
+        [ Element.width Element.fill
         , Element.height Element.fill
         ] <|
         Element.column
@@ -824,7 +672,7 @@ view model =
           [ Element.text <| getNote createModeInternal
           , Element.Input.multiline
             []
-            { onChange = UpdateNewSourceTitle
+            { onChange = UpdateSourceTitle
             , text = title
             , placeholder = Nothing
             , label = Element.Input.labelAbove [] titleLabel
@@ -853,8 +701,7 @@ view model =
 
     PromptCreateAnother _ createModeInternal ->
       Element.layout
-        [ Element.inFront cancel
-        , Element.width Element.fill
+        [ Element.width Element.fill
         , Element.height Element.fill
         ] <|
         Element.column
@@ -867,20 +714,6 @@ view model =
             , label = Element.text "Create Another Note?"
             }
           ]
-
-
-cancel : Element Msg
-cancel =
-  Element.el
-    [ Element.padding 8
-    , Element.alignRight
-    , Element.alignTop
-    ] <|
-    Element.Input.button
-      []
-      { onPress = Nothing
-      , label = Element.text "cancel"
-      }
 
 coaching : CoachingModal -> Element Msg -> Element Msg
 coaching modal text =
@@ -981,7 +814,7 @@ linkModalView selectedNote createdNote input =
       ]
     , Element.Input.button
       []
-      { onPress = Just CancelCreateLink
+      { onPress = Just ToggleLinkModal
       , label = Element.text "Cancel"
       }
     ]
@@ -991,28 +824,29 @@ linkCheckbox : SelectedNote -> LinksCreated -> Element Msg
 linkCheckbox selectedNote linksCreated =
   let
     maybeLinkCreatedForSelectedNote = getLinkForSelectedNote selectedNote linksCreated
-    (checked, bridgeNode) =
-      case maybeLinkCreatedForSelectedNote of
-        Just link ->
-          case getBridgeNoteFromLink link of
-            Just bridgeNote ->
-              ( True
-              , Element.text <| "Link Bridged With:" ++ bridgeNote
-              )
-            Nothing -> ( True, Element.none )
-        Nothing -> ( False, Element.none )
   in
-  Element.column
-    []
-    [ Element.Input.checkbox
-      []
-      { onChange = LinkCheckboxToggled
-      , icon = Element.Input.defaultCheckbox
-      , label = Element.Input.labelAbove [] <| Element.text "Link Options"
-      , checked = checked
-      }
-    , bridgeNode
-    ]
+  case maybeLinkCreatedForSelectedNote of
+    Just _ ->
+      Element.column
+        []
+        [ Element.text "Linked"
+        , Element.Input.button
+          []
+          { onPress = Just ToggleLinkModal
+          , label = Element.text "Edit"
+          }
+        , Element.Input.button
+          []
+          { onPress = Just RemoveLink
+          , label = Element.text "Remove"
+          }
+        ]
+    Nothing ->
+      Element.Input.button
+        []
+        { onPress = Just ToggleLinkModal
+        , label = Element.text "Create Link"
+        }
 
 type GraphNote
   = Selected Note.Note X Y
@@ -1192,7 +1026,7 @@ sourceInput input suggestions =
           , Html.Attributes.name sourceInputid
           , Html.Attributes.id sourceInputid
           , Html.Attributes.value input
-          , Html.Events.onInput ExistingSourceInputChanged
+          , Html.Events.onInput UpdateSourceTitle
           ]
           []
         , Html.datalist
