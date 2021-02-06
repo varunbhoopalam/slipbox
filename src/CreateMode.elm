@@ -48,29 +48,13 @@ getSlipbox model =
   case model of
     Model slipbox _ -> slipbox
 
+setSlipbox : Slipbox.Slipbox -> Model -> Model
+setSlipbox slipbox model =
+  case model of
+    Model _ create -> Model slipbox create
+
 type alias Question = Note.Note
 type alias SelectedNote = Note.Note
-
-getInternal : Model -> CreateModeInternal
-getInternal model =
-  case model of
-    NoteInput _ _ createModeInternal -> createModeInternal
-    ChooseQuestion _ _ createModeInternal -> createModeInternal
-    FindLinksForQuestion _ _ _ _ createModeInternal _ _ -> createModeInternal
-    ChooseSourceCategory _ _ createModeInternal _ -> createModeInternal
-    CreateNewSource _ _ createModeInternal _ _ _ -> createModeInternal
-    PromptCreateAnother _ createModeInternal -> createModeInternal
-
-setInternal : CreateModeInternal -> Model -> Model
-setInternal createModeInternal model =
-  case model of
-    NoteInput coachingModal slipbox _ -> NoteInput coachingModal slipbox createModeInternal
-    ChooseQuestion coachingModal slipbox _ -> ChooseQuestion coachingModal slipbox createModeInternal
-    FindLinksForQuestion coachingModal graph bridgeModal slipbox _ question selectedNote ->
-      FindLinksForQuestion coachingModal graph bridgeModal slipbox createModeInternal question selectedNote
-    ChooseSourceCategory coachingModal slipbox _ input -> ChooseSourceCategory coachingModal slipbox createModeInternal input
-    CreateNewSource coachingModal slipbox _ title author content -> CreateNewSource coachingModal slipbox createModeInternal title author content
-    PromptCreateAnother slipbox _ -> PromptCreateAnother slipbox createModeInternal
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
@@ -360,50 +344,40 @@ update msg model =
       )
 
     ContinueWithSelectedSource source ->
-      case model of
-        ChooseSourceCategory _ slipbox internal _ ->
-          let
-            updatedInternal = setExistingSource source internal
-          in
-          ( PromptCreateAnother (alterSlipbox updatedInternal slipbox) updatedInternal
-          , Cmd.none
-          )
-        _ -> ( model,Cmd.none )
+      let
+        ( updatedSlipbox, updatedCreate ) = getCreate model |> Create.selectSource source ( getSlipbox model )
+      in
+      ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+      , Cmd.none
+      )
 
     NoSource ->
-      case model of
-        ChooseSourceCategory _ slipbox internal _ ->
-          ( PromptCreateAnother (alterSlipbox internal slipbox) internal
-          , Cmd.none
-          )
-        _ -> ( model,Cmd.none )
+      let
+        ( updatedSlipbox, updatedCreate ) = getCreate model |> Create.noSource ( getSlipbox model )
+      in
+      ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+      , Cmd.none
+      )
 
     NewSource ->
-      case model of
-        ChooseSourceCategory coachingModal slipbox internal _ ->
-          ( CreateNewSource coachingModal slipbox internal "" "" ""
-          , Cmd.none
-          )
-        _ -> ( model,Cmd.none )
+      ( setCreate
+        ( getCreate model |> Create.newSource )
+        model
+      , Cmd.none
+      )
 
     SubmitNewSource ->
-      case model of
-        CreateNewSource _ slipbox internal title author content ->
-          let
-            updatedInternal = setNewSource title author content internal
-          in
-          ( PromptCreateAnother (alterSlipbox updatedInternal slipbox) updatedInternal
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none )
-
-
+      let
+        ( updatedSlipbox, updatedCreate ) = getCreate model |> Create.submitNewSource ( getSlipbox model )
+      in
+      ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+      , Cmd.none
+      )
 
     CreateAnotherNote ->
-      case model of
-        PromptCreateAnother slipbox internal ->
-          init ()
-        _ -> ( model, Cmd.none )
+      ( setCreate Create.init model
+      , Cmd.none
+      )
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
@@ -412,9 +386,6 @@ subscriptions model = Sub.none
 -- VIEW
 smallerElement = Element.fillPortion 1000
 biggerElement = Element.fillPortion 1618
-      -- TODO Change to layoutWith when it is hooked up to main
-      --Element.layoutWith
-      --{ options = [ Element.noStaticStyleSheet ] }
 
 -- toView function from create should not expose internals but only the exact data needed to make the view
 view : Model -> Html.Html Msg

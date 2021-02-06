@@ -10,6 +10,10 @@ module Create exposing
   , toggleLinkModal
   , removeLink
   , selectNote
+  , selectSource
+  , noSource
+  , newSource
+  , submitNewSource
   , updateInput
   , Input(..)
   )
@@ -141,6 +145,41 @@ selectNote note create =
       FindLinksForQuestion coachingModal graph linkModal createModeInternal question note
     _ -> create
 
+selectSource : Source.Source -> Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
+selectSource source slipbox create =
+  case create of
+    ChooseSourceCategory _ internal _ ->
+      ( updateSlipbox create slipbox
+      , PromptCreateAnother <| setExistingSource source internal
+      )
+    _ -> ( slipbox, create )
+
+noSource : Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
+noSource slipbox create =
+  case create of
+    ChooseSourceCategory _ internal _ ->
+      ( updateSlipbox create slipbox
+      , PromptCreateAnother internal
+      )
+    _ -> ( slipbox, create )
+
+newSource : Create -> Create
+newSource create =
+  case create of
+    ChooseSourceCategory coachingModal internal _ ->
+      CreateNewSource coachingModal internal "" "" ""
+    _ -> create
+
+submitNewSource : Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
+submitNewSource slipbox create =
+  case create of
+    CreateNewSource _ internal title author content ->
+      ( updateSlipbox create slipbox
+      , PromptCreateAnother <| setNewSource title author content internal
+      )
+    _ -> ( slipbox, create )
+
+
 type Input
   = Note String
   | SourceTitle String
@@ -182,7 +221,6 @@ updateInput input create =
           CreateNewSource coachingModal internal title author content
         _ -> create
 
-
 -- COACHINGMODAL
 type CoachingModal = CoachingModalOpen | CoachingModalClosed
 
@@ -195,6 +233,23 @@ toggle modal =
 -- CREATEMODEINTERNAL
 type CreateModeInternal
   = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source
+
+getSource : CreateModeInternal -> Source
+getSource internal =
+  case internal of
+    CreateModeInternal _ _ _ source -> source
+
+setExistingSource : Source.Source -> CreateModeInternal -> CreateModeInternal
+setExistingSource source internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated _ ->
+      CreateModeInternal note questionsRead linksCreated <| Existing source
+
+setNewSource : Title -> Author -> Content -> CreateModeInternal -> CreateModeInternal
+setNewSource title author content internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated _ ->
+      CreateModeInternal note questionsRead linksCreated <| New title author content
 
 createModeInternalInit : CreateModeInternal
 createModeInternalInit =
@@ -396,3 +451,21 @@ getBridgeNoteIfExists note linksCreated =
   case getLinkForSelectedNote note linksCreated of
     Just link -> getBridgeOnLink link
     Nothing -> Nothing
+
+getInternal : Create -> CreateModeInternal
+getInternal create =
+  case create of
+    NoteInput _ createModeInternal -> createModeInternal
+    ChooseQuestion _ createModeInternal -> createModeInternal
+    FindLinksForQuestion _ _ _ createModeInternal _ _ -> createModeInternal
+    ChooseSourceCategory _ createModeInternal _ -> createModeInternal
+    CreateNewSource _ createModeInternal _ _ _ -> createModeInternal
+    PromptCreateAnother createModeInternal -> createModeInternal
+
+updateSlipbox : Create -> Slipbox.Slipbox -> Slipbox.Slipbox
+updateSlipbox create slipbox =
+  let
+    internal = getInternal create
+    foo =
+      case source of
+  in
