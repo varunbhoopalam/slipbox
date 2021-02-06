@@ -390,7 +390,7 @@ biggerElement = Element.fillPortion 1618
 -- toView function from create should not expose internals but only the exact data needed to make the view
 view : Model -> Html.Html Msg
 view model =
-  case model of
+  case Create.view <| getCreate model of
     NoteInput coachingModal _ internal ->
       let
         coachingText =

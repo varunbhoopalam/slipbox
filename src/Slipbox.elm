@@ -25,6 +25,9 @@ module Slipbox exposing
   , unsavedChanges
   , saveChanges
   , getAllNotesAndLinksInQuestionTree
+  , addNote
+  , addSource
+  , addLink
   )
 
 import Note
@@ -585,6 +588,57 @@ getAllNotesAndLinksInQuestionTree question slipbox =
     noteLinkTuples = getAllNotesInQuestionTreeRecursion question content.notes content.links
   in
   ( question :: List.map Tuple.first noteLinkTuples, List.map Tuple.second noteLinkTuples )
+
+addNote : String -> String -> Slipbox -> ( Slipbox, Note.Note )
+addNote noteContent sourceTitle slipbox =
+  let
+    content = getContent slipbox
+    source =
+      if String.isEmpty sourceTitle then
+        "n/a"
+      else
+        sourceTitle
+    (note, idGenerator) = Note.create content.idGenerator <|
+      { content = noteContent, source = source, variant = Note.Regular }
+    (state, notes) = simulation (note :: content.notes) content.links
+  in
+  ( Slipbox
+    { content | notes = notes
+    , state = state
+    , idGenerator = idGenerator
+    , unsavedChanges = True
+    }
+  , note
+  )
+
+addSource : String -> String -> String -> Slipbox -> Slipbox
+addSource title author sourceContent slipbox =
+  let
+    content = getContent slipbox
+    ( source, generator ) = Source.createSource content.idGenerator
+      <| {title=title,author=author,content=sourceContent}
+  in
+  Slipbox
+    { content | sources = source :: content.sources
+    , idGenerator = generator
+    , unsavedChanges = True
+    }
+
+addLink : Note.Note -> Note.Note -> Slipbox -> Slipbox
+addLink note1 note2 slipbox =
+  let
+      content = getContent slipbox
+      (link, idGenerator) = Link.create content.idGenerator note1 note2
+      links = link :: content.links
+      (state, notes) = simulation content.notes links
+  in
+  Slipbox
+    { content | notes = notes
+    , links = links
+    , state = state
+    , idGenerator = idGenerator
+    , unsavedChanges = True
+    }
 
 getAllNotesInQuestionTreeRecursion : Note.Note -> ( List Note.Note ) -> ( List Link.Link) -> List ( Note.Note, Link.Link )
 getAllNotesInQuestionTreeRecursion note notes links =

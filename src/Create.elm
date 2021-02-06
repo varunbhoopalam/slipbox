@@ -479,15 +479,19 @@ updateSlipbox create slipbox =
           ( title
           , Slipbox.addSource title author content slipbox
           )
-    ( slipboxWithNote, note ) = Slipbox.addNote ( getNote internal )
+    ( slipboxWithNote, note ) = Slipbox.addNote ( getNote internal ) sourceTitle slipboxWithSource
   in
   List.foldr ( updateSlipboxWithLink note ) slipboxWithNote ( getCreatedLinks internal )
 
 updateSlipboxWithLink : Note.Note -> Link -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipboxWithLink note link slipbox =
   case link of
-    Link noteToLinkTo -> slipbox
-      
+    Link noteToLink ->
+      Slipbox.addLink note noteToLink slipbox
 
-    Bridge noteToLinkTo bridgeNote -> slipbox
-    -- Slipbox.addLink
+    Bridge noteToLink bridge ->
+      let
+        ( slipboxWithBridgeNote, bridgeNote ) = Slipbox.addNote bridge "n/a" slipbox
+      in
+      Slipbox.addLink note bridgeNote slipboxWithBridgeNote
+        |> Slipbox.addLink bridgeNote noteToLink
