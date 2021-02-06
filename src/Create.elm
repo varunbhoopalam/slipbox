@@ -234,6 +234,11 @@ toggle modal =
 type CreateModeInternal
   = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source
 
+getNote : CreateModeInternal -> CreatedNote
+getNote internal =
+  case internal of
+    CreateModeInternal note _ _ _ -> note
+
 getSource : CreateModeInternal -> Source
 getSource internal =
   case internal of
@@ -466,6 +471,23 @@ updateSlipbox : Create -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipbox create slipbox =
   let
     internal = getInternal create
-    foo =
-      case source of
+    ( sourceTitle, slipboxWithSource ) =
+      case getSource internal of
+        None -> ( "n/a", slipbox )
+        Existing source -> ( Source.getTitle source, slipbox )
+        New title author content ->
+          ( title
+          , Slipbox.addSource title author content slipbox
+          )
+    ( slipboxWithNote, note ) = Slipbox.addNote ( getNote internal )
   in
+  List.foldr ( updateSlipboxWithLink note ) slipboxWithNote ( getCreatedLinks internal )
+
+updateSlipboxWithLink : Note.Note -> Link -> Slipbox.Slipbox -> Slipbox.Slipbox
+updateSlipboxWithLink note link slipbox =
+  case link of
+    Link noteToLinkTo -> slipbox
+      
+
+    Bridge noteToLinkTo bridgeNote -> slipbox
+    -- Slipbox.addLink
