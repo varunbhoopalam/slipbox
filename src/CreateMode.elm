@@ -391,7 +391,7 @@ biggerElement = Element.fillPortion 1618
 view : Model -> Html.Html Msg
 view model =
   case Create.view <| getCreate model of
-    NoteInput coachingModal _ internal ->
+    Create.NoteCreation coachingOpen canContinue noteInput ->
       let
         coachingText =
           Element.paragraph
@@ -405,7 +405,7 @@ view model =
             , Element.text "Take your time, this isn't always an easy endeavor. "
             ]
         continueNode =
-          if not <| String.isEmpty <| getNote internal then
+          if canContinue then
             Element.Input.button
               [ Element.alignRight
               ]
@@ -430,11 +430,11 @@ view model =
             , Element.Font.heavy
             ] <|
             Element.text "Write a Permanent Note"
-          , coaching coachingModal coachingText
+          , coaching coachingOpen coachingText
           , Element.Input.multiline
             []
-            { onChange = UpdateNote
-            , text = getNote internal
+            { onChange = \n -> UpdateInput <| Create.Note n
+            , text = noteInput
             , placeholder = Nothing
             , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
             , spellcheck = True
@@ -686,8 +686,8 @@ view model =
             }
           ]
 
-coaching : CoachingModal -> Element Msg -> Element Msg
-coaching modal text =
+coaching : Bool -> Element Msg -> Element Msg
+coaching coachingOpen text =
   let
     toggleCoachingButton =
       Element.Input.button
@@ -700,9 +700,9 @@ coaching modal text =
         , label = Element.text "Coaching"
         }
   in
-  case modal of
-    CoachingModalClosed -> toggleCoachingButton
-    CoachingModalOpen ->
+  case coachingOpen of
+    False -> toggleCoachingButton
+    True ->
       Element.column
         [ Element.spacingXY 8 8
         , Element.centerX

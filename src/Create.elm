@@ -16,6 +16,8 @@ module Create exposing
   , submitNewSource
   , updateInput
   , Input(..)
+  , view
+  , CreateView(..)
   )
 
 import Force
@@ -221,6 +223,39 @@ updateInput input create =
           CreateNewSource coachingModal internal title author content
         _ -> create
 
+type alias CoachingOpen = Bool
+type alias CanContinue = Bool
+type CreateView
+  = NoteCreation CoachingOpen CanContinue CreatedNote
+  | QuestionScreen CoachingOpen CanContinue CreatedNote QuestionsRead
+
+view : Create -> CreateView
+view create =
+  case create of
+    NoteInput coachingModal createModeInternal ->
+      let
+        note = getNote createModeInternal
+        canContinue = not <| String.isEmpty note
+      in
+      NoteCreation (isOpen coachingModal) canContinue note
+
+
+    ChooseQuestion coachingModal createModeInternal ->
+
+
+
+    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
+
+
+    ChooseSourceCategory coachingModal createModeInternal string ->
+
+
+    CreateNewSource coachingModal createModeInternal title author content ->
+
+
+    PromptCreateAnother createModeInternal ->
+
+
 -- COACHINGMODAL
 type CoachingModal = CoachingModalOpen | CoachingModalClosed
 
@@ -229,6 +264,12 @@ toggle modal =
   case modal of
     CoachingModalOpen -> CoachingModalClosed
     CoachingModalClosed -> CoachingModalOpen
+
+isOpen : CoachingModal -> Bool
+isOpen modal =
+  case modal of
+    CoachingModalOpen -> True
+    CoachingModalClosed -> False
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
