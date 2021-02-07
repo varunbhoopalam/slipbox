@@ -233,7 +233,8 @@ type CreateView
   | ChooseQuestionView CoachingOpen CanContinue CreatedNote QuestionsRead
   | QuestionChosenView Graph LinkModal CreatedNote Question SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
   | ChooseSourceCategoryView CreatedNote String
-  | CreateSourceView
+  | CreateNewSourceView CreatedNote Title Author Content
+  | PromptCreateAnotherView CreatedNote
 
 view : Create -> CreateView
 view create =
@@ -271,13 +272,14 @@ view create =
         selectedNoteIsLinked
         notesAssociatedToCreatedLinks
 
-    ChooseSourceCategory coachingModal createModeInternal string ->
+    ChooseSourceCategory _ createModeInternal string ->
       ChooseSourceCategoryView ( getNote createModeInternal ) string
 
-    CreateNewSource coachingModal createModeInternal title author content ->
-
+    CreateNewSource _ createModeInternal title author content ->
+      CreateNewSourceView ( getNote createModeInternal ) title author content
 
     PromptCreateAnother createModeInternal ->
+      PromptCreateAnotherView <| getNote createModeInternal
 
 
 -- COACHINGMODAL
