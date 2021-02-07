@@ -13,6 +13,7 @@ import Element.Input
 import File.Download
 import FontAwesome.Attributes
 import FontAwesome.Solid
+import FontAwesome.Svg
 import Html
 import Html.Events
 import Html.Attributes
@@ -1528,23 +1529,6 @@ sessionNode deviceViewport content =
       <| tabView deviceViewport content
     ]
 
-contact : Element Msg
-contact =
-  Element.el
-    [ Element.Background.color Color.ebonyRegular
-    , Element.width Element.fill
-    , Element.height <| Element.px 36
-    , Element.padding 8
-    ]
-    <| Element.newTabLink
-      [ Element.centerX
-      , Element.Font.color Color.white
-      , Element.Font.underline
-      ]
-      { url = contactUrl
-      , label = Element.text "Contact/Contribute"
-      }
-
 contactUrl = "https://github.com/varunbhoopalam/slipbox"
 
 -- TAB
@@ -1652,7 +1636,7 @@ tabView deviceViewport content =
                 Element.Input.button
                   [ Element.alignRight
                   ]
-                  { onPress = Just NextStep
+                  { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
                   }
               else
@@ -1672,7 +1656,7 @@ tabView deviceViewport content =
             , coaching coachingOpen coachingText
             , Element.Input.multiline
               []
-              { onChange = \n -> UpdateInput <| Create.Note n
+              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
               , text = noteInput
               , placeholder = Nothing
               , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
@@ -1699,19 +1683,19 @@ tabView deviceViewport content =
                 Element.Input.button
                   [ Element.alignRight
                   ]
-                  { onPress = Just NextStep
+                  { onPress = Just CreateTabNextStep
                   , label = Element.text "Continue without linking"
                   }
               else
                 Element.Input.button
                   [ Element.alignRight
                   ]
-                  { onPress = Just NextStep
+                  { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
                   }
             questionTabularData =
               let
-                slipboxQuestions = Slipbox.getQuestions Nothing <| getSlipbox model
+                slipboxQuestions = Slipbox.getQuestions Nothing content.slipbox
                 toQuestionRecord =
                   \q ->
                     { read = List.any ( Note.is q) questionsRead
@@ -1759,7 +1743,7 @@ tabView deviceViewport content =
                         \row ->
                             Element.Input.button
                               []
-                              { onPress = Just <| ToFindLinksForQuestion row.note
+                              { onPress = Just <| CreateTabToFindLinksForQuestion row.note
                               , label = Element.text row.question
                               }
                   }
@@ -1767,7 +1751,7 @@ tabView deviceViewport content =
               }
             ]
 
-        Create.QuestionChosenView graph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
+        Create.QuestionChosenView createTabGraph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -1776,35 +1760,36 @@ tabView deviceViewport content =
                   [ Element.text "Linked"
                   , Element.Input.button
                     []
-                    { onPress = Just ToggleLinkModal
+                    { onPress = Just CreateTabToggleLinkModal
                     , label = Element.text "Edit"
                     }
                   , Element.Input.button
                     []
-                    { onPress = Just RemoveLink
+                    { onPress = Just CreateTabRemoveLink
                     , label = Element.text "Remove"
                     }
                   ]
               else
                 Element.Input.button
                   []
-                  { onPress = Just ToggleLinkModal
+                  { onPress = Just CreateTabToggleLinkModal
                   , label = Element.text "Create Link"
                   }
             viewGraph = Element.html <|
               Svg.svg
                 [ Svg.Attributes.width "100%"
                 , Svg.Attributes.height "100%"
-                , Svg.Attributes.viewBox <| computeViewbox graph.positions
+                , Svg.Attributes.viewBox <| computeViewbox createTabGraph.positions
                 ] <|
                 List.concat
-                  [ List.filterMap (toGraphLink graph.positions) graph.links
+                  [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
                   , List.map viewGraphNote <|
-                    List.map ( toGraphNote notesAssociatedToCreatedLinks selectedNote ) graph.positions
+                    List.map ( toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote ) createTabGraph.positions
                   ]
           in
           Element.row
-            [ Element.width Element.fill
+            [ Element.inFront <| doneOrLinkModal selectedNote note linkModal
+            , Element.width Element.fill
             , Element.height Element.fill
             ]
             [ Element.column
@@ -1852,14 +1837,14 @@ tabView deviceViewport content =
 
         Create.ChooseSourceCategoryView note input  ->
           let
-            existingSources = Slipbox.getSources Nothing <| getSlipbox model
+            existingSources = Slipbox.getSources Nothing content.slipbox
             maybeSourceSelected = List.head <| List.filter ( \source -> Source.getTitle source == input ) existingSources
             useExistingSourceNode =
               case maybeSourceSelected of
                 Just source ->
                   Element.Input.button
                     []
-                    { onPress = Just <| ContinueWithSelectedSource source
+                    { onPress = Just <| CreateTabContinueWithSelectedSource source
                     , label = Element.text "Use Selected Source"
                     }
                 Nothing ->
@@ -1870,30 +1855,30 @@ tabView deviceViewport content =
             [ Element.text note
             , Element.row
               []
-              [ sourceInput input <| List.map Source.getTitle existingSources
+              [ createTabSourceInput input <| List.map Source.getTitle existingSources
               , useExistingSourceNode
               ]
             , Element.Input.button
               []
-              { onPress = Just NoSource
+              { onPress = Just CreateTabNoSource
               , label = Element.text "No Source"
               }
             , Element.Input.button
               []
-              { onPress = Just NewSource
+              { onPress = Just CreateTabNewSource
               , label = Element.text "New Source"
               }
             ]
 
-        Create.CreateNewSourceView note title author content ->
+        Create.CreateNewSourceView note title author sourceContent ->
           let
-            existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing <| getSlipbox model
+            existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
             ( titleLabel, submitNode ) =
               if Source.titleIsValid existingTitles title then
                 ( Element.text "Title (required)"
                 , Element.Input.button
                   []
-                  { onPress = Just SubmitNewSource
+                  { onPress = Just CreateTabSubmitNewSource
                   , label = Element.text "Submit New Source"
                   }
                 )
@@ -1912,7 +1897,7 @@ tabView deviceViewport content =
             [ Element.text note
             , Element.Input.multiline
               []
-              { onChange = \s -> UpdateInput <| Create.SourceTitle s
+              { onChange = \s -> CreateTabUpdateInput <| Create.SourceTitle s
               , text = title
               , placeholder = Nothing
               , label = Element.Input.labelAbove [] titleLabel
@@ -1920,7 +1905,7 @@ tabView deviceViewport content =
               }
             , Element.Input.multiline
               []
-              { onChange = \s -> UpdateInput <| Create.SourceAuthor s
+              { onChange = \s -> CreateTabUpdateInput <| Create.SourceAuthor s
               , text = author
               , placeholder = Nothing
               , label = Element.Input.labelAbove [] <|
@@ -1929,8 +1914,8 @@ tabView deviceViewport content =
               }
             , Element.Input.multiline
               []
-              { onChange = \s -> UpdateInput <| Create.SourceContent s
-              , text = content
+              { onChange = \s -> CreateTabUpdateInput <| Create.SourceContent s
+              , text = sourceContent
               , placeholder = Nothing
               , label = Element.Input.labelAbove [] <|
                 Element.text "Content (not required)"
@@ -1946,7 +1931,7 @@ tabView deviceViewport content =
             , Element.text note
             , Element.Input.button
               []
-              { onPress = Just CreateAnotherNote
+              { onPress = Just CreateTabCreateAnotherNote
               , label = Element.text "Create Another Note?"
               }
             ]
@@ -1963,7 +1948,7 @@ coaching coachingOpen text =
         , Element.Border.rounded 4
         , Element.padding 2
         ]
-        { onPress = Just ToggleCoaching
+        { onPress = Just CreateTabToggleCoaching
         , label = Element.text "Coaching"
         }
   in
@@ -1989,7 +1974,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
         ] <|
         Element.Input.button
           []
-          { onPress = Just ToChooseQuestion
+          { onPress = Just CreateTabToChooseQuestion
           , label = Element.text "Done"
           }
     Create.Open input ->
@@ -2000,7 +1985,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           else
             Element.Input.button
               []
-              { onPress = Just CreateBridgeForSelectedNote
+              { onPress = Just CreateTabCreateBridgeForSelectedNote
               , label = Element.text "Create Bridged Link with Note"
               }
       in
@@ -2017,13 +2002,13 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           ]
         , Element.Input.button
           []
-          { onPress = Just CreateLinkForSelectedNote
+          { onPress = Just CreateTabCreateLinkForSelectedNote
           , label = Element.text "Create Link"}
         , Element.column
           []
           [ Element.Input.multiline
             []
-            { onChange = \s -> UpdateInput <| Create.Note s
+            { onChange = \s -> CreateTabUpdateInput <| Create.Note s
             , text = input
             , placeholder = Nothing
             , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
@@ -2033,7 +2018,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           ]
         , Element.Input.button
           []
-          { onPress = Just ToggleLinkModal
+          { onPress = Just CreateTabToggleLinkModal
           , label = Element.text "Cancel"
           }
         ]
@@ -2061,8 +2046,8 @@ type alias NotePosition =
   , vy : Float
   }
 
-toGraphNote : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
-toGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
+toCreateTabGraphNote : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
+toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
   let
     note = notePosition.note
     isSelectedNote = Note.is note selectedNote
@@ -2094,7 +2079,7 @@ viewGraphNote graphNote =
         --, Svg.Attributes.r "5"
         --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| SelectNote note
+        , Svg.Events.onClick <| CreateTabSelectNote note
         ]
         [ starSvg
         ]
@@ -2106,7 +2091,7 @@ viewGraphNote graphNote =
         --, Svg.Attributes.r "5"
         --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| SelectNote note
+        , Svg.Events.onClick <| CreateTabSelectNote note
         ]
         [ linkSvg
         ]
@@ -2118,9 +2103,9 @@ viewGraphNote graphNote =
         --, Svg.Attributes.r "5"
         --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| SelectNote note
+        , Svg.Events.onClick <| CreateTabSelectNote note
         ]
-        [ questionSvg
+        [ questionCircleSvg
         ]
 
     Regular note x y ->
@@ -2130,7 +2115,7 @@ viewGraphNote graphNote =
         , Svg.Attributes.r "5"
         , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| SelectNote note
+        , Svg.Events.onClick <| CreateTabSelectNote note
         ]
         []
 
@@ -2172,8 +2157,8 @@ computeViewbox notePositions =
     Nothing ->
       formatViewbox {minX=100,minY=100,width=100,height=100}
 
-toGraphLink: (List NotePosition) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
-toGraphLink notePositions link =
+toCreateTabGraphLink: (List NotePosition) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
+toCreateTabGraphLink notePositions link =
   let
     maybeGetNoteByIdentifier =
       \identifier ->
@@ -2184,10 +2169,10 @@ toGraphLink notePositions link =
           )
           notePositions
   in
-  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
+  Maybe.map2 createTabSvgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
 
-svgLine : NotePosition -> NotePosition -> Svg.Svg Msg
-svgLine note1 note2 =
+createTabSvgLine : NotePosition -> NotePosition -> Svg.Svg Msg
+createTabSvgLine note1 note2 =
   Svg.line
     [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
     , Svg.Attributes.y1 <| String.fromFloat <| note1.y
@@ -2198,8 +2183,8 @@ svgLine note1 note2 =
     ]
     []
 
-sourceInput: String -> (List String) -> Element Msg
-sourceInput input suggestions =
+createTabSourceInput: String -> (List String) -> Element Msg
+createTabSourceInput input suggestions =
   let
     sourceInputid = "Source: 1"
     dataitemId = "Sources: 2"
@@ -2215,7 +2200,7 @@ sourceInput input suggestions =
           , Html.Attributes.name sourceInputid
           , Html.Attributes.id sourceInputid
           , Html.Attributes.value input
-          , Html.Events.onInput <| \s -> UpdateInput <| Create.SourceTitle s
+          , Html.Events.onInput <| \s -> CreateTabUpdateInput <| Create.SourceTitle s
           ]
           []
         , Html.datalist
@@ -2226,26 +2211,6 @@ sourceInput input suggestions =
 toHtmlOption: String -> Html.Html Msg
 toHtmlOption value =
   Html.option [ Html.Attributes.value value ] []
-
--- ICONS
-iconBuilder : FontAwesome.Icon.Icon -> Element Msg
-iconBuilder icon =
-  Element.el []
-    <| Element.html
-      <| FontAwesome.Icon.viewStyled
-        [ FontAwesome.Attributes.fa2x
-        , FontAwesome.Attributes.fw
-        ]
-        icon
-
-starIcon = iconBuilder FontAwesome.Solid.star
-starSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.star
-
-linkIcon = iconBuilder FontAwesome.Solid.link
-linkSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.link
-
-questionIcon = iconBuilder FontAwesome.Solid.questionCircle
-questionSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.questionCircle
 
 -- END CREATETAB HELPERS
 
@@ -2450,6 +2415,11 @@ sameTab tab tab_ =
         Questions -> True
         _ -> False
 
+    CreateModeTab _ ->
+      case tab_ of
+        CreateMode -> True
+        _ -> False
+
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
 iconBuilder icon =
   Element.el []
@@ -2486,6 +2456,15 @@ scrollIcon = iconBuilder FontAwesome.Solid.scroll
 
 questionIcon : Element Msg
 questionIcon = iconBuilder FontAwesome.Solid.question
+
+starIcon = iconBuilder FontAwesome.Solid.star
+starSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.star
+
+linkIcon = iconBuilder FontAwesome.Solid.link
+linkSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.link
+
+questionCircleIcon = iconBuilder FontAwesome.Solid.questionCircle
+questionCircleSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.questionCircle
 
 barsButton : Element Msg
 barsButton =
@@ -3333,10 +3312,6 @@ sourceInput itemId item input suggestions =
           [ Html.Attributes.id dataitemId ]
           <| List.map toHtmlOption suggestionsWithNA
         ]
-
-toHtmlOption: String -> Html.Html Msg
-toHtmlOption value =
-  Html.option [ Html.Attributes.value value ] []
 
 chooseSubmitButton : Item.Item -> Bool -> Element Msg
 chooseSubmitButton item canSubmit =
