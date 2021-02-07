@@ -4,6 +4,7 @@ import Browser
 import Browser.Events
 import Browser.Navigation
 import Color
+import Create
 import Element.Background
 import Element.Border
 import Element.Events
@@ -65,8 +66,8 @@ updateTab tab model =
       { model | state = state }
     _ -> model
 
-updateSlipbox : Slipbox.Slipbox -> Model -> Model
-updateSlipbox slipbox model =
+setSlipbox : Slipbox.Slipbox -> Model -> Model
+setSlipbox slipbox model =
   case model.state of
     Session content ->
       let
@@ -81,10 +82,32 @@ getSlipbox model =
     Session content -> Just content.slipbox
     _ -> Nothing
 
+getCreate : Model -> Maybe Create.Create
+getCreate model =
+  case model.state of
+    Session content ->
+      case content.tab of
+        CreateModeTab create -> Just create
+        _ -> Nothing
+    _ -> Nothing
+
+setCreate : Create.Create -> Model -> Model
+setCreate create model =
+  case model.state of
+    Session content ->
+      case content.tab of
+        CreateModeTab _ ->
+          let
+            state = Session { content | tab = CreateModeTab create }
+          in
+          { model | state = state }
+        _ -> model
+    _ -> model
+
+
 type State 
   = Setup 
-  | Parsing 
-  | FailureToParse 
+  | FailureToParse
   | Session Content
   | Tutorial Tutorial.Tutorial
 
@@ -110,6 +133,7 @@ type Tab
   | SourcesTab String
   | WorkspaceTab
   | QuestionsTab String
+  | CreateModeTab Create.Create
 
 type Tab_
   = Brain
@@ -117,6 +141,7 @@ type Tab_
   | Notes
   | Sources
   | Questions
+  | CreateMode
 
 -- INIT
 
@@ -148,7 +173,6 @@ type Msg
   | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
   | FileRequested
-  --| FileSelected File.File
   | FileRequestedTutorial
   | FileSelectedTutorial File.File
   | FileLoaded String
@@ -163,13 +187,28 @@ type Msg
   | SkipTutorial
   | UpdateInputTutorial Tutorial.UpdateAction
   | EndTutorial
+  | CreateTabToggleCoaching
+  | CreateTabNextStep
+  | CreateTabToFindLinksForQuestion Note.Note
+  | CreateTabToChooseQuestion
+  | CreateTabCreateLinkForSelectedNote
+  | CreateTabCreateBridgeForSelectedNote
+  | CreateTabToggleLinkModal
+  | CreateTabRemoveLink
+  | CreateTabSelectNote Note.Note
+  | CreateTabContinueWithSelectedSource Source.Source
+  | CreateTabNoSource
+  | CreateTabNewSource
+  | CreateTabSubmitNewSource
+  | CreateTabUpdateInput Create.Input
+  | CreateTabCreateAnotherNote
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
   let
     updateSlipboxWrapper = \s -> case getSlipbox model of
        Just slipbox ->
-         ( updateSlipbox (s slipbox) model, Cmd.none )
+         ( setSlipbox (s slipbox) model, Cmd.none )
        _ -> ( model, Cmd.none)
     updateExploreTabViewportLambda = \toViewport ->
       case model.state of
@@ -183,6 +222,29 @@ update message model =
               }, Cmd.none )
             _ -> ( model, Cmd.none )
         _ -> ( model , Cmd.none)
+
+    createModeLambda createUpdate =
+      case getCreate model of
+        Just create ->
+          ( setCreate
+            ( createUpdate create )
+            model
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+    createModeAndSlipboxLambda createUpdate =
+      case getSlipbox model of
+        Just slipbox ->
+          case getCreate model of
+            Just create ->
+              let
+                ( updatedSlipbox, updatedCreate ) = createUpdate slipbox create
+              in
+              ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+              , Cmd.none
+              )
+            Nothing -> ( model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
   in
   case message of
     
@@ -224,7 +286,7 @@ update message model =
       in
       case getSlipbox model of
         Just slipbox ->
-          ( updateSlipbox ( addItemToSlipboxLambda slipbox ) modelWithUpdatedTab
+          ( setSlipbox ( addItemToSlipboxLambda slipbox ) modelWithUpdatedTab
           , Cmd.none
           )
         _ -> ( model, Cmd.none)
@@ -265,14 +327,6 @@ update message model =
         Setup -> ( model, open () )
         _ -> ( model, Cmd.none )
 
-    --FileSelected file ->
-    --  case model.state of
-    --    Setup ->
-    --      ({ model | state = Parsing}
-    --      , Task.perform FileLoaded (File.toString file)
-    --      )
-    --    _ -> ( model, Cmd.none )
-
     FileRequestedTutorial ->
       case model.state of
         Tutorial _ -> ( model, File.Select.file ["application/json"] FileSelectedTutorial )
@@ -297,7 +351,7 @@ update message model =
     FileSaved _ ->
       case getSlipbox model of
         Just slipbox ->
-          ( updateSlipbox ( Slipbox.saveChanges slipbox ) model
+          ( setSlipbox ( Slipbox.saveChanges slipbox ) model
           , Cmd.none
           )
         Nothing -> ( model, Cmd.none )
@@ -314,7 +368,7 @@ update message model =
       case getSlipbox model of
         Just slipbox ->
           if not <| Slipbox.simulationIsCompleted slipbox then
-            ( updateSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
+            ( setSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
           else
             ( model, Cmd.none )
         _ -> ( model, Cmd.none )
@@ -360,6 +414,16 @@ update message model =
                 _ ->
                   ( { model | state =
                     Session { content | tab = QuestionsTab "" }
+                    }
+                  , Cmd.none
+                  )
+
+            CreateMode ->
+              case content.tab of
+                CreateModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                    Session { content | tab = CreateModeTab Create.init }
                     }
                   , Cmd.none
                   )
@@ -428,6 +492,25 @@ update message model =
           )
         _ -> ( model, Cmd.none )
 
+    CreateTabToggleCoaching -> createModeLambda Create.toggleCoachingModal
+    CreateTabNextStep -> createModeLambda Create.next
+    CreateTabToFindLinksForQuestion question ->
+      case getSlipbox model of
+        Just slipbox -> createModeLambda <| Create.toAddLinkState question slipbox
+        Nothing -> ( model, Cmd.none )
+    CreateTabToChooseQuestion -> createModeLambda Create.toChooseQuestionState
+    CreateTabCreateLinkForSelectedNote -> createModeLambda Create.createLink
+    CreateTabCreateBridgeForSelectedNote -> createModeLambda Create.createBridge
+    CreateTabToggleLinkModal -> createModeLambda Create.toggleLinkModal
+    CreateTabRemoveLink -> createModeLambda Create.removeLink
+    CreateTabSelectNote newSelectedNote -> createModeLambda <| Create.selectNote newSelectedNote
+    CreateTabUpdateInput input -> createModeLambda <| Create.updateInput input
+    CreateTabContinueWithSelectedSource source -> createModeAndSlipboxLambda <| Create.selectSource source
+    CreateTabNoSource -> createModeAndSlipboxLambda Create.noSource
+    CreateTabNewSource -> createModeLambda Create.newSource
+    CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
+    CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
+
 
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
@@ -491,8 +574,6 @@ view: Model -> Browser.Document Msg
 view model =
   case model.state of
     Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
-    -- TODO : Investigate and remove Parsing form state
-    Parsing -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Loading" ] }
     FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure" ] }
     Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }
     Tutorial tutorial -> { title = webpageTitle, body = [ tutorialView tutorial ] }
@@ -1509,47 +1590,664 @@ tabView deviceViewport content =
 
     WorkspaceTab ->
       Element.column
-          [ Element.width Element.fill
-          , Element.height Element.fill
-          , Element.padding 8
-          , Element.spacingXY 8 8
-          ]
-          [ Element.el
-            [ Element.Font.heavy
-            , Element.Border.width 1
-            , Element.padding 4
-            , Element.Font.color Color.oldLavenderRegular
-            , Element.centerX
-            ]
-            <| Element.text "Workspace"
-          , Element.el [ Element.centerX ] <| buttonTray Nothing
-          , Element.column
-            [ Element.height Element.fill
-            , Element.padding 8
-            , Element.spacingXY 8 8
-            , Element.width Element.fill
-            , Element.scrollbarY
-            ]
-            <| List.map ( toItemView content )
-              <| Slipbox.getItems content.slipbox
-          ]
-
-    QuestionsTab input ->
-        Element.column
         [ Element.width Element.fill
         , Element.height Element.fill
+        , Element.padding 8
+        , Element.spacingXY 8 8
         ]
-          [ noteTabToolbar input
-          , tabTextContentContainer
-            <| List.map ( \n -> Element.el
-              [ Element.width <| Element.minimum 300 Element.fill
-              , Element.alignTop
-              , Element.alignLeft
-              ]
-              n )
-              <| List.map ( toOpenNoteButton Nothing )
-                <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
+        [ Element.el
+          [ Element.Font.heavy
+          , Element.Border.width 1
+          , Element.padding 4
+          , Element.Font.color Color.oldLavenderRegular
+          , Element.centerX
           ]
+          <| Element.text "Workspace"
+        , Element.el [ Element.centerX ] <| buttonTray Nothing
+        , Element.column
+          [ Element.height Element.fill
+          , Element.padding 8
+          , Element.spacingXY 8 8
+          , Element.width Element.fill
+          , Element.scrollbarY
+          ]
+          <| List.map ( toItemView content )
+            <| Slipbox.getItems content.slipbox
+        ]
+
+    QuestionsTab input ->
+      Element.column
+      [ Element.width Element.fill
+      , Element.height Element.fill
+      ]
+        [ noteTabToolbar input
+        , tabTextContentContainer
+          <| List.map ( \n -> Element.el
+            [ Element.width <| Element.minimum 300 Element.fill
+            , Element.alignTop
+            , Element.alignLeft
+            ]
+            n )
+            <| List.map ( toOpenNoteButton Nothing )
+              <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
+        ]
+
+    CreateModeTab create ->
+      case Create.view create of
+        Create.NoteInputView coachingOpen canContinue noteInput ->
+          let
+            coachingText =
+              Element.paragraph
+                [ Element.Font.center
+                , Element.width <| Element.maximum 800 Element.fill
+                , Element.centerX
+                ]
+                [ Element.text "Transform your learning into clear, concise notes with one idea. "
+                , Element.text "Write as if you'll forget all about this note. "
+                , Element.text "When you come across it again, you should be able to read and understand. "
+                , Element.text "Take your time, this isn't always an easy endeavor. "
+                ]
+            continueNode =
+              if canContinue then
+                Element.Input.button
+                  [ Element.alignRight
+                  ]
+                  { onPress = Just NextStep
+                  , label = Element.text "Next"
+                  }
+              else
+                Element.none
+          in
+          Element.column
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Write a Permanent Note"
+            , coaching coachingOpen coachingText
+            , Element.Input.multiline
+              []
+              { onChange = \n -> UpdateInput <| Create.Note n
+              , text = noteInput
+              , placeholder = Nothing
+              , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
+              , spellcheck = True
+              }
+            , continueNode
+            ]
+
+        Create.ChooseQuestionView  coachingOpen canContinue note questionsRead ->
+          let
+            coachingText =
+              Element.paragraph
+                [ Element.Font.center
+                , Element.width <| Element.maximum 800 Element.fill
+                , Element.centerX
+                ]
+                [ Element.text "Further existing arguments by improving your understanding of questions you want to answer. "
+                , Element.text "Choose a question and find notes to link your new knowledge to. "
+                , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
+                , Element.text "Because of existing biases, it is hard for us to gather information that opposes what we already know. "
+                ]
+            continueNode =
+              if canContinue then
+                Element.Input.button
+                  [ Element.alignRight
+                  ]
+                  { onPress = Just NextStep
+                  , label = Element.text "Continue without linking"
+                  }
+              else
+                Element.Input.button
+                  [ Element.alignRight
+                  ]
+                  { onPress = Just NextStep
+                  , label = Element.text "Next"
+                  }
+            questionTabularData =
+              let
+                slipboxQuestions = Slipbox.getQuestions Nothing <| getSlipbox model
+                toQuestionRecord =
+                  \q ->
+                    { read = List.any ( Note.is q) questionsRead
+                    , question = Note.getContent q
+                    , note = q
+                    }
+              in
+              List.map toQuestionRecord slipboxQuestions
+          in
+          Element.column
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Further Existing Arguments"
+            , coaching coachingOpen coachingText
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text note
+              ]
+            , continueNode
+            , Element.table
+              []
+              { data = questionTabularData
+              , columns =
+                [ { header = Element.text "Read"
+                  , width = Element.shrink
+                  , view =
+                        \row ->
+                            case row.read of
+                              True -> Element.text "read"
+                              False -> Element.text "unread"
+                  }
+                , { header = Element.text "Question"
+                  , width = Element.fill
+                  , view =
+                        \row ->
+                            Element.Input.button
+                              []
+                              { onPress = Just <| ToFindLinksForQuestion row.note
+                              , label = Element.text row.question
+                              }
+                  }
+                ]
+              }
+            ]
+
+        Create.QuestionChosenView graph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
+          let
+            linkNode =
+              if selectedNoteIsLinked then
+                Element.column
+                  []
+                  [ Element.text "Linked"
+                  , Element.Input.button
+                    []
+                    { onPress = Just ToggleLinkModal
+                    , label = Element.text "Edit"
+                    }
+                  , Element.Input.button
+                    []
+                    { onPress = Just RemoveLink
+                    , label = Element.text "Remove"
+                    }
+                  ]
+              else
+                Element.Input.button
+                  []
+                  { onPress = Just ToggleLinkModal
+                  , label = Element.text "Create Link"
+                  }
+            viewGraph = Element.html <|
+              Svg.svg
+                [ Svg.Attributes.width "100%"
+                , Svg.Attributes.height "100%"
+                , Svg.Attributes.viewBox <| computeViewbox graph.positions
+                ] <|
+                List.concat
+                  [ List.filterMap (toGraphLink graph.positions) graph.links
+                  , List.map viewGraphNote <|
+                    List.map ( toGraphNote notesAssociatedToCreatedLinks selectedNote ) graph.positions
+                  ]
+          in
+          Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text <| Note.getContent question
+              , Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text note
+              , Element.column
+                []
+                [ Element.el [ Element.alignRight ] starIcon
+                , Element.el [] <| Element.text <| Note.getContent selectedNote
+                , linkNode
+                ]
+              ]
+            , Element.column
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              ]
+              [ viewGraph
+              , Element.wrappedRow
+                [ Element.width Element.fill
+                , Element.height Element.shrink
+                , Element.padding 8
+                , Element.spacingXY 8 8
+                ]
+                [ Element.row
+                  []
+                  [ starIcon
+                  , Element.text "Currently Selected Note"
+                  ]
+                , Element.row
+                  []
+                  [ linkIcon
+                  , Element.text "Note Marked to link (if not selected)"
+                  ]
+                , Element.row
+                  []
+                  [ questionIcon
+                  , Element.text "Question (if not selected)"
+                  ]
+                ]
+              ]
+            ]
+
+        Create.ChooseSourceCategoryView note input  ->
+          let
+            existingSources = Slipbox.getSources Nothing <| getSlipbox model
+            maybeSourceSelected = List.head <| List.filter ( \source -> Source.getTitle source == input ) existingSources
+            useExistingSourceNode =
+              case maybeSourceSelected of
+                Just source ->
+                  Element.Input.button
+                    []
+                    { onPress = Just <| ContinueWithSelectedSource source
+                    , label = Element.text "Use Selected Source"
+                    }
+                Nothing ->
+                  Element.none
+          in
+          Element.column
+            []
+            [ Element.text note
+            , Element.row
+              []
+              [ sourceInput input <| List.map Source.getTitle existingSources
+              , useExistingSourceNode
+              ]
+            , Element.Input.button
+              []
+              { onPress = Just NoSource
+              , label = Element.text "No Source"
+              }
+            , Element.Input.button
+              []
+              { onPress = Just NewSource
+              , label = Element.text "New Source"
+              }
+            ]
+
+        Create.CreateNewSourceView note title author content ->
+          let
+            existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing <| getSlipbox model
+            ( titleLabel, submitNode ) =
+              if Source.titleIsValid existingTitles title then
+                ( Element.text "Title (required)"
+                , Element.Input.button
+                  []
+                  { onPress = Just SubmitNewSource
+                  , label = Element.text "Submit New Source"
+                  }
+                )
+              else
+                if String.isEmpty title then
+                  ( Element.text "Title (required)"
+                  , Element.none
+                  )
+                else
+                  ( Element.text "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
+                  , Element.none
+                  )
+          in
+          Element.column
+            []
+            [ Element.text note
+            , Element.Input.multiline
+              []
+              { onChange = \s -> UpdateInput <| Create.SourceTitle s
+              , text = title
+              , placeholder = Nothing
+              , label = Element.Input.labelAbove [] titleLabel
+              , spellcheck = True
+              }
+            , Element.Input.multiline
+              []
+              { onChange = \s -> UpdateInput <| Create.SourceAuthor s
+              , text = author
+              , placeholder = Nothing
+              , label = Element.Input.labelAbove [] <|
+                Element.text "Author (not required)"
+              , spellcheck = True
+              }
+            , Element.Input.multiline
+              []
+              { onChange = \s -> UpdateInput <| Create.SourceContent s
+              , text = content
+              , placeholder = Nothing
+              , label = Element.Input.labelAbove [] <|
+                Element.text "Content (not required)"
+              , spellcheck = True
+              }
+            , submitNode
+            ]
+
+        Create.PromptCreateAnotherView note ->
+          Element.column
+            []
+            [ Element.text "New Note is Created!"
+            , Element.text note
+            , Element.Input.button
+              []
+              { onPress = Just CreateAnotherNote
+              , label = Element.text "Create Another Note?"
+              }
+            ]
+
+-- CREATETAB HELPERS
+
+coaching : Bool -> Element Msg -> Element Msg
+coaching coachingOpen text =
+  let
+    toggleCoachingButton =
+      Element.Input.button
+        [ Element.centerX
+        , Element.Border.width 1
+        , Element.Border.rounded 4
+        , Element.padding 2
+        ]
+        { onPress = Just ToggleCoaching
+        , label = Element.text "Coaching"
+        }
+  in
+  case coachingOpen of
+    False -> toggleCoachingButton
+    True ->
+      Element.column
+        [ Element.spacingXY 8 8
+        , Element.centerX
+        ]
+        [ toggleCoachingButton
+        , text
+        ]
+
+doneOrLinkModal : Note.Note -> String -> Create.LinkModal -> Element Msg
+doneOrLinkModal selectedNote createdNote bridgeModal =
+  case bridgeModal of
+    Create.Closed ->
+      Element.el
+        [ Element.padding 8
+        , Element.alignRight
+        , Element.alignTop
+        ] <|
+        Element.Input.button
+          []
+          { onPress = Just ToChooseQuestion
+          , label = Element.text "Done"
+          }
+    Create.Open input ->
+      let
+        submitNode =
+          if String.isEmpty input then
+            Element.none
+          else
+            Element.Input.button
+              []
+              { onPress = Just CreateBridgeForSelectedNote
+              , label = Element.text "Create Bridged Link with Note"
+              }
+      in
+      Element.column
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        ]
+        [ Element.row
+          []
+          [ Element.el [ Element.width Element.fill, Element.height Element.fill ]
+            <| Element.text createdNote
+          , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+            <| Element.text <| Note.getContent selectedNote
+          ]
+        , Element.Input.button
+          []
+          { onPress = Just CreateLinkForSelectedNote
+          , label = Element.text "Create Link"}
+        , Element.column
+          []
+          [ Element.Input.multiline
+            []
+            { onChange = \s -> UpdateInput <| Create.Note s
+            , text = input
+            , placeholder = Nothing
+            , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
+            , spellcheck = True
+            }
+          , submitNode
+          ]
+        , Element.Input.button
+          []
+          { onPress = Just ToggleLinkModal
+          , label = Element.text "Cancel"
+          }
+        ]
+
+type GraphNote
+  = Selected Note.Note X Y
+  | Linked Note.Note X Y
+  | Question Note.Note X Y
+  | Regular Note.Note X Y
+
+type alias X = String
+type alias Y = String
+
+type alias Graph =
+  { positions :  List NotePosition
+  , links : List Link.Link
+  }
+
+type alias NotePosition =
+  { id : Int
+  , note : Note.Note
+  , x : Float
+  , y : Float
+  , vx : Float
+  , vy : Float
+  }
+
+toGraphNote : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
+toGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
+  let
+    note = notePosition.note
+    isSelectedNote = Note.is note selectedNote
+    isQuestion = Note.getVariant note == Note.Question
+    hasCreatedLink =
+      List.any
+        ( Note.is note )
+        notesAssociatedToCreatedLinks
+    x = String.fromFloat notePosition.x
+    y = String.fromFloat notePosition.y
+  in
+  if isSelectedNote then
+    Selected note x y
+  else
+    if isQuestion then
+      Question note x y
+    else
+      case hasCreatedLink of
+        True -> Linked note x y
+        False -> Regular note x y
+
+viewGraphNote : GraphNote -> Svg.Svg Msg
+viewGraphNote graphNote =
+  case graphNote of
+    Selected note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ starSvg
+        ]
+
+    Linked note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ linkSvg
+        ]
+
+    Question note x y ->
+      Svg.g
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        --, Svg.Attributes.r "5"
+        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        [ questionSvg
+        ]
+
+    Regular note x y ->
+      Svg.circle
+        [ Svg.Attributes.cx x
+        , Svg.Attributes.cy y
+        , Svg.Attributes.r "5"
+        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+        , Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| SelectNote note
+        ]
+        []
+
+type alias PositionExtremes =
+  { minX : Float
+  , minY : Float
+  , maxX : Float
+  , maxY : Float
+  }
+
+computeViewbox : ( List NotePosition ) -> String
+computeViewbox notePositions =
+  let
+    xList = List.map (.x) notePositions
+    yList = List.map (.y) notePositions
+    maybeExtremes =
+      Maybe.map4
+        PositionExtremes
+        ( List.minimum xList )
+        ( List.minimum yList )
+        ( List.maximum xList )
+        ( List.maximum yList )
+    padding = 25
+    formatViewbox record =
+      String.fromFloat record.minX
+      ++ " " ++  String.fromFloat record.minY
+      ++ " " ++  String.fromFloat record.width
+      ++ " " ++  String.fromFloat record.height
+  in
+  case maybeExtremes of
+    Just extremes ->
+      formatViewbox
+        { minX = extremes.minX - padding
+        , minY = extremes.minY - padding
+        , width = ( extremes.maxX - extremes.minX ) + ( padding * 2 )
+        , height = ( extremes.maxY - extremes.minY ) + ( padding * 2 )
+        }
+
+    Nothing ->
+      formatViewbox {minX=100,minY=100,width=100,height=100}
+
+toGraphLink: (List NotePosition) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
+toGraphLink notePositions link =
+  let
+    maybeGetNoteByIdentifier =
+      \identifier ->
+        List.head <|
+          List.filter
+          ( \notePosition ->
+            identifier link notePosition.note
+          )
+          notePositions
+  in
+  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
+
+svgLine : NotePosition -> NotePosition -> Svg.Svg Msg
+svgLine note1 note2 =
+  Svg.line
+    [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+    , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+    , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+    , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+    , Svg.Attributes.stroke "rgb(0,0,0)"
+    , Svg.Attributes.strokeWidth "2"
+    ]
+    []
+
+sourceInput: String -> (List String) -> Element Msg
+sourceInput input suggestions =
+  let
+    sourceInputid = "Source: 1"
+    dataitemId = "Sources: 2"
+  in
+    Element.html
+      <| Html.div
+        []
+        [ Html.label
+          [ Html.Attributes.for sourceInputid ]
+          [ Html.text "Source: " ]
+        , Html.input
+          [ Html.Attributes.list dataitemId
+          , Html.Attributes.name sourceInputid
+          , Html.Attributes.id sourceInputid
+          , Html.Attributes.value input
+          , Html.Events.onInput <| \s -> UpdateInput <| Create.SourceTitle s
+          ]
+          []
+        , Html.datalist
+          [ Html.Attributes.id dataitemId ]
+          <| List.map toHtmlOption suggestions
+        ]
+
+toHtmlOption: String -> Html.Html Msg
+toHtmlOption value =
+  Html.option [ Html.Attributes.value value ] []
+
+-- ICONS
+iconBuilder : FontAwesome.Icon.Icon -> Element Msg
+iconBuilder icon =
+  Element.el []
+    <| Element.html
+      <| FontAwesome.Icon.viewStyled
+        [ FontAwesome.Attributes.fa2x
+        , FontAwesome.Attributes.fw
+        ]
+        icon
+
+starIcon = iconBuilder FontAwesome.Solid.star
+starSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.star
+
+linkIcon = iconBuilder FontAwesome.Solid.link
+linkSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.link
+
+questionIcon = iconBuilder FontAwesome.Solid.questionCircle
+questionSvg = FontAwesome.Svg.viewIcon FontAwesome.Solid.questionCircle
+
+-- END CREATETAB HELPERS
 
 tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
 tabTextContentContainer contents =
