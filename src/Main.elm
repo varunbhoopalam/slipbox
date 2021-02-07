@@ -1634,7 +1634,8 @@ tabView deviceViewport content =
             continueNode =
               if canContinue then
                 Element.Input.button
-                  [ Element.alignRight
+                  [ Element.Border.width 1
+                  , Element.padding 8
                   ]
                   { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
@@ -1681,14 +1682,18 @@ tabView deviceViewport content =
             continueNode =
               if canContinue then
                 Element.Input.button
-                  [ Element.alignRight
+                  [ Element.centerX
+                  , Element.padding 8
+                  , Element.Border.width 1
                   ]
                   { onPress = Just CreateTabNextStep
                   , label = Element.text "Continue without linking"
                   }
               else
                 Element.Input.button
-                  [ Element.alignRight
+                  [ Element.centerX
+                  , Element.padding 8
+                  , Element.Border.width 1
                   ]
                   { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
@@ -1726,7 +1731,10 @@ tabView deviceViewport content =
               ]
             , continueNode
             , Element.table
-              []
+              [ Element.width Element.shrink
+              , Element.spacingXY 8 8
+              , Element.centerX
+              ]
               { data = questionTabularData
               , columns =
                 [ { header = Element.text "Read"
@@ -1796,12 +1804,25 @@ tabView deviceViewport content =
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text <| Note.getContent question
-              , Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text note
+              [ Element.paragraph
+                [ Element.width Element.fill
+                , Element.padding 8
+                ]
+                [ Element.text <| Note.getContent question
+                ]
+              , Element.paragraph
+                [ Element.width Element.fill
+                , Element.padding 8
+                ]
+                [ Element.text note
+                ]
               , Element.column
                 []
                 [ Element.el [ Element.alignRight ] starIcon
-                , Element.el [] <| Element.text <| Note.getContent selectedNote
+                , Element.paragraph
+                  []
+                  [ Element.text <| Note.getContent selectedNote
+                  ]
                 , linkNode
                 ]
               ]
@@ -1992,20 +2013,35 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
       Element.column
         [ Element.height Element.fill
         , Element.width Element.fill
+        , Element.Background.color Color.white
+        , Element.padding 32
+        , Element.spacingXY 16 16
         ]
         [ Element.row
-          []
-          [ Element.el [ Element.width Element.fill, Element.height Element.fill ]
-            <| Element.text createdNote
-          , Element.el [ Element.width Element.fill, Element.height Element.fill ]
-            <| Element.text <| Note.getContent selectedNote
+          [ Element.width Element.fill ]
+          [ Element.paragraph
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.text createdNote
+            ]
+          , Element.paragraph
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.text <| Note.getContent selectedNote
+            ]
           ]
         , Element.Input.button
-          []
+          [ Element.centerX
+          , Element.Border.width 1
+          , Element.padding 8
+          ]
           { onPress = Just CreateTabCreateLinkForSelectedNote
           , label = Element.text "Create Link"}
         , Element.column
-          []
+          [ Element.width Element.fill
+          ]
           [ Element.Input.multiline
             []
             { onChange = \s -> CreateTabUpdateInput <| Create.Note s
@@ -2017,7 +2053,10 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           , submitNode
           ]
         , Element.Input.button
-          []
+          [ Element.centerX
+          , Element.Border.width 1
+          , Element.padding 8
+          ]
           { onPress = Just CreateTabToggleLinkModal
           , label = Element.text "Cancel"
           }
@@ -2342,7 +2381,7 @@ leftNav sideNavState selectedTab slipbox =
                   , Element.text "Save"
                   ]
               }
-          , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Note" ( AddItem Nothing Slipbox.NewNote ) False
+          , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Mode" ( ChangeTab CreateMode ) <| sameTab selectedTab CreateMode
           , leftNavExpandedButtonLambda Element.alignBottom newspaperIcon "Create Source" ( AddItem Nothing Slipbox.NewSource ) False
           , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Question" ( AddItem Nothing Slipbox.NewQuestion ) False
           ]
