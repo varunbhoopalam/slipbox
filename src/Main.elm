@@ -2479,25 +2479,6 @@ barsButton =
           FontAwesome.Solid.bars
     }
 
-tabHeaderBuilder : { onPress: Maybe Msg, label: Element Msg } -> Bool -> Element Msg
-tabHeaderBuilder content onTab =
-  let
-    attributes =
-      if onTab then
-        [ Element.Background.color Color.heliotropeGrayRegular
-        , Element.Font.color Color.white
-        , Element.width Element.fill
-        , Element.height Element.fill
-        ]
-      else
-        [ Element.Background.color Color.heliotropeGrayHighlighted
-        , Element.Font.color Color.white
-        , Element.width Element.fill
-        , Element.height Element.fill
-        ]
-  in
-  Element.Input.button attributes content
-
 -- ITEMS
 
 itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
@@ -3436,13 +3417,5 @@ smallOldLavenderButton buttonFunction =
     , Element.height Element.fill
     , Element.padding 8
     , Element.Font.heavy
-    ]
-    buttonFunction
-
-buttonThatWillFillSpace : { onPress : Maybe Msg, label : Element Msg } -> Element Msg
-buttonThatWillFillSpace buttonFunction =
-  Element.Input.button
-    [ Element.width Element.fill
-    , Element.height Element.fill
     ]
     buttonFunction
