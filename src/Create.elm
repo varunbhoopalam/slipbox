@@ -18,6 +18,7 @@ module Create exposing
   , Input(..)
   , view
   , CreateView(..)
+  , LinkModal(..)
   )
 
 import Force
@@ -225,9 +226,14 @@ updateInput input create =
 
 type alias CoachingOpen = Bool
 type alias CanContinue = Bool
+type alias SelectedNoteIsLinked = Bool
+type alias NotesAssociatedToCreatedLinks = List Note.Note
 type CreateView
-  = NoteCreation CoachingOpen CanContinue CreatedNote
-  | QuestionScreen CoachingOpen CanContinue CreatedNote QuestionsRead
+  = NoteInputView CoachingOpen CanContinue CreatedNote
+  | ChooseQuestionView CoachingOpen CanContinue CreatedNote QuestionsRead
+  | QuestionChosenView Graph LinkModal CreatedNote Question SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | ChooseSourceCategoryView CreatedNote String
+  | CreateSourceView
 
 view : Create -> CreateView
 view create =
@@ -237,18 +243,36 @@ view create =
         note = getNote createModeInternal
         canContinue = not <| String.isEmpty note
       in
-      NoteCreation (isOpen coachingModal) canContinue note
-
+      NoteInputView (isOpen coachingModal) canContinue note
 
     ChooseQuestion coachingModal createModeInternal ->
+      let
+        note = getNote createModeInternal
+        canContinue = List.isEmpty <| getCreatedLinks createModeInternal
+      in
+      ChooseQuestionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
 
-
-
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
-
+    FindLinksForQuestion _ graph linkModal createModeInternal question selectedNote ->
+      let
+        note = getNote createModeInternal
+        createdLinks = getCreatedLinks createModeInternal
+        selectedNoteIsLinked =
+          List.any
+            ( linkIsForNote selectedNote )
+            createdLinks
+        notesAssociatedToCreatedLinks = List.map getNoteOnLink createdLinks
+      in
+      QuestionChosenView
+        graph
+        linkModal
+        note
+        question
+        selectedNote
+        selectedNoteIsLinked
+        notesAssociatedToCreatedLinks
 
     ChooseSourceCategory coachingModal createModeInternal string ->
-
+      ChooseSourceCategoryView ( getNote createModeInternal ) string
 
     CreateNewSource coachingModal createModeInternal title author content ->
 
@@ -322,6 +346,11 @@ read question internal =
   case internal of
     CreateModeInternal note questionsRead linksCreated source ->
       CreateModeInternal note (question :: questionsRead) linksCreated source
+
+getQuestionsRead : CreateModeInternal -> QuestionsRead
+getQuestionsRead internal =
+  case internal of
+    CreateModeInternal _ questionsRead _ _ -> questionsRead
 
 linkIsForNote : Note.Note -> Link -> Bool
 linkIsForNote note link =

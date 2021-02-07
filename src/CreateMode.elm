@@ -195,12 +195,11 @@ getNoteOnLink link =
     Bridge noteOnLink _ -> noteOnLink
 
 
-getLinkForSelectedNote : Note.Note -> LinksCreated -> Maybe Link
-getLinkForSelectedNote note linksCreated =
-  List.head <|
-    List.filter
-      ( linkIsForNote note )
-      linksCreated
+getLinkForSelectedNote : Note.Note -> ( List Note.Note ) -> Bool
+getLinkForSelectedNote note notesAssociatedToCreatedLinks =
+  List.any
+    ( Note.is note )
+    notesAssociatedToCreatedLinks
 
 getLinkForSelectedNoteIfBridge : Note.Note -> LinksCreated -> Maybe String
 getLinkForSelectedNoteIfBridge note linksCreated =
@@ -391,7 +390,7 @@ biggerElement = Element.fillPortion 1618
 view : Model -> Html.Html Msg
 view model =
   case Create.view <| getCreate model of
-    Create.NoteCreation coachingOpen canContinue noteInput ->
+    Create.NoteInputView coachingOpen canContinue noteInput ->
       let
         coachingText =
           Element.paragraph
@@ -442,7 +441,7 @@ view model =
           , continueNode
           ]
 
-    ChooseQuestion coachingModal slipbox createModeInternal ->
+    Create.ChooseQuestionView  coachingOpen canContinue note questionsRead ->
       let
         coachingText =
           Element.paragraph
@@ -456,7 +455,7 @@ view model =
             , Element.text "Because of existing biases, it is hard for us to gather information that opposes what we already know. "
             ]
         continueNode =
-          if List.isEmpty <| getCreatedLinks createModeInternal then
+          if canContinue then
             Element.Input.button
               [ Element.alignRight
               ]
@@ -486,18 +485,18 @@ view model =
             , Element.Font.heavy
             ] <|
             Element.text "Further Existing Arguments"
-          , coaching coachingModal coachingText
+          , coaching coachingOpen coachingText
           , Element.paragraph
             [ Element.Font.center
             , Element.width <| Element.maximum 800 Element.fill
             , Element.centerX
             ]
-            [ Element.text <| getNote createModeInternal
+            [ Element.text note
             ]
           , continueNode
           , Element.table
             []
-            { data = questionTabularData createModeInternal slipbox
+            { data = questionTabularData questionsRead <| getSlipbox model
             , columns =
               [ { header = Element.text "Read"
                 , width = Element.shrink
@@ -521,9 +520,9 @@ view model =
             }
           ]
 
-    FindLinksForQuestion _ graph linkModal _ createModeInternal question selectedNote ->
+    Create.QuestionChosenView graph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
       Element.layout
-        [ Element.inFront <| doneOrLinkModal selectedNote ( getNote createModeInternal ) linkModal
+        [ Element.inFront <| doneOrLinkModal selectedNote note linkModal
         , Element.width Element.fill
         , Element.height Element.fill
         ] <|
@@ -536,19 +535,19 @@ view model =
             , Element.height Element.fill
             ]
             [ Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text <| Note.getContent question
-            , Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text <| getNote createModeInternal
+            , Element.el [ Element.width Element.fill, Element.padding 8 ] <| Element.text note
             , Element.column
               []
               [ Element.el [ Element.alignRight ] starIcon
               , Element.el [] <| Element.text <| Note.getContent selectedNote
-              , linkCheckbox selectedNote <| getCreatedLinks createModeInternal
+              , linkNode selectedNoteIsLinked
               ]
             ]
           , Element.column
             [ Element.width biggerElement
             , Element.height Element.fill
             ]
-            [ viewGraph graph createModeInternal selectedNote
+            [ viewGraph graph notesAssociatedToCreatedLinks selectedNote
             , Element.wrappedRow
               [ Element.width Element.fill
               , Element.height Element.shrink
@@ -574,9 +573,9 @@ view model =
             ]
           ]
 
-    ChooseSourceCategory _ slipbox createModeInternal input ->
+    Create.ChooseSourceCategoryView note input  ->
       let
-        existingSources = Slipbox.getSources Nothing slipbox
+        existingSources = Slipbox.getSources Nothing <| getSlipbox model
         maybeSourceSelected = List.head <| List.filter ( \source -> Source.getTitle source == input ) existingSources
         useExistingSourceNode =
           case maybeSourceSelected of
@@ -595,7 +594,7 @@ view model =
         ] <|
         Element.column
           []
-          [ Element.text <| getNote createModeInternal
+          [ Element.text note
           , Element.row
             []
             [ sourceInput input <| List.map Source.getTitle existingSources
@@ -612,9 +611,9 @@ view model =
             , label = Element.text "New Source"
             }
           ]
-    CreateNewSource coachingModal slipbox createModeInternal title author content ->
+    CreateNewSource ->
       let
-        existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing slipbox
+        existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing <| getSlipbox model
         ( titleLabel, submitNode ) =
           if Source.titleIsValid existingTitles title then
             ( Element.text "Title (required)"
@@ -711,11 +710,10 @@ coaching coachingOpen text =
         , text
         ]
 
-questionTabularData : CreateModeInternal -> Slipbox.Slipbox -> List {read:Bool,question:String,note:Note.Note}
-questionTabularData internal slipbox =
+questionTabularData : ( List Note.Note ) -> Slipbox.Slipbox -> List {read:Bool,question:String,note:Note.Note}
+questionTabularData readQuestions slipbox =
   let
     slipboxQuestions = Slipbox.getQuestions Nothing slipbox
-    readQuestions = getQuestionsRead internal
     toQuestionRecord =
       \q ->
         { read = List.any ( Note.is q) readQuestions
@@ -725,10 +723,10 @@ questionTabularData internal slipbox =
   in
   List.map toQuestionRecord slipboxQuestions
 
-doneOrLinkModal : SelectedNote -> Note -> LinkModal -> Element Msg
+doneOrLinkModal : SelectedNote -> Note -> Create.LinkModal -> Element Msg
 doneOrLinkModal selectedNote createdNote bridgeModal =
   case bridgeModal of
-    Closed ->
+    Create.Closed ->
       Element.el
         [ Element.padding 8
         , Element.alignRight
@@ -739,7 +737,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           { onPress = Just ToChooseQuestion
           , label = Element.text "Done"
           }
-    Open input ->
+    Create.Open input ->
       linkModalView selectedNote createdNote input
 
 
@@ -791,33 +789,29 @@ linkModalView selectedNote createdNote input =
     ]
 
 
-linkCheckbox : SelectedNote -> LinksCreated -> Element Msg
-linkCheckbox selectedNote linksCreated =
-  let
-    maybeLinkCreatedForSelectedNote = getLinkForSelectedNote selectedNote linksCreated
-  in
-  case maybeLinkCreatedForSelectedNote of
-    Just _ ->
-      Element.column
-        []
-        [ Element.text "Linked"
-        , Element.Input.button
-          []
-          { onPress = Just ToggleLinkModal
-          , label = Element.text "Edit"
-          }
-        , Element.Input.button
-          []
-          { onPress = Just RemoveLink
-          , label = Element.text "Remove"
-          }
-        ]
-    Nothing ->
-      Element.Input.button
+linkNode : Bool -> Element Msg
+linkNode selectedNoteIsLinked =
+  if selectedNoteIsLinked then
+    Element.column
+      []
+      [ Element.text "Linked"
+      , Element.Input.button
         []
         { onPress = Just ToggleLinkModal
-        , label = Element.text "Create Link"
+        , label = Element.text "Edit"
         }
+      , Element.Input.button
+        []
+        { onPress = Just RemoveLink
+        , label = Element.text "Remove"
+        }
+      ]
+  else
+    Element.Input.button
+      []
+      { onPress = Just ToggleLinkModal
+      , label = Element.text "Create Link"
+      }
 
 type GraphNote
   = Selected Note.Note X Y
@@ -828,13 +822,16 @@ type GraphNote
 type alias X = String
 type alias Y = String
 
-toGraphNote : CreateModeInternal -> SelectedNote -> NotePosition -> GraphNote
-toGraphNote internal selectedNote notePosition =
+toGraphNote : ( List Note.Note ) -> SelectedNote -> NotePosition -> GraphNote
+toGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
   let
     note = notePosition.note
     isSelectedNote = Note.is note selectedNote
     isQuestion = Note.getVariant note == Note.Question
-    maybeHasLink = getLinkForSelectedNote note <| getCreatedLinks internal
+    hasCreatedLink =
+      List.any
+        ( Note.is note )
+        notesAssociatedToCreatedLinks
     x = String.fromFloat notePosition.x
     y = String.fromFloat notePosition.y
   in
@@ -844,9 +841,9 @@ toGraphNote internal selectedNote notePosition =
     if isQuestion then
       Question note x y
     else
-      case maybeHasLink of
-        Just _ -> Linked note x y
-        Nothing -> Regular note x y
+      case hasCreatedLink of
+        True -> Linked note x y
+        False -> Regular note x y
 
 viewGraphNote : GraphNote -> Svg.Svg Msg
 viewGraphNote graphNote =
@@ -900,8 +897,8 @@ viewGraphNote graphNote =
 
 
 
-viewGraph : Graph -> CreateModeInternal -> Note.Note -> Element Msg
-viewGraph graph createModeInternal selectedNote =
+viewGraph : Graph -> ( List Note.Note ) -> Note.Note -> Element Msg
+viewGraph graph notesAssociatedToCreatedLinks selectedNote =
   Element.html <|
     Svg.svg
       [ Svg.Attributes.width "100%"
@@ -910,7 +907,7 @@ viewGraph graph createModeInternal selectedNote =
       ] <|
       List.concat
         [ List.filterMap (toGraphLink graph.positions) graph.links
-        , List.map viewGraphNote <| List.map ( toGraphNote createModeInternal selectedNote ) graph.positions
+        , List.map viewGraphNote <| List.map ( toGraphNote notesAssociatedToCreatedLinks selectedNote ) graph.positions
         ]
 
 type alias PositionExtremes =
