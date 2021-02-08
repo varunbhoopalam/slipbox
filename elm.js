@@ -22113,8 +22113,9 @@ var $author$project$Source$titleIsValid = F2(
 				$elm$core$String$toLower(title));
 		};
 		var titleIsNotNA = $elm$core$String$toLower(title) !== 'n/a';
+		var titleIsNotEmpty = !$elm$core$String$isEmpty(title);
 		var allExistingTitlesAreDifferent = A2($elm$core$List$all, titlesAreDifferent, existingTitles);
-		return titleIsNotNA && allExistingTitlesAreDifferent;
+		return titleIsNotNA && (allExistingTitlesAreDifferent && titleIsNotEmpty);
 	});
 var $author$project$Main$createTabSvgLine = F2(
 	function (note1, note2) {
@@ -24000,6 +24001,7 @@ var $author$project$Main$tabView = F2(
 						var canContinue = _v1.b;
 						var note = _v1.c;
 						var questionsRead = _v1.d;
+						var questions = A2($author$project$Slipbox$getQuestions, $elm$core$Maybe$Nothing, content.u);
 						var questionTabularData = function () {
 							var toQuestionRecord = function (q) {
 								return {
@@ -24011,9 +24013,62 @@ var $author$project$Main$tabView = F2(
 										questionsRead)
 								};
 							};
-							var slipboxQuestions = A2($author$project$Slipbox$getQuestions, $elm$core$Maybe$Nothing, content.u);
-							return A2($elm$core$List$map, toQuestionRecord, slipboxQuestions);
+							return A2($elm$core$List$map, toQuestionRecord, questions);
 						}();
+						var tableNode = $elm$core$List$isEmpty(questions) ? A2(
+							$mdgriffith$elm_ui$Element$paragraph,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$Font$center,
+									$mdgriffith$elm_ui$Element$width(
+									A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+									$mdgriffith$elm_ui$Element$centerX
+								]),
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$text('There are no questions in your slipbox! '),
+									$mdgriffith$elm_ui$Element$text('We smartly add to our existing arguments by framing our minds to the perspective of answering questions. '),
+									$mdgriffith$elm_ui$Element$text('Add some questions to start adding links! ')
+								])) : A2(
+							$mdgriffith$elm_ui$Element$table,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+									A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+									$mdgriffith$elm_ui$Element$centerX
+								]),
+							{
+								gk: _List_fromArray(
+									[
+										{
+										ev: $mdgriffith$elm_ui$Element$text('Read'),
+										dX: function (row) {
+											var _v2 = row.fd;
+											if (_v2) {
+												return $mdgriffith$elm_ui$Element$text('read');
+											} else {
+												return $mdgriffith$elm_ui$Element$text('unread');
+											}
+										},
+										bq: $mdgriffith$elm_ui$Element$shrink
+									},
+										{
+										ev: $mdgriffith$elm_ui$Element$text('Question'),
+										dX: function (row) {
+											return A2(
+												$mdgriffith$elm_ui$Element$Input$button,
+												_List_Nil,
+												{
+													a: $mdgriffith$elm_ui$Element$text(row.fc),
+													b: $elm$core$Maybe$Just(
+														$author$project$Main$CreateTabToFindLinksForQuestion(row.eY))
+												});
+										},
+										bq: $mdgriffith$elm_ui$Element$fill
+									}
+									]),
+								gr: questionTabularData
+							});
 						var continueNode = canContinue ? A2(
 							$mdgriffith$elm_ui$Element$Input$button,
 							_List_fromArray(
@@ -24084,46 +24139,7 @@ var $author$project$Main$tabView = F2(
 											$mdgriffith$elm_ui$Element$text(note)
 										])),
 									continueNode,
-									A2(
-									$mdgriffith$elm_ui$Element$table,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
-											A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-											$mdgriffith$elm_ui$Element$centerX
-										]),
-									{
-										gk: _List_fromArray(
-											[
-												{
-												ev: $mdgriffith$elm_ui$Element$text('Read'),
-												dX: function (row) {
-													var _v2 = row.fd;
-													if (_v2) {
-														return $mdgriffith$elm_ui$Element$text('read');
-													} else {
-														return $mdgriffith$elm_ui$Element$text('unread');
-													}
-												},
-												bq: $mdgriffith$elm_ui$Element$shrink
-											},
-												{
-												ev: $mdgriffith$elm_ui$Element$text('Question'),
-												dX: function (row) {
-													return A2(
-														$mdgriffith$elm_ui$Element$Input$button,
-														_List_Nil,
-														{
-															a: $mdgriffith$elm_ui$Element$text(row.fc),
-															b: $elm$core$Maybe$Just(
-																$author$project$Main$CreateTabToFindLinksForQuestion(row.eY))
-														});
-												},
-												bq: $mdgriffith$elm_ui$Element$fill
-											}
-											]),
-										gr: questionTabularData
-									})
+									tableNode
 								]));
 					case 2:
 						var createTabGraph = _v1.a;
@@ -24221,8 +24237,10 @@ var $author$project$Main$tabView = F2(
 											$mdgriffith$elm_ui$Element$paragraph,
 											_List_fromArray(
 												[
-													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-													$mdgriffith$elm_ui$Element$padding(8)
+													$mdgriffith$elm_ui$Element$Font$center,
+													$mdgriffith$elm_ui$Element$width(
+													A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+													$mdgriffith$elm_ui$Element$centerX
 												]),
 											_List_fromArray(
 												[
@@ -24327,10 +24345,33 @@ var $author$project$Main$tabView = F2(
 						}();
 						return A2(
 							$mdgriffith$elm_ui$Element$column,
-							_List_Nil,
 							_List_fromArray(
 								[
-									$mdgriffith$elm_ui$Element$text(note),
+									$mdgriffith$elm_ui$Element$padding(16),
+									$mdgriffith$elm_ui$Element$centerX,
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+									A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+									$mdgriffith$elm_ui$Element$text('Attribute a Source')),
+									A2(
+									$mdgriffith$elm_ui$Element$paragraph,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$Font$center,
+											$mdgriffith$elm_ui$Element$width(
+											A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+											$mdgriffith$elm_ui$Element$centerX
+										]),
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$text(note)
+										])),
 									A2(
 									$mdgriffith$elm_ui$Element$row,
 									_List_Nil,
@@ -24383,10 +24424,33 @@ var $author$project$Main$tabView = F2(
 						var submitNode = _v4.b;
 						return A2(
 							$mdgriffith$elm_ui$Element$column,
-							_List_Nil,
 							_List_fromArray(
 								[
-									$mdgriffith$elm_ui$Element$text(note),
+									$mdgriffith$elm_ui$Element$padding(16),
+									$mdgriffith$elm_ui$Element$centerX,
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+									A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+									$mdgriffith$elm_ui$Element$text('Create a Source')),
+									A2(
+									$mdgriffith$elm_ui$Element$paragraph,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$Font$center,
+											$mdgriffith$elm_ui$Element$width(
+											A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+											$mdgriffith$elm_ui$Element$centerX
+										]),
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$text(note)
+										])),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$multiline,
 									_List_Nil,
@@ -24438,11 +24502,33 @@ var $author$project$Main$tabView = F2(
 						var note = _v1.a;
 						return A2(
 							$mdgriffith$elm_ui$Element$column,
-							_List_Nil,
 							_List_fromArray(
 								[
-									$mdgriffith$elm_ui$Element$text('New Note is Created!'),
-									$mdgriffith$elm_ui$Element$text(note),
+									$mdgriffith$elm_ui$Element$padding(16),
+									$mdgriffith$elm_ui$Element$centerX,
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+									A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$mdgriffith$elm_ui$Element$el,
+									_List_fromArray(
+										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
+									$mdgriffith$elm_ui$Element$text('Success! You\'ve smartly added to your external mind. ')),
+									A2(
+									$mdgriffith$elm_ui$Element$paragraph,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$Font$center,
+											$mdgriffith$elm_ui$Element$width(
+											A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+											$mdgriffith$elm_ui$Element$centerX
+										]),
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$text(note)
+										])),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
 									_List_Nil,

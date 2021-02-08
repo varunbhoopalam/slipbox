@@ -1698,9 +1698,9 @@ tabView deviceViewport content =
                   { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
                   }
+            questions = Slipbox.getQuestions Nothing content.slipbox
             questionTabularData =
               let
-                slipboxQuestions = Slipbox.getQuestions Nothing content.slipbox
                 toQuestionRecord =
                   \q ->
                     { read = List.any ( Note.is q) questionsRead
@@ -1708,7 +1708,47 @@ tabView deviceViewport content =
                     , note = q
                     }
               in
-              List.map toQuestionRecord slipboxQuestions
+              List.map toQuestionRecord questions
+
+            tableNode =
+              if List.isEmpty questions then
+                Element.paragraph
+                  [ Element.Font.center
+                  , Element.width <| Element.maximum 800 Element.fill
+                  , Element.centerX
+                  ]
+                  [ Element.text "There are no questions in your slipbox! "
+                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of furthering arguments on questions we care about. "
+                  , Element.text "Add some questions to start adding links! "
+                  ]
+              else
+                Element.table
+                  [ Element.width Element.shrink
+                  , Element.spacingXY 8 8
+                  , Element.centerX
+                  ]
+                  { data = questionTabularData
+                  , columns =
+                    [ { header = Element.text "Read"
+                      , width = Element.shrink
+                      , view =
+                            \row ->
+                                case row.read of
+                                  True -> Element.text "read"
+                                  False -> Element.text "unread"
+                      }
+                    , { header = Element.text "Question"
+                      , width = Element.fill
+                      , view =
+                            \row ->
+                                Element.Input.button
+                                  []
+                                  { onPress = Just <| CreateTabToFindLinksForQuestion row.note
+                                  , label = Element.text row.question
+                                  }
+                      }
+                    ]
+                  }
           in
           Element.column
             [ Element.padding 16
@@ -1730,33 +1770,7 @@ tabView deviceViewport content =
               [ Element.text note
               ]
             , continueNode
-            , Element.table
-              [ Element.width Element.shrink
-              , Element.spacingXY 8 8
-              , Element.centerX
-              ]
-              { data = questionTabularData
-              , columns =
-                [ { header = Element.text "Read"
-                  , width = Element.shrink
-                  , view =
-                        \row ->
-                            case row.read of
-                              True -> Element.text "read"
-                              False -> Element.text "unread"
-                  }
-                , { header = Element.text "Question"
-                  , width = Element.fill
-                  , view =
-                        \row ->
-                            Element.Input.button
-                              []
-                              { onPress = Just <| CreateTabToFindLinksForQuestion row.note
-                              , label = Element.text row.question
-                              }
-                  }
-                ]
-              }
+            , tableNode
             ]
 
         Create.QuestionChosenView createTabGraph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
@@ -1811,8 +1825,9 @@ tabView deviceViewport content =
                 [ Element.text <| Note.getContent question
                 ]
               , Element.paragraph
-                [ Element.width Element.fill
-                , Element.padding 8
+                [ Element.Font.center
+                , Element.width <| Element.maximum 800 Element.fill
+                , Element.centerX
                 ]
                 [ Element.text note
                 ]
@@ -1872,8 +1887,23 @@ tabView deviceViewport content =
                   Element.none
           in
           Element.column
-            []
-            [ Element.text note
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Attribute a Source"
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text note
+              ]
             , Element.row
               []
               [ createTabSourceInput input <| List.map Source.getTitle existingSources
@@ -1914,8 +1944,23 @@ tabView deviceViewport content =
                   )
           in
           Element.column
-            []
-            [ Element.text note
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Create a Source"
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text note
+              ]
             , Element.Input.multiline
               []
               { onChange = \s -> CreateTabUpdateInput <| Create.SourceTitle s
@@ -1947,9 +1992,23 @@ tabView deviceViewport content =
 
         Create.PromptCreateAnotherView note ->
           Element.column
-            []
-            [ Element.text "New Note is Created!"
-            , Element.text note
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Success! You've smartly added to your external mind. "
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text note
+              ]
             , Element.Input.button
               []
               { onPress = Just CreateTabCreateAnotherNote
