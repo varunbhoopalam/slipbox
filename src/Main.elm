@@ -1722,33 +1722,59 @@ tabView deviceViewport content =
                   , Element.text "Add some questions to start adding links! "
                   ]
               else
-                Element.table
-                  [ Element.width Element.shrink
-                  , Element.spacingXY 8 8
+                let
+                    headerAttrs =
+                        [ Element.Font.bold
+                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                        ]
+                in
+                Element.column
+                  [ Element.width <| Element.maximum 600 Element.fill
+                  , Element.height Element.fill
+                  , Element.spacingXY 10 10
+                  , Element.padding 5
+                  , Element.Border.width 2
+                  , Element.Border.rounded 6
                   , Element.centerX
                   ]
-                  { data = questionTabularData
-                  , columns =
-                    [ { header = Element.text "Read"
-                      , width = Element.shrink
-                      , view =
-                            \row ->
-                                case row.read of
-                                  True -> Element.text "read"
-                                  False -> Element.text "unread"
-                      }
-                    , { header = Element.text "Question"
-                      , width = Element.fill
-                      , view =
-                            \row ->
-                                Element.Input.button
-                                  []
-                                  { onPress = Just <| CreateTabToFindLinksForQuestion row.note
-                                  , label = Element.text row.question
-                                  }
-                      }
+                  [ Element.row [ Element.width Element.fill ]
+                    [ Element.el (Element.width ( Element.fillPortion 1 ) :: headerAttrs) <| Element.text "Read"
+                    , Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Question"
                     ]
-                  }
+                  , Element.el [ Element.width Element.fill ] <| Element.table
+                    [ Element.width Element.fill
+                    , Element.spacingXY 8 8
+                    , Element.centerX
+                    , Element.height <| Element.maximum 600 Element.fill
+                    , Element.scrollbarY
+                    ]
+                    { data = questionTabularData
+                    , columns =
+                      [ { header = Element.none
+                        , width = Element.fillPortion 1
+                        , view =
+                              \row ->
+                                  case row.read of
+                                    True -> Element.text "read"
+                                    False -> Element.text "unread"
+                        }
+                      , { header = Element.none
+                        , width = Element.fillPortion 4
+                        , view =
+                              \row ->
+                                  Element.Input.button
+                                    []
+                                    { onPress = Just <| CreateTabToFindLinksForQuestion row.note
+                                    , label =
+                                      Element.paragraph
+                                        []
+                                        [ Element.text row.question
+                                        ]
+                                    }
+                        }
+                      ]
+                    }
+                  ]
           in
           Element.column
             [ Element.padding 16
