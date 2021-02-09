@@ -2197,27 +2197,50 @@ viewGraphNote : GraphNote -> Svg.Svg Msg
 viewGraphNote graphNote =
   case graphNote of
     Selected note x y ->
+      let
+        center str =
+          case String.toFloat str of
+            Just s -> String.fromFloat <| s - 10
+            Nothing -> str
+        xCenter = center x
+        yCenter = center y
+        transformation = "rotate(45 " ++ x ++ " " ++ y ++ ")"
+      in
       Svg.g
-        [ Svg.Attributes.cx x
-        , Svg.Attributes.cy y
-        --, Svg.Attributes.r "5"
-        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-        , Svg.Attributes.cursor "Pointer"
+        [ Svg.Attributes.cursor "Pointer"
         , Svg.Events.onClick <| CreateTabSelectNote note
         ]
-        [ starSvg
+        [ Svg.rect
+          [ Svg.Attributes.fill "rgb(0,0,0)"
+          , Svg.Attributes.width "20"
+          , Svg.Attributes.height "20"
+          , Svg.Attributes.x xCenter
+          , Svg.Attributes.y yCenter
+          ]
+          []
+        , Svg.rect
+          [ Svg.Attributes.fill "rgba(0,0,0)"
+          , Svg.Attributes.width "20"
+          , Svg.Attributes.height "20"
+          , Svg.Attributes.x xCenter
+          , Svg.Attributes.y yCenter
+          , Svg.Attributes.transform transformation
+          ]
+          []
         ]
+
 
     Linked note x y ->
       Svg.g
         [ Svg.Attributes.cx x
         , Svg.Attributes.cy y
-        --, Svg.Attributes.r "5"
-        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
         , Svg.Events.onClick <| CreateTabSelectNote note
         ]
-        [ linkSvg
+        [ Svg.circle
+          [ Svg.Attributes.r "5"
+          ]
+          []
         ]
 
     Question note x y ->
