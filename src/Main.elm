@@ -1804,22 +1804,29 @@ tabView deviceViewport content =
             linkNode =
               if selectedNoteIsLinked then
                 Element.column
-                  []
+                  [ Element.width Element.fill
+                  ]
                   [ Element.text "Linked"
                   , Element.Input.button
-                    []
+                    [ Element.padding 8
+                    , Element.Border.width 1
+                    ]
                     { onPress = Just CreateTabToggleLinkModal
                     , label = Element.text "Edit"
                     }
                   , Element.Input.button
-                    []
+                    [ Element.padding 8
+                    , Element.Border.width 1
+                    ]
                     { onPress = Just CreateTabRemoveLink
                     , label = Element.text "Remove"
                     }
                   ]
               else
                 Element.Input.button
-                  []
+                  [ Element.padding 8
+                  , Element.Border.width 1
+                  ]
                   { onPress = Just CreateTabToggleLinkModal
                   , label = Element.text "Create Link"
                   }
@@ -1844,25 +1851,42 @@ tabView deviceViewport content =
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ Element.paragraph
+              [ Element.textColumn
                 [ Element.width Element.fill
+                , Element.height <| Element.fillPortion 1
                 , Element.padding 8
-                ]
-                [ Element.text <| Note.getContent question
-                ]
-              , Element.paragraph
-                [ Element.Font.center
-                , Element.width <| Element.maximum 800 Element.fill
+                , Element.Border.width 1
+                , Element.centerY
                 , Element.centerX
+                , Element.spacingXY 10 10
                 ]
-                [ Element.text note
+                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Question" ]
+                , Element.paragraph [] [ Element.text <| Note.getContent question ]
+                ]
+              , Element.textColumn
+                [ Element.width Element.fill
+                , Element.height <| Element.fillPortion 1
+                , Element.centerY
+                , Element.centerX
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Created Note" ]
+                , Element.paragraph [] [ Element.text note ]
                 ]
               , Element.column
-                []
-                [ Element.el [ Element.alignRight ] starIcon
-                , Element.paragraph
-                  []
-                  [ Element.text <| Note.getContent selectedNote
+                [ Element.width Element.fill
+                , Element.height <| Element.fillPortion 3
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ Element.textColumn
+                  [ Element.spacingXY 10 10
+                  ]
+                  [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+                  , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
                   ]
                 , linkNode
                 ]
@@ -1880,18 +1904,91 @@ tabView deviceViewport content =
                 ]
                 [ Element.row
                   []
-                  [ starIcon
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.g []
+                        [ Svg.rect
+                          [ Svg.Attributes.fill "rgb(0,0,0)"
+                          , Svg.Attributes.width "20"
+                          , Svg.Attributes.height "20"
+                          , Svg.Attributes.x "10"
+                          , Svg.Attributes.y "10"
+                          ]
+                          []
+                        , Svg.rect
+                          [ Svg.Attributes.fill "rgba(0,0,0)"
+                          , Svg.Attributes.width "20"
+                          , Svg.Attributes.height "20"
+                          , Svg.Attributes.transform "rotate(45 20 20)"
+                          , Svg.Attributes.x "10"
+                          , Svg.Attributes.y "10"
+                          ]
+                          []
+                        ]
+                      ]
                   , Element.text "Currently Selected Note"
                   ]
                 , Element.row
                   []
-                  [ linkIcon
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.g []
+                        [ Svg.circle
+                          [ Svg.Attributes.r "10"
+                          , Svg.Attributes.stroke "black"
+                          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+                          , Svg.Attributes.cx "20"
+                          , Svg.Attributes.cy "20"
+                          ]
+                          []
+                        , Svg.line
+                          [ Svg.Attributes.x1 "10"
+                          , Svg.Attributes.x2 "30"
+                          , Svg.Attributes.y1 "20"
+                          , Svg.Attributes.y2 "20"
+                          , Svg.Attributes.stroke "black"
+                          ]
+                          []
+                        , Svg.line
+                          [ Svg.Attributes.x1 "20"
+                          , Svg.Attributes.x2 "20"
+                          , Svg.Attributes.y1 "10"
+                          , Svg.Attributes.y2 "30"
+                          , Svg.Attributes.stroke "black"
+                          ]
+                          []
+                        ]
+                      ]
                   , Element.text "Note Marked to link (if not selected)"
                   ]
                 , Element.row
                   []
-                  [ questionIcon
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.rect
+                        [ Svg.Attributes.fill "rgb(0,0,0)"
+                        , Svg.Attributes.width "20"
+                        , Svg.Attributes.height "20"
+                        , Svg.Attributes.x "10"
+                        , Svg.Attributes.y "10"
+                        ]
+                        []
+                      ]
                   , Element.text "Question (if not selected)"
+                  ]
+                , Element.row
+                  []
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.circle
+                        [ Svg.Attributes.r "10"
+                        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+                        , Svg.Attributes.cx "20"
+                        , Svg.Attributes.cy "20"
+                        ]
+                        []
+                      ]
+                  , Element.text "Regular Note"
                   ]
                 ]
               ]
@@ -1905,7 +2002,10 @@ tabView deviceViewport content =
               case maybeSourceSelected of
                 Just source ->
                   Element.Input.button
-                    []
+                    [ Element.centerX
+                    , Element.padding 8
+                    , Element.Border.width 1
+                    ]
                     { onPress = Just <| CreateTabContinueWithSelectedSource source
                     , label = Element.text "Use Selected Source"
                     }
@@ -1936,12 +2036,18 @@ tabView deviceViewport content =
               , useExistingSourceNode
               ]
             , Element.Input.button
-              []
+              [ Element.centerX
+              , Element.padding 8
+              , Element.Border.width 1
+              ]
               { onPress = Just CreateTabNoSource
               , label = Element.text "No Source"
               }
             , Element.Input.button
-              []
+              [ Element.centerX
+              , Element.padding 8
+              , Element.Border.width 1
+              ]
               { onPress = Just CreateTabNewSource
               , label = Element.text "New Source"
               }
@@ -1954,7 +2060,10 @@ tabView deviceViewport content =
               if Source.titleIsValid existingTitles title then
                 ( Element.text "Title (required)"
                 , Element.Input.button
-                  []
+                  [ Element.centerX
+                  , Element.padding 8
+                  , Element.Border.width 1
+                  ]
                   { onPress = Just CreateTabSubmitNewSource
                   , label = Element.text "Submit New Source"
                   }
@@ -2036,7 +2145,10 @@ tabView deviceViewport content =
               [ Element.text note
               ]
             , Element.Input.button
-              []
+              [ Element.centerX
+              , Element.padding 8
+              , Element.Border.width 1
+              ]              
               { onPress = Just CreateTabCreateAnotherNote
               , label = Element.text "Create Another Note?"
               }
@@ -2074,7 +2186,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
   case bridgeModal of
     Create.Closed ->
       Element.el
-        [ Element.padding 8
+        [ Element.padding 16
         , Element.alignRight
         , Element.alignTop
         ] <|
@@ -2087,10 +2199,13 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
       let
         submitNode =
           if String.isEmpty input then
-            Element.none
+            Element.el [] Element.none
           else
             Element.Input.button
-              []
+              [ Element.centerX
+              , Element.Border.width 1
+              , Element.padding 8
+              ]
               { onPress = Just CreateTabCreateBridgeForSelectedNote
               , label = Element.text "Create Bridged Link with Note"
               }
@@ -2104,17 +2219,27 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
         ]
         [ Element.row
           [ Element.width Element.fill ]
-          [ Element.paragraph
+          [ Element.textColumn
             [ Element.width Element.fill
-            , Element.height Element.fill
+            , Element.centerY
+            , Element.centerX
+            , Element.Border.width 1
+            , Element.padding 8
+            , Element.spacingXY 10 10
             ]
-            [ Element.text createdNote
+            [ Element.paragraph [ Element.Font.bold ] [ Element.text "Created Note" ]
+            , Element.paragraph [] [ Element.text createdNote ]
             ]
-          , Element.paragraph
+          , Element.textColumn
             [ Element.width Element.fill
-            , Element.height Element.fill
+            , Element.centerY
+            , Element.centerX
+            , Element.Border.width 1
+            , Element.padding 8
+            , Element.spacingXY 10 10
             ]
-            [ Element.text <| Note.getContent selectedNote
+            [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+            , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
             ]
           ]
         , Element.Input.button
@@ -2126,6 +2251,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           , label = Element.text "Create Link"}
         , Element.column
           [ Element.width Element.fill
+          , Element.spacingXY 16 16
           ]
           [ Element.Input.multiline
             []
@@ -2193,6 +2319,7 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
         True -> Linked note x y
         False -> Regular note x y
 
+
 viewGraphNote : GraphNote -> Svg.Svg Msg
 viewGraphNote graphNote =
   case graphNote of
@@ -2243,7 +2370,6 @@ viewGraphNote graphNote =
         ]
         [ Svg.circle
           [ Svg.Attributes.r "5"
-          --, Svg.Attributes.fill "none"
           , Svg.Attributes.stroke "black"
           , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
           , Svg.Attributes.cx x

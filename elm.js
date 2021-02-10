@@ -19575,8 +19575,6 @@ var $author$project$Create$SourceContent = function (a) {
 var $author$project$Create$SourceTitle = function (a) {
 	return {$: 1, a: a};
 };
-var $mdgriffith$elm_ui$Internal$Model$Right = 2;
-var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX(2);
 var $mdgriffith$elm_ui$Internal$Model$Top = 0;
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY(0);
 var $mdgriffith$elm_ui$Internal$Flag$fontWeight = $mdgriffith$elm_ui$Internal$Flag$flag(13);
@@ -19820,6 +19818,7 @@ var $author$project$Main$buttonTray = function (maybeItem) {
 };
 var $mdgriffith$elm_ui$Internal$Flag$fontAlignment = $mdgriffith$elm_ui$Internal$Flag$flag(12);
 var $mdgriffith$elm_ui$Element$Font$center = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontAlignment, $mdgriffith$elm_ui$Internal$Style$classes.hZ);
+var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
 var $author$project$Main$CreateTabToggleCoaching = {$: 31};
 var $mdgriffith$elm_ui$Internal$Model$BorderWidth = F5(
 	function (a, b, c, d, e) {
@@ -19996,9 +19995,13 @@ var $author$project$Main$createTabSourceInput = F2(
 						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestions))
 					])));
 	});
+var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
+var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
 var $author$project$Main$CreateTabCreateBridgeForSelectedNote = {$: 36};
 var $author$project$Main$CreateTabCreateLinkForSelectedNote = {$: 35};
 var $author$project$Main$CreateTabToChooseQuestion = {$: 34};
+var $mdgriffith$elm_ui$Internal$Model$Right = 2;
+var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX(2);
 var $mdgriffith$elm_ui$Element$Input$Above = 2;
 var $mdgriffith$elm_ui$Element$Input$Label = F3(
 	function (a, b, c) {
@@ -20889,6 +20892,40 @@ var $mdgriffith$elm_ui$Element$paragraph = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
+var $mdgriffith$elm_ui$Internal$Model$AsTextColumn = 5;
+var $mdgriffith$elm_ui$Internal$Model$asTextColumn = 5;
+var $mdgriffith$elm_ui$Internal$Model$Max = F2(
+	function (a, b) {
+		return {$: 4, a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$maximum = F2(
+	function (i, l) {
+		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
+	});
+var $mdgriffith$elm_ui$Internal$Model$Min = F2(
+	function (a, b) {
+		return {$: 3, a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$minimum = F2(
+	function (i, l) {
+		return A2($mdgriffith$elm_ui$Internal$Model$Min, i, l);
+	});
+var $mdgriffith$elm_ui$Element$textColumn = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asTextColumn,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Element$width(
+					A2(
+						$mdgriffith$elm_ui$Element$maximum,
+						750,
+						A2($mdgriffith$elm_ui$Element$minimum, 500, $mdgriffith$elm_ui$Element$fill))),
+				attrs),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
 var $author$project$Main$doneOrLinkModal = F3(
 	function (selectedNote, createdNote, bridgeModal) {
 		if (!bridgeModal.$) {
@@ -20896,7 +20933,7 @@ var $author$project$Main$doneOrLinkModal = F3(
 				$mdgriffith$elm_ui$Element$el,
 				_List_fromArray(
 					[
-						$mdgriffith$elm_ui$Element$padding(8),
+						$mdgriffith$elm_ui$Element$padding(16),
 						$mdgriffith$elm_ui$Element$alignRight,
 						$mdgriffith$elm_ui$Element$alignTop
 					]),
@@ -20909,9 +20946,14 @@ var $author$project$Main$doneOrLinkModal = F3(
 					}));
 		} else {
 			var input = bridgeModal.a;
-			var submitNode = $elm$core$String$isEmpty(input) ? $mdgriffith$elm_ui$Element$none : A2(
+			var submitNode = $elm$core$String$isEmpty(input) ? A2($mdgriffith$elm_ui$Element$el, _List_Nil, $mdgriffith$elm_ui$Element$none) : A2(
 				$mdgriffith$elm_ui$Element$Input$button,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$centerX,
+						$mdgriffith$elm_ui$Element$Border$width(1),
+						$mdgriffith$elm_ui$Element$padding(8)
+					]),
 				{
 					a: $mdgriffith$elm_ui$Element$text('Create Bridged Link with Note'),
 					b: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateBridgeForSelectedNote)
@@ -20937,27 +20979,63 @@ var $author$project$Main$doneOrLinkModal = F3(
 						_List_fromArray(
 							[
 								A2(
-								$mdgriffith$elm_ui$Element$paragraph,
+								$mdgriffith$elm_ui$Element$textColumn,
 								_List_fromArray(
 									[
 										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+										$mdgriffith$elm_ui$Element$centerY,
+										$mdgriffith$elm_ui$Element$centerX,
+										$mdgriffith$elm_ui$Element$Border$width(1),
+										$mdgriffith$elm_ui$Element$padding(8),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
 									]),
 								_List_fromArray(
 									[
-										$mdgriffith$elm_ui$Element$text(createdNote)
+										A2(
+										$mdgriffith$elm_ui$Element$paragraph,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$Font$bold]),
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$text('Created Note')
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$paragraph,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$text(createdNote)
+											]))
 									])),
 								A2(
-								$mdgriffith$elm_ui$Element$paragraph,
+								$mdgriffith$elm_ui$Element$textColumn,
 								_List_fromArray(
 									[
 										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+										$mdgriffith$elm_ui$Element$centerY,
+										$mdgriffith$elm_ui$Element$centerX,
+										$mdgriffith$elm_ui$Element$Border$width(1),
+										$mdgriffith$elm_ui$Element$padding(8),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
 									]),
 								_List_fromArray(
 									[
-										$mdgriffith$elm_ui$Element$text(
-										$author$project$Note$getContent(selectedNote))
+										A2(
+										$mdgriffith$elm_ui$Element$paragraph,
+										_List_fromArray(
+											[$mdgriffith$elm_ui$Element$Font$bold]),
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$text('Selected Note')
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$paragraph,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$text(
+												$author$project$Note$getContent(selectedNote))
+											]))
 									]))
 							])),
 						A2(
@@ -20976,7 +21054,8 @@ var $author$project$Main$doneOrLinkModal = F3(
 						$mdgriffith$elm_ui$Element$column,
 						_List_fromArray(
 							[
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								A2($mdgriffith$elm_ui$Element$spacingXY, 16, 16)
 							]),
 						_List_fromArray(
 							[
@@ -21408,10 +21487,7 @@ var $author$project$Main$ExpandNote = function (a) {
 var $author$project$Slipbox$OpenNote = function (a) {
 	return {$: 0, a: a};
 };
-var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
 var $elm$svg$Svg$Attributes$cursor = _VirtualDom_attribute('cursor');
-var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
-var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
 var $elm$svg$Svg$foreignObject = $elm$svg$Svg$trustedNode('foreignObject');
 var $author$project$Note$getGraphState = function (note) {
 	return $author$project$Note$getInfo(note).cc;
@@ -21598,31 +21674,6 @@ var $author$project$Main$graph = F3(
 							A3($author$project$Main$graph_, deviceViewport, viewport, elements)
 						]))));
 	});
-var $lattyware$elm_fontawesome$FontAwesome$Solid$link = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'link',
-	512,
-	512,
-	_List_fromArray(
-		['M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z']));
-var $author$project$Main$linkIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$link);
-var $mdgriffith$elm_ui$Internal$Model$Max = F2(
-	function (a, b) {
-		return {$: 4, a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$maximum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Max, i, l);
-	});
-var $mdgriffith$elm_ui$Internal$Model$Min = F2(
-	function (a, b) {
-		return {$: 3, a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Element$minimum = F2(
-	function (i, l) {
-		return A2($mdgriffith$elm_ui$Internal$Model$Min, i, l);
-	});
 var $author$project$Main$NoteTabUpdateInput = function (a) {
 	return {$: 3, a: a};
 };
@@ -21675,15 +21726,6 @@ var $author$project$Main$sourceTabToolbar = function (input) {
 				A2($author$project$Main$searchInput, input, $author$project$Main$SourceTabUpdateInput)
 			]));
 };
-var $lattyware$elm_fontawesome$FontAwesome$Solid$star = A5(
-	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
-	'fas',
-	'star',
-	576,
-	512,
-	_List_fromArray(
-		['M259.3 17.8L194 150.2 47.9 171.5c-26.2 3.8-36.7 36.1-17.7 54.6l105.7 103-25 145.5c-4.5 26.3 23.2 46 46.4 33.7L288 439.6l130.7 68.7c23.2 12.2 50.9-7.4 46.4-33.7l-25-145.5 105.7-103c19-18.5 8.5-50.8-17.7-54.6L382 150.2 316.7 17.8c-11.7-23.6-45.6-23.9-57.4 0z']));
-var $author$project$Main$starIcon = $author$project$Main$iconBuilder($lattyware$elm_fontawesome$FontAwesome$Solid$star);
 var $mdgriffith$elm_ui$Internal$Model$Padding = F5(
 	function (a, b, c, d, e) {
 		return {$: 0, a: a, b: b, c: c, d: d, e: e};
@@ -22247,24 +22289,6 @@ var $author$project$Main$contentContainer = function (contents) {
 			]),
 		contents);
 };
-var $mdgriffith$elm_ui$Internal$Model$AsTextColumn = 5;
-var $mdgriffith$elm_ui$Internal$Model$asTextColumn = 5;
-var $mdgriffith$elm_ui$Element$textColumn = F2(
-	function (attrs, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asTextColumn,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Element$width(
-					A2(
-						$mdgriffith$elm_ui$Element$maximum,
-						750,
-						A2($mdgriffith$elm_ui$Element$minimum, 500, $mdgriffith$elm_ui$Element$fill))),
-				attrs),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
 var $author$project$Main$labeledViewBuilder = F2(
 	function (label, content) {
 		return A2(
@@ -24326,27 +24350,42 @@ var $author$project$Main$tabView = F2(
 										]))));
 						var linkNode = selectedNoteIsLinked ? A2(
 							$mdgriffith$elm_ui$Element$column,
-							_List_Nil,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+								]),
 							_List_fromArray(
 								[
 									$mdgriffith$elm_ui$Element$text('Linked'),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('Edit'),
 										b: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleLinkModal)
 									}),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('Remove'),
 										b: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
 									})
 								])) : A2(
 							$mdgriffith$elm_ui$Element$Input$button,
-							_List_Nil,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$padding(8),
+									$mdgriffith$elm_ui$Element$Border$width(1)
+								]),
 							{
 								a: $mdgriffith$elm_ui$Element$text('Create Link'),
 								b: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleLinkModal)
@@ -24372,47 +24411,105 @@ var $author$project$Main$tabView = F2(
 									_List_fromArray(
 										[
 											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
+											$mdgriffith$elm_ui$Element$textColumn,
 											_List_fromArray(
 												[
 													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-													$mdgriffith$elm_ui$Element$padding(8)
+													$mdgriffith$elm_ui$Element$height(
+													$mdgriffith$elm_ui$Element$fillPortion(1)),
+													$mdgriffith$elm_ui$Element$padding(8),
+													$mdgriffith$elm_ui$Element$Border$width(1),
+													$mdgriffith$elm_ui$Element$centerY,
+													$mdgriffith$elm_ui$Element$centerX,
+													A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
 												]),
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text(
-													$author$project$Note$getContent(question))
-												])),
-											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$Font$center,
-													$mdgriffith$elm_ui$Element$width(
-													A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
-													$mdgriffith$elm_ui$Element$centerX
-												]),
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text(note)
-												])),
-											A2(
-											$mdgriffith$elm_ui$Element$column,
-											_List_Nil,
 											_List_fromArray(
 												[
 													A2(
-													$mdgriffith$elm_ui$Element$el,
+													$mdgriffith$elm_ui$Element$paragraph,
 													_List_fromArray(
-														[$mdgriffith$elm_ui$Element$alignRight]),
-													$author$project$Main$starIcon),
+														[$mdgriffith$elm_ui$Element$Font$bold]),
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Question')
+														])),
 													A2(
 													$mdgriffith$elm_ui$Element$paragraph,
 													_List_Nil,
 													_List_fromArray(
 														[
 															$mdgriffith$elm_ui$Element$text(
-															$author$project$Note$getContent(selectedNote))
+															$author$project$Note$getContent(question))
+														]))
+												])),
+											A2(
+											$mdgriffith$elm_ui$Element$textColumn,
+											_List_fromArray(
+												[
+													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+													$mdgriffith$elm_ui$Element$height(
+													$mdgriffith$elm_ui$Element$fillPortion(1)),
+													$mdgriffith$elm_ui$Element$centerY,
+													$mdgriffith$elm_ui$Element$centerX,
+													$mdgriffith$elm_ui$Element$Border$width(1),
+													$mdgriffith$elm_ui$Element$padding(8),
+													A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_fromArray(
+														[$mdgriffith$elm_ui$Element$Font$bold]),
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text('Created Note')
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text(note)
+														]))
+												])),
+											A2(
+											$mdgriffith$elm_ui$Element$column,
+											_List_fromArray(
+												[
+													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+													$mdgriffith$elm_ui$Element$height(
+													$mdgriffith$elm_ui$Element$fillPortion(3)),
+													$mdgriffith$elm_ui$Element$Border$width(1),
+													$mdgriffith$elm_ui$Element$padding(8),
+													A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$mdgriffith$elm_ui$Element$textColumn,
+													_List_fromArray(
+														[
+															A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+														]),
+													_List_fromArray(
+														[
+															A2(
+															$mdgriffith$elm_ui$Element$paragraph,
+															_List_fromArray(
+																[$mdgriffith$elm_ui$Element$Font$bold]),
+															_List_fromArray(
+																[
+																	$mdgriffith$elm_ui$Element$text('Selected Note')
+																])),
+															A2(
+															$mdgriffith$elm_ui$Element$paragraph,
+															_List_Nil,
+															_List_fromArray(
+																[
+																	$mdgriffith$elm_ui$Element$text(
+																	$author$project$Note$getContent(selectedNote))
+																]))
 														])),
 													linkNode
 												]))
@@ -24443,7 +24540,47 @@ var $author$project$Main$tabView = F2(
 													_List_Nil,
 													_List_fromArray(
 														[
-															$author$project$Main$starIcon,
+															$mdgriffith$elm_ui$Element$html(
+															A2(
+																$elm$svg$Svg$svg,
+																_List_fromArray(
+																	[
+																		$elm$svg$Svg$Attributes$height('40'),
+																		$elm$svg$Svg$Attributes$width('40'),
+																		$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+																	]),
+																_List_fromArray(
+																	[
+																		A2(
+																		$elm$svg$Svg$g,
+																		_List_Nil,
+																		_List_fromArray(
+																			[
+																				A2(
+																				$elm$svg$Svg$rect,
+																				_List_fromArray(
+																					[
+																						$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
+																						$elm$svg$Svg$Attributes$width('20'),
+																						$elm$svg$Svg$Attributes$height('20'),
+																						$elm$svg$Svg$Attributes$x('10'),
+																						$elm$svg$Svg$Attributes$y('10')
+																					]),
+																				_List_Nil),
+																				A2(
+																				$elm$svg$Svg$rect,
+																				_List_fromArray(
+																					[
+																						$elm$svg$Svg$Attributes$fill('rgba(0,0,0)'),
+																						$elm$svg$Svg$Attributes$width('20'),
+																						$elm$svg$Svg$Attributes$height('20'),
+																						$elm$svg$Svg$Attributes$transform('rotate(45 20 20)'),
+																						$elm$svg$Svg$Attributes$x('10'),
+																						$elm$svg$Svg$Attributes$y('10')
+																					]),
+																				_List_Nil)
+																			]))
+																	]))),
 															$mdgriffith$elm_ui$Element$text('Currently Selected Note')
 														])),
 													A2(
@@ -24451,7 +24588,57 @@ var $author$project$Main$tabView = F2(
 													_List_Nil,
 													_List_fromArray(
 														[
-															$author$project$Main$linkIcon,
+															$mdgriffith$elm_ui$Element$html(
+															A2(
+																$elm$svg$Svg$svg,
+																_List_fromArray(
+																	[
+																		$elm$svg$Svg$Attributes$height('40'),
+																		$elm$svg$Svg$Attributes$width('40'),
+																		$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+																	]),
+																_List_fromArray(
+																	[
+																		A2(
+																		$elm$svg$Svg$g,
+																		_List_Nil,
+																		_List_fromArray(
+																			[
+																				A2(
+																				$elm$svg$Svg$circle,
+																				_List_fromArray(
+																					[
+																						$elm$svg$Svg$Attributes$r('10'),
+																						$elm$svg$Svg$Attributes$stroke('black'),
+																						$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)'),
+																						$elm$svg$Svg$Attributes$cx('20'),
+																						$elm$svg$Svg$Attributes$cy('20')
+																					]),
+																				_List_Nil),
+																				A2(
+																				$elm$svg$Svg$line,
+																				_List_fromArray(
+																					[
+																						$elm$svg$Svg$Attributes$x1('10'),
+																						$elm$svg$Svg$Attributes$x2('30'),
+																						$elm$svg$Svg$Attributes$y1('20'),
+																						$elm$svg$Svg$Attributes$y2('20'),
+																						$elm$svg$Svg$Attributes$stroke('black')
+																					]),
+																				_List_Nil),
+																				A2(
+																				$elm$svg$Svg$line,
+																				_List_fromArray(
+																					[
+																						$elm$svg$Svg$Attributes$x1('20'),
+																						$elm$svg$Svg$Attributes$x2('20'),
+																						$elm$svg$Svg$Attributes$y1('10'),
+																						$elm$svg$Svg$Attributes$y2('30'),
+																						$elm$svg$Svg$Attributes$stroke('black')
+																					]),
+																				_List_Nil)
+																			]))
+																	]))),
 															$mdgriffith$elm_ui$Element$text('Note Marked to link (if not selected)')
 														])),
 													A2(
@@ -24459,8 +24646,59 @@ var $author$project$Main$tabView = F2(
 													_List_Nil,
 													_List_fromArray(
 														[
-															$author$project$Main$questionIcon,
+															$mdgriffith$elm_ui$Element$html(
+															A2(
+																$elm$svg$Svg$svg,
+																_List_fromArray(
+																	[
+																		$elm$svg$Svg$Attributes$height('40'),
+																		$elm$svg$Svg$Attributes$width('40'),
+																		$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+																	]),
+																_List_fromArray(
+																	[
+																		A2(
+																		$elm$svg$Svg$rect,
+																		_List_fromArray(
+																			[
+																				$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
+																				$elm$svg$Svg$Attributes$width('20'),
+																				$elm$svg$Svg$Attributes$height('20'),
+																				$elm$svg$Svg$Attributes$x('10'),
+																				$elm$svg$Svg$Attributes$y('10')
+																			]),
+																		_List_Nil)
+																	]))),
 															$mdgriffith$elm_ui$Element$text('Question (if not selected)')
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$row,
+													_List_Nil,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$html(
+															A2(
+																$elm$svg$Svg$svg,
+																_List_fromArray(
+																	[
+																		$elm$svg$Svg$Attributes$height('40'),
+																		$elm$svg$Svg$Attributes$width('40'),
+																		$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+																	]),
+																_List_fromArray(
+																	[
+																		A2(
+																		$elm$svg$Svg$circle,
+																		_List_fromArray(
+																			[
+																				$elm$svg$Svg$Attributes$r('10'),
+																				$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)'),
+																				$elm$svg$Svg$Attributes$cx('20'),
+																				$elm$svg$Svg$Attributes$cy('20')
+																			]),
+																		_List_Nil)
+																	]))),
+															$mdgriffith$elm_ui$Element$text('Regular Note')
 														]))
 												]))
 										]))
