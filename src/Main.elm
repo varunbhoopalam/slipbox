@@ -2231,29 +2231,62 @@ viewGraphNote graphNote =
 
 
     Linked note x y ->
+      let
+        modify str increment =
+          case String.toFloat str of
+            Just s -> String.fromFloat <| s + increment
+            Nothing -> str
+      in
       Svg.g
-        [ Svg.Attributes.cx x
-        , Svg.Attributes.cy y
-        , Svg.Attributes.cursor "Pointer"
+        [ Svg.Attributes.cursor "Pointer"
         , Svg.Events.onClick <| CreateTabSelectNote note
         ]
         [ Svg.circle
           [ Svg.Attributes.r "5"
+          --, Svg.Attributes.fill "none"
+          , Svg.Attributes.stroke "black"
+          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+          , Svg.Attributes.cx x
+          , Svg.Attributes.cy y
+          ]
+          []
+        , Svg.line
+          [ Svg.Attributes.x1 <| modify x -5
+          , Svg.Attributes.x2 <| modify x 5
+          , Svg.Attributes.y1 y
+          , Svg.Attributes.y2 y
+          , Svg.Attributes.stroke "black"
+          ]
+          []
+        , Svg.line
+          [ Svg.Attributes.x1 x
+          , Svg.Attributes.x2 x
+          , Svg.Attributes.y1 <| modify y -5
+          , Svg.Attributes.y2 <| modify y 5
+          , Svg.Attributes.stroke "black"
           ]
           []
         ]
 
     Question note x y ->
-      Svg.g
-        [ Svg.Attributes.cx x
-        , Svg.Attributes.cy y
-        --, Svg.Attributes.r "5"
-        --, Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+      let
+        center str =
+          case String.toFloat str of
+            Just s -> String.fromFloat <| s - 10
+            Nothing -> str
+        xCenter = center x
+        yCenter = center y
+      in
+      Svg.rect
+        [ Svg.Attributes.fill "rgb(0,0,0)"
+        , Svg.Attributes.width "20"
+        , Svg.Attributes.height "20"
+        , Svg.Attributes.x xCenter
+        , Svg.Attributes.y yCenter
         , Svg.Attributes.cursor "Pointer"
         , Svg.Events.onClick <| CreateTabSelectNote note
         ]
-        [ questionCircleSvg
-        ]
+        []
 
     Regular note x y ->
       Svg.circle
@@ -2285,7 +2318,7 @@ computeViewbox notePositions =
         ( List.minimum yList )
         ( List.maximum xList )
         ( List.maximum yList )
-    padding = 25
+    padding = 50
     formatViewbox record =
       String.fromFloat record.minX
       ++ " " ++  String.fromFloat record.minY

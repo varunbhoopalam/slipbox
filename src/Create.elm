@@ -515,7 +515,7 @@ simulatePositions (notes, links) =
     entities = List.map toEntity notes
     state =
       Force.simulation
-        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) entities)
+        [ Force.manyBody (List.map (\n -> n.id) entities)
         , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
         , Force.center 0 0
         ]
