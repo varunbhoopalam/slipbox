@@ -116,8 +116,9 @@ titleIsValid existingTitles title =
       List.all
       titlesAreDifferent
       existingTitles
+    titleIsNotEmpty = not <| String.isEmpty title
   in
-  titleIsNotNA && allExistingTitlesAreDifferent
+  titleIsNotNA && allExistingTitlesAreDifferent && titleIsNotEmpty
 
 -- HELPER
 
