@@ -48,7 +48,6 @@ contains : String -> Source -> Bool
 contains input source =
   let
       info = getInfo source
-      lowerInput = String.toLower input
       has = \s -> String.contains (String.toLower input) <| String.toLower s
   in
   has info.title || has info.author || has info.content
