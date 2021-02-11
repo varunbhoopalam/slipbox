@@ -20939,7 +20939,11 @@ var $author$project$Main$doneOrLinkModal = F3(
 					]),
 				A2(
 					$mdgriffith$elm_ui$Element$Input$button,
-					_List_Nil,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$Border$width(1),
+							$mdgriffith$elm_ui$Element$padding(8)
+						]),
 					{
 						a: $mdgriffith$elm_ui$Element$text('Done'),
 						b: $elm$core$Maybe$Just($author$project$Main$CreateTabToChooseQuestion)
@@ -24721,7 +24725,13 @@ var $author$project$Main$tabView = F2(
 								var source = maybeSourceSelected.a;
 								return A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1),
+											$mdgriffith$elm_ui$Element$moveRight(16)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('Use Selected Source'),
 										b: $elm$core$Maybe$Just(
@@ -24761,26 +24771,36 @@ var $author$project$Main$tabView = F2(
 											$mdgriffith$elm_ui$Element$text(note)
 										])),
 									A2(
-									$mdgriffith$elm_ui$Element$row,
-									_List_Nil,
+									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[
-											A2(
-											$author$project$Main$createTabSourceInput,
-											input,
-											A2($elm$core$List$map, $author$project$Source$getTitle, existingSources)),
-											useExistingSourceNode
-										])),
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$onRight(useExistingSourceNode)
+										]),
+									A2(
+										$author$project$Main$createTabSourceInput,
+										input,
+										A2($elm$core$List$map, $author$project$Source$getTitle, existingSources))),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('No Source'),
 										b: $elm$core$Maybe$Just($author$project$Main$CreateTabNoSource)
 									}),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('New Source'),
 										b: $elm$core$Maybe$Just($author$project$Main$CreateTabNewSource)
@@ -24799,7 +24819,12 @@ var $author$project$Main$tabView = F2(
 							$mdgriffith$elm_ui$Element$text('Title (required)'),
 							A2(
 								$mdgriffith$elm_ui$Element$Input$button,
-								_List_Nil,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$centerX,
+										$mdgriffith$elm_ui$Element$padding(8),
+										$mdgriffith$elm_ui$Element$Border$width(1)
+									]),
 								{
 									a: $mdgriffith$elm_ui$Element$text('Submit New Source'),
 									b: $elm$core$Maybe$Just($author$project$Main$CreateTabSubmitNewSource)
@@ -24919,7 +24944,12 @@ var $author$project$Main$tabView = F2(
 										])),
 									A2(
 									$mdgriffith$elm_ui$Element$Input$button,
-									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$centerX,
+											$mdgriffith$elm_ui$Element$padding(8),
+											$mdgriffith$elm_ui$Element$Border$width(1)
+										]),
 									{
 										a: $mdgriffith$elm_ui$Element$text('Create Another Note?'),
 										b: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateAnotherNote)
@@ -26839,7 +26869,7 @@ var $author$project$Main$view = function (model) {
 						A2(
 						$mdgriffith$elm_ui$Element$layout,
 						_List_Nil,
-						$mdgriffith$elm_ui$Element$text('Failure'))
+						$mdgriffith$elm_ui$Element$text('Failure to read file, please reload the page.'))
 					]),
 				cr: $author$project$Main$webpageTitle
 			};

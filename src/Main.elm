@@ -575,7 +575,7 @@ view: Model -> Browser.Document Msg
 view model =
   case model.state of
     Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
-    FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure" ] }
+    FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure to read file, please reload the page." ] }
     Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }
     Tutorial tutorial -> { title = webpageTitle, body = [ tutorialView tutorial ] }
 
@@ -2005,6 +2005,7 @@ tabView deviceViewport content =
                     [ Element.centerX
                     , Element.padding 8
                     , Element.Border.width 1
+                    , Element.moveRight 16
                     ]
                     { onPress = Just <| CreateTabContinueWithSelectedSource source
                     , label = Element.text "Use Selected Source"
@@ -2030,11 +2031,11 @@ tabView deviceViewport content =
               ]
               [ Element.text note
               ]
-            , Element.row
-              []
-              [ createTabSourceInput input <| List.map Source.getTitle existingSources
-              , useExistingSourceNode
-              ]
+            , Element.el
+              [ Element.centerX
+              , Element.onRight useExistingSourceNode
+              ] <|
+              createTabSourceInput input <| List.map Source.getTitle existingSources
             , Element.Input.button
               [ Element.centerX
               , Element.padding 8
@@ -2148,7 +2149,7 @@ tabView deviceViewport content =
               [ Element.centerX
               , Element.padding 8
               , Element.Border.width 1
-              ]              
+              ]
               { onPress = Just CreateTabCreateAnotherNote
               , label = Element.text "Create Another Note?"
               }
@@ -2191,7 +2192,9 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
         , Element.alignTop
         ] <|
         Element.Input.button
-          []
+          [ Element.Border.width 1
+          , Element.padding 8
+          ]
           { onPress = Just CreateTabToChooseQuestion
           , label = Element.text "Done"
           }
