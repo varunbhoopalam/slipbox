@@ -177,11 +177,13 @@ submitNewSource : Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
 submitNewSource slipbox create =
   case create of
     CreateNewSource _ internal title author content ->
-      ( updateSlipbox create slipbox
-      , PromptCreateAnother <| setNewSource title author content internal
+      let
+        updatedCreate = PromptCreateAnother <| setNewSource title author content internal
+      in
+      ( updateSlipbox updatedCreate slipbox
+      , updatedCreate
       )
     _ -> ( slipbox, create )
-
 
 type Input
   = Note String
