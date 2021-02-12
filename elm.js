@@ -8752,10 +8752,11 @@ var $author$project$Create$submitNewSource = F2(
 			var title = create.c;
 			var author = create.d;
 			var content = create.e;
+			var updatedCreate = $author$project$Create$PromptCreateAnother(
+				A4($author$project$Create$setNewSource, title, author, content, internal));
 			return _Utils_Tuple2(
-				A2($author$project$Create$updateSlipbox, create, slipbox),
-				$author$project$Create$PromptCreateAnother(
-					A4($author$project$Create$setNewSource, title, author, content, internal)));
+				A2($author$project$Create$updateSlipbox, updatedCreate, slipbox),
+				updatedCreate);
 		} else {
 			return _Utils_Tuple2(slipbox, create);
 		}
