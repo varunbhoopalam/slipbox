@@ -152,8 +152,10 @@ selectSource : Source.Source -> Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, 
 selectSource source slipbox create =
   case create of
     ChooseSourceCategory _ internal _ ->
-      ( updateSlipbox create slipbox
-      , PromptCreateAnother <| setExistingSource source internal
+      let updatedCreate = PromptCreateAnother <| setExistingSource source internal
+      in
+      ( updateSlipbox updatedCreate slipbox
+      , updatedCreate
       )
     _ -> ( slipbox, create )
 
@@ -177,8 +179,7 @@ submitNewSource : Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
 submitNewSource slipbox create =
   case create of
     CreateNewSource _ internal title author content ->
-      let
-        updatedCreate = PromptCreateAnother <| setNewSource title author content internal
+      let updatedCreate = PromptCreateAnother <| setNewSource title author content internal
       in
       ( updateSlipbox updatedCreate slipbox
       , updatedCreate

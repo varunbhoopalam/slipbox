@@ -8654,10 +8654,11 @@ var $author$project$Create$selectSource = F3(
 	function (source, slipbox, create) {
 		if (create.$ === 3) {
 			var internal = create.b;
+			var updatedCreate = $author$project$Create$PromptCreateAnother(
+				A2($author$project$Create$setExistingSource, source, internal));
 			return _Utils_Tuple2(
-				A2($author$project$Create$updateSlipbox, create, slipbox),
-				$author$project$Create$PromptCreateAnother(
-					A2($author$project$Create$setExistingSource, source, internal)));
+				A2($author$project$Create$updateSlipbox, updatedCreate, slipbox),
+				updatedCreate);
 		} else {
 			return _Utils_Tuple2(slipbox, create);
 		}
