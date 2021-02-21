@@ -3,7 +3,7 @@ module Slipbox exposing
   , new
   , getGraphItems
   , getNotes
-  , getQuestions
+  , getDiscussions
   , getSources
   , getItems
   , getLinkedNotes
@@ -84,7 +84,7 @@ isNote note =
 
 isQuestion : Note.Note -> Bool
 isQuestion note =
-  Note.getVariant note == Note.Question
+  Note.getVariant note == Note.Discussion
 
 getNotes : (Maybe String) -> Slipbox -> (List Note.Note)
 getNotes maybeSearch slipbox =
@@ -95,8 +95,8 @@ getNotes maybeSearch slipbox =
     Just search -> List.filter isNote <| List.filter (Note.contains search) content.notes
     Nothing -> List.filter isNote content.notes
 
-getQuestions : (Maybe String) -> Slipbox -> (List Note.Note)
-getQuestions maybeSearch slipbox =
+getDiscussions : (Maybe String) -> Slipbox -> (List Note.Note)
+getDiscussions maybeSearch slipbox =
   let
     content = getContent slipbox
   in
@@ -178,7 +178,7 @@ type AddAction
   | OpenSource Source.Source
   | NewNote
   | NewSource
-  | NewQuestion
+  | NewDiscussion
 
 addItem : ( Maybe Item.Item ) -> AddAction -> Slipbox -> Slipbox
 addItem maybeItem addAction slipbox =
@@ -215,7 +215,7 @@ addItem maybeItem addAction slipbox =
 
     NewSource -> itemDoesNotExistLambda <| Item.newSource content.idGenerator
 
-    NewQuestion -> itemDoesNotExistLambda <| Item.newQuestion content.idGenerator
+    NewDiscussion -> itemDoesNotExistLambda <| Item.newQuestion content.idGenerator
 
 dismissItem : Item.Item -> Slipbox -> Slipbox
 dismissItem item slipbox =
@@ -264,8 +264,8 @@ updateItem item updateAction slipbox =
           update <| Item.NewNote itemId tray { newNoteContent | content = input }
         Item.NewSource itemId tray newSourceContent ->
           update <| Item.NewSource itemId tray { newSourceContent | content = input }
-        Item.NewQuestion itemId tray _ ->
-          update <| Item.NewQuestion itemId tray input
+        Item.NewDiscussion itemId tray _ ->
+          update <| Item.NewDiscussion itemId tray input
         _ -> slipbox
 
     UpdateSource input ->
@@ -366,10 +366,10 @@ updateItem item updateAction slipbox =
           update <| Item.Source itemId tray source
         Item.ConfirmDeleteLink itemId tray note _ _ ->
           update <| Item.Note itemId tray note
-        Item.NewQuestion itemId tray question ->
-          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewQuestion itemId tray question
-        Item.ConfirmDiscardNewQuestion itemId tray question ->
-          update <| Item.ConfirmDiscardNewQuestion itemId tray question
+        Item.NewDiscussion itemId tray question ->
+          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewDiscussion itemId tray question
+        Item.ConfirmDiscardNewDiscussion itemId tray question ->
+          update <| Item.ConfirmDiscardNewDiscussion itemId tray question
         _ -> slipbox
 
     Submit ->
@@ -483,10 +483,10 @@ updateItem item updateAction slipbox =
         Item.ConfirmDiscardNewSourceForm _ _ _ ->
           Slipbox { content | items = removeItemFromList item content.items }
 
-        Item.NewQuestion itemId tray question ->
+        Item.NewDiscussion itemId tray question ->
           let
               (note, idGenerator) = Note.create content.idGenerator
-                <| { content = question, source = "n/a", variant = Note.Question }
+                <| { content = question, source = "n/a", variant = Note.Discussion }
               (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
@@ -497,7 +497,7 @@ updateItem item updateAction slipbox =
             , unsavedChanges = True
             }
 
-        Item.ConfirmDiscardNewQuestion _ _ _ ->
+        Item.ConfirmDiscardNewDiscussion _ _ _ ->
           Slipbox { content | items = removeItemFromList item content.items }
 
         _ -> slipbox
@@ -691,7 +691,7 @@ convertLinktoLinkNoteTupleNoQ targetNote notes link =
 
         case Note.getVariant note of
 
-          Note.Question -> Nothing
+          Note.Discussion -> Nothing
 
           Note.Regular -> Just ( note, link )
 
@@ -705,7 +705,7 @@ convertLinktoLinkNoteTupleNoQ targetNote notes link =
 
         case Note.getVariant note of
 
-            Note.Question -> Nothing
+            Note.Discussion -> Nothing
 
             Note.Regular -> Just ( note, link )
 

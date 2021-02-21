@@ -4,7 +4,7 @@ module Create exposing
   , toggleCoachingModal
   , next
   , toAddLinkState
-  , toChooseQuestionState
+  , toChooseDiscussionState
   , createLink
   , createBridge
   , toggleLinkModal
@@ -27,10 +27,11 @@ import Link
 import Slipbox
 import Source
 
+-- TODO: Add section for checking if this is the entry point to a new discussion
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseQuestion CoachingModal CreateModeInternal
-  | FindLinksForQuestion CoachingModal Graph LinkModal CreateModeInternal Question SelectedNote
+  | FindLinksForQuestion CoachingModal Graph LinkModal CreateModeInternal Discussion SelectedNote
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
   | PromptCreateAnother CreateModeInternal
@@ -72,8 +73,8 @@ toAddLinkState question slipbox create =
         question
     _ -> create
 
-toChooseQuestionState : Create -> Create
-toChooseQuestionState create =
+toChooseDiscussionState : Create -> Create
+toChooseDiscussionState create =
   case create of
     FindLinksForQuestion coachingModal _ _ createModeInternal _ _ ->
       ChooseQuestion coachingModal createModeInternal
@@ -233,8 +234,8 @@ type alias SelectedNoteIsLinked = Bool
 type alias NotesAssociatedToCreatedLinks = List Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
-  | ChooseQuestionView CoachingOpen CanContinue CreatedNote QuestionsRead
-  | QuestionChosenView Graph LinkModal CreatedNote Question SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
+  | DiscussionChosenView Graph LinkModal CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
   | PromptCreateAnotherView CreatedNote
@@ -254,7 +255,7 @@ view create =
         note = getNote createModeInternal
         canContinue = List.isEmpty <| getCreatedLinks createModeInternal
       in
-      ChooseQuestionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
+      ChooseDiscussionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
 
     FindLinksForQuestion _ graph linkModal createModeInternal question selectedNote ->
       let
@@ -266,7 +267,7 @@ view create =
             createdLinks
         notesAssociatedToCreatedLinks = List.map getNoteOnLink createdLinks
       in
-      QuestionChosenView
+      DiscussionChosenView
         graph
         linkModal
         note
@@ -346,7 +347,7 @@ setNote note internal =
   case internal of
     CreateModeInternal _ questionsRead linksCreated source -> CreateModeInternal note questionsRead linksCreated source
 
-read : Question -> CreateModeInternal -> CreateModeInternal
+read : Discussion -> CreateModeInternal -> CreateModeInternal
 read question internal =
   case internal of
     CreateModeInternal note questionsRead linksCreated source ->
@@ -474,7 +475,7 @@ makeBridge note bridgeNote =
   Bridge note bridgeNote
 
 -- MISC
-type alias Question = Note.Note
+type alias Discussion = Note.Note
 type alias SelectedNote = Note.Note
 type alias Title = String
 type alias Author = String

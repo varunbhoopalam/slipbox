@@ -30,13 +30,13 @@ type Item
   | Source ItemId ButtonTray Source.Source
   | NewNote ItemId ButtonTray NewNoteContent
   | NewSource ItemId ButtonTray NewSourceContent
-  | NewQuestion ItemId ButtonTray String
+  | NewDiscussion ItemId ButtonTray String
   | EditingNote ItemId ButtonTray Note.Note Note.Note
   | EditingSource ItemId ButtonTray Source.Source Source.Source
   | AddingLinkToNoteForm ItemId ButtonTray String Note.Note (Maybe Note.Note)
   | ConfirmDiscardNewNoteForm ItemId ButtonTray NewNoteContent
   | ConfirmDiscardNewSourceForm ItemId ButtonTray NewSourceContent
-  | ConfirmDiscardNewQuestion ItemId ButtonTray String
+  | ConfirmDiscardNewDiscussion ItemId ButtonTray String
   | ConfirmDeleteNote ItemId ButtonTray Note.Note
   | ConfirmDeleteSource ItemId ButtonTray Source.Source
   | ConfirmDeleteLink ItemId ButtonTray Note.Note Note.Note Link.Link
@@ -95,7 +95,7 @@ newQuestion generator =
   let
       ( id, idGenerator ) = IdGenerator.generateId generator
   in
-  ( NewQuestion id Closed "", idGenerator )
+  ( NewDiscussion id Closed "", idGenerator )
 
 sourceCanSubmit : NewSourceContent -> ( List String ) -> Bool
 sourceCanSubmit newSourceContent existingTitles =
@@ -118,13 +118,13 @@ getId item =
     Source id _ _  -> id
     NewNote id _ _  -> id
     NewSource id _ _  -> id
-    NewQuestion id _ _ -> id
+    NewDiscussion id _ _ -> id
     EditingNote id _ _ _ -> id
     EditingSource id _ _ _ -> id
     AddingLinkToNoteForm id _ _ _ _ -> id
     ConfirmDiscardNewNoteForm id _ _ -> id
     ConfirmDiscardNewSourceForm id _ _ -> id
-    ConfirmDiscardNewQuestion id _ _ -> id
+    ConfirmDiscardNewDiscussion id _ _ -> id
     ConfirmDeleteNote id _ _ -> id
     ConfirmDeleteSource id _ _ -> id
     ConfirmDeleteLink id _ _ _ _ -> id
@@ -154,13 +154,13 @@ getButtonTray item =
     Source _ tray _  -> tray
     NewNote _ tray _  -> tray
     NewSource _ tray _  -> tray
-    NewQuestion _ tray _ -> tray
+    NewDiscussion _ tray _ -> tray
     EditingNote _ tray _ _ -> tray
     EditingSource _ tray _ _ -> tray
     AddingLinkToNoteForm _ tray _ _ _ -> tray
     ConfirmDiscardNewNoteForm _ tray _ -> tray
     ConfirmDiscardNewSourceForm _ tray _ -> tray
-    ConfirmDiscardNewQuestion _ tray _ -> tray
+    ConfirmDiscardNewDiscussion _ tray _ -> tray
     ConfirmDeleteNote _ tray _ -> tray
     ConfirmDeleteSource _ tray _ -> tray
     ConfirmDeleteLink _ tray _ _ _ -> tray
@@ -184,13 +184,13 @@ setTray tray item =
     Source id _ source -> Source id tray source
     NewNote id _ content -> NewNote id tray content
     NewSource id _ content -> NewSource id tray content
-    NewQuestion id _ question -> NewQuestion id tray question
+    NewDiscussion id _ question -> NewDiscussion id tray question
     EditingNote id _ note noteWithEdits -> EditingNote id tray note noteWithEdits
     EditingSource id _ source sourceWithEdits -> EditingSource id tray source sourceWithEdits
     AddingLinkToNoteForm id _ input note maybeNote -> AddingLinkToNoteForm id tray input note maybeNote
     ConfirmDiscardNewNoteForm id _ content -> ConfirmDiscardNewNoteForm id tray content
     ConfirmDiscardNewSourceForm id _ content -> ConfirmDiscardNewSourceForm id tray content
-    ConfirmDiscardNewQuestion id _ question -> ConfirmDiscardNewQuestion id tray question
+    ConfirmDiscardNewDiscussion id _ question -> ConfirmDiscardNewDiscussion id tray question
     ConfirmDeleteNote id _ note -> ConfirmDeleteNote id tray note
     ConfirmDeleteSource id _ source -> ConfirmDeleteSource id tray source
     ConfirmDeleteLink id _ note linkedNote link -> ConfirmDeleteLink id tray note linkedNote link
@@ -206,7 +206,7 @@ isEmpty item =
       String.isEmpty newSourceContent.author &&
       String.isEmpty newSourceContent.content
 
-    NewQuestion _ _ string ->
+    NewDiscussion _ _ string ->
       String.isEmpty string
 
     _ -> False
