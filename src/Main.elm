@@ -127,7 +127,7 @@ type Tab
   | NotesTab String
   | SourcesTab String
   | WorkspaceTab
-  | QuestionsTab String
+  | DiscussionsTab String
   | CreateModeTab Create.Create
 
 type Tab_
@@ -135,7 +135,7 @@ type Tab_
   | Workspace
   | Notes
   | Sources
-  | Questions
+  | Discussions
   | CreateMode
 
 -- INIT
@@ -176,8 +176,8 @@ type Msg
   | ToggleSideNav
   | CreateTabToggleCoaching
   | CreateTabNextStep
-  | CreateTabToFindLinksForQuestion Note.Note
-  | CreateTabToChooseQuestion
+  | CreateTabToFindLinksForDiscussion Note.Note
+  | CreateTabToChooseDiscussion
   | CreateTabCreateLinkForSelectedNote
   | CreateTabCreateBridgeForSelectedNote
   | CreateTabToggleLinkModal
@@ -388,12 +388,12 @@ update message model =
             Workspace ->
               ( updateTab WorkspaceTab model, Cmd.none )
 
-            Questions ->
+            Discussions ->
               case content.tab of
-                QuestionsTab _ -> ( model, Cmd.none )
+                DiscussionsTab _ -> ( model, Cmd.none )
                 _ ->
                   ( { model | state =
-                    Session { content | tab = QuestionsTab "" }
+                    Session { content | tab = DiscussionsTab "" }
                     }
                   , Cmd.none
                   )
@@ -421,11 +421,11 @@ update message model =
 
     CreateTabToggleCoaching -> createModeLambda Create.toggleCoachingModal
     CreateTabNextStep -> createModeLambda Create.next
-    CreateTabToFindLinksForQuestion question ->
+    CreateTabToFindLinksForDiscussion discussion ->
       case getSlipbox model of
-        Just slipbox -> createModeLambda <| Create.toAddLinkState question slipbox
+        Just slipbox -> createModeLambda <| Create.toAddLinkState discussion slipbox
         Nothing -> ( model, Cmd.none )
-    CreateTabToChooseQuestion -> createModeLambda Create.toChooseQuestionState
+    CreateTabToChooseDiscussion -> createModeLambda Create.toChooseDiscussionState
     CreateTabCreateLinkForSelectedNote -> createModeLambda Create.createLink
     CreateTabCreateBridgeForSelectedNote -> createModeLambda Create.createBridge
     CreateTabToggleLinkModal -> createModeLambda Create.toggleLinkModal
@@ -679,7 +679,7 @@ tabView deviceViewport content =
             <| Slipbox.getItems content.slipbox
         ]
 
-    QuestionsTab input ->
+    DiscussionsTab input ->
       Element.column
       [ Element.width Element.fill
       , Element.height Element.fill
@@ -693,7 +693,7 @@ tabView deviceViewport content =
             ]
             n )
             <| List.map ( toOpenNoteButton Nothing )
-              <| Slipbox.getQuestions ( searchConverter input ) content.slipbox
+              <| Slipbox.getDiscussions ( searchConverter input ) content.slipbox
         ]
 
     CreateModeTab create ->
@@ -746,7 +746,7 @@ tabView deviceViewport content =
             , continueNode
             ]
 
-        Create.ChooseQuestionView  coachingOpen canContinue note questionsRead ->
+        Create.ChooseDiscussionView  coachingOpen canContinue note discussionsRead ->
           let
             coachingText =
               Element.paragraph
@@ -754,10 +754,10 @@ tabView deviceViewport content =
                 , Element.width <| Element.maximum 800 Element.fill
                 , Element.centerX
                 ]
-                [ Element.text "Further existing arguments by improving your understanding of questions you want to answer. "
-                , Element.text "Choose a question and find notes to link your new knowledge to. "
+                [ Element.text "Add to existing discussions by linking relevant notes/ideas to that discussion. "
+                , Element.text "Click a discussion to get started! "
                 , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
-                , Element.text "Because of existing biases, it is hard for us to gather information that opposes what we already know. "
+                , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
                 ]
             continueNode =
               if canContinue then
@@ -778,28 +778,28 @@ tabView deviceViewport content =
                   { onPress = Just CreateTabNextStep
                   , label = Element.text "Next"
                   }
-            questions = Slipbox.getQuestions Nothing content.slipbox
-            questionTabularData =
+            discussions = Slipbox.getDiscussions Nothing content.slipbox
+            discussionTabularData =
               let
-                toQuestionRecord =
+                toDiscussionRecord =
                   \q ->
-                    { read = List.any ( Note.is q) questionsRead
-                    , question = Note.getContent q
+                    { read = List.any ( Note.is q) discussionsRead
+                    , discussion = Note.getContent q
                     , note = q
                     }
               in
-              List.map toQuestionRecord questions
+              List.map toDiscussionRecord discussions
 
             tableNode =
-              if List.isEmpty questions then
+              if List.isEmpty discussions then
                 Element.paragraph
                   [ Element.Font.center
                   , Element.width <| Element.maximum 800 Element.fill
                   , Element.centerX
                   ]
-                  [ Element.text "There are no questions in your slipbox! "
-                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of furthering arguments on questions we care about. "
-                  , Element.text "Add some questions to start adding links! "
+                  [ Element.text "There are no discussions in your slipbox! "
+                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. "
+                  , Element.text "Add conversations to start adding links! "
                   ]
               else
                 let
@@ -819,7 +819,7 @@ tabView deviceViewport content =
                   ]
                   [ Element.row [ Element.width Element.fill ]
                     [ Element.el (Element.width ( Element.fillPortion 1 ) :: headerAttrs) <| Element.text "Read"
-                    , Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Question"
+                    , Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Discussion"
                     ]
                   , Element.el [ Element.width Element.fill ] <| Element.table
                     [ Element.width Element.fill
@@ -828,7 +828,7 @@ tabView deviceViewport content =
                     , Element.height <| Element.maximum 600 Element.fill
                     , Element.scrollbarY
                     ]
-                    { data = questionTabularData
+                    { data = discussionTabularData
                     , columns =
                       [ { header = Element.none
                         , width = Element.fillPortion 1
@@ -844,11 +844,11 @@ tabView deviceViewport content =
                               \row ->
                                   Element.Input.button
                                     []
-                                    { onPress = Just <| CreateTabToFindLinksForQuestion row.note
+                                    { onPress = Just <| CreateTabToFindLinksForDiscussion row.note
                                     , label =
                                       Element.paragraph
                                         []
-                                        [ Element.text row.question
+                                        [ Element.text row.discussion
                                         ]
                                     }
                         }
@@ -879,7 +879,7 @@ tabView deviceViewport content =
             , tableNode
             ]
 
-        Create.QuestionChosenView createTabGraph linkModal note question selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
+        Create.DiscussionChosenView createTabGraph linkModal note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -940,8 +940,8 @@ tabView deviceViewport content =
                 , Element.centerX
                 , Element.spacingXY 10 10
                 ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Question" ]
-                , Element.paragraph [] [ Element.text <| Note.getContent question ]
+                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
+                , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
                 ]
               , Element.textColumn
                 [ Element.width Element.fill
@@ -1054,7 +1054,7 @@ tabView deviceViewport content =
                         ]
                         []
                       ]
-                  , Element.text "Question (if not selected)"
+                  , Element.text "Discussion (if not selected)"
                   ]
                 , Element.row
                   []
@@ -1275,7 +1275,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
           [ Element.Border.width 1
           , Element.padding 8
           ]
-          { onPress = Just CreateTabToChooseQuestion
+          { onPress = Just CreateTabToChooseDiscussion
           , label = Element.text "Done"
           }
     Create.Open input ->
@@ -1359,7 +1359,7 @@ doneOrLinkModal selectedNote createdNote bridgeModal =
 type GraphNote
   = Selected Note.Note X Y
   | Linked Note.Note X Y
-  | Question Note.Note X Y
+  | Discussion Note.Note X Y
   | Regular Note.Note X Y
 
 type alias X = String
@@ -1384,7 +1384,7 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
   let
     note = notePosition.note
     isSelectedNote = Note.is note selectedNote
-    isQuestion = Note.getVariant note == Note.Question
+    isDiscussion = Note.getVariant note == Note.Discussion
     hasCreatedLink =
       List.any
         ( Note.is note )
@@ -1395,8 +1395,8 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
   if isSelectedNote then
     Selected note x y
   else
-    if isQuestion then
-      Question note x y
+    if isDiscussion then
+      Discussion note x y
     else
       case hasCreatedLink of
         True -> Linked note x y
@@ -1477,7 +1477,7 @@ viewGraphNote graphNote =
           []
         ]
 
-    Question note x y ->
+    Discussion note x y ->
       let
         center str =
           case String.toFloat str of
@@ -1733,7 +1733,7 @@ leftNav sideNavState selectedTab slipbox =
               }
           , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Mode" ( ChangeTab CreateMode ) <| sameTab selectedTab CreateMode
           , leftNavExpandedButtonLambda Element.alignBottom newspaperIcon "Create Source" ( AddItem Nothing Slipbox.NewSource ) False
-          , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Question" ( AddItem Nothing Slipbox.NewQuestion ) False
+          , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Discussion" ( AddItem Nothing Slipbox.NewDiscussion ) False
           ]
         , Element.column
           [ Element.height biggerElement
@@ -1744,7 +1744,7 @@ leftNav sideNavState selectedTab slipbox =
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
           , leftNavExpandedButtonLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
           , leftNavExpandedButtonLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
-          , leftNavExpandedButtonLambda Element.alignLeft questionIcon "Questions" ( ChangeTab Questions ) <| sameTab selectedTab Questions
+          , leftNavExpandedButtonLambda Element.alignLeft questionIcon "Discussions" ( ChangeTab Discussions ) <| sameTab selectedTab Discussions
           ]
         ]
     Contracted ->
@@ -1762,7 +1762,7 @@ leftNav sideNavState selectedTab slipbox =
           , leftNavContractedButtonLambda Element.alignBottom FileDownload saveIcon False
           , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
           , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewSource ) newspaperIcon False
-          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewQuestion ) handPaperIcon False
+          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewDiscussion ) handPaperIcon False
           ]
         , Element.column
           [ Element.height biggerElement
@@ -1772,7 +1772,7 @@ leftNav sideNavState selectedTab slipbox =
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
-          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Questions ) questionIcon <| sameTab selectedTab Questions
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Discussions ) questionIcon <| sameTab selectedTab Discussions
           ]
         ]
 
@@ -1799,9 +1799,9 @@ sameTab tab tab_ =
         Workspace -> True
         _ -> False
 
-    QuestionsTab _ ->
+    DiscussionsTab _ ->
       case tab_ of
-        Questions -> True
+        Discussions -> True
         _ -> False
 
     CreateModeTab _ ->
@@ -1928,7 +1928,7 @@ toItemView content item =
         text =
           case Note.getVariant note of
             Note.Regular -> "Note"
-            Note.Question -> "Question"
+            Note.Discussion -> "Discussion"
       in
       itemContainerLambda
         [ normalItemHeader text item
@@ -1955,7 +1955,7 @@ toItemView content item =
         text =
           case Note.getVariant noteWithEdits of
             Note.Regular -> "Editing Note"
-            Note.Question -> "Editing Question"
+            Note.Discussion -> "Editing Discussion"
       in
       itemContainerLambda
         [ submitItemHeader text item
@@ -1968,7 +1968,7 @@ toItemView content item =
         text =
           case Note.getVariant note of
             Note.Regular -> "Delete Note"
-            Note.Question -> "Delete Question"
+            Note.Discussion -> "Delete Discussion"
       in
       itemContainerLambda
         [ deleteItemHeader text item
@@ -2066,16 +2066,16 @@ toItemView content item =
         ]
       ]
 
-    Item.NewQuestion _ _ question -> itemContainerLambda
-      [ conditionalSubmitItemHeader "New Question" ( not <| String.isEmpty question ) item
+    Item.NewDiscussion _ _ discussion -> itemContainerLambda
+      [ conditionalSubmitItemHeader "New Discussion" ( not <| String.isEmpty discussion ) item
       , contentContainer
-        [ Element.el [ Element.width Element.fill ] <| questionInput item question
+        [ Element.el [ Element.width Element.fill ] <| discussionInput item discussion
         ]
       ]
 
-    Item.ConfirmDiscardNewQuestion _ _ question -> itemContainerLambda
-      [ deleteItemHeader "Confirm Discard New Question" item
-      , toQuestionRepresentation question
+    Item.ConfirmDiscardNewDiscussion _ _ discussion -> itemContainerLambda
+      [ deleteItemHeader "Confirm Discard New Discussion" item
+      , toDiscussionRepresentation discussion
       ]
 
 getTitlesFromSlipbox : Slipbox.Slipbox -> ( List String )
@@ -2104,15 +2104,28 @@ onHoverButtonTray item =
 
 buttonTray : ( Maybe Item.Item ) -> Element Msg
 buttonTray maybeItem =
+  let
+    button addAction text=
+      smallOldLavenderButton
+          { onPress = Just <| AddItem maybeItem addAction
+          , label = Element.el
+            [ Element.centerX
+            , Element.centerY
+            , Element.Font.heavy
+            , Element.Font.color Color.white
+            ]
+            <| Element.text text
+          }
+  in
   Element.row
     [ Element.width Element.fill
     , Element.padding 8
     , Element.spacingXY 8 8
     , Element.height Element.fill
     ]
-    [ createNoteButton maybeItem
-    , createSourceButton maybeItem
-    , createQuestionButton maybeItem
+    [ button Slipbox.NewNote "Create Note"
+    , button Slipbox.NewSource "Create Source"
+    , button Slipbox.NewDiscussion "Create Discussion"
     ]
 
 headerText : String -> Element Msg
@@ -2234,9 +2247,9 @@ toNoteRepresentation content source variant =
         [ Element.el [ Element.width Element.fill] <| noteContentView content
         , Element.el [ Element.width Element.fill] <| noteSourceView source
         ]
-    Note.Question ->
+    Note.Discussion ->
       contentContainer
-        [ Element.el [ Element.width Element.fill] <| questionView content
+        [ Element.el [ Element.width Element.fill] <| discussionView content
         ]
 
 toAssociatedNoteRepresentation : String -> Note.Variant -> Element Msg
@@ -2245,9 +2258,9 @@ toAssociatedNoteRepresentation content variant =
     Note.Regular ->
       contentContainer
         [ Element.el [ Element.width Element.fill] <| labeledViewBuilder "Note" content ]
-    Note.Question ->
+    Note.Discussion ->
       contentContainer
-        [ Element.el [ Element.width Element.fill] <| questionView content ]
+        [ Element.el [ Element.width Element.fill] <| discussionView content ]
 
 toAssociatedNoteRepresentationFromNote : Note.Note -> Element Msg
 toAssociatedNoteRepresentationFromNote note =
@@ -2271,7 +2284,7 @@ toEditingNoteRepresentation itemId item titles content source variant =
         [ Element.el [ Element.width Element.fill ] <| contentInput item content
         , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
         ]
-    Note.Question ->
+    Note.Discussion ->
       contentContainer
         [ Element.el [ Element.width Element.fill ] <| contentInput item content
         ]
@@ -2305,10 +2318,10 @@ toSourceRepresentation title author content =
     , Element.el [ Element.width Element.fill] <| sourceContentView content
     ]
 
-toQuestionRepresentation : String -> Element Msg
-toQuestionRepresentation question =
+toDiscussionRepresentation : String -> Element Msg
+toDiscussionRepresentation dicussion =
   contentContainer
-    [ Element.el [ Element.width Element.fill] <| questionView question
+    [ Element.el [ Element.width Element.fill] <| discussionView dicussion
     ]
 
 toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> ( List String ) -> Element Msg
@@ -2550,7 +2563,7 @@ toOpenSourceButton source =
 noteColor : Note.Variant -> String
 noteColor variant =
   case variant of
-    Note.Question -> "rgba(250, 190, 88, 1)"
+    Note.Discussion -> "rgba(250, 190, 88, 1)"
     Note.Regular -> "rgba(137, 196, 244, 1)"
 
 -- UTILITIES
@@ -2563,43 +2576,6 @@ searchInput input onChange = Element.Input.text
   , placeholder = Nothing
   , label = Element.Input.labelLeft [] <| Element.text "search"
   }
-
-createNoteButton : ( Maybe Item.Item ) -> Element Msg
-createNoteButton maybeItem =
-  smallOldLavenderButton
-    { onPress = Just <| AddItem maybeItem Slipbox.NewNote
-    , label = Element.el
-      [ Element.centerX
-      , Element.centerY
-      , Element.Font.heavy
-      , Element.Font.color Color.white
-      ]
-      <| Element.text "Create Note"
-    }
-
-createSourceButton : ( Maybe Item.Item ) -> Element Msg
-createSourceButton maybeItem =
-  smallOldLavenderButton
-    { onPress = Just <| AddItem maybeItem Slipbox.NewSource
-    , label = Element.el
-      [ Element.centerX
-      , Element.centerY
-      , Element.Font.heavy
-      , Element.Font.color Color.white
-      ] <| Element.text "Create Source"
-    }
-
-createQuestionButton : ( Maybe Item.Item ) -> Element Msg
-createQuestionButton maybeItem =
-  smallOldLavenderButton
-    { onPress = Just <| AddItem maybeItem Slipbox.NewQuestion
-    , label = Element.el
-      [ Element.centerX
-      , Element.centerY
-      , Element.Font.heavy
-      , Element.Font.color Color.white
-      ] <| Element.text "Create Question"
-    }
 
 editButton: Item.Item -> Element Msg
 editButton item =
@@ -2637,14 +2613,14 @@ contentInput item input =
     , spellcheck = True
     }
 
-questionInput: Item.Item -> String -> Element Msg
-questionInput item input =
+discussionInput: Item.Item -> String -> Element Msg
+discussionInput item input =
   Element.Input.multiline
     []
     { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
     , text = input
     , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Question"
+    , label = Element.Input.labelAbove [] <| Element.text "Discussion"
     , spellcheck = True
     }
 
@@ -2750,8 +2726,8 @@ noteContentView noteContent = labeledViewBuilder "Content" noteContent
 noteSourceView : String -> Element Msg
 noteSourceView noteSource = labeledViewBuilder "Source" noteSource
 
-questionView : String -> Element Msg
-questionView sourceTitle = labeledViewBuilder "Question" sourceTitle
+discussionView : String -> Element Msg
+discussionView sourceTitle = labeledViewBuilder "Discussion" sourceTitle
 
 sourceTitleView : String -> Element Msg
 sourceTitleView sourceTitle = labeledViewBuilder "Title" sourceTitle
