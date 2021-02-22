@@ -756,6 +756,7 @@ tabView deviceViewport content =
                 ]
                 [ Element.text "Add to existing discussions by linking relevant notes/ideas to that discussion. "
                 , Element.text "Click a discussion to get started! "
+                -- TODO: word this better! What's a sustainable way to link ideas together?
                 , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
                 , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
                 ]
@@ -1073,6 +1074,10 @@ tabView deviceViewport content =
                 ]
               ]
             ]
+
+        -- TODO
+        Create.DesignateDiscussionEntryPointView note input ->
+          
 
         Create.ChooseSourceCategoryView note input  ->
           let
