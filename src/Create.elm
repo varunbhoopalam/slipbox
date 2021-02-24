@@ -14,6 +14,7 @@ module Create exposing
   , noSource
   , newSource
   , submitNewSource
+  , submitNewDiscussion
   , updateInput
   , Input(..)
   , view
@@ -53,7 +54,8 @@ next : Create -> Create
 next create =
   case create of
     NoteInput coachingModal createModeInternal -> ChooseDiscussion coachingModal createModeInternal
-    ChooseDiscussion coachingModal createModeInternal -> ChooseSourceCategory coachingModal createModeInternal ""
+    ChooseDiscussion coachingModal createModeInternal -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
+    DesignateDiscussionEntryPoint coachingModal createModeInternal _ -> ChooseSourceCategory coachingModal createModeInternal ""
     _ -> create
 
 toAddLinkState : Note.Note -> Slipbox.Slipbox -> Create -> Create
@@ -188,6 +190,13 @@ submitNewSource slipbox create =
       )
     _ -> ( slipbox, create )
 
+submitNewDiscussion : Create -> Create
+submitNewDiscussion create =
+  case create of
+    DesignateDiscussionEntryPoint coachingModal internal discussion ->
+      ChooseSourceCategory coachingModal ( setDiscussion discussion internal ) ""
+    _ -> create
+
 type Input
   = Note String
   | SourceTitle String
@@ -204,6 +213,9 @@ updateInput input create =
 
         FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
           FindLinksForDiscussion coachingModal graph (setBridgeNote noteInput linkModal) createModeInternal question selectedNote
+
+        DesignateDiscussionEntryPoint coachingModal createModeInternal _ ->
+          DesignateDiscussionEntryPoint coachingModal createModeInternal noteInput
 
         _ -> create
 
@@ -308,60 +320,72 @@ isOpen modal =
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
-  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source
+  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source LinkedDiscussion
 
 getNote : CreateModeInternal -> CreatedNote
 getNote internal =
   case internal of
-    CreateModeInternal note _ _ _ -> note
+    CreateModeInternal note _ _ _ _ -> note
 
 getSource : CreateModeInternal -> Source
 getSource internal =
   case internal of
-    CreateModeInternal _ _ _ source -> source
+    CreateModeInternal _ _ _ source _ -> source
+
+getDiscussion : CreateModeInternal -> LinkedDiscussion
+getDiscussion internal =
+  case internal of
+    CreateModeInternal _ _ _ _ linkedDiscussion -> linkedDiscussion
 
 setExistingSource : Source.Source -> CreateModeInternal -> CreateModeInternal
 setExistingSource source internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ ->
-      CreateModeInternal note questionsRead linksCreated <| Existing source
+    CreateModeInternal note questionsRead linksCreated _ discussion ->
+      CreateModeInternal note questionsRead linksCreated ( Existing source ) discussion
 
 setNewSource : Title -> Author -> Content -> CreateModeInternal -> CreateModeInternal
 setNewSource title author content internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ ->
-      CreateModeInternal note questionsRead linksCreated <| New title author content
+    CreateModeInternal note questionsRead linksCreated _ discussion ->
+      CreateModeInternal note questionsRead linksCreated ( New title author content ) discussion
+
+setDiscussion : String -> CreateModeInternal -> CreateModeInternal
+setDiscussion discussion internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated source _ ->
+      CreateModeInternal note questionsRead linksCreated source <| Just discussion
 
 createModeInternalInit : CreateModeInternal
 createModeInternalInit =
-  CreateModeInternal "" [] [] None
+  CreateModeInternal "" [] [] None Nothing
 
 getCreatedLinks : CreateModeInternal -> LinksCreated
 getCreatedLinks internal =
   case internal of
-    CreateModeInternal _ _ links _ -> links
+    CreateModeInternal _ _ links _ _ -> links
 
 setCreatedLinks : LinksCreated -> CreateModeInternal -> CreateModeInternal
 setCreatedLinks linksCreated internal =
   case internal of
-    CreateModeInternal note questionsRead _ source ->
-      CreateModeInternal note questionsRead linksCreated source
+    CreateModeInternal note questionsRead _ source discussion ->
+      CreateModeInternal note questionsRead linksCreated source discussion
 
 setNote : CreatedNote -> CreateModeInternal -> CreateModeInternal
 setNote note internal =
   case internal of
-    CreateModeInternal _ questionsRead linksCreated source -> CreateModeInternal note questionsRead linksCreated source
+    CreateModeInternal _ questionsRead linksCreated source discussion ->
+      CreateModeInternal note questionsRead linksCreated source discussion
 
 read : Discussion -> CreateModeInternal -> CreateModeInternal
 read question internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated source ->
-      CreateModeInternal note (question :: questionsRead) linksCreated source
+    CreateModeInternal note questionsRead linksCreated source discussion ->
+      CreateModeInternal note (question :: questionsRead) linksCreated source discussion
 
 getQuestionsRead : CreateModeInternal -> QuestionsRead
 getQuestionsRead internal =
   case internal of
-    CreateModeInternal _ questionsRead _ _ -> questionsRead
+    CreateModeInternal _ questionsRead _ _ _ -> questionsRead
 
 linkIsForNote : Note.Note -> Link -> Bool
 linkIsForNote note link =
@@ -447,6 +471,9 @@ type alias QuestionsRead = ( List Note.Note )
 -- LINKSCREATED
 type alias LinksCreated = ( List Link )
 
+-- DISCUSSION
+type alias LinkedDiscussion = Maybe String
+
 getLinkForSelectedNote : Note.Note -> LinksCreated -> Maybe Link
 getLinkForSelectedNote note linksCreated =
   List.head <|
@@ -495,6 +522,7 @@ getCoachingModal model =
     NoteInput coachingModal _ -> Just coachingModal
     ChooseDiscussion coachingModal _ -> Just coachingModal
     FindLinksForDiscussion coachingModal _ _ _ _ _ -> Just coachingModal
+    DesignateDiscussionEntryPoint coachingModal _ _ -> Just coachingModal
     ChooseSourceCategory coachingModal _ _ -> Just coachingModal
     CreateNewSource coachingModal _ _ _ _ -> Just coachingModal
     PromptCreateAnother _ -> Nothing
@@ -504,11 +532,18 @@ setCoachingModal coachingModal model =
    case model of
      NoteInput _ internal -> NoteInput coachingModal internal
      ChooseDiscussion _ internal -> ChooseDiscussion coachingModal internal
+
      FindLinksForDiscussion _ graph bridgeModal internal question selectedNote ->
-      FindLinksForDiscussion coachingModal graph bridgeModal internal question selectedNote
+       FindLinksForDiscussion coachingModal graph bridgeModal internal question selectedNote
+
+     DesignateDiscussionEntryPoint _ createModeInternal string ->
+       DesignateDiscussionEntryPoint coachingModal createModeInternal string
+
      ChooseSourceCategory _ internal input -> ChooseSourceCategory coachingModal internal input
      CreateNewSource _ internal title author content -> CreateNewSource coachingModal internal title author content
      PromptCreateAnother _ -> model
+
+
 
 simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
 simulatePositions (notes, links) =
@@ -544,9 +579,12 @@ getInternal create =
     NoteInput _ createModeInternal -> createModeInternal
     ChooseDiscussion _ createModeInternal -> createModeInternal
     FindLinksForDiscussion _ _ _ createModeInternal _ _ -> createModeInternal
+    DesignateDiscussionEntryPoint _ createModeInternal _ -> createModeInternal
     ChooseSourceCategory _ createModeInternal _ -> createModeInternal
     CreateNewSource _ createModeInternal _ _ _ -> createModeInternal
     PromptCreateAnother createModeInternal -> createModeInternal
+
+
 
 updateSlipbox : Create -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipbox create slipbox =
@@ -561,8 +599,18 @@ updateSlipbox create slipbox =
           , Slipbox.addSource title author content slipbox
           )
     ( slipboxWithNote, note ) = Slipbox.addNote ( getNote internal ) sourceTitle slipboxWithSource
+    updatedSlipbox =
+      case getDiscussion internal of
+        Just discussion ->
+          let
+            ( slipboxWithDiscussion, discussionNote ) = Slipbox.addDiscussion discussion slipboxWithNote
+          in
+          Slipbox.addLink note discussionNote slipboxWithDiscussion
+        Nothing ->
+          slipboxWithNote
+
   in
-  List.foldr ( updateSlipboxWithLink note ) slipboxWithNote ( getCreatedLinks internal )
+  List.foldr ( updateSlipboxWithLink note ) updatedSlipbox ( getCreatedLinks internal )
 
 updateSlipboxWithLink : Note.Note -> Link -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipboxWithLink note link slipbox =

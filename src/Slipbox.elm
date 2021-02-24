@@ -24,6 +24,7 @@ module Slipbox exposing
   , saveChanges
   , getAllNotesAndLinksInQuestionTree
   , addNote
+  , addDiscussion
   , addSource
   , addLink
   )
@@ -598,6 +599,24 @@ addNote noteContent sourceTitle slipbox =
         sourceTitle
     (note, idGenerator) = Note.create content.idGenerator <|
       { content = noteContent, source = source, variant = Note.Regular }
+    (state, notes) = simulation (note :: content.notes) content.links
+  in
+  ( Slipbox
+    { content | notes = notes
+    , state = state
+    , idGenerator = idGenerator
+    , unsavedChanges = True
+    }
+  , note
+  )
+
+addDiscussion : String -> Slipbox -> ( Slipbox, Note.Note )
+addDiscussion discussion slipbox =
+  let
+    content = getContent slipbox
+    source = "n/a"
+    (note, idGenerator) = Note.create content.idGenerator <|
+      { content = discussion, source = source, variant = Note.Discussion }
     (state, notes) = simulation (note :: content.notes) content.links
   in
   ( Slipbox
