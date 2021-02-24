@@ -14,6 +14,7 @@ module Create exposing
   , noSource
   , newSource
   , submitNewSource
+  , submitNewDiscussion
   , updateInput
   , Input(..)
   , view
@@ -30,8 +31,9 @@ import Source
 -- TODO: Add section for checking if this is the entry point to a new discussion
 type Create
   = NoteInput CoachingModal CreateModeInternal
-  | ChooseQuestion CoachingModal CreateModeInternal
-  | FindLinksForQuestion CoachingModal Graph LinkModal CreateModeInternal Discussion SelectedNote
+  | ChooseDiscussion CoachingModal CreateModeInternal
+  | FindLinksForDiscussion CoachingModal Graph LinkModal CreateModeInternal Discussion SelectedNote
+  | DesignateDiscussionEntryPoint CoachingModal CreateModeInternal String
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
   | PromptCreateAnother CreateModeInternal
@@ -51,20 +53,21 @@ toggleCoachingModal create =
 next : Create -> Create
 next create =
   case create of
-    NoteInput coachingModal createModeInternal -> ChooseQuestion coachingModal createModeInternal
-    ChooseQuestion coachingModal createModeInternal -> ChooseSourceCategory coachingModal createModeInternal ""
+    NoteInput coachingModal createModeInternal -> ChooseDiscussion coachingModal createModeInternal
+    ChooseDiscussion coachingModal createModeInternal -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
+    DesignateDiscussionEntryPoint coachingModal createModeInternal _ -> ChooseSourceCategory coachingModal createModeInternal ""
     _ -> create
 
 toAddLinkState : Note.Note -> Slipbox.Slipbox -> Create -> Create
 toAddLinkState question slipbox create =
   case create of
-    ChooseQuestion coachingModal createModeInternal ->
+    ChooseDiscussion coachingModal createModeInternal ->
       let
         (notePositions, links) = simulatePositions
           <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox
         updatedInternal = read question createModeInternal
       in
-      FindLinksForQuestion
+      FindLinksForDiscussion
         coachingModal
         (Graph notePositions links)
         Closed
@@ -76,18 +79,18 @@ toAddLinkState question slipbox create =
 toChooseDiscussionState : Create -> Create
 toChooseDiscussionState create =
   case create of
-    FindLinksForQuestion coachingModal _ _ createModeInternal _ _ ->
-      ChooseQuestion coachingModal createModeInternal
+    FindLinksForDiscussion coachingModal _ _ createModeInternal _ _ ->
+      ChooseDiscussion coachingModal createModeInternal
     _ -> create
 
 createLink : Create -> Create
 createLink create =
   case create of
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
       if linkModalIsClosed linkModal then
         create
       else
-        FindLinksForQuestion
+        FindLinksForDiscussion
           coachingModal
           graph
           closeLinkModal
@@ -99,10 +102,10 @@ createLink create =
 createBridge : Create -> Create
 createBridge create =
   case create of
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
       case getBridgeNote linkModal of
         Just bridgeNote ->
-          FindLinksForQuestion
+          FindLinksForDiscussion
             coachingModal
             graph
             closeLinkModal
@@ -115,23 +118,23 @@ createBridge create =
 toggleLinkModal : Create -> Create
 toggleLinkModal create =
   case create of
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
       let createdLinks = getCreatedLinks createModeInternal
       in
       if linkModalIsClosed linkModal then
         case getBridgeNoteIfExists selectedNote createdLinks of
           Just bridge ->
-            FindLinksForQuestion coachingModal graph ( openLinkModal bridge ) createModeInternal question selectedNote
+            FindLinksForDiscussion coachingModal graph ( openLinkModal bridge ) createModeInternal question selectedNote
           Nothing ->
-            FindLinksForQuestion coachingModal graph ( openLinkModal "" ) createModeInternal question selectedNote
+            FindLinksForDiscussion coachingModal graph ( openLinkModal "" ) createModeInternal question selectedNote
       else
-        FindLinksForQuestion coachingModal graph closeLinkModal createModeInternal question selectedNote
+        FindLinksForDiscussion coachingModal graph closeLinkModal createModeInternal question selectedNote
     _ -> create
 
 removeLink : Create -> Create
 removeLink create =
   case create of
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
       let
         updatedLinks =
           List.filter
@@ -139,14 +142,14 @@ removeLink create =
             <| getCreatedLinks createModeInternal
         updatedInternal = setCreatedLinks updatedLinks createModeInternal
       in
-      FindLinksForQuestion coachingModal graph linkModal updatedInternal question selectedNote
+      FindLinksForDiscussion coachingModal graph linkModal updatedInternal question selectedNote
     _ -> create
 
 selectNote : Note.Note -> Create -> Create
 selectNote note create =
   case create of
-    FindLinksForQuestion coachingModal graph linkModal createModeInternal question _ ->
-      FindLinksForQuestion coachingModal graph linkModal createModeInternal question note
+    FindLinksForDiscussion coachingModal graph linkModal createModeInternal question _ ->
+      FindLinksForDiscussion coachingModal graph linkModal createModeInternal question note
     _ -> create
 
 selectSource : Source.Source -> Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
@@ -187,6 +190,13 @@ submitNewSource slipbox create =
       )
     _ -> ( slipbox, create )
 
+submitNewDiscussion : Create -> Create
+submitNewDiscussion create =
+  case create of
+    DesignateDiscussionEntryPoint coachingModal internal discussion ->
+      ChooseSourceCategory coachingModal ( setDiscussion discussion internal ) ""
+    _ -> create
+
 type Input
   = Note String
   | SourceTitle String
@@ -201,8 +211,11 @@ updateInput input create =
         NoteInput coachingModal createModeInternal ->
           NoteInput coachingModal <| setNote noteInput createModeInternal
 
-        FindLinksForQuestion coachingModal graph linkModal createModeInternal question selectedNote ->
-          FindLinksForQuestion coachingModal graph (setBridgeNote noteInput linkModal) createModeInternal question selectedNote
+        FindLinksForDiscussion coachingModal graph linkModal createModeInternal question selectedNote ->
+          FindLinksForDiscussion coachingModal graph (setBridgeNote noteInput linkModal) createModeInternal question selectedNote
+
+        DesignateDiscussionEntryPoint coachingModal createModeInternal _ ->
+          DesignateDiscussionEntryPoint coachingModal createModeInternal noteInput
 
         _ -> create
 
@@ -236,6 +249,7 @@ type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
   | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
   | DiscussionChosenView Graph LinkModal CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
   | PromptCreateAnotherView CreatedNote
@@ -250,14 +264,14 @@ view create =
       in
       NoteInputView (isOpen coachingModal) canContinue note
 
-    ChooseQuestion coachingModal createModeInternal ->
+    ChooseDiscussion coachingModal createModeInternal ->
       let
         note = getNote createModeInternal
         canContinue = List.isEmpty <| getCreatedLinks createModeInternal
       in
       ChooseDiscussionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
 
-    FindLinksForQuestion _ graph linkModal createModeInternal question selectedNote ->
+    FindLinksForDiscussion _ graph linkModal createModeInternal question selectedNote ->
       let
         note = getNote createModeInternal
         createdLinks = getCreatedLinks createModeInternal
@@ -275,6 +289,9 @@ view create =
         selectedNote
         selectedNoteIsLinked
         notesAssociatedToCreatedLinks
+
+    DesignateDiscussionEntryPoint _ createModeInternal string ->
+      DesignateDiscussionEntryPointView ( getNote createModeInternal ) string
 
     ChooseSourceCategory _ createModeInternal string ->
       ChooseSourceCategoryView ( getNote createModeInternal ) string
@@ -303,60 +320,72 @@ isOpen modal =
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
-  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source
+  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source LinkedDiscussion
 
 getNote : CreateModeInternal -> CreatedNote
 getNote internal =
   case internal of
-    CreateModeInternal note _ _ _ -> note
+    CreateModeInternal note _ _ _ _ -> note
 
 getSource : CreateModeInternal -> Source
 getSource internal =
   case internal of
-    CreateModeInternal _ _ _ source -> source
+    CreateModeInternal _ _ _ source _ -> source
+
+getDiscussion : CreateModeInternal -> LinkedDiscussion
+getDiscussion internal =
+  case internal of
+    CreateModeInternal _ _ _ _ linkedDiscussion -> linkedDiscussion
 
 setExistingSource : Source.Source -> CreateModeInternal -> CreateModeInternal
 setExistingSource source internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ ->
-      CreateModeInternal note questionsRead linksCreated <| Existing source
+    CreateModeInternal note questionsRead linksCreated _ discussion ->
+      CreateModeInternal note questionsRead linksCreated ( Existing source ) discussion
 
 setNewSource : Title -> Author -> Content -> CreateModeInternal -> CreateModeInternal
 setNewSource title author content internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ ->
-      CreateModeInternal note questionsRead linksCreated <| New title author content
+    CreateModeInternal note questionsRead linksCreated _ discussion ->
+      CreateModeInternal note questionsRead linksCreated ( New title author content ) discussion
+
+setDiscussion : String -> CreateModeInternal -> CreateModeInternal
+setDiscussion discussion internal =
+  case internal of
+    CreateModeInternal note questionsRead linksCreated source _ ->
+      CreateModeInternal note questionsRead linksCreated source <| Just discussion
 
 createModeInternalInit : CreateModeInternal
 createModeInternalInit =
-  CreateModeInternal "" [] [] None
+  CreateModeInternal "" [] [] None Nothing
 
 getCreatedLinks : CreateModeInternal -> LinksCreated
 getCreatedLinks internal =
   case internal of
-    CreateModeInternal _ _ links _ -> links
+    CreateModeInternal _ _ links _ _ -> links
 
 setCreatedLinks : LinksCreated -> CreateModeInternal -> CreateModeInternal
 setCreatedLinks linksCreated internal =
   case internal of
-    CreateModeInternal note questionsRead _ source ->
-      CreateModeInternal note questionsRead linksCreated source
+    CreateModeInternal note questionsRead _ source discussion ->
+      CreateModeInternal note questionsRead linksCreated source discussion
 
 setNote : CreatedNote -> CreateModeInternal -> CreateModeInternal
 setNote note internal =
   case internal of
-    CreateModeInternal _ questionsRead linksCreated source -> CreateModeInternal note questionsRead linksCreated source
+    CreateModeInternal _ questionsRead linksCreated source discussion ->
+      CreateModeInternal note questionsRead linksCreated source discussion
 
 read : Discussion -> CreateModeInternal -> CreateModeInternal
 read question internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated source ->
-      CreateModeInternal note (question :: questionsRead) linksCreated source
+    CreateModeInternal note questionsRead linksCreated source discussion ->
+      CreateModeInternal note (question :: questionsRead) linksCreated source discussion
 
 getQuestionsRead : CreateModeInternal -> QuestionsRead
 getQuestionsRead internal =
   case internal of
-    CreateModeInternal _ questionsRead _ _ -> questionsRead
+    CreateModeInternal _ questionsRead _ _ _ -> questionsRead
 
 linkIsForNote : Note.Note -> Link -> Bool
 linkIsForNote note link =
@@ -442,6 +471,9 @@ type alias QuestionsRead = ( List Note.Note )
 -- LINKSCREATED
 type alias LinksCreated = ( List Link )
 
+-- DISCUSSION
+type alias LinkedDiscussion = Maybe String
+
 getLinkForSelectedNote : Note.Note -> LinksCreated -> Maybe Link
 getLinkForSelectedNote note linksCreated =
   List.head <|
@@ -488,8 +520,9 @@ getCoachingModal : Create -> ( Maybe CoachingModal )
 getCoachingModal model =
   case model of
     NoteInput coachingModal _ -> Just coachingModal
-    ChooseQuestion coachingModal _ -> Just coachingModal
-    FindLinksForQuestion coachingModal _ _ _ _ _ -> Just coachingModal
+    ChooseDiscussion coachingModal _ -> Just coachingModal
+    FindLinksForDiscussion coachingModal _ _ _ _ _ -> Just coachingModal
+    DesignateDiscussionEntryPoint coachingModal _ _ -> Just coachingModal
     ChooseSourceCategory coachingModal _ _ -> Just coachingModal
     CreateNewSource coachingModal _ _ _ _ -> Just coachingModal
     PromptCreateAnother _ -> Nothing
@@ -498,12 +531,19 @@ setCoachingModal : CoachingModal -> Create -> Create
 setCoachingModal coachingModal model =
    case model of
      NoteInput _ internal -> NoteInput coachingModal internal
-     ChooseQuestion _ internal -> ChooseQuestion coachingModal internal
-     FindLinksForQuestion _ graph bridgeModal internal question selectedNote ->
-      FindLinksForQuestion coachingModal graph bridgeModal internal question selectedNote
+     ChooseDiscussion _ internal -> ChooseDiscussion coachingModal internal
+
+     FindLinksForDiscussion _ graph bridgeModal internal question selectedNote ->
+       FindLinksForDiscussion coachingModal graph bridgeModal internal question selectedNote
+
+     DesignateDiscussionEntryPoint _ createModeInternal string ->
+       DesignateDiscussionEntryPoint coachingModal createModeInternal string
+
      ChooseSourceCategory _ internal input -> ChooseSourceCategory coachingModal internal input
      CreateNewSource _ internal title author content -> CreateNewSource coachingModal internal title author content
      PromptCreateAnother _ -> model
+
+
 
 simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
 simulatePositions (notes, links) =
@@ -537,11 +577,14 @@ getInternal : Create -> CreateModeInternal
 getInternal create =
   case create of
     NoteInput _ createModeInternal -> createModeInternal
-    ChooseQuestion _ createModeInternal -> createModeInternal
-    FindLinksForQuestion _ _ _ createModeInternal _ _ -> createModeInternal
+    ChooseDiscussion _ createModeInternal -> createModeInternal
+    FindLinksForDiscussion _ _ _ createModeInternal _ _ -> createModeInternal
+    DesignateDiscussionEntryPoint _ createModeInternal _ -> createModeInternal
     ChooseSourceCategory _ createModeInternal _ -> createModeInternal
     CreateNewSource _ createModeInternal _ _ _ -> createModeInternal
     PromptCreateAnother createModeInternal -> createModeInternal
+
+
 
 updateSlipbox : Create -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipbox create slipbox =
@@ -556,8 +599,18 @@ updateSlipbox create slipbox =
           , Slipbox.addSource title author content slipbox
           )
     ( slipboxWithNote, note ) = Slipbox.addNote ( getNote internal ) sourceTitle slipboxWithSource
+    updatedSlipbox =
+      case getDiscussion internal of
+        Just discussion ->
+          let
+            ( slipboxWithDiscussion, discussionNote ) = Slipbox.addDiscussion discussion slipboxWithNote
+          in
+          Slipbox.addLink note discussionNote slipboxWithDiscussion
+        Nothing ->
+          slipboxWithNote
+
   in
-  List.foldr ( updateSlipboxWithLink note ) slipboxWithNote ( getCreatedLinks internal )
+  List.foldr ( updateSlipboxWithLink note ) updatedSlipbox ( getCreatedLinks internal )
 
 updateSlipboxWithLink : Note.Note -> Link -> Slipbox.Slipbox -> Slipbox.Slipbox
 updateSlipboxWithLink note link slipbox =

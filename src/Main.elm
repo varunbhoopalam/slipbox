@@ -189,6 +189,7 @@ type Msg
   | CreateTabSubmitNewSource
   | CreateTabUpdateInput Create.Input
   | CreateTabCreateAnotherNote
+  | CreateTabSubmitNewDiscussion
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -437,6 +438,7 @@ update message model =
     CreateTabNewSource -> createModeLambda Create.newSource
     CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
     CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
+    CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
 
 
 newContent : ( Int, Int ) -> Content
@@ -756,6 +758,7 @@ tabView deviceViewport content =
                 ]
                 [ Element.text "Add to existing discussions by linking relevant notes/ideas to that discussion. "
                 , Element.text "Click a discussion to get started! "
+                -- TODO: word this better! What's a sustainable way to link ideas together?
                 , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
                 , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
                 ]
@@ -1072,6 +1075,61 @@ tabView deviceViewport content =
                   ]
                 ]
               ]
+            ]
+
+        Create.DesignateDiscussionEntryPointView note input ->
+          let
+            continueNode =
+              if String.isEmpty input then
+                Element.el
+                  [ Element.height <| Element.px 38
+                  ] Element.none
+              else
+                Element.Input.button
+                  [ Element.centerX
+                  , Element.padding 8
+                  , Element.Border.width 1
+                  , Element.moveRight 16
+                  ]
+                  { onPress = Just CreateTabSubmitNewDiscussion
+                  , label = Element.text "Create and Link Discussion"
+                  }
+          in
+          Element.column
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Is this note the start of it's own discussion/a new discussion?"
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text note
+              ]
+            , Element.Input.multiline
+              []
+              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
+              , text = input
+              , placeholder = Nothing
+              , label = Element.Input.labelAbove [] <| Element.text "Discussion"
+              , spellcheck = True
+              }
+            , continueNode
+            , Element.Input.button
+              [ Element.centerX
+              , Element.padding 8
+              , Element.Border.width 1
+              ]
+              { onPress = Just CreateTabNextStep
+              , label = Element.text "This isn't the start of a new discussion"
+              }
             ]
 
         Create.ChooseSourceCategoryView note input  ->
