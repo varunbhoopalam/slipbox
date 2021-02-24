@@ -179,8 +179,6 @@ type Msg
   | CreateTabToFindLinksForDiscussion Note.Note
   | CreateTabToChooseDiscussion
   | CreateTabCreateLinkForSelectedNote
-  | CreateTabCreateBridgeForSelectedNote
-  | CreateTabToggleLinkModal
   | CreateTabRemoveLink
   | CreateTabSelectNote Note.Note
   | CreateTabContinueWithSelectedSource Source.Source
@@ -428,8 +426,6 @@ update message model =
         Nothing -> ( model, Cmd.none )
     CreateTabToChooseDiscussion -> createModeLambda Create.toChooseDiscussionState
     CreateTabCreateLinkForSelectedNote -> createModeLambda Create.createLink
-    CreateTabCreateBridgeForSelectedNote -> createModeLambda Create.createBridge
-    CreateTabToggleLinkModal -> createModeLambda Create.toggleLinkModal
     CreateTabRemoveLink -> createModeLambda Create.removeLink
     CreateTabSelectNote newSelectedNote -> createModeLambda <| Create.selectNote newSelectedNote
     CreateTabUpdateInput input -> createModeLambda <| Create.updateInput input
@@ -802,7 +798,7 @@ tabView deviceViewport content =
                   ]
                   [ Element.text "There are no discussions in your slipbox! "
                   , Element.text "We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. "
-                  , Element.text "Add conversations to start adding links! "
+                  , Element.text "Add a discussion in the next step to start linking notes together! "
                   ]
               else
                 let
@@ -882,7 +878,7 @@ tabView deviceViewport content =
             , tableNode
             ]
 
-        Create.DiscussionChosenView createTabGraph linkModal note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
+        Create.DiscussionChosenView createTabGraph note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -890,13 +886,6 @@ tabView deviceViewport content =
                   [ Element.width Element.fill
                   ]
                   [ Element.text "Linked"
-                  , Element.Input.button
-                    [ Element.padding 8
-                    , Element.Border.width 1
-                    ]
-                    { onPress = Just CreateTabToggleLinkModal
-                    , label = Element.text "Edit"
-                    }
                   , Element.Input.button
                     [ Element.padding 8
                     , Element.Border.width 1
@@ -910,7 +899,7 @@ tabView deviceViewport content =
                   [ Element.padding 8
                   , Element.Border.width 1
                   ]
-                  { onPress = Just CreateTabToggleLinkModal
+                  { onPress = Just CreateTabCreateLinkForSelectedNote
                   , label = Element.text "Create Link"
                   }
             viewGraph = Element.html <|
@@ -926,7 +915,19 @@ tabView deviceViewport content =
                   ]
           in
           Element.row
-            [ Element.inFront <| doneOrLinkModal selectedNote note linkModal
+            [ Element.inFront <|
+              Element.el
+                [ Element.padding 16
+                , Element.alignRight
+                , Element.alignTop
+                ] <|
+                Element.Input.button
+                  [ Element.Border.width 1
+                  , Element.padding 8
+                  ]
+                  { onPress = Just CreateTabToChooseDiscussion
+                  , label = Element.text "Done"
+                  }
             , Element.width Element.fill
             , Element.height Element.fill
             ]
@@ -1105,7 +1106,7 @@ tabView deviceViewport content =
               [ Element.centerX
               , Element.Font.heavy
               ] <|
-              Element.text "Is this note the start of it's own discussion/a new discussion?"
+              Element.text "Is this note the start of its own discussion/a new discussion?"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1318,100 +1319,6 @@ coaching coachingOpen text =
         ]
         [ toggleCoachingButton
         , text
-        ]
-
-doneOrLinkModal : Note.Note -> String -> Create.LinkModal -> Element Msg
-doneOrLinkModal selectedNote createdNote bridgeModal =
-  case bridgeModal of
-    Create.Closed ->
-      Element.el
-        [ Element.padding 16
-        , Element.alignRight
-        , Element.alignTop
-        ] <|
-        Element.Input.button
-          [ Element.Border.width 1
-          , Element.padding 8
-          ]
-          { onPress = Just CreateTabToChooseDiscussion
-          , label = Element.text "Done"
-          }
-    Create.Open input ->
-      let
-        submitNode =
-          if String.isEmpty input then
-            Element.el [] Element.none
-          else
-            Element.Input.button
-              [ Element.centerX
-              , Element.Border.width 1
-              , Element.padding 8
-              ]
-              { onPress = Just CreateTabCreateBridgeForSelectedNote
-              , label = Element.text "Create Bridged Link with Note"
-              }
-      in
-      Element.column
-        [ Element.height Element.fill
-        , Element.width Element.fill
-        , Element.Background.color Color.white
-        , Element.padding 32
-        , Element.spacingXY 16 16
-        ]
-        [ Element.row
-          [ Element.width Element.fill ]
-          [ Element.textColumn
-            [ Element.width Element.fill
-            , Element.centerY
-            , Element.centerX
-            , Element.Border.width 1
-            , Element.padding 8
-            , Element.spacingXY 10 10
-            ]
-            [ Element.paragraph [ Element.Font.bold ] [ Element.text "Created Note" ]
-            , Element.paragraph [] [ Element.text createdNote ]
-            ]
-          , Element.textColumn
-            [ Element.width Element.fill
-            , Element.centerY
-            , Element.centerX
-            , Element.Border.width 1
-            , Element.padding 8
-            , Element.spacingXY 10 10
-            ]
-            [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
-            , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
-            ]
-          ]
-        , Element.Input.button
-          [ Element.centerX
-          , Element.Border.width 1
-          , Element.padding 8
-          ]
-          { onPress = Just CreateTabCreateLinkForSelectedNote
-          , label = Element.text "Create Link"}
-        , Element.column
-          [ Element.width Element.fill
-          , Element.spacingXY 16 16
-          ]
-          [ Element.Input.multiline
-            []
-            { onChange = \s -> CreateTabUpdateInput <| Create.Note s
-            , text = input
-            , placeholder = Nothing
-            , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
-            , spellcheck = True
-            }
-          , submitNode
-          ]
-        , Element.Input.button
-          [ Element.centerX
-          , Element.Border.width 1
-          , Element.padding 8
-          ]
-          { onPress = Just CreateTabToggleLinkModal
-          , label = Element.text "Cancel"
-          }
         ]
 
 type GraphNote
