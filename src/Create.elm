@@ -19,10 +19,8 @@ module Create exposing
   , CreateView(..)
   )
 
-import Force
 import Graph
 import Note
-import Link
 import Slipbox
 import Source
 
@@ -61,13 +59,12 @@ toAddLinkState question slipbox create =
   case create of
     ChooseDiscussion coachingModal createModeInternal ->
       let
-        (notePositions, links) = simulatePositions
-          <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox
         updatedInternal = read question createModeInternal
       in
       FindLinksForDiscussion
         coachingModal
-        (Graph.Graph notePositions links)
+        ( Graph.simulatePositions
+          <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox )
         updatedInternal
         question
         question
@@ -435,29 +432,6 @@ setCoachingModal coachingModal model =
      ChooseSourceCategory _ internal input -> ChooseSourceCategory coachingModal internal input
      CreateNewSource _ internal title author content -> CreateNewSource coachingModal internal title author content
      PromptCreateAnother _ -> model
-
-
-simulatePositions : ( List Note.Note, List Link.Link ) -> ( List Graph.NotePosition, List Link.Link )
-simulatePositions (notes, links) =
-  let
-    toEntity note =
-      { id = Note.getId note
-      , x = Note.getX note
-      , y = Note.getY note
-      , vx = Note.getVx note
-      , vy = Note.getVy note
-      , note = note
-      }
-    entities = List.map toEntity notes
-    state =
-      Force.simulation
-        [ Force.manyBody (List.map (\n -> n.id) entities)
-        , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
-        , Force.center 0 0
-        ]
-    notePositions = Force.computeSimulation state entities
-  in
-  ( notePositions, links )
 
 getInternal : Create -> CreateModeInternal
 getInternal create =
