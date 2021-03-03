@@ -5,6 +5,7 @@ import Browser.Events
 import Browser.Navigation
 import Color
 import Create
+import Discovery
 import Element.Background
 import Element.Border
 import Element.Events
@@ -129,6 +130,7 @@ type Tab
   | WorkspaceTab
   | DiscussionsTab String
   | CreateModeTab Create.Create
+  | DiscoveryModeTab Discovery.Discovery
 
 type Tab_
   = Brain
@@ -137,6 +139,7 @@ type Tab_
   | Sources
   | Discussions
   | CreateMode
+  | Discovery
 
 -- INIT
 
@@ -404,6 +407,16 @@ update message model =
                   ( { model | state =
                     Session { content | tab = CreateModeTab Create.init }
                     }
+                  , Cmd.none
+                  )
+
+            Discovery ->
+              case content.tab of
+                DiscoveryModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( { model | state =
+                  Session { content | tab = DiscoveryModeTab Discovery.init }
+                  }
                   , Cmd.none
                   )
 
@@ -1293,6 +1306,262 @@ tabView deviceViewport content =
               , label = Element.text "Create Another Note?"
               }
             ]
+
+    DiscoveryModeTab discovery ->
+      case Discovery.view discovery of
+        Discovery.ViewDiscussionView discussion selectedNote discussionGraph ->
+          let
+            viewGraph = Element.html <|
+              Svg.svg
+                [ Svg.Attributes.width "100%"
+                , Svg.Attributes.height "100%"
+                , Svg.Attributes.viewBox <| computeViewbox discussionGraph.positions
+                ] <|
+                List.concat
+                  [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
+                  , List.map viewGraphNote <|
+                    List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
+                  ]
+          in
+          Element.row
+            [ Element.inFront <|
+              Element.el
+                [ Element.padding 16
+                , Element.alignRight
+                , Element.alignTop
+                ] <|
+                Element.Input.button
+                  [ Element.Border.width 1
+                  , Element.padding 8
+                  ]
+                  { onPress = Just CreateTabToChooseDiscussion
+                  , label = Element.text "Done"
+                  }
+            , Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ Element.textColumn
+                [ Element.width Element.fill
+                , Element.height <| Element.fillPortion 1
+                , Element.padding 8
+                , Element.Border.width 1
+                , Element.centerY
+                , Element.centerX
+                , Element.spacingXY 10 10
+                ]
+                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
+                , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
+                ]
+              , Element.column
+                [ Element.width Element.fill
+                , Element.height <| Element.fillPortion 3
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ Element.textColumn
+                  [ Element.spacingXY 10 10
+                  ]
+                  [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+                  , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                  ]
+                ]
+              ]
+            , Element.column
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              ]
+              [ viewGraph
+              , Element.wrappedRow
+                [ Element.width Element.fill
+                , Element.height Element.shrink
+                , Element.padding 8
+                , Element.spacingXY 8 8
+                ]
+                [ Element.row
+                  []
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.g []
+                        [ Svg.rect
+                          [ Svg.Attributes.fill "rgb(0,0,0)"
+                          , Svg.Attributes.width "20"
+                          , Svg.Attributes.height "20"
+                          , Svg.Attributes.x "10"
+                          , Svg.Attributes.y "10"
+                          ]
+                          []
+                        , Svg.rect
+                          [ Svg.Attributes.fill "rgba(0,0,0)"
+                          , Svg.Attributes.width "20"
+                          , Svg.Attributes.height "20"
+                          , Svg.Attributes.transform "rotate(45 20 20)"
+                          , Svg.Attributes.x "10"
+                          , Svg.Attributes.y "10"
+                          ]
+                          []
+                        ]
+                      ]
+                  , Element.text "Currently Selected Note"
+                  ]
+                , Element.row
+                  []
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.g []
+                        [ Svg.circle
+                          [ Svg.Attributes.r "10"
+                          , Svg.Attributes.stroke "black"
+                          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+                          , Svg.Attributes.cx "20"
+                          , Svg.Attributes.cy "20"
+                          ]
+                          []
+                        , Svg.line
+                          [ Svg.Attributes.x1 "10"
+                          , Svg.Attributes.x2 "30"
+                          , Svg.Attributes.y1 "20"
+                          , Svg.Attributes.y2 "20"
+                          , Svg.Attributes.stroke "black"
+                          ]
+                          []
+                        , Svg.line
+                          [ Svg.Attributes.x1 "20"
+                          , Svg.Attributes.x2 "20"
+                          , Svg.Attributes.y1 "10"
+                          , Svg.Attributes.y2 "30"
+                          , Svg.Attributes.stroke "black"
+                          ]
+                          []
+                        ]
+                      ]
+                  , Element.text "Note Marked to link (if not selected)"
+                  ]
+                , Element.row
+                  []
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.rect
+                        [ Svg.Attributes.fill "rgb(0,0,0)"
+                        , Svg.Attributes.width "20"
+                        , Svg.Attributes.height "20"
+                        , Svg.Attributes.x "10"
+                        , Svg.Attributes.y "10"
+                        ]
+                        []
+                      ]
+                  , Element.text "Discussion (if not selected)"
+                  ]
+                , Element.row
+                  []
+                  [ Element.html <|
+                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                      [ Svg.circle
+                        [ Svg.Attributes.r "10"
+                        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+                        , Svg.Attributes.cx "20"
+                        , Svg.Attributes.cy "20"
+                        ]
+                        []
+                      ]
+                  , Element.text "Regular Note"
+                  ]
+                ]
+              ]
+            ]
+
+        Discovery.ChooseDiscussionView filterInput ->
+          let
+            discussionFilter =
+              if String.isEmpty filterInput then
+                Nothing
+              else
+                Just filterInput
+            discussions = Slipbox.getDiscussions discussionFilter content.slipbox
+            discussionTabularData =
+              let
+                toDiscussionRecord =
+                  \q ->
+                    { discussion = Note.getContent q
+                    , note = q
+                    }
+              in
+              List.map toDiscussionRecord discussions
+            tableNode =
+              if List.isEmpty discussions then
+                Element.paragraph
+                  [ Element.Font.center
+                  , Element.width <| Element.maximum 800 Element.fill
+                  , Element.centerX
+                  ]
+                  [ Element.text "There are no discussions in your slipbox! "
+                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. "
+                  , Element.text "Add a discussion to use discovery mode! "
+                  ]
+              else
+                let
+                    headerAttrs =
+                        [ Element.Font.bold
+                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                        ]
+                in
+                Element.column
+                  [ Element.width <| Element.maximum 600 Element.fill
+                  , Element.height Element.fill
+                  , Element.spacingXY 10 10
+                  , Element.padding 5
+                  , Element.Border.width 2
+                  , Element.Border.rounded 6
+                  , Element.centerX
+                  ]
+                  [ Element.row [ Element.width Element.fill ]
+                    [ Element.el (Element.width Element.fill :: headerAttrs) <| Element.text "Discussion"
+                    ]
+                  , Element.el [ Element.width Element.fill ] <| Element.table
+                    [ Element.width Element.fill
+                    , Element.spacingXY 8 8
+                    , Element.centerX
+                    , Element.height <| Element.maximum 600 Element.fill
+                    , Element.scrollbarY
+                    ]
+                    { data = discussionTabularData
+                    , columns =
+                      [ { header = Element.none
+                        , width = Element.fillPortion 4
+                        , view =
+                              \row ->
+                                  Element.Input.button
+                                    []
+                                    { onPress = Nothing -- row.note
+                                    , label =
+                                      Element.paragraph
+                                        []
+                                        [ Element.text row.discussion
+                                        ]
+                                    }
+                        }
+                      ]
+                    }
+                  ]
+          in
+          Element.column
+            [ Element.padding 16
+            , Element.centerX
+            , Element.width Element.fill
+            , Element.spacingXY 32 32
+            ]
+            [ Element.el
+              [ Element.centerX
+              , Element.Font.heavy
+              ] <|
+              Element.text "Select Discussion"
+            , tableNode
+            ]
+
 
 -- CREATETAB HELPERS
 

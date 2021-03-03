@@ -4,6 +4,8 @@ module Discovery exposing
   , view
   , DiscoveryView(..)
   , viewDiscussion
+  , selectNote
+  , back
   )
 
 import Graph
@@ -43,3 +45,14 @@ viewDiscussion discussion slipbox _ =
     ( Graph.simulatePositions
       <| Slipbox.getAllNotesAndLinksInQuestionTree discussion slipbox )
 
+selectNote : Note.Note -> Discovery -> Discovery
+selectNote note discovery =
+  case discovery of
+    ViewDiscussion discussion _ graph -> ViewDiscussion discussion note graph
+    _ -> discovery
+
+back : Discovery -> Discovery
+back discovery =
+  case discovery of
+    ChooseDiscussion _ -> discovery
+    _ -> init
