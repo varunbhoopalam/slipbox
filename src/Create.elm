@@ -20,6 +20,7 @@ module Create exposing
   )
 
 import Force
+import Graph
 import Note
 import Link
 import Slipbox
@@ -29,7 +30,7 @@ import Source
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseDiscussion CoachingModal CreateModeInternal
-  | FindLinksForDiscussion CoachingModal Graph CreateModeInternal Discussion SelectedNote
+  | FindLinksForDiscussion CoachingModal Graph.Graph CreateModeInternal Discussion SelectedNote
   | DesignateDiscussionEntryPoint CoachingModal CreateModeInternal String
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
@@ -66,7 +67,7 @@ toAddLinkState question slipbox create =
       in
       FindLinksForDiscussion
         coachingModal
-        (Graph notePositions links)
+        (Graph.Graph notePositions links)
         updatedInternal
         question
         question
@@ -205,7 +206,7 @@ type alias NotesAssociatedToCreatedLinks = List Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
   | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
-  | DiscussionChosenView Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
@@ -371,21 +372,6 @@ addLink newLink internal =
   in
   setCreatedLinks updatedCreatedLinks internal
 
--- GRAPH
-type alias Graph =
-  { positions :  List NotePosition
-  , links : List Link.Link
-  }
-
-type alias NotePosition =
-  { id : Int
-  , note : Note.Note
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  }
-
 -- CREATEMODESOURCE
 type Source
   = None
@@ -451,7 +437,7 @@ setCoachingModal coachingModal model =
      PromptCreateAnother _ -> model
 
 
-simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
+simulatePositions : ( List Note.Note, List Link.Link ) -> ( List Graph.NotePosition, List Link.Link )
 simulatePositions (notes, links) =
   let
     toEntity note =
