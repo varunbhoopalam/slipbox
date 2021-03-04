@@ -26,11 +26,15 @@ simulatePositions : ( List Note.Note, List Link.Link ) -> Graph
 simulatePositions (notes, links) =
   let
     toEntity note =
-      { id = Note.getId note
-      , x = Note.getX note
-      , y = Note.getY note
-      , vx = Note.getVx note
-      , vy = Note.getVy note
+      let
+        id = Note.getId note
+        init = Force.entity id 1
+      in
+      { id = id
+      , x = init.x
+      , y = init.y
+      , vx = init.vx
+      , vy = init.vy
       , note = note
       }
     entities = List.map toEntity notes
