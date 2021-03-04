@@ -23134,64 +23134,6 @@ var $author$project$Main$tabView = F2(
 													_List_fromArray(
 														[
 															A2(
-															$elm$svg$Svg$g,
-															_List_Nil,
-															_List_fromArray(
-																[
-																	A2(
-																	$elm$svg$Svg$circle,
-																	_List_fromArray(
-																		[
-																			$elm$svg$Svg$Attributes$r('10'),
-																			$elm$svg$Svg$Attributes$stroke('black'),
-																			$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)'),
-																			$elm$svg$Svg$Attributes$cx('20'),
-																			$elm$svg$Svg$Attributes$cy('20')
-																		]),
-																	_List_Nil),
-																	A2(
-																	$elm$svg$Svg$line,
-																	_List_fromArray(
-																		[
-																			$elm$svg$Svg$Attributes$x1('10'),
-																			$elm$svg$Svg$Attributes$x2('30'),
-																			$elm$svg$Svg$Attributes$y1('20'),
-																			$elm$svg$Svg$Attributes$y2('20'),
-																			$elm$svg$Svg$Attributes$stroke('black')
-																		]),
-																	_List_Nil),
-																	A2(
-																	$elm$svg$Svg$line,
-																	_List_fromArray(
-																		[
-																			$elm$svg$Svg$Attributes$x1('20'),
-																			$elm$svg$Svg$Attributes$x2('20'),
-																			$elm$svg$Svg$Attributes$y1('10'),
-																			$elm$svg$Svg$Attributes$y2('30'),
-																			$elm$svg$Svg$Attributes$stroke('black')
-																		]),
-																	_List_Nil)
-																]))
-														]))),
-												$mdgriffith$elm_ui$Element$text('Note Marked to link (if not selected)')
-											])),
-										A2(
-										$mdgriffith$elm_ui$Element$row,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$mdgriffith$elm_ui$Element$html(
-												A2(
-													$elm$svg$Svg$svg,
-													_List_fromArray(
-														[
-															$elm$svg$Svg$Attributes$height('40'),
-															$elm$svg$Svg$Attributes$width('40'),
-															$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-														]),
-													_List_fromArray(
-														[
-															A2(
 															$elm$svg$Svg$rect,
 															_List_fromArray(
 																[

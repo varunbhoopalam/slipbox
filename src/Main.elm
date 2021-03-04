@@ -1436,39 +1436,6 @@ tabView deviceViewport content =
                 []
                 [ Element.html <|
                   Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                    [ Svg.g []
-                      [ Svg.circle
-                        [ Svg.Attributes.r "10"
-                        , Svg.Attributes.stroke "black"
-                        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                        , Svg.Attributes.cx "20"
-                        , Svg.Attributes.cy "20"
-                        ]
-                        []
-                      , Svg.line
-                        [ Svg.Attributes.x1 "10"
-                        , Svg.Attributes.x2 "30"
-                        , Svg.Attributes.y1 "20"
-                        , Svg.Attributes.y2 "20"
-                        , Svg.Attributes.stroke "black"
-                        ]
-                        []
-                      , Svg.line
-                        [ Svg.Attributes.x1 "20"
-                        , Svg.Attributes.x2 "20"
-                        , Svg.Attributes.y1 "10"
-                        , Svg.Attributes.y2 "30"
-                        , Svg.Attributes.stroke "black"
-                        ]
-                        []
-                      ]
-                    ]
-                , Element.text "Note Marked to link (if not selected)"
-                ]
-              , Element.row
-                []
-                [ Element.html <|
-                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
                     [ Svg.rect
                       [ Svg.Attributes.fill "rgb(0,0,0)"
                       , Svg.Attributes.width "20"
