@@ -1359,7 +1359,7 @@ tabView deviceViewport content =
                 [ Svg.Attributes.width "100%"
                 , Svg.Attributes.height "100%"
                 , Svg.Attributes.viewBox <| computeViewbox discussionGraph.positions
-                , Svg.Attributes.preserveAspectRatio "none"
+                , Svg.Attributes.style "position: absolute"
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
@@ -1498,6 +1498,7 @@ tabView deviceViewport content =
             , Element.el
               [ Element.width biggerElement
               , Element.height Element.fill
+              , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
               ]
               viewGraph
             ]

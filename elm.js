@@ -19558,7 +19558,6 @@ var $author$project$Main$noteTabToolbar = function (input) {
 					})
 				])));
 };
-var $elm$svg$Svg$Attributes$preserveAspectRatio = _VirtualDom_attribute('preserveAspectRatio');
 var $author$project$Main$searchConverter = function (input) {
 	return $elm$core$String$isEmpty(input) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(input);
 };
@@ -22957,7 +22956,7 @@ var $author$project$Main$tabView = F2(
 									$elm$svg$Svg$Attributes$height('100%'),
 									$elm$svg$Svg$Attributes$viewBox(
 									$author$project$Main$computeViewbox(discussionGraph.hs)),
-									$elm$svg$Svg$Attributes$preserveAspectRatio('none')
+									$elm$svg$Svg$Attributes$style('position: absolute')
 								]),
 							$elm$core$List$concat(
 								_List_fromArray(
@@ -23241,7 +23240,9 @@ var $author$project$Main$tabView = F2(
 								_List_fromArray(
 									[
 										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$htmlAttribute(
+										A2($elm$html$Html$Attributes$style, 'position', 'relative'))
 									]),
 								viewGraph)
 							]));
