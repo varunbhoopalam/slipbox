@@ -324,7 +324,7 @@ update message model =
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( BrainTab "" Viewport.initialize ) slipbox Expanded }
+              ({ model | state = Session <| Content ( CreateModeTab Create.init ) slipbox Expanded }
               , Cmd.none
               )
             Err _ -> ( { model | state = FailureToParse }, Cmd.none )
@@ -453,7 +453,7 @@ update message model =
 newContent : ( Int, Int ) -> Content
 newContent deviceViewport =
   Content
-    (BrainTab "" Viewport.initialize )
+    ( CreateModeTab Create.init )
     Slipbox.new
     Expanded
 
@@ -1974,7 +1974,7 @@ leftNav sideNavState selectedTab slipbox =
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Brain" ( ChangeTab Brain ) <| sameTab selectedTab Brain
+          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab Discovery ) <| sameTab selectedTab Discovery
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
           , leftNavExpandedButtonLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
           , leftNavExpandedButtonLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
@@ -2041,6 +2041,11 @@ sameTab tab tab_ =
     CreateModeTab _ ->
       case tab_ of
         CreateMode -> True
+        _ -> False
+
+    DiscoveryModeTab _ ->
+      case tab_ of
+        Discovery -> True
         _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
