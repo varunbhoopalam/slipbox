@@ -6,6 +6,7 @@ module Discovery exposing
   , viewDiscussion
   , selectNote
   , back
+  , updateInput
   )
 
 import Graph
@@ -22,7 +23,7 @@ type alias FilterInput = String
 
 type DiscoveryView
   = ViewDiscussionView Discussion SelectedNote Graph.Graph
-  | ChooseDiscussionView FilterInput
+  | ChooseDiscussionView String
 
 init : Discovery
 init =
@@ -56,3 +57,9 @@ back discovery =
   case discovery of
     ChooseDiscussion _ -> discovery
     _ -> init
+
+updateInput : String -> Discovery -> Discovery
+updateInput input discovery =
+  case discovery of
+    ChooseDiscussion _ -> ChooseDiscussion input
+    _ -> discovery

@@ -101,6 +101,28 @@ setCreate create model =
         _ -> model
     _ -> model
 
+getDiscovery : Model -> Maybe Discovery.Discovery
+getDiscovery model =
+  case model.state of
+    Session content ->
+      case content.tab of
+        DiscoveryModeTab create -> Just create
+        _ -> Nothing
+    _ -> Nothing
+
+setDiscovery : Discovery.Discovery -> Model -> Model
+setDiscovery create model =
+  case model.state of
+    Session content ->
+      case content.tab of
+        DiscoveryModeTab _ ->
+          let
+            state = Session { content | tab = DiscoveryModeTab create }
+          in
+          { model | state = state }
+        _ -> model
+    _ -> model
+
 
 type State 
   = Setup 
@@ -191,6 +213,10 @@ type Msg
   | CreateTabUpdateInput Create.Input
   | CreateTabCreateAnotherNote
   | CreateTabSubmitNewDiscussion
+  | DiscoveryModeUpdateInput String
+  | DiscoveryModeSelectDiscussion Note.Note
+  | DiscoveryModeBack
+  | DiscoveryModeSelectNote Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -217,6 +243,15 @@ update message model =
         Just create ->
           ( setCreate
             ( createUpdate create )
+            model
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+    discoveryModeLambda discoveryUpdate =
+      case getDiscovery model of
+        Just discovery ->
+          ( setDiscovery
+            ( discoveryUpdate discovery )
             model
           , Cmd.none
           )
@@ -448,6 +483,14 @@ update message model =
     CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
     CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
     CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
+
+    DiscoveryModeUpdateInput input -> discoveryModeLambda <| Discovery.updateInput input
+    DiscoveryModeSelectDiscussion discussion ->
+      case getSlipbox model of
+        Just slipbox -> discoveryModeLambda <| Discovery.viewDiscussion discussion slipbox
+        Nothing -> ( model, Cmd.none )
+    DiscoveryModeBack -> discoveryModeLambda Discovery.back
+    DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
 
 
 newContent : ( Int, Int ) -> Content
@@ -923,7 +966,7 @@ tabView deviceViewport content =
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
-                  , List.map viewGraphNote <|
+                  , List.map ( \n -> viewGraphNote CreateTabSelectNote n ) <|
                     List.map ( toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote ) createTabGraph.positions
                   ]
           in
@@ -1316,10 +1359,11 @@ tabView deviceViewport content =
                 [ Svg.Attributes.width "100%"
                 , Svg.Attributes.height "100%"
                 , Svg.Attributes.viewBox <| computeViewbox discussionGraph.positions
+                , Svg.Attributes.preserveAspectRatio "none"
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
-                  , List.map viewGraphNote <|
+                  , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote n ) <|
                     List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
                   ]
           in
@@ -1334,7 +1378,7 @@ tabView deviceViewport content =
                   [ Element.Border.width 1
                   , Element.padding 8
                   ]
-                  { onPress = Just CreateTabToChooseDiscussion
+                  { onPress = Just DiscoveryModeBack
                   , label = Element.text "Done"
                   }
             , Element.width Element.fill
@@ -1346,105 +1390,27 @@ tabView deviceViewport content =
               ]
               [ Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 1
-                , Element.padding 8
                 , Element.Border.width 1
-                , Element.centerY
-                , Element.centerX
+                , Element.padding 8
                 , Element.spacingXY 10 10
                 ]
                 [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
                 , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
                 ]
-              , Element.column
+              , Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 3
                 , Element.Border.width 1
                 , Element.padding 8
                 , Element.spacingXY 10 10
                 ]
-                [ Element.textColumn
-                  [ Element.spacingXY 10 10
-                  ]
-                  [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
-                  , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
-                  ]
+                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+                , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
                 ]
-              ]
-            , Element.column
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              ]
-              [ viewGraph
-              , Element.wrappedRow
-                [ Element.width Element.fill
-                , Element.height Element.shrink
-                , Element.padding 8
-                , Element.spacingXY 8 8
-                ]
-                [ Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.g []
-                        [ Svg.rect
-                          [ Svg.Attributes.fill "rgb(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
-                        , Svg.rect
-                          [ Svg.Attributes.fill "rgba(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.transform "rotate(45 20 20)"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
-                        ]
-                      ]
-                  , Element.text "Currently Selected Note"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.g []
-                        [ Svg.circle
-                          [ Svg.Attributes.r "10"
-                          , Svg.Attributes.stroke "black"
-                          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                          , Svg.Attributes.cx "20"
-                          , Svg.Attributes.cy "20"
-                          ]
-                          []
-                        , Svg.line
-                          [ Svg.Attributes.x1 "10"
-                          , Svg.Attributes.x2 "30"
-                          , Svg.Attributes.y1 "20"
-                          , Svg.Attributes.y2 "20"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        , Svg.line
-                          [ Svg.Attributes.x1 "20"
-                          , Svg.Attributes.x2 "20"
-                          , Svg.Attributes.y1 "10"
-                          , Svg.Attributes.y2 "30"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        ]
-                      ]
-                  , Element.text "Note Marked to link (if not selected)"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+              , Element.row
+                []
+                [ Element.html <|
+                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    [ Svg.g []
                       [ Svg.rect
                         [ Svg.Attributes.fill "rgb(0,0,0)"
                         , Svg.Attributes.width "20"
@@ -1453,25 +1419,87 @@ tabView deviceViewport content =
                         , Svg.Attributes.y "10"
                         ]
                         []
+                      , Svg.rect
+                        [ Svg.Attributes.fill "rgba(0,0,0)"
+                        , Svg.Attributes.width "20"
+                        , Svg.Attributes.height "20"
+                        , Svg.Attributes.transform "rotate(45 20 20)"
+                        , Svg.Attributes.x "10"
+                        , Svg.Attributes.y "10"
+                        ]
+                        []
                       ]
-                  , Element.text "Discussion (if not selected)"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    ]
+                , Element.text "Currently Selected Note"
+                ]
+              , Element.row
+                []
+                [ Element.html <|
+                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    [ Svg.g []
                       [ Svg.circle
                         [ Svg.Attributes.r "10"
+                        , Svg.Attributes.stroke "black"
                         , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
                         , Svg.Attributes.cx "20"
                         , Svg.Attributes.cy "20"
                         ]
                         []
+                      , Svg.line
+                        [ Svg.Attributes.x1 "10"
+                        , Svg.Attributes.x2 "30"
+                        , Svg.Attributes.y1 "20"
+                        , Svg.Attributes.y2 "20"
+                        , Svg.Attributes.stroke "black"
+                        ]
+                        []
+                      , Svg.line
+                        [ Svg.Attributes.x1 "20"
+                        , Svg.Attributes.x2 "20"
+                        , Svg.Attributes.y1 "10"
+                        , Svg.Attributes.y2 "30"
+                        , Svg.Attributes.stroke "black"
+                        ]
+                        []
                       ]
-                  , Element.text "Regular Note"
-                  ]
+                    ]
+                , Element.text "Note Marked to link (if not selected)"
+                ]
+              , Element.row
+                []
+                [ Element.html <|
+                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    [ Svg.rect
+                      [ Svg.Attributes.fill "rgb(0,0,0)"
+                      , Svg.Attributes.width "20"
+                      , Svg.Attributes.height "20"
+                      , Svg.Attributes.x "10"
+                      , Svg.Attributes.y "10"
+                      ]
+                      []
+                    ]
+                , Element.text "Discussion (if not selected)"
+                ]
+              , Element.row
+                []
+                [ Element.html <|
+                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    [ Svg.circle
+                      [ Svg.Attributes.r "10"
+                      , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+                      , Svg.Attributes.cx "20"
+                      , Svg.Attributes.cy "20"
+                      ]
+                      []
+                    ]
+                , Element.text "Regular Note"
                 ]
               ]
+            , Element.el
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              ]
+              viewGraph
             ]
 
         Discovery.ChooseDiscussionView filterInput ->
@@ -1518,7 +1546,14 @@ tabView deviceViewport content =
                   , Element.Border.rounded 6
                   , Element.centerX
                   ]
-                  [ Element.row [ Element.width Element.fill ]
+                  [ Element.Input.text
+                    []
+                    { onChange = DiscoveryModeUpdateInput
+                    , text = filterInput
+                    , placeholder = Nothing
+                    , label = Element.Input.labelAbove [] <| Element.text "Filter Discussion"
+                    }
+                  , Element.row [ Element.width Element.fill ]
                     [ Element.el (Element.width Element.fill :: headerAttrs) <| Element.text "Discussion"
                     ]
                   , Element.el [ Element.width Element.fill ] <| Element.table
@@ -1536,7 +1571,7 @@ tabView deviceViewport content =
                               \row ->
                                   Element.Input.button
                                     []
-                                    { onPress = Nothing -- row.note
+                                    { onPress = Just <| DiscoveryModeSelectDiscussion row.note
                                     , label =
                                       Element.paragraph
                                         []
@@ -1637,8 +1672,8 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
         False -> Regular note x y
 
 
-viewGraphNote : GraphNote -> Svg.Svg Msg
-viewGraphNote graphNote =
+viewGraphNote : ( Note.Note -> Msg ) ->  GraphNote -> Svg.Svg Msg
+viewGraphNote msg graphNote =
   case graphNote of
     Selected note x y ->
       let
@@ -1652,7 +1687,7 @@ viewGraphNote graphNote =
       in
       Svg.g
         [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
+        , Svg.Events.onClick <| msg note
         ]
         [ Svg.rect
           [ Svg.Attributes.fill "rgb(0,0,0)"
@@ -1683,7 +1718,7 @@ viewGraphNote graphNote =
       in
       Svg.g
         [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
+        , Svg.Events.onClick <| msg note
         ]
         [ Svg.circle
           [ Svg.Attributes.r "5"
@@ -1727,7 +1762,7 @@ viewGraphNote graphNote =
         , Svg.Attributes.x xCenter
         , Svg.Attributes.y yCenter
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
+        , Svg.Events.onClick <| msg note
         ]
         []
 
@@ -1738,7 +1773,7 @@ viewGraphNote graphNote =
         , Svg.Attributes.r "5"
         , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
         , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
+        , Svg.Events.onClick <| msg note
         ]
         []
 
