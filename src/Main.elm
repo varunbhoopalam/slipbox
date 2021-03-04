@@ -159,7 +159,6 @@ type Msg
   | FileLoaded String
   | FileSaved Int
   | FileDownload
-  | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
   | CreateTabToggleCoaching
@@ -301,15 +300,6 @@ update message model =
           , save <| Slipbox.encode slipbox
           )
         Nothing -> ( model, Cmd.none )
-
-    Tick _ ->
-      case getSlipbox model of
-        Just slipbox ->
-          if not <| Slipbox.simulationIsCompleted slipbox then
-            ( setSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
-          else
-            ( model, Cmd.none )
-        _ -> ( model, Cmd.none )
 
     ChangeTab tab ->
       case model of
