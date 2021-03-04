@@ -1,7 +1,6 @@
 port module Main exposing (..)
 
 import Browser
-import Browser.Events
 import Browser.Navigation
 import Color
 import Create
@@ -24,10 +23,7 @@ import Svg.Attributes
 import Element exposing (Element)
 import Json.Decode
 import Time
-import Viewport
-import Browser.Dom
 import Url
-import Task
 import Note
 import Source
 import Item
@@ -146,8 +142,7 @@ toggle state =
 
 -- TAB
 type Tab
-  = BrainTab String Viewport.Viewport
-  | NotesTab String
+  = NotesTab String
   | SourcesTab String
   | WorkspaceTab
   | DiscussionsTab String
@@ -155,8 +150,7 @@ type Tab
   | DiscoveryModeTab Discovery.Discovery
 
 type Tab_
-  = Brain
-  | Workspace
+  = Workspace
   | Notes
   | Sources
   | Discussions
@@ -168,29 +162,18 @@ type Tab_
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ _ _ =
   ( Model Setup ( 0, 0 )
-  , Cmd.batch [ getViewport ]
+  , Cmd.none
   )
-
-getViewport: Cmd Msg
-getViewport = Task.perform GotViewport Browser.Dom.getViewport
 
 -- UPDATE
 type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
-  | ExploreTabUpdateInput String
   | NoteTabUpdateInput String
   | SourceTabUpdateInput String
   | AddItem ( Maybe Item.Item ) Slipbox.AddAction
   | UpdateItem Item.Item Slipbox.UpdateAction
   | DismissItem Item.Item
-  | CompressNote Note.Note
-  | ExpandNote Note.Note
-  | StartMoveView Viewport.MouseEvent
-  | MoveView Viewport.MouseEvent
-  | StopMoveView
-  | GotViewport Browser.Dom.Viewport
-  | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
   | FileRequested
   | FileLoaded String
@@ -225,18 +208,6 @@ update message model =
        Just slipbox ->
          ( setSlipbox (s slipbox) model, Cmd.none )
        _ -> ( model, Cmd.none)
-    updateExploreTabViewportLambda = \toViewport ->
-      case model.state of
-        Session content ->
-          case content.tab of
-            BrainTab input viewport ->
-              ({ model | state = Session
-                { content | tab =
-                  BrainTab input (toViewport viewport)
-                }
-              }, Cmd.none )
-            _ -> ( model, Cmd.none )
-        _ -> ( model , Cmd.none)
 
     createModeLambda createUpdate =
       case getCreate model of
@@ -276,15 +247,6 @@ update message model =
 
     UrlChanged _ -> (model, Cmd.none)
 
-    ExploreTabUpdateInput input ->
-      case model.state of
-        Session content ->
-          case content.tab of
-            BrainTab _ viewport ->
-              ( updateTab ( BrainTab input viewport ) model, Cmd.none )
-            _ -> ( model, Cmd.none)
-        _ -> ( model, Cmd.none)
-
     NoteTabUpdateInput input ->
       case model.state of
         Session content ->
@@ -315,35 +277,14 @@ update message model =
           )
         _ -> ( model, Cmd.none)
 
-    CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
-
-    ExpandNote note -> updateSlipboxWrapper <| Slipbox.expandNote note
-
     UpdateItem item updateAction -> updateSlipboxWrapper <| Slipbox.updateItem item updateAction
 
     DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
 
-    StartMoveView mouseEvent -> updateExploreTabViewportLambda <| Viewport.startMove mouseEvent
-    
-    MoveView mouseEvent ->
-      case getSlipbox model of
-        Just slipbox -> updateExploreTabViewportLambda <| Viewport.move mouseEvent ( Slipbox.getNotes Nothing slipbox )
-        Nothing -> ( model, Cmd.none )
-    
-    StopMoveView -> updateExploreTabViewportLambda Viewport.stopMove
-    
-    GotViewport viewport ->
-      let
-        windowInfo = ( round viewport.viewport.width, round viewport.viewport.height )
-      in
-      ( handleWindowInfo windowInfo model, Cmd.none )
-
-    GotWindowResize windowInfo -> (handleWindowInfo windowInfo model, Cmd.none)
-
     InitializeNewSlipbox ->
       case model.state of
         Setup ->
-          ({ model | state = Session <| newContent model.deviceViewport }, Cmd.none)
+          ({ model | state = Session newContent }, Cmd.none)
         _ -> ( model, Cmd.none )
 
     FileRequested ->
@@ -394,15 +335,6 @@ update message model =
       case model.state of
         Session content ->
           case tab of
-            Brain ->
-              case content.tab of
-                BrainTab _ _ -> ( model, Cmd.none )
-                _ ->
-                  ( { model | state =
-                    Session { content | tab = BrainTab "" Viewport.initialize }
-                    }
-                  , Cmd.none
-                  )
             Notes ->
               case content.tab of
                 NotesTab _ -> ( model, Cmd.none )
@@ -493,26 +425,12 @@ update message model =
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
 
 
-newContent : ( Int, Int ) -> Content
-newContent deviceViewport =
+newContent : Content
+newContent =
   Content
     ( CreateModeTab Create.init )
     Slipbox.new
     Expanded
-
-handleWindowInfo: ( Int, Int ) -> Model -> Model
-handleWindowInfo windowInfo model = 
-  case model.state of
-    Session content ->
-      case content.tab of
-        BrainTab input viewport ->
-          { model | deviceViewport = windowInfo
-          , state = Session { content | tab =
-            BrainTab input <| Viewport.updateSvgContainerDimensions windowInfo viewport
-            }
-          }
-        _ -> { model | deviceViewport = windowInfo }
-    _ -> { model | deviceViewport = windowInfo }
 
 -- PORTS
 
@@ -523,26 +441,11 @@ port fileSaved : (Int -> msg) -> Sub msg
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
   Sub.batch
-    [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
-    , maybeSubscribeOnAnimationFrame model
-    , fileContent FileLoaded
+    [ fileContent FileLoaded
     , fileSaved FileSaved
     ]
-
-maybeSubscribeOnAnimationFrame : Model -> Sub Msg
-maybeSubscribeOnAnimationFrame model =
-  case model.state of
-    Session content ->
-      case content.tab of
-        BrainTab _ _ ->
-          if Slipbox.simulationIsCompleted content.slipbox then
-            Sub.none
-          else
-            Browser.Events.onAnimationFrame Tick
-        _ -> Sub.none
-    _ -> Sub.none
 
 -- VIEW
 versionString = "0.1"
@@ -553,12 +456,12 @@ biggerElement = Element.fillPortion 1618
 view: Model -> Browser.Document Msg
 view model =
   case model.state of
-    Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
+    Setup -> { title = webpageTitle , body = [ setupView ] }
     FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure to read file, please reload the page." ] }
-    Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }
+    Session content -> { title = webpageTitle, body = [ sessionView content ] }
 
-setupView : ( Int, Int ) -> Html.Html Msg
-setupView deviceViewport =
+setupView : Html.Html Msg
+setupView =
   Html.div
     [ Html.Attributes.style "height" "100%"
     , Html.Attributes.style "width" "100%"
@@ -568,7 +471,7 @@ setupView deviceViewport =
       [ Element.inFront setupOverlay ]
       <| Element.el
         [ Element.alpha 0.3, Element.height Element.fill, Element.width Element.fill ]
-        <| sessionNode deviceViewport (newContent deviceViewport)
+        <| sessionNode newContent
     ]
 
 setupOverlay : Element Msg
@@ -646,12 +549,12 @@ layoutWithFontAwesomeStyles node =
       node
     ]
 
-sessionView : ( Int, Int ) -> Content -> Html.Html Msg
-sessionView deviceViewport content =
-  layoutWithFontAwesomeStyles <| sessionNode deviceViewport content
+sessionView : Content -> Html.Html Msg
+sessionView content =
+  layoutWithFontAwesomeStyles <| sessionNode content
 
-sessionNode : ( Int, Int ) -> Content -> Element Msg
-sessionNode deviceViewport content =
+sessionNode : Content -> Element Msg
+sessionNode content =
   Element.row
     [ Element.width Element.fill
     , Element.height Element.fill
@@ -660,24 +563,15 @@ sessionNode deviceViewport content =
     , Element.el
       [ Element.width biggerElement
       , Element.height Element.fill]
-      <| tabView deviceViewport content
+      <| tabView content
     ]
 
 contactUrl = "https://github.com/varunbhoopalam/slipbox"
 
 -- TAB
-tabView: ( Int, Int ) -> Content -> Element Msg
-tabView deviceViewport content =
+tabView: Content -> Element Msg
+tabView content =
   case content.tab of
-    BrainTab input viewport ->
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        ]
-        [ exploreTabToolbar input
-        , graph deviceViewport viewport <| Slipbox.getGraphItems ( searchConverter input ) content.slipbox
-        ]
-
     NotesTab input ->
       Element.column
         [ Element.width Element.fill
@@ -2005,7 +1899,7 @@ leftNav sideNavState selectedTab slipbox =
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Brain ) brainIcon <| sameTab selectedTab Brain
+          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Discovery ) brainIcon <| sameTab selectedTab Discovery
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
@@ -2016,11 +1910,6 @@ leftNav sideNavState selectedTab slipbox =
 sameTab : Tab -> Tab_ -> Bool
 sameTab tab tab_ =
   case tab of
-    BrainTab _ _ ->
-      case tab_ of
-        Brain -> True
-        _ -> False
-
     NotesTab _ ->
       case tab_ of
         Notes -> True
@@ -2583,161 +2472,6 @@ toEditingSourceRepresentation item title author content existingTitles =
     , contentInput item content
     ]
 
-exploreTabToolbar: String -> Element Msg
-exploreTabToolbar input = 
-  Element.el 
-    [ Element.width Element.fill
-    , Element.height <| Element.px barHeight
-    , Element.padding 8
-    ]
-    <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ searchInput input (\s -> ExploreTabUpdateInput s)
-      ]
-
-graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
-graph deviceViewport viewport elements =
-  Element.el
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    <| Element.html
-      <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
-
-graphWrapperAttributes : Viewport.Viewport -> ( List ( Html.Attribute Msg ) )
-graphWrapperAttributes viewport =
-  case Viewport.getState viewport of
-    Viewport.Moving _ -> [ Html.Events.onMouseEnter StopMoveView ]
-    Viewport.Stationary -> []
-
-graph_ : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Svg.Svg Msg
-graph_ deviceViewport viewport (notes, links) =
-  Svg.svg ( graphAttributes deviceViewport viewport )
-    <| List.concat
-      [ List.filterMap (toGraphLink notes) links
-      , List.map toGraphNote notes
-      , maybePanningFrame viewport notes
-      ]
-
-graphAttributes : ( Int, Int ) -> Viewport.Viewport -> (List ( Svg.Attribute Msg ) )
-graphAttributes ( width, _ ) viewport =
-  let
-      mouseEventDecoder =
-        Json.Decode.map2 Viewport.MouseEvent
-        ( Json.Decode.field "offsetX" Json.Decode.int )
-        ( Json.Decode.field "offsetY" Json.Decode.int )
-  in
-  case Viewport.getState viewport of
-    Viewport.Moving _ ->
-      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
-        , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
-        , Svg.Events.onMouseUp StopMoveView
-        , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "100%"
-      ]
-    Viewport.Stationary -> 
-      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
-        , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
-        , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "100%"
-      ]
-
-toGraphNote: Note.Note -> Svg.Svg Msg
-toGraphNote note =
-  case Note.getGraphState note of
-    Note.Expanded width height ->
-      Svg.g [ Svg.Attributes.transform <| Note.getTransform note ]
-        [ Svg.rect
-            [ Svg.Attributes.width <| String.fromInt width
-            , Svg.Attributes.height <| String.fromInt height
-            , Svg.Attributes.fill "none"
-            ]
-            []
-        , Svg.foreignObject
-          [ Svg.Attributes.width <| String.fromInt width
-          , Svg.Attributes.height <| String.fromInt height
-          ]
-          <| [ Element.layoutWith
-            { options = [ Element.noStaticStyleSheet ] }
-            [ Element.width <| Element.px width, Element.height <| Element.px height ]
-            <| Element.column
-              [ Element.width Element.fill
-              , Element.height Element.fill
-              , Element.Border.width 3
-              ]
-              [ Element.Input.button [Element.alignRight]
-                { onPress = Just <| CompressNote note
-                , label = Element.text "X"
-                }
-              , Element.Input.button
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.Font.size 8
-                ]
-                { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
-                , label = Element.paragraph
-                  [ Element.scrollbarY ]
-                  [ Element.text <| Note.getContent note ]
-                }
-              ]
-              ]
-        ]
-    Note.Compressed radius ->
-      Svg.circle
-        [ Svg.Attributes.cx <| String.fromFloat <| Note.getX note
-        , Svg.Attributes.cy <| String.fromFloat <| Note.getY note
-        , Svg.Attributes.r <| String.fromInt radius
-        , Svg.Attributes.fill <| noteColor <| Note.getVariant note
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| ExpandNote note
-        ]
-        []
-
-toGraphLink: (List Note.Note) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
-toGraphLink notes link =
-  let
-    maybeGetNoteByIdentifier = \identifier -> List.head <| List.filter (identifier link) notes
-  in
-  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
-
-svgLine : Note.Note -> Note.Note -> Svg.Svg Msg
-svgLine note1 note2 =
-  Svg.line 
-    [ Svg.Attributes.x1 <| String.fromFloat <| Note.getX note1
-    , Svg.Attributes.y1 <| String.fromFloat <| Note.getY note1
-    , Svg.Attributes.x2 <| String.fromFloat <| Note.getX note2
-    , Svg.Attributes.y2 <| String.fromFloat <| Note.getY note2
-    , Svg.Attributes.stroke "rgb(0,0,0)"
-    , Svg.Attributes.strokeWidth "2"
-    ] 
-    []
-
-maybePanningFrame: Viewport.Viewport -> ( List Note.Note ) -> ( List ( Svg.Svg Msg ) )
-maybePanningFrame viewport notes =
-  let
-      maybeAttr = Viewport.getPanningAttributes viewport notes
-  in
-  case maybeAttr of
-    Just attr ->
-      [ Svg.g
-        [ Svg.Attributes.transform attr.bottomRight]
-        [ Svg.rect
-          [ Svg.Attributes.width attr.outerWidth
-          , Svg.Attributes.height attr.outerHeight
-          , Svg.Attributes.style "border: 2px solid gray;"
-          , Svg.Attributes.fillOpacity "0.1"
-          ]
-          []
-        , Svg.rect
-          [ Svg.Attributes.width attr.innerWidth
-          , Svg.Attributes.height attr.innerHeight
-          , Svg.Attributes.style attr.innerStyle
-          , Svg.Attributes.transform attr.innerTransform
-          ]
-          []
-        ]
-      ]
-    Nothing -> []
-
 noteTabToolbar: String -> Element Msg
 noteTabToolbar input = 
   Element.el 
@@ -2800,13 +2534,6 @@ toOpenSourceButton source =
       { onPress = Just <| AddItem Nothing <| Slipbox.OpenSource source
       , label = toSourceRepresentationFromSource source
       }
-
--- COLORS
-noteColor : Note.Variant -> String
-noteColor variant =
-  case variant of
-    Note.Discussion -> "rgba(250, 190, 88, 1)"
-    Note.Regular -> "rgba(137, 196, 244, 1)"
 
 -- UTILITIES
 
