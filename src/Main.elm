@@ -22,7 +22,6 @@ import Svg.Events
 import Svg.Attributes
 import Element exposing (Element)
 import Json.Decode
-import Time
 import Url
 import Note
 import Source
