@@ -44,40 +44,32 @@ main =
 
 -- MODEL
 
-type alias Model =
-  { state: State 
-  , deviceViewport: ( Int, Int )
-  }
+type Model
+  = Setup
+  | FailureToParse
+  | Session Content
 
 updateTab : Tab -> Model -> Model
 updateTab tab model =
-  case model.state of
-    Session content ->
-      let
-        state = Session { content | tab = tab }
-      in
-      { model | state = state }
+  case model of
+    Session content -> Session { content | tab = tab }
     _ -> model
 
 setSlipbox : Slipbox.Slipbox -> Model -> Model
 setSlipbox slipbox model =
-  case model.state of
-    Session content ->
-      let
-        state = Session { content | slipbox = slipbox }
-      in
-      { model | state = state }
+  case model of
+    Session content -> Session { content | slipbox = slipbox }
     _ -> model
 
 getSlipbox : Model -> ( Maybe Slipbox.Slipbox )
 getSlipbox model =
-  case model.state of
+  case model of
     Session content -> Just content.slipbox
     _ -> Nothing
 
 getCreate : Model -> Maybe Create.Create
 getCreate model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         CreateModeTab create -> Just create
@@ -86,20 +78,17 @@ getCreate model =
 
 setCreate : Create.Create -> Model -> Model
 setCreate create model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         CreateModeTab _ ->
-          let
-            state = Session { content | tab = CreateModeTab create }
-          in
-          { model | state = state }
+          Session { content | tab = CreateModeTab create }
         _ -> model
     _ -> model
 
 getDiscovery : Model -> Maybe Discovery.Discovery
 getDiscovery model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         DiscoveryModeTab create -> Just create
@@ -108,22 +97,13 @@ getDiscovery model =
 
 setDiscovery : Discovery.Discovery -> Model -> Model
 setDiscovery create model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         DiscoveryModeTab _ ->
-          let
-            state = Session { content | tab = DiscoveryModeTab create }
-          in
-          { model | state = state }
+          Session { content | tab = DiscoveryModeTab create }
         _ -> model
     _ -> model
-
-
-type State 
-  = Setup 
-  | FailureToParse
-  | Session Content
 
 -- CONTENT
 type alias Content = 
@@ -161,7 +141,7 @@ type Tab_
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ _ _ =
-  ( Model Setup ( 0, 0 )
+  ( Setup
   , Cmd.none
   )
 
@@ -248,7 +228,7 @@ update message model =
     UrlChanged _ -> (model, Cmd.none)
 
     NoteTabUpdateInput input ->
-      case model.state of
+      case model of
         Session content ->
           case content.tab of
             NotesTab _ ->
@@ -257,7 +237,7 @@ update message model =
         _ -> ( model, Cmd.none)
     
     SourceTabUpdateInput input ->
-      case model.state of
+      case model of
         Session content ->
           case content.tab of
             SourcesTab _ ->
@@ -282,28 +262,28 @@ update message model =
     DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
 
     InitializeNewSlipbox ->
-      case model.state of
+      case model of
         Setup ->
-          ({ model | state = Session newContent }, Cmd.none)
+          ( Session newContent, Cmd.none)
         _ -> ( model, Cmd.none )
 
     FileRequested ->
-      case model.state of
+      case model of
         Setup -> ( model, open () )
         _ -> ( model, Cmd.none )
 
     FileLoaded fileContentAsString ->
-      case model.state of
+      case model of
         Setup ->
           let
             maybeSlipbox = Json.Decode.decodeString Slipbox.decode fileContentAsString
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( CreateModeTab Create.init ) slipbox Expanded }
+              ( Session <| Content ( CreateModeTab Create.init ) slipbox Expanded
               , Cmd.none
               )
-            Err _ -> ( { model | state = FailureToParse }, Cmd.none )
+            Err _ -> ( FailureToParse, Cmd.none )
         _ -> ( model, Cmd.none )
 
     FileSaved _ ->
@@ -332,25 +312,21 @@ update message model =
         _ -> ( model, Cmd.none )
 
     ChangeTab tab ->
-      case model.state of
+      case model of
         Session content ->
           case tab of
             Notes ->
               case content.tab of
                 NotesTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = NotesTab "" }
-                    }
+                  ( Session { content | tab = NotesTab "" }
                   , Cmd.none
                   )
             Sources ->
               case content.tab of
                 SourcesTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = SourcesTab "" }
-                    }
+                  ( Session { content | tab = SourcesTab "" }
                   , Cmd.none
                   )
 
@@ -361,9 +337,7 @@ update message model =
               case content.tab of
                 DiscussionsTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = DiscussionsTab "" }
-                    }
+                  ( Session { content | tab = DiscussionsTab "" }
                   , Cmd.none
                   )
 
@@ -371,9 +345,7 @@ update message model =
               case content.tab of
                 CreateModeTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = CreateModeTab Create.init }
-                    }
+                  ( Session { content | tab = CreateModeTab Create.init }
                   , Cmd.none
                   )
 
@@ -381,18 +353,16 @@ update message model =
               case content.tab of
                 DiscoveryModeTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                  Session { content | tab = DiscoveryModeTab Discovery.init }
-                  }
+                  ( Session { content | tab = DiscoveryModeTab Discovery.init }
                   , Cmd.none
                   )
 
         _ -> ( model, Cmd.none )
 
     ToggleSideNav ->
-      case model.state of
+      case model of
         Session content ->
-          ( { model | state = ( Session { content | sideNavState = toggle content.sideNavState } ) }
+          ( Session { content | sideNavState = toggle content.sideNavState }
           , Cmd.none
           )
 
@@ -455,7 +425,7 @@ biggerElement = Element.fillPortion 1618
 
 view: Model -> Browser.Document Msg
 view model =
-  case model.state of
+  case model of
     Setup -> { title = webpageTitle , body = [ setupView ] }
     FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure to read file, please reload the page." ] }
     Session content -> { title = webpageTitle, body = [ sessionView content ] }
