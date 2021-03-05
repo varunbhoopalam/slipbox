@@ -21518,6 +21518,23 @@ var $author$project$Main$tabView = function (content) {
 										A2($author$project$Main$toCreateTabGraphNote, _List_Nil, selectedNote),
 										discussionGraph.hh))
 								]))));
+				var viewDiscussionNode = (($author$project$Note$getVariant(selectedNote) === 1) && (!A2($author$project$Note$is, discussion, selectedNote))) ? A2(
+					$mdgriffith$elm_ui$Element$Input$button,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$centerX,
+							$mdgriffith$elm_ui$Element$padding(8),
+							$mdgriffith$elm_ui$Element$Border$width(1)
+						]),
+					{
+						a: A2(
+							$mdgriffith$elm_ui$Element$el,
+							_List_fromArray(
+								[$mdgriffith$elm_ui$Element$centerX]),
+							$mdgriffith$elm_ui$Element$text('Go to Discussion')),
+						e: $elm$core$Maybe$Just(
+							$author$project$Main$DiscoveryModeSelectDiscussion(selectedNote))
+					}) : $mdgriffith$elm_ui$Element$none;
 				return A2(
 					$mdgriffith$elm_ui$Element$row,
 					_List_fromArray(
@@ -21610,7 +21627,8 @@ var $author$project$Main$tabView = function (content) {
 												[
 													$mdgriffith$elm_ui$Element$text(
 													$author$project$Note$getContent(selectedNote))
-												]))
+												])),
+											viewDiscussionNode
 										])),
 									A2(
 									$mdgriffith$elm_ui$Element$row,

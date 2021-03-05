@@ -1219,6 +1219,18 @@ tabView content =
                   , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote n ) <|
                     List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
                   ]
+            viewDiscussionNode =
+              if Note.getVariant selectedNote == Note.Discussion && ( not <| Note.is discussion selectedNote ) then
+                Element.Input.button
+                  [ Element.centerX
+                  , Element.padding 8
+                  , Element.Border.width 1
+                  ]
+                  { onPress = Just <| DiscoveryModeSelectDiscussion selectedNote
+                  , label = Element.el [ Element.centerX ] <| Element.text "Go to Discussion"
+                  }
+              else
+                Element.none
           in
           Element.row
             [ Element.inFront <|
@@ -1258,6 +1270,7 @@ tabView content =
                 ]
                 [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
                 , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                , viewDiscussionNode
                 ]
               , Element.row
                 []

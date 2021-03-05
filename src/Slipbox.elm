@@ -514,7 +514,6 @@ getDiscussionTreeWithCollapsedDiscussions : Note.Note -> Slipbox -> ( List Note.
 getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
   let
     content = getContent slipbox
-
     recurs rootNote links =
       if isADifferentDiscussion rootNote discussion then
         []
@@ -569,13 +568,6 @@ getLinkedNotes_ note notes links =
       relevantLinks = List.filter ( isAssociated note ) links
   in
   List.filterMap ( convertLinktoLinkNoteTuple note notes ) relevantLinks
-
--- Given algorithm(rootNote, rootDiscusion, notes, links)
--- For each linked note to the root
--- If (noteIsEntryPointForNewDiscussion)
--- Return [(discussionForTheEntryPoint, newLinkBetweenRootNoteAndDiscussion)]
--- Else
--- Return (linkedNote, link) ++ algorithm(linkedNote, rootDiscussion, notes, links (without found link))
 
 {-| This will get all linked notes to a question and all linked notes to those linked notes
 except for if the note is a question. Confusing I know but perhaps this is a confusing feature.
