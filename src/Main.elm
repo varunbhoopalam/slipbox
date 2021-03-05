@@ -873,17 +873,7 @@ tabView content =
                 , Element.padding 8
                 , Element.spacingXY 8 8
                 ]
-                [ Element.row
-                  []
-                  [ Element.html <|
-                    svgLegend
-                      [ Svg.g []
-                        [ svgRect "10" "10"
-                        , svgRectTransform "10" "10" "rotate(45 20 20)"
-                        ]
-                      ]
-                  , Element.text "Currently Selected Note"
-                  ]
+                [ selectedNoteLegend
                 , Element.row
                   []
                   [ Element.html <|
@@ -917,11 +907,7 @@ tabView content =
                       ]
                   , Element.text "Note Marked to link (if not selected)"
                   ]
-                , Element.row
-                  []
-                  [ Element.html <| svgLegend [ svgRect "10" "10" ]
-                  , Element.text "Discussion (if not selected)"
-                  ]
+                , discussionLegend
                 , Element.row
                   []
                   [ Element.html <|
@@ -1153,22 +1139,8 @@ tabView content =
                 , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
                 , viewDiscussionNode
                 ]
-              , Element.row
-                []
-                [ Element.html <|
-                  svgLegend
-                    [ Svg.g []
-                      [ svgRect "10" "10"
-                      , svgRectTransform "10" "10" "rotate(45 20 20)"
-                      ]
-                    ]
-                , Element.text "Currently Selected Note"
-                ]
-              , Element.row
-                []
-                [ Element.html <| svgLegend [ svgRect "10" "10" ]
-                , Element.text "Discussion (if not selected)"
-                ]
+              , selectedNoteLegend
+              , discussionLegend
               , Element.row
                 []
                 [ Element.html <|
@@ -2587,3 +2559,23 @@ svgRectTransform x y transform =
     , Svg.Attributes.transform transform
     ]
     []
+
+discussionLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgRect "10" "10" ]
+    , Element.text "Discussion (if not selected)"
+    ]
+
+selectedNoteLegend =
+  Element.row
+    []
+    [ Element.html <|
+      svgLegend
+        [ Svg.g []
+          [ svgRect "10" "10"
+          , svgRectTransform "10" "10" "rotate(45 20 20)"
+          ]
+        ]
+    , Element.text "Currently Selected Note"
+    ]
