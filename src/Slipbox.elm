@@ -518,14 +518,14 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
       List.map
         ( \( linkedNote, link ) ->
           case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
-            Just differentDiscussionList ->
-              List.map
-                ( \differentDiscussion ->
-                  ( differentDiscussion
-                  , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
-                  )
-                )
-                differentDiscussionList
+            Just differentDiscussionList -> ( linkedNote, link ) :: differentDiscussionList
+              --List.map
+                --( \differentDiscussion ->
+                --  ( differentDiscussion
+                --  , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
+                --  )
+                --)
+                --differentDiscussionList
             Nothing ->
               ( (linkedNote,link) ::
                 recurs
@@ -541,12 +541,12 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
   , List.map Tuple.second allTuples
   )
 
-noteIsEntryPointForDifferentDiscussion : Note.Note -> Note.Note -> Slipbox -> Maybe ( List Note.Note )
+noteIsEntryPointForDifferentDiscussion : Note.Note -> Note.Note -> Slipbox -> Maybe ( List ( Note.Note, Link.Link ) )
 noteIsEntryPointForDifferentDiscussion note discussion slipbox =
   let
     noteLinkTuples = getLinkedNotes note slipbox
     differentLinkedDiscussions =
-      List.map Tuple.first <|
+      --List.map Tuple.first <|
         List.filter
           ( \( linkedNote, _ ) ->
             Note.getVariant linkedNote == Note.Discussion &&

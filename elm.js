@@ -5536,7 +5536,7 @@ var $author$project$Slipbox$addItem = F3(
 				return _Utils_update(
 					content,
 					{
-						m: idGenerator,
+						o: idGenerator,
 						c: A3(
 							$elm$core$List$foldr,
 							A2($author$project$Slipbox$buildItemList, itemToMatch, newItem),
@@ -5547,7 +5547,7 @@ var $author$project$Slipbox$addItem = F3(
 				return _Utils_update(
 					content,
 					{
-						m: idGenerator,
+						o: idGenerator,
 						c: A2($elm$core$List$cons, newItem, content.c)
 					});
 			}
@@ -5564,7 +5564,7 @@ var $author$project$Slipbox$addItem = F3(
 					return itemExistsLambda(existingItem);
 				} else {
 					return itemDoesNotExistLambda(
-						A2($author$project$Item$openNote, content.m, note));
+						A2($author$project$Item$openNote, content.o, note));
 				}
 			case 1:
 				var source = addAction.a;
@@ -5577,17 +5577,17 @@ var $author$project$Slipbox$addItem = F3(
 					return itemExistsLambda(existingItem);
 				} else {
 					return itemDoesNotExistLambda(
-						A2($author$project$Item$openSource, content.m, source));
+						A2($author$project$Item$openSource, content.o, source));
 				}
 			case 2:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newNote(content.m));
+					$author$project$Item$newNote(content.o));
 			case 3:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newSource(content.m));
+					$author$project$Item$newSource(content.o));
 			default:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newQuestion(content.m));
+					$author$project$Item$newQuestion(content.o));
 		}
 	});
 var $author$project$Discovery$ChooseDiscussion = function (a) {
@@ -5694,7 +5694,7 @@ var $author$project$Create$createLink = function (create) {
 };
 var $author$project$Slipbox$Content = F6(
 	function (notes, links, items, sources, idGenerator, unsavedChanges) {
-		return {m: idGenerator, c: items, gX: links, p: notes, X: sources, C: unsavedChanges};
+		return {o: idGenerator, c: items, gX: links, p: notes, X: sources, C: unsavedChanges};
 	});
 var $author$project$IdGenerator$decode = A2($elm$json$Json$Decode$map, $elm$core$Basics$identity, $elm$json$Json$Decode$int);
 var $elm$json$Json$Decode$field = _Json_decodeField;
@@ -5905,7 +5905,7 @@ var $author$project$Slipbox$encode = function (slipbox) {
 					A2($elm$json$Json$Encode$list, $author$project$Source$encode, info.X)),
 					_Utils_Tuple2(
 					'idGenerator',
-					$author$project$IdGenerator$encode(info.m))
+					$author$project$IdGenerator$encode(info.o))
 				])));
 };
 var $author$project$Main$getCreate = function (model) {
@@ -6025,7 +6025,7 @@ var $author$project$Slipbox$addDiscussion = F2(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Note$create,
-			content.m,
+			content.o,
 			{bt: discussion, fu: source, bm: 1});
 		var note = _v0.a;
 		var idGenerator = _v0.b;
@@ -6033,7 +6033,7 @@ var $author$project$Slipbox$addDiscussion = F2(
 			_Utils_update(
 				content,
 				{
-					m: idGenerator,
+					o: idGenerator,
 					p: A2($elm$core$List$cons, note, content.p),
 					C: true
 				}),
@@ -6055,13 +6055,13 @@ var $author$project$Link$create = F3(
 var $author$project$Slipbox$addLink = F3(
 	function (note1, note2, slipbox) {
 		var content = $author$project$Slipbox$getContent(slipbox);
-		var _v0 = A3($author$project$Link$create, content.m, note1, note2);
+		var _v0 = A3($author$project$Link$create, content.o, note1, note2);
 		var link = _v0.a;
 		var idGenerator = _v0.b;
 		var links = A2($elm$core$List$cons, link, content.gX);
 		return _Utils_update(
 			content,
-			{m: idGenerator, gX: links, C: true});
+			{o: idGenerator, gX: links, C: true});
 	});
 var $author$project$Slipbox$addNote = F3(
 	function (noteContent, sourceTitle, slipbox) {
@@ -6069,7 +6069,7 @@ var $author$project$Slipbox$addNote = F3(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Note$create,
-			content.m,
+			content.o,
 			{bt: noteContent, fu: source, bm: 0});
 		var note = _v0.a;
 		var idGenerator = _v0.b;
@@ -6077,7 +6077,7 @@ var $author$project$Slipbox$addNote = F3(
 			_Utils_update(
 				content,
 				{
-					m: idGenerator,
+					o: idGenerator,
 					p: A2($elm$core$List$cons, note, content.p),
 					C: true
 				}),
@@ -6096,14 +6096,14 @@ var $author$project$Slipbox$addSource = F4(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Source$createSource,
-			content.m,
+			content.o,
 			{cA: author, bt: sourceContent, cn: title});
 		var source = _v0.a;
 		var generator = _v0.b;
 		return _Utils_update(
 			content,
 			{
-				m: generator,
+				o: generator,
 				X: A2($elm$core$List$cons, source, content.X),
 				C: true
 			});
@@ -8962,14 +8962,14 @@ var $author$project$Slipbox$updateItem = F3(
 						var source = $elm$core$String$isEmpty(noteContent.fu) ? 'n/a' : noteContent.fu;
 						var _v13 = A2(
 							$author$project$Note$create,
-							content.m,
+							content.o,
 							{bt: noteContent.bt, fu: source, bm: 0});
 						var note = _v13.a;
 						var idGenerator = _v13.b;
 						return _Utils_update(
 							content,
 							{
-								m: idGenerator,
+								o: idGenerator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
@@ -8983,13 +8983,13 @@ var $author$project$Slipbox$updateItem = F3(
 						var itemId = item.a;
 						var tray = item.b;
 						var sourceContent = item.c;
-						var _v14 = A2($author$project$Source$createSource, content.m, sourceContent);
+						var _v14 = A2($author$project$Source$createSource, content.o, sourceContent);
 						var source = _v14.a;
 						var generator = _v14.b;
 						return _Utils_update(
 							content,
 							{
-								m: generator,
+								o: generator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
@@ -9048,14 +9048,14 @@ var $author$project$Slipbox$updateItem = F3(
 						var maybeNoteToBeLinked = item.e;
 						if (!maybeNoteToBeLinked.$) {
 							var noteToBeLinked = maybeNoteToBeLinked.a;
-							var _v16 = A3($author$project$Link$create, content.m, note, noteToBeLinked);
+							var _v16 = A3($author$project$Link$create, content.o, note, noteToBeLinked);
 							var link = _v16.a;
 							var idGenerator = _v16.b;
 							var links = A2($elm$core$List$cons, link, content.gX);
 							return _Utils_update(
 								content,
 								{
-									m: idGenerator,
+									o: idGenerator,
 									c: A2(
 										$elm$core$List$map,
 										function (i) {
@@ -9105,14 +9105,14 @@ var $author$project$Slipbox$updateItem = F3(
 						var question = item.c;
 						var _v17 = A2(
 							$author$project$Note$create,
-							content.m,
+							content.o,
 							{bt: question, fu: 'n/a', bm: 1});
 						var note = _v17.a;
 						var idGenerator = _v17.b;
 						return _Utils_update(
 							content,
 							{
-								m: idGenerator,
+								o: idGenerator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
@@ -9231,15 +9231,12 @@ var $author$project$Slipbox$noteIsEntryPointForDifferentDiscussion = F3(
 	function (note, discussion, slipbox) {
 		var noteLinkTuples = A2($author$project$Slipbox$getLinkedNotes, note, slipbox);
 		var differentLinkedDiscussions = A2(
-			$elm$core$List$map,
-			$elm$core$Tuple$first,
-			A2(
-				$elm$core$List$filter,
-				function (_v0) {
-					var linkedNote = _v0.a;
-					return ($author$project$Note$getVariant(linkedNote) === 1) && (!A2($author$project$Note$is, linkedNote, discussion));
-				},
-				noteLinkTuples));
+			$elm$core$List$filter,
+			function (_v0) {
+				var linkedNote = _v0.a;
+				return ($author$project$Note$getVariant(linkedNote) === 1) && (!A2($author$project$Note$is, linkedNote, discussion));
+			},
+			noteLinkTuples);
 		return $elm$core$List$isEmpty(differentLinkedDiscussions) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(differentLinkedDiscussions);
 	});
 var $author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions = F2(
@@ -9257,12 +9254,8 @@ var $author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions = F2(
 							if (!_v1.$) {
 								var differentDiscussionList = _v1.a;
 								return A2(
-									$elm$core$List$map,
-									function (differentDiscussion) {
-										return _Utils_Tuple2(
-											differentDiscussion,
-											A3($author$project$Link$create, content.m, rootNote, differentDiscussion).a);
-									},
+									$elm$core$List$cons,
+									_Utils_Tuple2(linkedNote, link),
 									differentDiscussionList);
 							} else {
 								return A2(
