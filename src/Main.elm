@@ -667,25 +667,11 @@ tabView content =
                 , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
                 , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
                 ]
-            continueNode =
+            continueLabel =
               if canContinue then
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Continue without linking"
-                  }
+                  ( Element.text "Continue without linking" )
               else
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Next"
-                  }
+                  ( Element.text "Next" )
             discussions = Slipbox.getDiscussions Nothing content.slipbox
             discussionTabularData =
               let
@@ -783,7 +769,9 @@ tabView content =
               ]
               [ Element.text note
               ]
-            , continueNode
+            , button
+              ( Just CreateTabNextStep )
+              continueLabel
             , tableNode
             ]
 
@@ -1032,14 +1020,7 @@ tabView content =
               , spellcheck = True
               }
             , continueNode
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNextStep
-              , label = Element.text "This isn't the start of a new discussion"
-              }
+            , button ( Just CreateTabNextStep ) ( Element.text "This isn't the start of a new discussion" )
             ]
 
         Create.ChooseSourceCategoryView note input  ->
@@ -1049,15 +1030,10 @@ tabView content =
             useExistingSourceNode =
               case maybeSourceSelected of
                 Just source ->
-                  Element.Input.button
-                    [ Element.centerX
-                    , Element.padding 8
-                    , Element.Border.width 1
-                    , Element.moveRight 16
-                    ]
-                    { onPress = Just <| CreateTabContinueWithSelectedSource source
-                    , label = Element.text "Use Selected Source"
-                    }
+                  Element.el [ Element.moveRight 16 ] <|
+                  button
+                    ( Just <| CreateTabContinueWithSelectedSource source )
+                    ( Element.text "Use Selected Source" )
                 Nothing ->
                   Element.none
           in
@@ -1084,22 +1060,8 @@ tabView content =
               , Element.onRight useExistingSourceNode
               ] <|
               createTabSourceInput input <| List.map Source.getTitle existingSources
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNoSource
-              , label = Element.text "No Source"
-              }
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNewSource
-              , label = Element.text "New Source"
-              }
+            , button ( Just CreateTabNoSource ) ( Element.text "No Source" )
+            , button ( Just CreateTabNewSource ) ( Element.text "New Source" )
             ]
 
         Create.CreateNewSourceView note title author sourceContent ->
@@ -1108,14 +1070,7 @@ tabView content =
             ( titleLabel, submitNode ) =
               if Source.titleIsValid existingTitles title then
                 ( Element.text "Title (required)"
-                , Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabSubmitNewSource
-                  , label = Element.text "Submit New Source"
-                  }
+                , button ( Just CreateTabSubmitNewSource ) ( Element.text "Submit New Source" )
                 )
               else
                 if String.isEmpty title then
@@ -1193,14 +1148,7 @@ tabView content =
               ]
               [ Element.text note
               ]
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabCreateAnotherNote
-              , label = Element.text "Create Another Note?"
-              }
+            , button ( Just CreateTabCreateAnotherNote ) ( Element.text "Create Another Note?" )
             ]
 
     DiscoveryModeTab discovery ->
@@ -1221,14 +1169,9 @@ tabView content =
                   ]
             viewDiscussionNode =
               if Note.getVariant selectedNote == Note.Discussion && ( not <| Note.is discussion selectedNote ) then
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just <| DiscoveryModeSelectDiscussion selectedNote
-                  , label = Element.el [ Element.centerX ] <| Element.text "Go to Discussion"
-                  }
+                button
+                  ( Just <| DiscoveryModeSelectDiscussion selectedNote )
+                  ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
               else
                 Element.none
           in
@@ -2208,7 +2151,7 @@ onHoverButtonTray item =
 buttonTray : ( Maybe Item.Item ) -> Element Msg
 buttonTray maybeItem =
   let
-    button addAction text=
+    button_ addAction text=
       smallOldLavenderButton
           { onPress = Just <| AddItem maybeItem addAction
           , label = Element.el
@@ -2226,9 +2169,9 @@ buttonTray maybeItem =
     , Element.spacingXY 8 8
     , Element.height Element.fill
     ]
-    [ button Slipbox.NewNote "Create Note"
-    , button Slipbox.NewSource "Create Source"
-    , button Slipbox.NewDiscussion "Create Discussion"
+    [ button_ Slipbox.NewNote "Create Note"
+    , button_ Slipbox.NewSource "Create Source"
+    , button_ Slipbox.NewDiscussion "Create Discussion"
     ]
 
 headerText : String -> Element Msg
@@ -2716,3 +2659,14 @@ smallOldLavenderButton buttonFunction =
     , Element.Font.heavy
     ]
     buttonFunction
+
+button : Maybe Msg -> Element Msg -> Element.Element Msg
+button msg label =
+  Element.Input.button
+    [ Element.centerX
+    , Element.padding 8
+    , Element.Border.width 1
+    ]
+    { onPress =  msg
+    , label = label
+    }
