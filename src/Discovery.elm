@@ -44,7 +44,7 @@ viewDiscussion discussion slipbox _ =
     discussion
     discussion
     ( Graph.simulatePositions
-      <| Slipbox.getAllNotesAndLinksInQuestionTree discussion slipbox )
+      <| Slipbox.getDiscussionTreeWithCollapsedDiscussions discussion slipbox )
 
 selectNote : Note.Note -> Discovery -> Discovery
 selectNote note discovery =

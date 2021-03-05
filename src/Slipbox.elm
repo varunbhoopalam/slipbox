@@ -18,6 +18,7 @@ module Slipbox exposing
   , unsavedChanges
   , saveChanges
   , getAllNotesAndLinksInQuestionTree
+  , getDiscussionTreeWithCollapsedDiscussions
   , addNote
   , addDiscussion
   , addSource
@@ -517,17 +518,18 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
       List.map
         ( \( linkedNote, link ) ->
           case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
-            Just differentDiscussion ->
-              [
-                ( differentDiscussion
-                , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
+            Just differentDiscussionList ->
+              List.map
+                ( \differentDiscussion ->
+                  ( differentDiscussion
+                  , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
+                  )
                 )
-              ]
+                differentDiscussionList
             Nothing ->
               ( (linkedNote,link) ::
                 recurs
                   linkedNote
-                  content.notes
                   ( List.filter (\l -> not <| Link.is link l ) links )
               )
         )
@@ -535,10 +537,27 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
         |> flatten2D
     allTuples = recurs discussion content.links
   in
-  ( List.map Tuple.first allTuples
+  ( discussion :: List.map Tuple.first allTuples
   , List.map Tuple.second allTuples
   )
 
+noteIsEntryPointForDifferentDiscussion : Note.Note -> Note.Note -> Slipbox -> Maybe ( List Note.Note )
+noteIsEntryPointForDifferentDiscussion note discussion slipbox =
+  let
+    noteLinkTuples = getLinkedNotes note slipbox
+    differentLinkedDiscussions =
+      List.map Tuple.first <|
+        List.filter
+          ( \( linkedNote, _ ) ->
+            Note.getVariant linkedNote == Note.Discussion &&
+            ( not <| Note.is linkedNote discussion )
+          )
+          noteLinkTuples
+  in
+  if List.isEmpty differentLinkedDiscussions then
+    Nothing
+  else
+    Just differentLinkedDiscussions
 
 getLinkedNotes_ : Note.Note -> ( List Note.Note ) -> ( List Link.Link ) -> ( List ( Note.Note, Link.Link ) )
 getLinkedNotes_ note notes links =

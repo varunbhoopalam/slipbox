@@ -5536,7 +5536,7 @@ var $author$project$Slipbox$addItem = F3(
 				return _Utils_update(
 					content,
 					{
-						o: idGenerator,
+						m: idGenerator,
 						c: A3(
 							$elm$core$List$foldr,
 							A2($author$project$Slipbox$buildItemList, itemToMatch, newItem),
@@ -5547,7 +5547,7 @@ var $author$project$Slipbox$addItem = F3(
 				return _Utils_update(
 					content,
 					{
-						o: idGenerator,
+						m: idGenerator,
 						c: A2($elm$core$List$cons, newItem, content.c)
 					});
 			}
@@ -5564,7 +5564,7 @@ var $author$project$Slipbox$addItem = F3(
 					return itemExistsLambda(existingItem);
 				} else {
 					return itemDoesNotExistLambda(
-						A2($author$project$Item$openNote, content.o, note));
+						A2($author$project$Item$openNote, content.m, note));
 				}
 			case 1:
 				var source = addAction.a;
@@ -5577,17 +5577,17 @@ var $author$project$Slipbox$addItem = F3(
 					return itemExistsLambda(existingItem);
 				} else {
 					return itemDoesNotExistLambda(
-						A2($author$project$Item$openSource, content.o, source));
+						A2($author$project$Item$openSource, content.m, source));
 				}
 			case 2:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newNote(content.o));
+					$author$project$Item$newNote(content.m));
 			case 3:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newSource(content.o));
+					$author$project$Item$newSource(content.m));
 			default:
 				return itemDoesNotExistLambda(
-					$author$project$Item$newQuestion(content.o));
+					$author$project$Item$newQuestion(content.m));
 		}
 	});
 var $author$project$Discovery$ChooseDiscussion = function (a) {
@@ -5694,7 +5694,7 @@ var $author$project$Create$createLink = function (create) {
 };
 var $author$project$Slipbox$Content = F6(
 	function (notes, links, items, sources, idGenerator, unsavedChanges) {
-		return {o: idGenerator, c: items, gX: links, q: notes, X: sources, C: unsavedChanges};
+		return {m: idGenerator, c: items, gX: links, p: notes, X: sources, C: unsavedChanges};
 	});
 var $author$project$IdGenerator$decode = A2($elm$json$Json$Decode$map, $elm$core$Basics$identity, $elm$json$Json$Decode$int);
 var $elm$json$Json$Decode$field = _Json_decodeField;
@@ -5896,7 +5896,7 @@ var $author$project$Slipbox$encode = function (slipbox) {
 				[
 					_Utils_Tuple2(
 					'notes',
-					A2($elm$json$Json$Encode$list, $author$project$Note$encode, info.q)),
+					A2($elm$json$Json$Encode$list, $author$project$Note$encode, info.p)),
 					_Utils_Tuple2(
 					'links',
 					A2($elm$json$Json$Encode$list, $author$project$Link$encode, info.gX)),
@@ -5905,7 +5905,7 @@ var $author$project$Slipbox$encode = function (slipbox) {
 					A2($elm$json$Json$Encode$list, $author$project$Source$encode, info.X)),
 					_Utils_Tuple2(
 					'idGenerator',
-					$author$project$IdGenerator$encode(info.o))
+					$author$project$IdGenerator$encode(info.m))
 				])));
 };
 var $author$project$Main$getCreate = function (model) {
@@ -6025,7 +6025,7 @@ var $author$project$Slipbox$addDiscussion = F2(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Note$create,
-			content.o,
+			content.m,
 			{bt: discussion, fu: source, bm: 1});
 		var note = _v0.a;
 		var idGenerator = _v0.b;
@@ -6033,8 +6033,8 @@ var $author$project$Slipbox$addDiscussion = F2(
 			_Utils_update(
 				content,
 				{
-					o: idGenerator,
-					q: A2($elm$core$List$cons, note, content.q),
+					m: idGenerator,
+					p: A2($elm$core$List$cons, note, content.p),
 					C: true
 				}),
 			note);
@@ -6055,13 +6055,13 @@ var $author$project$Link$create = F3(
 var $author$project$Slipbox$addLink = F3(
 	function (note1, note2, slipbox) {
 		var content = $author$project$Slipbox$getContent(slipbox);
-		var _v0 = A3($author$project$Link$create, content.o, note1, note2);
+		var _v0 = A3($author$project$Link$create, content.m, note1, note2);
 		var link = _v0.a;
 		var idGenerator = _v0.b;
 		var links = A2($elm$core$List$cons, link, content.gX);
 		return _Utils_update(
 			content,
-			{o: idGenerator, gX: links, C: true});
+			{m: idGenerator, gX: links, C: true});
 	});
 var $author$project$Slipbox$addNote = F3(
 	function (noteContent, sourceTitle, slipbox) {
@@ -6069,7 +6069,7 @@ var $author$project$Slipbox$addNote = F3(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Note$create,
-			content.o,
+			content.m,
 			{bt: noteContent, fu: source, bm: 0});
 		var note = _v0.a;
 		var idGenerator = _v0.b;
@@ -6077,8 +6077,8 @@ var $author$project$Slipbox$addNote = F3(
 			_Utils_update(
 				content,
 				{
-					o: idGenerator,
-					q: A2($elm$core$List$cons, note, content.q),
+					m: idGenerator,
+					p: A2($elm$core$List$cons, note, content.p),
 					C: true
 				}),
 			note);
@@ -6096,14 +6096,14 @@ var $author$project$Slipbox$addSource = F4(
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var _v0 = A2(
 			$author$project$Source$createSource,
-			content.o,
+			content.m,
 			{cA: author, bt: sourceContent, cn: title});
 		var source = _v0.a;
 		var generator = _v0.b;
 		return _Utils_update(
 			content,
 			{
-				o: generator,
+				m: generator,
 				X: A2($elm$core$List$cons, source, content.X),
 				C: true
 			});
@@ -6589,7 +6589,7 @@ var $author$project$Slipbox$getAllNotesInQuestionTreeRecursion = F3(
 var $author$project$Slipbox$getAllNotesAndLinksInQuestionTree = F2(
 	function (question, slipbox) {
 		var content = $author$project$Slipbox$getContent(slipbox);
-		var noteLinkTuples = A3($author$project$Slipbox$getAllNotesInQuestionTreeRecursion, question, content.q, content.gX);
+		var noteLinkTuples = A3($author$project$Slipbox$getAllNotesInQuestionTreeRecursion, question, content.p, content.gX);
 		return _Utils_Tuple2(
 			A2(
 				$elm$core$List$cons,
@@ -8925,7 +8925,7 @@ var $author$project$Slipbox$updateItem = F3(
 						var notes = A2(
 							$elm$core$List$filter,
 							A2($author$project$Slipbox$isNotLambda, $author$project$Note$is, noteToDelete),
-							content.q);
+							content.p);
 						var links = A2(
 							$elm$core$List$filter,
 							function (l) {
@@ -8940,7 +8940,7 @@ var $author$project$Slipbox$updateItem = F3(
 									$author$project$Slipbox$deleteNoteItemStateChange(noteToDelete),
 									A2($author$project$Slipbox$removeItemFromList, item, content.c)),
 								gX: links,
-								q: notes,
+								p: notes,
 								C: true
 							});
 					case 12:
@@ -8962,34 +8962,34 @@ var $author$project$Slipbox$updateItem = F3(
 						var source = $elm$core$String$isEmpty(noteContent.fu) ? 'n/a' : noteContent.fu;
 						var _v13 = A2(
 							$author$project$Note$create,
-							content.o,
+							content.m,
 							{bt: noteContent.bt, fu: source, bm: 0});
 						var note = _v13.a;
 						var idGenerator = _v13.b;
 						return _Utils_update(
 							content,
 							{
-								o: idGenerator,
+								m: idGenerator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
 										return A2($author$project$Item$is, item, i) ? A3($author$project$Item$Note, itemId, tray, note) : i;
 									},
 									content.c),
-								q: A2($elm$core$List$cons, note, content.q),
+								p: A2($elm$core$List$cons, note, content.p),
 								C: true
 							});
 					case 3:
 						var itemId = item.a;
 						var tray = item.b;
 						var sourceContent = item.c;
-						var _v14 = A2($author$project$Source$createSource, content.o, sourceContent);
+						var _v14 = A2($author$project$Source$createSource, content.m, sourceContent);
 						var source = _v14.a;
 						var generator = _v14.b;
 						return _Utils_update(
 							content,
 							{
-								o: generator,
+								m: generator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
@@ -9017,7 +9017,7 @@ var $author$project$Slipbox$updateItem = F3(
 										return A2($author$project$Item$is, item, i) ? A3($author$project$Item$Note, itemId, tray, editingNote) : i;
 									},
 									content.c),
-								q: A2($elm$core$List$map, conditionallyUpdateTargetNoteWithEdits, content.q),
+								p: A2($elm$core$List$map, conditionallyUpdateTargetNoteWithEdits, content.p),
 								C: true
 							});
 					case 6:
@@ -9048,14 +9048,14 @@ var $author$project$Slipbox$updateItem = F3(
 						var maybeNoteToBeLinked = item.e;
 						if (!maybeNoteToBeLinked.$) {
 							var noteToBeLinked = maybeNoteToBeLinked.a;
-							var _v16 = A3($author$project$Link$create, content.o, note, noteToBeLinked);
+							var _v16 = A3($author$project$Link$create, content.m, note, noteToBeLinked);
 							var link = _v16.a;
 							var idGenerator = _v16.b;
 							var links = A2($elm$core$List$cons, link, content.gX);
 							return _Utils_update(
 								content,
 								{
-									o: idGenerator,
+									m: idGenerator,
 									c: A2(
 										$elm$core$List$map,
 										function (i) {
@@ -9105,21 +9105,21 @@ var $author$project$Slipbox$updateItem = F3(
 						var question = item.c;
 						var _v17 = A2(
 							$author$project$Note$create,
-							content.o,
+							content.m,
 							{bt: question, fu: 'n/a', bm: 1});
 						var note = _v17.a;
 						var idGenerator = _v17.b;
 						return _Utils_update(
 							content,
 							{
-								o: idGenerator,
+								m: idGenerator,
 								c: A2(
 									$elm$core$List$map,
 									function (i) {
 										return A2($author$project$Item$is, item, i) ? A3($author$project$Item$Note, itemId, tray, note) : i;
 									},
 									content.c),
-								q: A2($elm$core$List$cons, note, content.q),
+								p: A2($elm$core$List$cons, note, content.p),
 								C: true
 							});
 					case 10:
@@ -9163,6 +9163,132 @@ var $author$project$Main$updateTab = F2(
 			return model;
 		}
 	});
+var $author$project$Slipbox$convertLinktoLinkNoteTuple = F3(
+	function (targetNote, notes, link) {
+		if (A2($author$project$Link$isTarget, link, targetNote)) {
+			var _v0 = $elm$core$List$head(
+				A2(
+					$elm$core$List$filter,
+					$author$project$Link$isSource(link),
+					notes));
+			if (!_v0.$) {
+				var note = _v0.a;
+				return $elm$core$Maybe$Just(
+					_Utils_Tuple2(note, link));
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		} else {
+			if (A2($author$project$Link$isSource, link, targetNote)) {
+				var _v1 = $elm$core$List$head(
+					A2(
+						$elm$core$List$filter,
+						$author$project$Link$isTarget(link),
+						notes));
+				if (!_v1.$) {
+					var note = _v1.a;
+					return $elm$core$Maybe$Just(
+						_Utils_Tuple2(note, link));
+				} else {
+					return $elm$core$Maybe$Nothing;
+				}
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		}
+	});
+var $author$project$Slipbox$getLinkedNotes_ = F3(
+	function (note, notes, links) {
+		var relevantLinks = A2(
+			$elm$core$List$filter,
+			$author$project$Slipbox$isAssociated(note),
+			links);
+		return A2(
+			$elm$core$List$filterMap,
+			A2($author$project$Slipbox$convertLinktoLinkNoteTuple, note, notes),
+			relevantLinks);
+	});
+var $author$project$Slipbox$getLinkedNotes = F2(
+	function (note, slipbox) {
+		var content = $author$project$Slipbox$getContent(slipbox);
+		var relevantLinks = A2(
+			$elm$core$List$filter,
+			$author$project$Slipbox$isAssociated(note),
+			content.gX);
+		return A2(
+			$elm$core$List$filterMap,
+			A2($author$project$Slipbox$convertLinktoLinkNoteTuple, note, content.p),
+			relevantLinks);
+	});
+var $elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $author$project$Slipbox$noteIsEntryPointForDifferentDiscussion = F3(
+	function (note, discussion, slipbox) {
+		var noteLinkTuples = A2($author$project$Slipbox$getLinkedNotes, note, slipbox);
+		var differentLinkedDiscussions = A2(
+			$elm$core$List$map,
+			$elm$core$Tuple$first,
+			A2(
+				$elm$core$List$filter,
+				function (_v0) {
+					var linkedNote = _v0.a;
+					return ($author$project$Note$getVariant(linkedNote) === 1) && (!A2($author$project$Note$is, linkedNote, discussion));
+				},
+				noteLinkTuples));
+		return $elm$core$List$isEmpty(differentLinkedDiscussions) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(differentLinkedDiscussions);
+	});
+var $author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions = F2(
+	function (discussion, slipbox) {
+		var content = $author$project$Slipbox$getContent(slipbox);
+		var recurs = F2(
+			function (rootNote, links) {
+				return $author$project$Slipbox$flatten2D(
+					A2(
+						$elm$core$List$map,
+						function (_v0) {
+							var linkedNote = _v0.a;
+							var link = _v0.b;
+							var _v1 = A3($author$project$Slipbox$noteIsEntryPointForDifferentDiscussion, linkedNote, discussion, slipbox);
+							if (!_v1.$) {
+								var differentDiscussionList = _v1.a;
+								return A2(
+									$elm$core$List$map,
+									function (differentDiscussion) {
+										return _Utils_Tuple2(
+											differentDiscussion,
+											A3($author$project$Link$create, content.m, rootNote, differentDiscussion).a);
+									},
+									differentDiscussionList);
+							} else {
+								return A2(
+									$elm$core$List$cons,
+									_Utils_Tuple2(linkedNote, link),
+									A2(
+										recurs,
+										linkedNote,
+										A2(
+											$elm$core$List$filter,
+											function (l) {
+												return !A2($author$project$Link$is, link, l);
+											},
+											links)));
+							}
+						},
+						A3($author$project$Slipbox$getLinkedNotes_, rootNote, content.p, links)));
+			});
+		var allTuples = A2(recurs, discussion, content.gX);
+		return _Utils_Tuple2(
+			A2(
+				$elm$core$List$cons,
+				discussion,
+				A2($elm$core$List$map, $elm$core$Tuple$first, allTuples)),
+			A2($elm$core$List$map, $elm$core$Tuple$second, allTuples));
+	});
 var $author$project$Discovery$viewDiscussion = F3(
 	function (discussion, slipbox, _v0) {
 		return A3(
@@ -9170,7 +9296,7 @@ var $author$project$Discovery$viewDiscussion = F3(
 			discussion,
 			discussion,
 			$author$project$Graph$simulatePositions(
-				A2($author$project$Slipbox$getAllNotesAndLinksInQuestionTree, discussion, slipbox)));
+				A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, discussion, slipbox)));
 	});
 var $author$project$Main$update = F2(
 	function (message, model) {
@@ -13253,13 +13379,6 @@ var $mdgriffith$elm_ui$Internal$Model$finalizeNode = F6(
 				return html;
 		}
 	});
-var $elm$core$List$isEmpty = function (xs) {
-	if (!xs.b) {
-		return true;
-	} else {
-		return false;
-	}
-};
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $mdgriffith$elm_ui$Internal$Model$textElementClasses = $mdgriffith$elm_ui$Internal$Style$classes.f_ + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.ae + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.dZ + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.cT)))));
 var $mdgriffith$elm_ui$Internal$Model$textElement = function (str) {
@@ -16990,9 +17109,9 @@ var $author$project$Slipbox$getDiscussions = F2(
 				A2(
 					$elm$core$List$filter,
 					$author$project$Note$contains(search),
-					content.q));
+					content.p));
 		} else {
-			return A2($elm$core$List$filter, $author$project$Slipbox$isQuestion, content.q);
+			return A2($elm$core$List$filter, $author$project$Slipbox$isQuestion, content.p);
 		}
 	});
 var $author$project$Slipbox$getItems = function (slipbox) {
@@ -17012,9 +17131,9 @@ var $author$project$Slipbox$getNotes = F2(
 				A2(
 					$elm$core$List$filter,
 					$author$project$Note$contains(search),
-					content.q));
+					content.p));
 		} else {
-			return A2($elm$core$List$filter, $author$project$Slipbox$isNote, content.q);
+			return A2($elm$core$List$filter, $author$project$Slipbox$isNote, content.p);
 		}
 	});
 var $author$project$Source$contains = F2(
@@ -17423,13 +17542,13 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 				return $mdgriffith$elm_ui$Element$Input$isFill(width) ? _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p),
+						q: A2($elm$core$List$cons, attr, els.q),
 						z: A2($elm$core$List$cons, attr, els.z),
 						f: A2($elm$core$List$cons, attr, els.f)
 					}) : (stacked ? _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p)
+						q: A2($elm$core$List$cons, attr, els.q)
 					}) : _Utils_update(
 					els,
 					{
@@ -17440,12 +17559,12 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 				return (!stacked) ? _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p),
+						q: A2($elm$core$List$cons, attr, els.q),
 						f: A2($elm$core$List$cons, attr, els.f)
 					}) : ($mdgriffith$elm_ui$Element$Input$isFill(height) ? _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p),
+						q: A2($elm$core$List$cons, attr, els.q),
 						f: A2($elm$core$List$cons, attr, els.f)
 					}) : ($mdgriffith$elm_ui$Element$Input$isPixel(height) ? _Utils_update(
 					els,
@@ -17460,13 +17579,13 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 				return _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p)
+						q: A2($elm$core$List$cons, attr, els.q)
 					});
 			case 5:
 				return _Utils_update(
 					els,
 					{
-						p: A2($elm$core$List$cons, attr, els.p)
+						q: A2($elm$core$List$cons, attr, els.q)
 					});
 			case 4:
 				switch (attr.b.$) {
@@ -17475,7 +17594,7 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 						return _Utils_update(
 							els,
 							{
-								p: A2($elm$core$List$cons, attr, els.p),
+								q: A2($elm$core$List$cons, attr, els.q),
 								z: A2($elm$core$List$cons, attr, els.z),
 								f: A2($elm$core$List$cons, attr, els.f),
 								bp: A2($elm$core$List$cons, attr, els.bp)
@@ -17550,14 +17669,14 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 						return _Utils_update(
 							els,
 							{
-								p: A2($elm$core$List$cons, attr, els.p)
+								q: A2($elm$core$List$cons, attr, els.q)
 							});
 					case 1:
 						var _v4 = attr.b;
 						return _Utils_update(
 							els,
 							{
-								p: A2($elm$core$List$cons, attr, els.p)
+								q: A2($elm$core$List$cons, attr, els.q)
 							});
 					default:
 						var flag = attr.a;
@@ -17602,7 +17721,7 @@ var $mdgriffith$elm_ui$Element$Input$redistribute = F3(
 		return function (redist) {
 			return {
 				Q: $elm$core$List$reverse(redist.Q),
-				p: $elm$core$List$reverse(redist.p),
+				q: $elm$core$List$reverse(redist.q),
 				z: $elm$core$List$reverse(redist.z),
 				f: $elm$core$List$reverse(redist.f),
 				bp: $elm$core$List$reverse(redist.bp)
@@ -17611,7 +17730,7 @@ var $mdgriffith$elm_ui$Element$Input$redistribute = F3(
 			A3(
 				$elm$core$List$foldl,
 				A2($mdgriffith$elm_ui$Element$Input$redistributeOver, isMultiline, stacked),
-				{Q: _List_Nil, p: _List_Nil, z: _List_Nil, f: _List_Nil, bp: _List_Nil},
+				{Q: _List_Nil, q: _List_Nil, z: _List_Nil, f: _List_Nil, bp: _List_Nil},
 				attrs));
 	});
 var $mdgriffith$elm_ui$Element$Input$renderBox = function (_v0) {
@@ -17917,7 +18036,7 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 				A2(
 					$elm$core$List$cons,
 					$mdgriffith$elm_ui$Element$Input$isHiddenLabel(textOptions.a) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Element$spacing(5),
-					A2($elm$core$List$cons, $mdgriffith$elm_ui$Element$Region$announce, redistributed.p))),
+					A2($elm$core$List$cons, $mdgriffith$elm_ui$Element$Region$announce, redistributed.q))),
 			textOptions.a,
 			wrappedInput);
 	});
@@ -18611,7 +18730,7 @@ var $author$project$Slipbox$getNotesAssociatedToSource = F2(
 		return A2(
 			$elm$core$List$filter,
 			$author$project$Note$isAssociated(source),
-			$author$project$Slipbox$getContent(slipbox).q);
+			$author$project$Slipbox$getContent(slipbox).p);
 	});
 var $author$project$Main$headerText = function (text) {
 	return A2(
@@ -18913,7 +19032,7 @@ var $author$project$Slipbox$getNotesThatCanLinkToNote = F2(
 				function (n) {
 					return !A2($author$project$Note$is, note, n);
 				},
-				content.q));
+				content.p));
 	});
 var $author$project$Main$getTitlesFromSlipbox = function (slipbox) {
 	return A2(
@@ -18930,52 +19049,6 @@ var $author$project$Main$addLinkButton = function (item) {
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$AddLinkForm))
 		});
 };
-var $author$project$Slipbox$convertLinktoLinkNoteTuple = F3(
-	function (targetNote, notes, link) {
-		if (A2($author$project$Link$isTarget, link, targetNote)) {
-			var _v0 = $elm$core$List$head(
-				A2(
-					$elm$core$List$filter,
-					$author$project$Link$isSource(link),
-					notes));
-			if (!_v0.$) {
-				var note = _v0.a;
-				return $elm$core$Maybe$Just(
-					_Utils_Tuple2(note, link));
-			} else {
-				return $elm$core$Maybe$Nothing;
-			}
-		} else {
-			if (A2($author$project$Link$isSource, link, targetNote)) {
-				var _v1 = $elm$core$List$head(
-					A2(
-						$elm$core$List$filter,
-						$author$project$Link$isTarget(link),
-						notes));
-				if (!_v1.$) {
-					var note = _v1.a;
-					return $elm$core$Maybe$Just(
-						_Utils_Tuple2(note, link));
-				} else {
-					return $elm$core$Maybe$Nothing;
-				}
-			} else {
-				return $elm$core$Maybe$Nothing;
-			}
-		}
-	});
-var $author$project$Slipbox$getLinkedNotes = F2(
-	function (note, slipbox) {
-		var content = $author$project$Slipbox$getContent(slipbox);
-		var relevantLinks = A2(
-			$elm$core$List$filter,
-			$author$project$Slipbox$isAssociated(note),
-			content.gX);
-		return A2(
-			$elm$core$List$filterMap,
-			A2($author$project$Slipbox$convertLinktoLinkNoteTuple, note, content.q),
-			relevantLinks);
-	});
 var $author$project$Slipbox$PromptConfirmRemoveLink = F2(
 	function (a, b) {
 		return {$: 9, a: a, b: b};
