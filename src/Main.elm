@@ -879,14 +879,7 @@ tabView content =
                   [ Element.html <|
                     svgLegend
                       [ Svg.g []
-                        [ Svg.circle
-                          [ Svg.Attributes.r "10"
-                          , Svg.Attributes.stroke "black"
-                          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                          , Svg.Attributes.cx "20"
-                          , Svg.Attributes.cy "20"
-                          ]
-                          []
+                        [ svgCircle "20" "20" "10"
                         , Svg.line
                           [ Svg.Attributes.x1 "10"
                           , Svg.Attributes.x2 "30"
@@ -908,20 +901,7 @@ tabView content =
                   , Element.text "Note Marked to link (if not selected)"
                   ]
                 , discussionLegend
-                , Element.row
-                  []
-                  [ Element.html <|
-                    svgLegend
-                      [ Svg.circle
-                        [ Svg.Attributes.r "10"
-                        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                        , Svg.Attributes.cx "20"
-                        , Svg.Attributes.cy "20"
-                        ]
-                        []
-                      ]
-                  , Element.text "Regular Note"
-                  ]
+                , circleLegend
                 ]
               ]
             ]
@@ -1141,20 +1121,7 @@ tabView content =
                 ]
               , selectedNoteLegend
               , discussionLegend
-              , Element.row
-                []
-                [ Element.html <|
-                  svgLegend
-                    [ Svg.circle
-                      [ Svg.Attributes.r "10"
-                      , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                      , Svg.Attributes.cx "20"
-                      , Svg.Attributes.cy "20"
-                      ]
-                      []
-                    ]
-                , Element.text "Regular Note"
-                ]
+              , circleLegend
               ]
             , Element.el
               [ Element.width biggerElement
@@ -1358,14 +1325,7 @@ viewGraphNote msg graphNote =
             Nothing -> str
       in
       gLambda note
-        [ Svg.circle
-          [ Svg.Attributes.r "5"
-          , Svg.Attributes.stroke "black"
-          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-          , Svg.Attributes.cx x
-          , Svg.Attributes.cy y
-          ]
-          []
+        [ svgCircle x y "5"
         , Svg.line
           [ Svg.Attributes.x1 <| modify x -5
           , Svg.Attributes.x2 <| modify x 5
@@ -1396,16 +1356,7 @@ viewGraphNote msg graphNote =
       gLambda note
         [ svgRect xCenter yCenter ]
 
-    Regular note x y ->
-      Svg.circle
-        [ Svg.Attributes.cx x
-        , Svg.Attributes.cy y
-        , Svg.Attributes.r "5"
-        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| msg note
-        ]
-        []
+    Regular note x y -> gLambda note [ svgCircle x y "5" ]
 
 type alias PositionExtremes =
   { minX : Float
@@ -2534,20 +2485,22 @@ column contents =
     ]
     contents
 
+-- SVG HELPERS
+
 svgLegend : List ( Svg.Svg Msg ) -> Svg.Svg Msg
 svgLegend contents =
   Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
     contents
 
-svgRect x y =
-  Svg.rect
-    [ Svg.Attributes.fill "rgb(0,0,0)"
-    , Svg.Attributes.width "20"
-    , Svg.Attributes.height "20"
-    , Svg.Attributes.x x
-    , Svg.Attributes.y y
+svgCircle cx cy r =
+  Svg.circle
+    [ Svg.Attributes.r r
+    , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+    , Svg.Attributes.cx cx
+    , Svg.Attributes.cy cy
     ]
     []
+
 
 svgRectTransform x y transform =
   Svg.rect
@@ -2559,6 +2512,8 @@ svgRectTransform x y transform =
     , Svg.Attributes.transform transform
     ]
     []
+
+svgRect x y = svgRectTransform x y ""
 
 discussionLegend =
   Element.row
@@ -2578,4 +2533,11 @@ selectedNoteLegend =
           ]
         ]
     , Element.text "Currently Selected Note"
+    ]
+
+circleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgCircle "20" "20" "10" ]
+    , Element.text "Regular Note"
     ]
