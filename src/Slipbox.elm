@@ -503,6 +503,57 @@ saveChanges slipbox =
   case slipbox of
     Slipbox content -> Slipbox { content | unsavedChanges = False }
 
+{-| Returns all notes in discussion tree with a few conditions around other discussion entry points
+(Discussion Entry point is a note linked to a discussion)
+1. If a note is ca different discussion entry point, the discussion is swapped with the entry point.
+Ignore any other links from that entry point or on the discussion.
+2. If a note is not a different discussion entry point, normal tree behavior.
+-}
+getDiscussionTreeWithCollapsedDiscussions : Note.Note -> Slipbox -> ( List Note.Note, List Link.Link )
+getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
+  let
+    content = getContent slipbox
+    recurs rootNote links =
+      List.map
+        ( \noteLinkTuple ->
+          case noteIsEntryPointForDifferentDiscussion ( Tuple.first noteLinkTuple ) discussion slipbox of
+            Just differentDiscussion ->
+              [
+                ( differentDiscussion
+                , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
+                )
+              ]
+            Nothing ->
+              ( noteLinkTuple ::
+                recurs
+                  ( Tuple.first noteLinkTuple )
+                  content.notes
+                  ( List.filter (\l -> not <| Link.is ( Tuple.second noteLinkTuple ) l ) links )
+              )
+        )
+        ( getLinkedNotes_ rootNote content.notes links )
+        |> flatten2D
+    allTuples = recurs discussion content.links
+  in
+  ( List.map Tuple.first allTuples
+  , List.map Tuple.second allTuples
+  )
+
+
+getLinkedNotes_ : Note.Note -> ( List Note.Note ) -> ( List Link.Link ) -> ( List ( Note.Note, Link.Link ) )
+getLinkedNotes_ note notes links =
+  let
+      relevantLinks = List.filter ( isAssociated note ) links
+  in
+  List.filterMap ( convertLinktoLinkNoteTuple note notes ) relevantLinks
+
+-- Given algorithm(rootNote, rootDiscusion, notes, links)
+-- For each linked note to the root
+-- If (noteIsEntryPointForNewDiscussion)
+-- Return [(discussionForTheEntryPoint, newLinkBetweenRootNoteAndDiscussion)]
+-- Else
+-- Return (linkedNote, link) ++ algorithm(linkedNote, rootDiscussion, notes, links (without found link))
+
 {-| This will get all linked notes to a question and all linked notes to those linked notes
 except for if the note is a question. Confusing I know but perhaps this is a confusing feature.
 -}
