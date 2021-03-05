@@ -630,12 +630,7 @@ tabView content =
               else
                 Element.none
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -750,12 +745,7 @@ tabView content =
                     }
                   ]
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -983,22 +973,10 @@ tabView content =
                   [ Element.height <| Element.px 38
                   ] Element.none
               else
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  , Element.moveRight 16
-                  ]
-                  { onPress = Just CreateTabSubmitNewDiscussion
-                  , label = Element.text "Create and Link Discussion"
-                  }
+                Element.el [ Element.moveRight 16 ] <|
+                  button ( Just CreateTabSubmitNewDiscussion ) ( Element.text "Create and Link Discussion" )
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -1037,12 +1015,7 @@ tabView content =
                 Nothing ->
                   Element.none
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -1082,12 +1055,7 @@ tabView content =
                   , Element.none
                   )
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -1130,12 +1098,7 @@ tabView content =
             ]
 
         Create.PromptCreateAnotherView note ->
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -1360,12 +1323,7 @@ tabView content =
                     }
                   ]
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
+          column
             [ Element.el
               [ Element.centerX
               , Element.Font.heavy
@@ -2660,7 +2618,7 @@ smallOldLavenderButton buttonFunction =
     ]
     buttonFunction
 
-button : Maybe Msg -> Element Msg -> Element.Element Msg
+button : Maybe Msg -> Element Msg -> Element Msg
 button msg label =
   Element.Input.button
     [ Element.centerX
@@ -2670,3 +2628,13 @@ button msg label =
     { onPress =  msg
     , label = label
     }
+
+column : List ( Element Msg ) -> Element Msg
+column contents =
+  Element.column
+    [ Element.padding 16
+    , Element.centerX
+    , Element.width Element.fill
+    , Element.spacingXY 32 32
+    ]
+    contents

@@ -10013,9 +10013,9 @@ var $mdgriffith$elm_ui$Internal$Model$formatBoxShadow = function (shadow) {
 				[
 					shadow.eH ? $elm$core$Maybe$Just('inset') : $elm$core$Maybe$Nothing,
 					$elm$core$Maybe$Just(
-					$elm$core$String$fromFloat(shadow.d.a) + 'px'),
+					$elm$core$String$fromFloat(shadow.c.a) + 'px'),
 					$elm$core$Maybe$Just(
-					$elm$core$String$fromFloat(shadow.d.b) + 'px'),
+					$elm$core$String$fromFloat(shadow.c.b) + 'px'),
 					$elm$core$Maybe$Just(
 					$elm$core$String$fromFloat(shadow.a4) + 'px'),
 					$elm$core$Maybe$Just(
@@ -10080,10 +10080,10 @@ var $mdgriffith$elm_ui$Internal$Model$renderFocusStyle = function (focus) {
 										a4: shadow.a4,
 										a5: shadow.a5,
 										eH: false,
-										d: A2(
+										c: A2(
 											$elm$core$Tuple$mapSecond,
 											$elm$core$Basics$toFloat,
-											A2($elm$core$Tuple$mapFirst, $elm$core$Basics$toFloat, shadow.d)),
+											A2($elm$core$Tuple$mapFirst, $elm$core$Basics$toFloat, shadow.c)),
 										fs: shadow.fs
 									}));
 						},
@@ -10128,10 +10128,10 @@ var $mdgriffith$elm_ui$Internal$Model$renderFocusStyle = function (focus) {
 										a4: shadow.a4,
 										a5: shadow.a5,
 										eH: false,
-										d: A2(
+										c: A2(
 											$elm$core$Tuple$mapSecond,
 											$elm$core$Basics$toFloat,
-											A2($elm$core$Tuple$mapFirst, $elm$core$Basics$toFloat, shadow.d)),
+											A2($elm$core$Tuple$mapFirst, $elm$core$Basics$toFloat, shadow.c)),
 										fs: shadow.fs
 									}));
 						},
@@ -15016,7 +15016,7 @@ var $mdgriffith$elm_ui$Internal$Model$focusDefaultStyle = {
 		{
 			a4: 0,
 			a5: A4($mdgriffith$elm_ui$Internal$Model$Rgba, 155 / 255, 203 / 255, 1, 1),
-			d: _Utils_Tuple2(0, 0),
+			c: _Utils_Tuple2(0, 0),
 			fs: 3
 		})
 };
@@ -15371,7 +15371,7 @@ var $elm$html$Html$Attributes$target = $elm$html$Html$Attributes$stringProperty(
 var $mdgriffith$elm_ui$Element$newTabLink = F2(
 	function (attrs, _v0) {
 		var url = _v0.h9;
-		var label = _v0.c;
+		var label = _v0.d;
 		return A4(
 			$mdgriffith$elm_ui$Internal$Model$element,
 			$mdgriffith$elm_ui$Internal$Model$asEl,
@@ -15414,7 +15414,7 @@ var $author$project$Main$aboutButton = A2(
 	_List_fromArray(
 		[$mdgriffith$elm_ui$Element$centerY]),
 	{
-		c: A2(
+		d: A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
 				[$mdgriffith$elm_ui$Element$Font$underline]),
@@ -15539,7 +15539,7 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 var $mdgriffith$elm_ui$Element$Input$button = F2(
 	function (attrs, _v0) {
 		var onPress = _v0.h;
-		var label = _v0.c;
+		var label = _v0.d;
 		return A4(
 			$mdgriffith$elm_ui$Internal$Model$element,
 			$mdgriffith$elm_ui$Internal$Model$asEl,
@@ -16004,7 +16004,7 @@ var $author$project$Main$barsButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_Nil,
 	{
-		c: A2(
+		d: A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_Nil,
 			$mdgriffith$elm_ui$Element$html(
@@ -16104,7 +16104,7 @@ var $author$project$Main$leftNavContractedButtonLambda = F4(
 				$mdgriffith$elm_ui$Element$Input$button,
 				buttonAttributes,
 				{
-					c: icon,
+					d: icon,
 					h: $elm$core$Maybe$Just(msg)
 				}));
 	});
@@ -16201,7 +16201,7 @@ var $author$project$Main$leftNavExpandedButtonLambda = F5(
 				$mdgriffith$elm_ui$Element$Input$button,
 				buttonAttributesMaybeWithBackground,
 				{
-					c: A2(
+					d: A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
 							[
@@ -16460,7 +16460,7 @@ var $author$project$Main$leftNav = F3(
 											$mdgriffith$elm_ui$Element$padding(1)
 										]),
 									{
-										c: A2(
+										d: A2(
 											$mdgriffith$elm_ui$Element$row,
 											_List_fromArray(
 												[
@@ -16706,7 +16706,7 @@ var $author$project$Main$button = F2(
 					$mdgriffith$elm_ui$Element$padding(8),
 					$mdgriffith$elm_ui$Element$Border$width(1)
 				]),
-			{c: label, h: msg});
+			{d: label, h: msg});
 	});
 var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
 	return A2(
@@ -16880,7 +16880,7 @@ var $author$project$Main$buttonTray = function (maybeItem) {
 		function (addAction, text) {
 			return $author$project$Main$smallOldLavenderButton(
 				{
-					c: A2(
+					d: A2(
 						$mdgriffith$elm_ui$Element$el,
 						_List_fromArray(
 							[
@@ -16926,7 +16926,7 @@ var $author$project$Main$coaching = F2(
 					$mdgriffith$elm_ui$Element$padding(2)
 				]),
 			{
-				c: $mdgriffith$elm_ui$Element$text('Coaching'),
+				d: $mdgriffith$elm_ui$Element$text('Coaching'),
 				h: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleCoaching)
 			});
 		if (!coachingOpen) {
@@ -16943,6 +16943,18 @@ var $author$project$Main$coaching = F2(
 					[toggleCoachingButton, text]));
 		}
 	});
+var $author$project$Main$column = function (contents) {
+	return A2(
+		$mdgriffith$elm_ui$Element$column,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$padding(16),
+				$mdgriffith$elm_ui$Element$centerX,
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+				A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
+			]),
+		contents);
+};
 var $author$project$Main$PositionExtremes = F4(
 	function (minX, minY, maxX, maxY) {
 		return {eU: maxX, eV: maxY, ba: minX, bb: minY};
@@ -17817,7 +17829,7 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 		var redistributed = A3(
 			$mdgriffith$elm_ui$Element$Input$redistribute,
 			_Utils_eq(textInput.G, $mdgriffith$elm_ui$Element$Input$TextArea),
-			$mdgriffith$elm_ui$Element$Input$isStacked(textOptions.c),
+			$mdgriffith$elm_ui$Element$Input$isStacked(textOptions.d),
 			withDefaults);
 		var onlySpacing = function (attr) {
 			if ((attr.$ === 4) && (attr.b.$ === 5)) {
@@ -17930,7 +17942,7 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 							$mdgriffith$elm_ui$Element$Input$value(textOptions.ae),
 							$mdgriffith$elm_ui$Internal$Model$Attr(
 							$elm$html$Html$Events$onInput(textOptions.ac)),
-							$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(textOptions.c),
+							$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(textOptions.d),
 							$mdgriffith$elm_ui$Element$Input$spellcheck(textInput.ao),
 							A2(
 							$elm$core$Maybe$withDefault,
@@ -18051,9 +18063,9 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 				A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$cursor, $mdgriffith$elm_ui$Internal$Style$classes.gn),
 				A2(
 					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$Input$isHiddenLabel(textOptions.c) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Element$spacing(5),
+					$mdgriffith$elm_ui$Element$Input$isHiddenLabel(textOptions.d) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Element$spacing(5),
 					A2($elm$core$List$cons, $mdgriffith$elm_ui$Element$Region$announce, redistributed.q))),
-			textOptions.c,
+			textOptions.d,
 			wrappedInput);
 	});
 var $mdgriffith$elm_ui$Element$Input$multiline = F2(
@@ -18062,7 +18074,7 @@ var $mdgriffith$elm_ui$Element$Input$multiline = F2(
 			$mdgriffith$elm_ui$Element$Input$textHelper,
 			{ai: $elm$core$Maybe$Nothing, ao: multi.at, G: $mdgriffith$elm_ui$Element$Input$TextArea},
 			attrs,
-			{c: multi.c, ac: multi.ac, ad: multi.ad, ae: multi.ae});
+			{d: multi.d, ac: multi.ac, ad: multi.ad, ae: multi.ae});
 	});
 var $author$project$Main$NoteTabUpdateInput = function (a) {
 	return {$: 2, a: a};
@@ -18088,7 +18100,7 @@ var $author$project$Main$searchInput = F2(
 					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			{
-				c: A2(
+				d: A2(
 					$mdgriffith$elm_ui$Element$Input$labelLeft,
 					_List_Nil,
 					$mdgriffith$elm_ui$Element$text('search')),
@@ -18853,7 +18865,7 @@ var $author$project$Main$toAssociatedNoteButton = F2(
 				$mdgriffith$elm_ui$Element$Input$button,
 				_List_Nil,
 				{
-					c: $author$project$Main$toAssociatedNoteRepresentationFromNote(note),
+					d: $author$project$Main$toAssociatedNoteRepresentationFromNote(note),
 					h: $elm$core$Maybe$Just(
 						A2(
 							$author$project$Main$AddItem,
@@ -18911,7 +18923,7 @@ var $author$project$Main$smallRedButton = function (buttonFunction) {
 var $author$project$Main$cancelButton = function (item) {
 	return $author$project$Main$smallRedButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Cancel'),
+			d: $mdgriffith$elm_ui$Element$text('Cancel'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Cancel))
 		});
@@ -18920,7 +18932,7 @@ var $author$project$Slipbox$Submit = {$: 11};
 var $author$project$Main$submitButton = function (item) {
 	return $author$project$Main$smallOldLavenderButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Submit'),
+			d: $mdgriffith$elm_ui$Element$text('Submit'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Submit))
 		});
@@ -18969,7 +18981,7 @@ var $author$project$Main$containerAttributes = _List_fromArray(
 var $author$project$Main$confirmButton = function (item) {
 	return $author$project$Main$smallRedButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Confirm'),
+			d: $mdgriffith$elm_ui$Element$text('Confirm'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Submit))
 		});
@@ -19001,7 +19013,7 @@ var $author$project$Main$discussionInput = F2(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				c: A2(
+				d: A2(
 					$mdgriffith$elm_ui$Element$Input$labelAbove,
 					_List_Nil,
 					$mdgriffith$elm_ui$Element$text('Discussion')),
@@ -19060,7 +19072,7 @@ var $author$project$Slipbox$AddLinkForm = {$: 8};
 var $author$project$Main$addLinkButton = function (item) {
 	return $author$project$Main$smallOldLavenderButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Add Link'),
+			d: $mdgriffith$elm_ui$Element$text('Add Link'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$AddLinkForm))
 		});
@@ -19073,7 +19085,7 @@ var $author$project$Main$removeLinkButton = F3(
 	function (item, linkedNote, link) {
 		return $author$project$Main$smallRedButton(
 			{
-				c: $mdgriffith$elm_ui$Element$text('Remove Link'),
+				d: $mdgriffith$elm_ui$Element$text('Remove Link'),
 				h: $elm$core$Maybe$Just(
 					A2(
 						$author$project$Main$UpdateItem,
@@ -19150,7 +19162,7 @@ var $author$project$Main$toOpenNoteButton = F2(
 						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
 					]),
 				{
-					c: $author$project$Main$toNoteRepresentationFromNote(note),
+					d: $author$project$Main$toNoteRepresentationFromNote(note),
 					h: $elm$core$Maybe$Just(
 						A2(
 							$author$project$Main$AddItem,
@@ -19225,7 +19237,7 @@ var $author$project$Slipbox$PromptConfirmDelete = {$: 7};
 var $author$project$Main$deleteButton = function (item) {
 	return $author$project$Main$smallRedButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Delete'),
+			d: $mdgriffith$elm_ui$Element$text('Delete'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$PromptConfirmDelete))
 		});
@@ -19243,7 +19255,7 @@ var $author$project$Main$dismissButton = function (item) {
 				$mdgriffith$elm_ui$Element$Font$heavy
 			]),
 		{
-			c: $mdgriffith$elm_ui$Element$text('X'),
+			d: $mdgriffith$elm_ui$Element$text('X'),
 			h: $elm$core$Maybe$Just(
 				$author$project$Main$DismissItem(item))
 		});
@@ -19252,7 +19264,7 @@ var $author$project$Slipbox$Edit = {$: 6};
 var $author$project$Main$editButton = function (item) {
 	return $author$project$Main$smallOldLavenderButton(
 		{
-			c: $mdgriffith$elm_ui$Element$text('Edit'),
+			d: $mdgriffith$elm_ui$Element$text('Edit'),
 			h: $elm$core$Maybe$Just(
 				A2($author$project$Main$UpdateItem, item, $author$project$Slipbox$Edit))
 		});
@@ -19413,7 +19425,7 @@ var $author$project$Main$contentInput = F2(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				c: A2(
+				d: A2(
 					$mdgriffith$elm_ui$Element$Input$labelAbove,
 					_List_Nil,
 					$mdgriffith$elm_ui$Element$text('Content')),
@@ -19536,7 +19548,7 @@ var $author$project$Main$authorInput = F2(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				c: A2(
+				d: A2(
 					$mdgriffith$elm_ui$Element$Input$labelAbove,
 					_List_Nil,
 					$mdgriffith$elm_ui$Element$text('Author')),
@@ -19561,7 +19573,7 @@ var $author$project$Main$titleInput = F3(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				c: A2($mdgriffith$elm_ui$Element$Input$labelAbove, _List_Nil, titleLabel),
+				d: A2($mdgriffith$elm_ui$Element$Input$labelAbove, _List_Nil, titleLabel),
 				ac: function (s) {
 					return A2(
 						$author$project$Main$UpdateItem,
@@ -19610,7 +19622,7 @@ var $author$project$Main$toNoteDetailAddingLinkForm = F2(
 					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 				]),
 			{
-				c: $author$project$Main$toNoteRepresentationFromNote(note),
+				d: $author$project$Main$toNoteRepresentationFromNote(note),
 				h: $elm$core$Maybe$Just(
 					A2(
 						$author$project$Main$UpdateItem,
@@ -20045,7 +20057,7 @@ var $author$project$Main$toOpenSourceButton = function (source) {
 			$mdgriffith$elm_ui$Element$Input$button,
 			_List_Nil,
 			{
-				c: $author$project$Main$toSourceRepresentationFromSource(source),
+				d: $author$project$Main$toSourceRepresentationFromSource(source),
 				h: $elm$core$Maybe$Just(
 					A2(
 						$author$project$Main$AddItem,
@@ -20501,7 +20513,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$padding(8)
 							]),
 						{
-							c: $mdgriffith$elm_ui$Element$text('Next'),
+							d: $mdgriffith$elm_ui$Element$text('Next'),
 							h: $elm$core$Maybe$Just($author$project$Main$CreateTabNextStep)
 						}) : $mdgriffith$elm_ui$Element$none;
 					var coachingText = A2(
@@ -20520,15 +20532,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$text('When you come across it again, you should be able to read and understand. '),
 								$mdgriffith$elm_ui$Element$text('Take your time, this isn\'t always an easy endeavor. ')
 							]));
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -20541,7 +20545,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Input$multiline,
 								_List_Nil,
 								{
-									c: A2(
+									d: A2(
 										$mdgriffith$elm_ui$Element$Input$labelAbove,
 										_List_Nil,
 										$mdgriffith$elm_ui$Element$text('Note Content (required)')),
@@ -20677,7 +20681,7 @@ var $author$project$Main$tabView = function (content) {
 																$mdgriffith$elm_ui$Element$Input$button,
 																_List_Nil,
 																{
-																	c: A2(
+																	d: A2(
 																		$mdgriffith$elm_ui$Element$paragraph,
 																		_List_Nil,
 																		_List_fromArray(
@@ -20713,15 +20717,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$text('Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. '),
 								$mdgriffith$elm_ui$Element$text('Because of confirmation bias, it is hard for us to gather information that opposes what we already know. ')
 							]));
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -20800,7 +20796,7 @@ var $author$project$Main$tabView = function (content) {
 										$mdgriffith$elm_ui$Element$Border$width(1)
 									]),
 								{
-									c: $mdgriffith$elm_ui$Element$text('Remove'),
+									d: $mdgriffith$elm_ui$Element$text('Remove'),
 									h: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
 								})
 							])) : A2(
@@ -20811,7 +20807,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Border$width(1)
 							]),
 						{
-							c: $mdgriffith$elm_ui$Element$text('Create Link'),
+							d: $mdgriffith$elm_ui$Element$text('Create Link'),
 							h: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
 						});
 					return A2(
@@ -20835,7 +20831,7 @@ var $author$project$Main$tabView = function (content) {
 												$mdgriffith$elm_ui$Element$padding(8)
 											]),
 										{
-											c: $mdgriffith$elm_ui$Element$text('Done'),
+											d: $mdgriffith$elm_ui$Element$text('Done'),
 											h: $elm$core$Maybe$Just($author$project$Main$CreateTabToChooseDiscussion)
 										}))),
 								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
@@ -21156,27 +21152,16 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$px(38))
 							]),
 						$mdgriffith$elm_ui$Element$none) : A2(
-						$mdgriffith$elm_ui$Element$Input$button,
+						$mdgriffith$elm_ui$Element$el,
 						_List_fromArray(
 							[
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$padding(8),
-								$mdgriffith$elm_ui$Element$Border$width(1),
 								$mdgriffith$elm_ui$Element$moveRight(16)
 							]),
-						{
-							c: $mdgriffith$elm_ui$Element$text('Create and Link Discussion'),
-							h: $elm$core$Maybe$Just($author$project$Main$CreateTabSubmitNewDiscussion)
-						});
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+						A2(
+							$author$project$Main$button,
+							$elm$core$Maybe$Just($author$project$Main$CreateTabSubmitNewDiscussion),
+							$mdgriffith$elm_ui$Element$text('Create and Link Discussion')));
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -21201,7 +21186,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Input$multiline,
 								_List_Nil,
 								{
-									c: A2(
+									d: A2(
 										$mdgriffith$elm_ui$Element$Input$labelAbove,
 										_List_Nil,
 										$mdgriffith$elm_ui$Element$text('Discussion')),
@@ -21250,15 +21235,7 @@ var $author$project$Main$tabView = function (content) {
 							return $mdgriffith$elm_ui$Element$none;
 						}
 					}();
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -21320,15 +21297,7 @@ var $author$project$Main$tabView = function (content) {
 						$mdgriffith$elm_ui$Element$none));
 					var titleLabel = _v4.a;
 					var submitNode = _v4.b;
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -21353,7 +21322,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Input$multiline,
 								_List_Nil,
 								{
-									c: A2($mdgriffith$elm_ui$Element$Input$labelAbove, _List_Nil, titleLabel),
+									d: A2($mdgriffith$elm_ui$Element$Input$labelAbove, _List_Nil, titleLabel),
 									ac: function (s) {
 										return $author$project$Main$CreateTabUpdateInput(
 											$author$project$Create$SourceTitle(s));
@@ -21366,7 +21335,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Input$multiline,
 								_List_Nil,
 								{
-									c: A2(
+									d: A2(
 										$mdgriffith$elm_ui$Element$Input$labelAbove,
 										_List_Nil,
 										$mdgriffith$elm_ui$Element$text('Author (not required)')),
@@ -21382,7 +21351,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Input$multiline,
 								_List_Nil,
 								{
-									c: A2(
+									d: A2(
 										$mdgriffith$elm_ui$Element$Input$labelAbove,
 										_List_Nil,
 										$mdgriffith$elm_ui$Element$text('Content (not required)')),
@@ -21398,15 +21367,7 @@ var $author$project$Main$tabView = function (content) {
 							]));
 				default:
 					var note = _v1.a;
-					return A2(
-						$mdgriffith$elm_ui$Element$column,
-						_List_fromArray(
-							[
-								$mdgriffith$elm_ui$Element$padding(16),
-								$mdgriffith$elm_ui$Element$centerX,
-								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-								A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-							]),
+					return $author$project$Main$column(
 						_List_fromArray(
 							[
 								A2(
@@ -21498,7 +21459,7 @@ var $author$project$Main$tabView = function (content) {
 											$mdgriffith$elm_ui$Element$padding(8)
 										]),
 									{
-										c: $mdgriffith$elm_ui$Element$text('Done'),
+										d: $mdgriffith$elm_ui$Element$text('Done'),
 										h: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
 									}))),
 							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
@@ -21747,7 +21708,7 @@ var $author$project$Main$tabView = function (content) {
 									$mdgriffith$elm_ui$Element$Input$text,
 									_List_Nil,
 									{
-										c: A2(
+										d: A2(
 											$mdgriffith$elm_ui$Element$Input$labelAbove,
 											_List_Nil,
 											$mdgriffith$elm_ui$Element$text('Filter Discussion')),
@@ -21798,7 +21759,7 @@ var $author$project$Main$tabView = function (content) {
 															$mdgriffith$elm_ui$Element$Input$button,
 															_List_Nil,
 															{
-																c: A2(
+																d: A2(
 																	$mdgriffith$elm_ui$Element$paragraph,
 																	_List_Nil,
 																	_List_fromArray(
@@ -21817,15 +21778,7 @@ var $author$project$Main$tabView = function (content) {
 								]));
 					}
 				}();
-				return A2(
-					$mdgriffith$elm_ui$Element$column,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$padding(16),
-							$mdgriffith$elm_ui$Element$centerX,
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-							A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
-						]),
+				return $author$project$Main$column(
 					_List_fromArray(
 						[
 							A2(
@@ -21886,7 +21839,7 @@ var $author$project$Main$setupOverlay = function () {
 					$mdgriffith$elm_ui$Element$moveLeft(2)
 				]),
 			{
-				c: $mdgriffith$elm_ui$Element$text('x'),
+				d: $mdgriffith$elm_ui$Element$text('x'),
 				h: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
 			}));
 	var buttonBuilder = function (func) {
@@ -21939,7 +21892,7 @@ var $author$project$Main$setupOverlay = function () {
 							]),
 						buttonBuilder(
 							{
-								c: A2(
+								d: A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
@@ -21955,7 +21908,7 @@ var $author$project$Main$setupOverlay = function () {
 							]),
 						buttonBuilder(
 							{
-								c: A2(
+								d: A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
