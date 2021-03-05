@@ -515,8 +515,8 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
     content = getContent slipbox
     recurs rootNote links =
       List.map
-        ( \noteLinkTuple ->
-          case noteIsEntryPointForDifferentDiscussion ( Tuple.first noteLinkTuple ) discussion slipbox of
+        ( \( linkedNote, link ) ->
+          case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
             Just differentDiscussion ->
               [
                 ( differentDiscussion
@@ -524,11 +524,11 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
                 )
               ]
             Nothing ->
-              ( noteLinkTuple ::
+              ( (linkedNote,link) ::
                 recurs
-                  ( Tuple.first noteLinkTuple )
+                  linkedNote
                   content.notes
-                  ( List.filter (\l -> not <| Link.is ( Tuple.second noteLinkTuple ) l ) links )
+                  ( List.filter (\l -> not <| Link.is link l ) links )
               )
         )
         ( getLinkedNotes_ rootNote content.notes links )
