@@ -514,47 +514,51 @@ getDiscussionTreeWithCollapsedDiscussions : Note.Note -> Slipbox -> ( List Note.
 getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
   let
     content = getContent slipbox
+
     recurs rootNote links =
-      List.map
-        ( \( linkedNote, link ) ->
-          case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
-            Just differentDiscussionList -> ( linkedNote, link ) :: differentDiscussionList
-              --List.map
-                --( \differentDiscussion ->
-                --  ( differentDiscussion
-                --  , Tuple.first <| Link.create content.idGenerator rootNote differentDiscussion
-                --  )
-                --)
-                --differentDiscussionList
-            Nothing ->
-              ( (linkedNote,link) ::
-                recurs
-                  linkedNote
-                  ( List.filter (\l -> not <| Link.is link l ) links )
-              )
-        )
-        ( getLinkedNotes_ rootNote content.notes links )
-        |> flatten2D
+      if isADifferentDiscussion rootNote discussion then
+        []
+      else
+        List.map
+          ( \( linkedNote, link ) ->
+            case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
+              Just differentDiscussionList ->
+                ( linkedNote, link ) :: differentDiscussionList
+              Nothing ->
+                ( (linkedNote,link) ::
+                  recurs
+                    linkedNote
+                    ( List.filter (\l -> not <| Link.is link l ) links )
+                )
+          )
+          ( getLinkedNotes_ rootNote content.notes links )
+          |> flatten2D
     allTuples = recurs discussion content.links
   in
   ( discussion :: List.map Tuple.first allTuples
   , List.map Tuple.second allTuples
   )
 
+isADifferentDiscussion : Note.Note -> Note.Note -> Bool
+isADifferentDiscussion note discussion =
+  Note.getVariant note == Note.Discussion && ( not <| Note.is note discussion )
+
 noteIsEntryPointForDifferentDiscussion : Note.Note -> Note.Note -> Slipbox -> Maybe ( List ( Note.Note, Link.Link ) )
 noteIsEntryPointForDifferentDiscussion note discussion slipbox =
   let
     noteLinkTuples = getLinkedNotes note slipbox
     differentLinkedDiscussions =
-      --List.map Tuple.first <|
         List.filter
-          ( \( linkedNote, _ ) ->
-            Note.getVariant linkedNote == Note.Discussion &&
-            ( not <| Note.is linkedNote discussion )
-          )
+          ( \( linkedNote, _ ) -> isADifferentDiscussion linkedNote discussion )
           noteLinkTuples
+    isEntryPointForGivenDiscussion =
+      List.any
+        ( \( linkedNote, _ ) ->
+          Note.is linkedNote discussion
+        )
+        noteLinkTuples
   in
-  if List.isEmpty differentLinkedDiscussions then
+  if List.isEmpty differentLinkedDiscussions || isEntryPointForGivenDiscussion then
     Nothing
   else
     Just differentLinkedDiscussions

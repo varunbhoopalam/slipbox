@@ -9208,6 +9208,10 @@ var $author$project$Slipbox$getLinkedNotes_ = F3(
 			A2($author$project$Slipbox$convertLinktoLinkNoteTuple, note, notes),
 			relevantLinks);
 	});
+var $author$project$Slipbox$isADifferentDiscussion = F2(
+	function (note, discussion) {
+		return ($author$project$Note$getVariant(note) === 1) && (!A2($author$project$Note$is, note, discussion));
+	});
 var $author$project$Slipbox$getLinkedNotes = F2(
 	function (note, slipbox) {
 		var content = $author$project$Slipbox$getContent(slipbox);
@@ -9230,21 +9234,28 @@ var $elm$core$List$isEmpty = function (xs) {
 var $author$project$Slipbox$noteIsEntryPointForDifferentDiscussion = F3(
 	function (note, discussion, slipbox) {
 		var noteLinkTuples = A2($author$project$Slipbox$getLinkedNotes, note, slipbox);
+		var isEntryPointForGivenDiscussion = A2(
+			$elm$core$List$any,
+			function (_v1) {
+				var linkedNote = _v1.a;
+				return A2($author$project$Note$is, linkedNote, discussion);
+			},
+			noteLinkTuples);
 		var differentLinkedDiscussions = A2(
 			$elm$core$List$filter,
 			function (_v0) {
 				var linkedNote = _v0.a;
-				return ($author$project$Note$getVariant(linkedNote) === 1) && (!A2($author$project$Note$is, linkedNote, discussion));
+				return A2($author$project$Slipbox$isADifferentDiscussion, linkedNote, discussion);
 			},
 			noteLinkTuples);
-		return $elm$core$List$isEmpty(differentLinkedDiscussions) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(differentLinkedDiscussions);
+		return ($elm$core$List$isEmpty(differentLinkedDiscussions) || isEntryPointForGivenDiscussion) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(differentLinkedDiscussions);
 	});
 var $author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions = F2(
 	function (discussion, slipbox) {
 		var content = $author$project$Slipbox$getContent(slipbox);
 		var recurs = F2(
 			function (rootNote, links) {
-				return $author$project$Slipbox$flatten2D(
+				return A2($author$project$Slipbox$isADifferentDiscussion, rootNote, discussion) ? _List_Nil : $author$project$Slipbox$flatten2D(
 					A2(
 						$elm$core$List$map,
 						function (_v0) {
