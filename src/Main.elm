@@ -876,25 +876,10 @@ tabView content =
                 [ Element.row
                   []
                   [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    svgLegend
                       [ Svg.g []
-                        [ Svg.rect
-                          [ Svg.Attributes.fill "rgb(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
-                        , Svg.rect
-                          [ Svg.Attributes.fill "rgba(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.transform "rotate(45 20 20)"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
+                        [ svgRect "10" "10"
+                        , svgRectTransform "10" "10" "rotate(45 20 20)"
                         ]
                       ]
                   , Element.text "Currently Selected Note"
@@ -902,7 +887,7 @@ tabView content =
                 , Element.row
                   []
                   [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    svgLegend
                       [ Svg.g []
                         [ Svg.circle
                           [ Svg.Attributes.r "10"
@@ -934,23 +919,13 @@ tabView content =
                   ]
                 , Element.row
                   []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.rect
-                        [ Svg.Attributes.fill "rgb(0,0,0)"
-                        , Svg.Attributes.width "20"
-                        , Svg.Attributes.height "20"
-                        , Svg.Attributes.x "10"
-                        , Svg.Attributes.y "10"
-                        ]
-                        []
-                      ]
+                  [ Element.html <| svgLegend [ svgRect "10" "10" ]
                   , Element.text "Discussion (if not selected)"
                   ]
                 , Element.row
                   []
                   [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                    svgLegend
                       [ Svg.circle
                         [ Svg.Attributes.r "10"
                         , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
@@ -1181,48 +1156,23 @@ tabView content =
               , Element.row
                 []
                 [ Element.html <|
-                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                  svgLegend
                     [ Svg.g []
-                      [ Svg.rect
-                        [ Svg.Attributes.fill "rgb(0,0,0)"
-                        , Svg.Attributes.width "20"
-                        , Svg.Attributes.height "20"
-                        , Svg.Attributes.x "10"
-                        , Svg.Attributes.y "10"
-                        ]
-                        []
-                      , Svg.rect
-                        [ Svg.Attributes.fill "rgba(0,0,0)"
-                        , Svg.Attributes.width "20"
-                        , Svg.Attributes.height "20"
-                        , Svg.Attributes.transform "rotate(45 20 20)"
-                        , Svg.Attributes.x "10"
-                        , Svg.Attributes.y "10"
-                        ]
-                        []
+                      [ svgRect "10" "10"
+                      , svgRectTransform "10" "10" "rotate(45 20 20)"
                       ]
                     ]
                 , Element.text "Currently Selected Note"
                 ]
               , Element.row
                 []
-                [ Element.html <|
-                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                    [ Svg.rect
-                      [ Svg.Attributes.fill "rgb(0,0,0)"
-                      , Svg.Attributes.width "20"
-                      , Svg.Attributes.height "20"
-                      , Svg.Attributes.x "10"
-                      , Svg.Attributes.y "10"
-                      ]
-                      []
-                    ]
+                [ Element.html <| svgLegend [ svgRect "10" "10" ]
                 , Element.text "Discussion (if not selected)"
                 ]
               , Element.row
                 []
                 [ Element.html <|
-                  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+                  svgLegend
                     [ Svg.circle
                       [ Svg.Attributes.r "10"
                       , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
@@ -1409,6 +1359,8 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
 
 viewGraphNote : ( Note.Note -> Msg ) ->  GraphNote -> Svg.Svg Msg
 viewGraphNote msg graphNote =
+  let gLambda note content = Svg.g [ Svg.Attributes.cursor "Pointer", Svg.Events.onClick <| msg note ] content
+  in
   case graphNote of
     Selected note x y ->
       let
@@ -1420,27 +1372,9 @@ viewGraphNote msg graphNote =
         yCenter = center y
         transformation = "rotate(45 " ++ x ++ " " ++ y ++ ")"
       in
-      Svg.g
-        [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| msg note
-        ]
-        [ Svg.rect
-          [ Svg.Attributes.fill "rgb(0,0,0)"
-          , Svg.Attributes.width "20"
-          , Svg.Attributes.height "20"
-          , Svg.Attributes.x xCenter
-          , Svg.Attributes.y yCenter
-          ]
-          []
-        , Svg.rect
-          [ Svg.Attributes.fill "rgba(0,0,0)"
-          , Svg.Attributes.width "20"
-          , Svg.Attributes.height "20"
-          , Svg.Attributes.x xCenter
-          , Svg.Attributes.y yCenter
-          , Svg.Attributes.transform transformation
-          ]
-          []
+      gLambda note
+        [ svgRect xCenter yCenter
+        , svgRectTransform xCenter yCenter transformation
         ]
 
 
@@ -1451,10 +1385,7 @@ viewGraphNote msg graphNote =
             Just s -> String.fromFloat <| s + increment
             Nothing -> str
       in
-      Svg.g
-        [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| msg note
-        ]
+      gLambda note
         [ Svg.circle
           [ Svg.Attributes.r "5"
           , Svg.Attributes.stroke "black"
@@ -1490,16 +1421,8 @@ viewGraphNote msg graphNote =
         xCenter = center x
         yCenter = center y
       in
-      Svg.rect
-        [ Svg.Attributes.fill "rgb(0,0,0)"
-        , Svg.Attributes.width "20"
-        , Svg.Attributes.height "20"
-        , Svg.Attributes.x xCenter
-        , Svg.Attributes.y yCenter
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| msg note
-        ]
-        []
+      gLambda note
+        [ svgRect xCenter yCenter ]
 
     Regular note x y ->
       Svg.circle
@@ -2638,3 +2561,29 @@ column contents =
     , Element.spacingXY 32 32
     ]
     contents
+
+svgLegend : List ( Svg.Svg Msg ) -> Svg.Svg Msg
+svgLegend contents =
+  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+    contents
+
+svgRect x y =
+  Svg.rect
+    [ Svg.Attributes.fill "rgb(0,0,0)"
+    , Svg.Attributes.width "20"
+    , Svg.Attributes.height "20"
+    , Svg.Attributes.x x
+    , Svg.Attributes.y y
+    ]
+    []
+
+svgRectTransform x y transform =
+  Svg.rect
+    [ Svg.Attributes.fill "rgb(0,0,0)"
+    , Svg.Attributes.width "20"
+    , Svg.Attributes.height "20"
+    , Svg.Attributes.x x
+    , Svg.Attributes.y y
+    , Svg.Attributes.transform transform
+    ]
+    []

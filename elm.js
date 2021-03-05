@@ -18180,6 +18180,46 @@ var $author$project$Main$sourceTabToolbar = function (input) {
 };
 var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
 var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
+var $author$project$Main$svgLegend = function (contents) {
+	return A2(
+		$elm$svg$Svg$svg,
+		_List_fromArray(
+			[
+				$elm$svg$Svg$Attributes$height('40'),
+				$elm$svg$Svg$Attributes$width('40'),
+				$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+			]),
+		contents);
+};
+var $author$project$Main$svgRect = F2(
+	function (x, y) {
+		return A2(
+			$elm$svg$Svg$rect,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
+					$elm$svg$Svg$Attributes$width('20'),
+					$elm$svg$Svg$Attributes$height('20'),
+					$elm$svg$Svg$Attributes$x(x),
+					$elm$svg$Svg$Attributes$y(y)
+				]),
+			_List_Nil);
+	});
+var $author$project$Main$svgRectTransform = F3(
+	function (x, y, transform) {
+		return A2(
+			$elm$svg$Svg$rect,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
+					$elm$svg$Svg$Attributes$width('20'),
+					$elm$svg$Svg$Attributes$height('20'),
+					$elm$svg$Svg$Attributes$x(x),
+					$elm$svg$Svg$Attributes$y(y),
+					$elm$svg$Svg$Attributes$transform(transform)
+				]),
+			_List_Nil);
+	});
 var $mdgriffith$elm_ui$Internal$Model$Padding = F5(
 	function (a, b, c, d, e) {
 		return {$: 0, a: a, b: b, c: c, d: d, e: e};
@@ -20199,6 +20239,18 @@ var $elm$svg$Svg$Events$onClick = function (msg) {
 var $elm$core$String$toFloat = _String_toFloat;
 var $author$project$Main$viewGraphNote = F2(
 	function (msg, graphNote) {
+		var gLambda = F2(
+			function (note, content) {
+				return A2(
+					$elm$svg$Svg$g,
+					_List_fromArray(
+						[
+							$elm$svg$Svg$Attributes$cursor('Pointer'),
+							$elm$svg$Svg$Events$onClick(
+							msg(note))
+						]),
+					content);
+			});
 		switch (graphNote.$) {
 			case 0:
 				var note = graphNote.a;
@@ -20217,38 +20269,12 @@ var $author$project$Main$viewGraphNote = F2(
 				var xCenter = center(x);
 				var yCenter = center(y);
 				return A2(
-					$elm$svg$Svg$g,
+					gLambda,
+					note,
 					_List_fromArray(
 						[
-							$elm$svg$Svg$Attributes$cursor('Pointer'),
-							$elm$svg$Svg$Events$onClick(
-							msg(note))
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$elm$svg$Svg$rect,
-							_List_fromArray(
-								[
-									$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-									$elm$svg$Svg$Attributes$width('20'),
-									$elm$svg$Svg$Attributes$height('20'),
-									$elm$svg$Svg$Attributes$x(xCenter),
-									$elm$svg$Svg$Attributes$y(yCenter)
-								]),
-							_List_Nil),
-							A2(
-							$elm$svg$Svg$rect,
-							_List_fromArray(
-								[
-									$elm$svg$Svg$Attributes$fill('rgba(0,0,0)'),
-									$elm$svg$Svg$Attributes$width('20'),
-									$elm$svg$Svg$Attributes$height('20'),
-									$elm$svg$Svg$Attributes$x(xCenter),
-									$elm$svg$Svg$Attributes$y(yCenter),
-									$elm$svg$Svg$Attributes$transform(transformation)
-								]),
-							_List_Nil)
+							A2($author$project$Main$svgRect, xCenter, yCenter),
+							A3($author$project$Main$svgRectTransform, xCenter, yCenter, transformation)
 						]));
 			case 1:
 				var note = graphNote.a;
@@ -20265,13 +20291,8 @@ var $author$project$Main$viewGraphNote = F2(
 						}
 					});
 				return A2(
-					$elm$svg$Svg$g,
-					_List_fromArray(
-						[
-							$elm$svg$Svg$Attributes$cursor('Pointer'),
-							$elm$svg$Svg$Events$onClick(
-							msg(note))
-						]),
+					gLambda,
+					note,
 					_List_fromArray(
 						[
 							A2(
@@ -20328,19 +20349,12 @@ var $author$project$Main$viewGraphNote = F2(
 				var xCenter = center(x);
 				var yCenter = center(y);
 				return A2(
-					$elm$svg$Svg$rect,
+					gLambda,
+					note,
 					_List_fromArray(
 						[
-							$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-							$elm$svg$Svg$Attributes$width('20'),
-							$elm$svg$Svg$Attributes$height('20'),
-							$elm$svg$Svg$Attributes$x(xCenter),
-							$elm$svg$Svg$Attributes$y(yCenter),
-							$elm$svg$Svg$Attributes$cursor('Pointer'),
-							$elm$svg$Svg$Events$onClick(
-							msg(note))
-						]),
-					_List_Nil);
+							A2($author$project$Main$svgRect, xCenter, yCenter)
+						]));
 			default:
 				var note = graphNote.a;
 				var x = graphNote.b;
@@ -20979,14 +20993,7 @@ var $author$project$Main$tabView = function (content) {
 												_List_fromArray(
 													[
 														$mdgriffith$elm_ui$Element$html(
-														A2(
-															$elm$svg$Svg$svg,
-															_List_fromArray(
-																[
-																	$elm$svg$Svg$Attributes$height('40'),
-																	$elm$svg$Svg$Attributes$width('40'),
-																	$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-																]),
+														$author$project$Main$svgLegend(
 															_List_fromArray(
 																[
 																	A2(
@@ -20994,29 +21001,8 @@ var $author$project$Main$tabView = function (content) {
 																	_List_Nil,
 																	_List_fromArray(
 																		[
-																			A2(
-																			$elm$svg$Svg$rect,
-																			_List_fromArray(
-																				[
-																					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-																					$elm$svg$Svg$Attributes$width('20'),
-																					$elm$svg$Svg$Attributes$height('20'),
-																					$elm$svg$Svg$Attributes$x('10'),
-																					$elm$svg$Svg$Attributes$y('10')
-																				]),
-																			_List_Nil),
-																			A2(
-																			$elm$svg$Svg$rect,
-																			_List_fromArray(
-																				[
-																					$elm$svg$Svg$Attributes$fill('rgba(0,0,0)'),
-																					$elm$svg$Svg$Attributes$width('20'),
-																					$elm$svg$Svg$Attributes$height('20'),
-																					$elm$svg$Svg$Attributes$transform('rotate(45 20 20)'),
-																					$elm$svg$Svg$Attributes$x('10'),
-																					$elm$svg$Svg$Attributes$y('10')
-																				]),
-																			_List_Nil)
+																			A2($author$project$Main$svgRect, '10', '10'),
+																			A3($author$project$Main$svgRectTransform, '10', '10', 'rotate(45 20 20)')
 																		]))
 																]))),
 														$mdgriffith$elm_ui$Element$text('Currently Selected Note')
@@ -21027,14 +21013,7 @@ var $author$project$Main$tabView = function (content) {
 												_List_fromArray(
 													[
 														$mdgriffith$elm_ui$Element$html(
-														A2(
-															$elm$svg$Svg$svg,
-															_List_fromArray(
-																[
-																	$elm$svg$Svg$Attributes$height('40'),
-																	$elm$svg$Svg$Attributes$width('40'),
-																	$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-																]),
+														$author$project$Main$svgLegend(
 															_List_fromArray(
 																[
 																	A2(
@@ -21085,27 +21064,10 @@ var $author$project$Main$tabView = function (content) {
 												_List_fromArray(
 													[
 														$mdgriffith$elm_ui$Element$html(
-														A2(
-															$elm$svg$Svg$svg,
+														$author$project$Main$svgLegend(
 															_List_fromArray(
 																[
-																	$elm$svg$Svg$Attributes$height('40'),
-																	$elm$svg$Svg$Attributes$width('40'),
-																	$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-																]),
-															_List_fromArray(
-																[
-																	A2(
-																	$elm$svg$Svg$rect,
-																	_List_fromArray(
-																		[
-																			$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-																			$elm$svg$Svg$Attributes$width('20'),
-																			$elm$svg$Svg$Attributes$height('20'),
-																			$elm$svg$Svg$Attributes$x('10'),
-																			$elm$svg$Svg$Attributes$y('10')
-																		]),
-																	_List_Nil)
+																	A2($author$project$Main$svgRect, '10', '10')
 																]))),
 														$mdgriffith$elm_ui$Element$text('Discussion (if not selected)')
 													])),
@@ -21115,14 +21077,7 @@ var $author$project$Main$tabView = function (content) {
 												_List_fromArray(
 													[
 														$mdgriffith$elm_ui$Element$html(
-														A2(
-															$elm$svg$Svg$svg,
-															_List_fromArray(
-																[
-																	$elm$svg$Svg$Attributes$height('40'),
-																	$elm$svg$Svg$Attributes$width('40'),
-																	$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-																]),
+														$author$project$Main$svgLegend(
 															_List_fromArray(
 																[
 																	A2(
@@ -21539,14 +21494,7 @@ var $author$project$Main$tabView = function (content) {
 									_List_fromArray(
 										[
 											$mdgriffith$elm_ui$Element$html(
-											A2(
-												$elm$svg$Svg$svg,
-												_List_fromArray(
-													[
-														$elm$svg$Svg$Attributes$height('40'),
-														$elm$svg$Svg$Attributes$width('40'),
-														$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-													]),
+											$author$project$Main$svgLegend(
 												_List_fromArray(
 													[
 														A2(
@@ -21554,29 +21502,8 @@ var $author$project$Main$tabView = function (content) {
 														_List_Nil,
 														_List_fromArray(
 															[
-																A2(
-																$elm$svg$Svg$rect,
-																_List_fromArray(
-																	[
-																		$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-																		$elm$svg$Svg$Attributes$width('20'),
-																		$elm$svg$Svg$Attributes$height('20'),
-																		$elm$svg$Svg$Attributes$x('10'),
-																		$elm$svg$Svg$Attributes$y('10')
-																	]),
-																_List_Nil),
-																A2(
-																$elm$svg$Svg$rect,
-																_List_fromArray(
-																	[
-																		$elm$svg$Svg$Attributes$fill('rgba(0,0,0)'),
-																		$elm$svg$Svg$Attributes$width('20'),
-																		$elm$svg$Svg$Attributes$height('20'),
-																		$elm$svg$Svg$Attributes$transform('rotate(45 20 20)'),
-																		$elm$svg$Svg$Attributes$x('10'),
-																		$elm$svg$Svg$Attributes$y('10')
-																	]),
-																_List_Nil)
+																A2($author$project$Main$svgRect, '10', '10'),
+																A3($author$project$Main$svgRectTransform, '10', '10', 'rotate(45 20 20)')
 															]))
 													]))),
 											$mdgriffith$elm_ui$Element$text('Currently Selected Note')
@@ -21587,27 +21514,10 @@ var $author$project$Main$tabView = function (content) {
 									_List_fromArray(
 										[
 											$mdgriffith$elm_ui$Element$html(
-											A2(
-												$elm$svg$Svg$svg,
+											$author$project$Main$svgLegend(
 												_List_fromArray(
 													[
-														$elm$svg$Svg$Attributes$height('40'),
-														$elm$svg$Svg$Attributes$width('40'),
-														$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-													]),
-												_List_fromArray(
-													[
-														A2(
-														$elm$svg$Svg$rect,
-														_List_fromArray(
-															[
-																$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-																$elm$svg$Svg$Attributes$width('20'),
-																$elm$svg$Svg$Attributes$height('20'),
-																$elm$svg$Svg$Attributes$x('10'),
-																$elm$svg$Svg$Attributes$y('10')
-															]),
-														_List_Nil)
+														A2($author$project$Main$svgRect, '10', '10')
 													]))),
 											$mdgriffith$elm_ui$Element$text('Discussion (if not selected)')
 										])),
@@ -21617,14 +21527,7 @@ var $author$project$Main$tabView = function (content) {
 									_List_fromArray(
 										[
 											$mdgriffith$elm_ui$Element$html(
-											A2(
-												$elm$svg$Svg$svg,
-												_List_fromArray(
-													[
-														$elm$svg$Svg$Attributes$height('40'),
-														$elm$svg$Svg$Attributes$width('40'),
-														$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-													]),
+											$author$project$Main$svgLegend(
 												_List_fromArray(
 													[
 														A2(
