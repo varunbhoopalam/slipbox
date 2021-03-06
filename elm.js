@@ -17153,6 +17153,52 @@ var $author$project$Slipbox$getSources = F2(
 			return content.X;
 		}
 	});
+var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 9};
+var $mdgriffith$elm_ui$Element$spacing = function (x) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$spacing,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
+			A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, x),
+			x,
+			x));
+};
+var $mdgriffith$elm_ui$Element$paragraph = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asParagraph,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Paragraph),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Element$spacing(5),
+						attrs))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
+var $author$project$Main$heading = function (title) {
+	return A2(
+		$mdgriffith$elm_ui$Element$paragraph,
+		_List_fromArray(
+			[$mdgriffith$elm_ui$Element$Font$bold]),
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$text(title)
+			]));
+};
+var $author$project$Main$headingCenter = function (title) {
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[$mdgriffith$elm_ui$Element$centerX]),
+		$author$project$Main$heading(title));
+};
 var $mdgriffith$elm_ui$Element$htmlAttribute = $mdgriffith$elm_ui$Internal$Model$Attr;
 var $mdgriffith$elm_ui$Internal$Model$InFront = 4;
 var $mdgriffith$elm_ui$Element$inFront = function (element) {
@@ -17387,16 +17433,6 @@ var $mdgriffith$elm_ui$Element$paddingXY = F2(
 		}
 	});
 var $mdgriffith$elm_ui$Element$Input$defaultTextPadding = A2($mdgriffith$elm_ui$Element$paddingXY, 12, 12);
-var $mdgriffith$elm_ui$Element$spacing = function (x) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$spacing,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$SpacingStyle,
-			A2($mdgriffith$elm_ui$Internal$Model$spacingName, x, x),
-			x,
-			x));
-};
 var $mdgriffith$elm_ui$Element$Input$white = A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1);
 var $mdgriffith$elm_ui$Element$Input$defaultTextBoxStyle = _List_fromArray(
 	[
@@ -18157,25 +18193,6 @@ var $author$project$Main$noteTabToolbar = function (input) {
 					})
 				])));
 };
-var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 9};
-var $mdgriffith$elm_ui$Element$paragraph = F2(
-	function (attrs, children) {
-		return A4(
-			$mdgriffith$elm_ui$Internal$Model$element,
-			$mdgriffith$elm_ui$Internal$Model$asParagraph,
-			$mdgriffith$elm_ui$Internal$Model$div,
-			A2(
-				$elm$core$List$cons,
-				$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Paragraph),
-				A2(
-					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-					A2(
-						$elm$core$List$cons,
-						$mdgriffith$elm_ui$Element$spacing(5),
-						attrs))),
-			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
 var $author$project$Main$searchConverter = function (input) {
 	return $elm$core$String$isEmpty(input) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(input);
 };
@@ -18795,13 +18812,6 @@ var $author$project$Slipbox$getNotesAssociatedToSource = F2(
 			$author$project$Note$isAssociated(source),
 			$author$project$Slipbox$getContent(slipbox).q);
 	});
-var $author$project$Main$headerText = function (text) {
-	return A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_fromArray(
-			[$mdgriffith$elm_ui$Element$alignLeft, $mdgriffith$elm_ui$Element$Font$heavy]),
-		$mdgriffith$elm_ui$Element$text(text));
-};
 var $author$project$Slipbox$OpenNote = function (a) {
 	return {$: 0, a: a};
 };
@@ -18921,7 +18931,7 @@ var $author$project$Main$associatedNotesNode = F3(
 				]),
 			_List_fromArray(
 				[
-					$author$project$Main$headerText('Associated Notes'),
+					$author$project$Main$heading('Associated Notes'),
 					A2(
 					$mdgriffith$elm_ui$Element$column,
 					$author$project$Main$containerWithScrollAttributes,
@@ -18991,7 +19001,7 @@ var $author$project$Main$conditionalSubmitItemHeader = F3(
 		return $author$project$Main$itemHeaderBuilder(
 			_List_fromArray(
 				[
-					$author$project$Main$headerText(text),
+					$author$project$Main$heading(text),
 					A2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
@@ -19026,7 +19036,7 @@ var $author$project$Main$deleteItemHeader = F2(
 		return $author$project$Main$itemHeaderBuilder(
 			_List_fromArray(
 				[
-					$author$project$Main$headerText(text),
+					$author$project$Main$heading(text),
 					A2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
@@ -19239,7 +19249,7 @@ var $author$project$Main$linkedNotesNode = F3(
 						]),
 					_List_fromArray(
 						[
-							$author$project$Main$headerText('Linked Notes'),
+							$author$project$Main$heading('Linked Notes'),
 							A2(
 							$mdgriffith$elm_ui$Element$el,
 							_List_fromArray(
@@ -19301,7 +19311,7 @@ var $author$project$Main$normalItemHeader = F2(
 		return $author$project$Main$itemHeaderBuilder(
 			_List_fromArray(
 				[
-					$author$project$Main$headerText(text),
+					$author$project$Main$heading(text),
 					A2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
@@ -19420,7 +19430,7 @@ var $author$project$Main$submitItemHeader = F2(
 		return $author$project$Main$itemHeaderBuilder(
 			_List_fromArray(
 				[
-					$author$project$Main$headerText(text),
+					$author$project$Main$heading(text),
 					A2(
 					$mdgriffith$elm_ui$Element$el,
 					_List_fromArray(
@@ -19907,11 +19917,7 @@ var $author$project$Main$toItemView = F2(
 								]),
 							_List_fromArray(
 								[
-									A2(
-									$mdgriffith$elm_ui$Element$el,
-									_List_fromArray(
-										[$mdgriffith$elm_ui$Element$alignLeft, $mdgriffith$elm_ui$Element$Font$heavy]),
-									$mdgriffith$elm_ui$Element$text('Select Note to Link')),
+									$author$project$Main$heading('Select Note to Link'),
 									A2(
 									$author$project$Main$searchInput,
 									search,
@@ -20475,11 +20481,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Write a Permanent Note')),
+								$author$project$Main$headingCenter('Write a Permanent Note'),
 								A2($author$project$Main$coaching, coachingOpen, coachingText),
 								A3(
 								$author$project$Main$multiline,
@@ -20649,11 +20651,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Further Existing Arguments')),
+								$author$project$Main$headingCenter('Further Existing Arguments'),
 								A2($author$project$Main$coaching, coachingOpen, coachingText),
 								A2(
 								$mdgriffith$elm_ui$Element$paragraph,
@@ -20792,14 +20790,7 @@ var $author$project$Main$tabView = function (content) {
 											]),
 										_List_fromArray(
 											[
-												A2(
-												$mdgriffith$elm_ui$Element$paragraph,
-												_List_fromArray(
-													[$mdgriffith$elm_ui$Element$Font$bold]),
-												_List_fromArray(
-													[
-														$mdgriffith$elm_ui$Element$text('Discussion')
-													])),
+												$author$project$Main$heading('Discussion'),
 												A2(
 												$mdgriffith$elm_ui$Element$paragraph,
 												_List_Nil,
@@ -20824,14 +20815,7 @@ var $author$project$Main$tabView = function (content) {
 											]),
 										_List_fromArray(
 											[
-												A2(
-												$mdgriffith$elm_ui$Element$paragraph,
-												_List_fromArray(
-													[$mdgriffith$elm_ui$Element$Font$bold]),
-												_List_fromArray(
-													[
-														$mdgriffith$elm_ui$Element$text('Created Note')
-													])),
+												$author$project$Main$heading('Created Note'),
 												A2(
 												$mdgriffith$elm_ui$Element$paragraph,
 												_List_Nil,
@@ -20861,14 +20845,7 @@ var $author$project$Main$tabView = function (content) {
 													]),
 												_List_fromArray(
 													[
-														A2(
-														$mdgriffith$elm_ui$Element$paragraph,
-														_List_fromArray(
-															[$mdgriffith$elm_ui$Element$Font$bold]),
-														_List_fromArray(
-															[
-																$mdgriffith$elm_ui$Element$text('Selected Note')
-															])),
+														$author$project$Main$heading('Selected Note'),
 														A2(
 														$mdgriffith$elm_ui$Element$paragraph,
 														_List_Nil,
@@ -20927,11 +20904,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Is this note the start of its own discussion/a new discussion?')),
+								$author$project$Main$headingCenter('Is this note the start of its own discussion/a new discussion?'),
 								A2(
 								$mdgriffith$elm_ui$Element$paragraph,
 								_List_fromArray(
@@ -20993,11 +20966,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Attribute a Source')),
+								$author$project$Main$headingCenter('Attribute a Source'),
 								A2(
 								$mdgriffith$elm_ui$Element$paragraph,
 								_List_fromArray(
@@ -21057,11 +21026,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Create a Source')),
+								$author$project$Main$headingCenter('Create a Source'),
 								A2(
 								$mdgriffith$elm_ui$Element$paragraph,
 								_List_fromArray(
@@ -21097,11 +21062,7 @@ var $author$project$Main$tabView = function (content) {
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-								$mdgriffith$elm_ui$Element$text('Success! You\'ve smartly added to your external mind. ')),
+								$author$project$Main$headingCenter('Success! You\'ve smartly added to your external mind. '),
 								A2(
 								$mdgriffith$elm_ui$Element$paragraph,
 								_List_fromArray(
@@ -21165,6 +21126,31 @@ var $author$project$Main$tabView = function (content) {
 						_List_fromArray(
 							[$mdgriffith$elm_ui$Element$centerX]),
 						$mdgriffith$elm_ui$Element$text('Go to Discussion'))) : $mdgriffith$elm_ui$Element$none;
+				var container = F3(
+					function (title, note, element) {
+						return A2(
+							$mdgriffith$elm_ui$Element$textColumn,
+							_List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+									$mdgriffith$elm_ui$Element$Border$width(1),
+									$mdgriffith$elm_ui$Element$padding(8),
+									A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+								]),
+							_List_fromArray(
+								[
+									$author$project$Main$heading(title),
+									A2(
+									$mdgriffith$elm_ui$Element$paragraph,
+									_List_Nil,
+									_List_fromArray(
+										[
+											$mdgriffith$elm_ui$Element$text(
+											$author$project$Note$getContent(note))
+										])),
+									element
+								]));
+					});
 				return A2(
 					$mdgriffith$elm_ui$Element$row,
 					_List_fromArray(
@@ -21203,63 +21189,8 @@ var $author$project$Main$tabView = function (content) {
 								]),
 							_List_fromArray(
 								[
-									A2(
-									$mdgriffith$elm_ui$Element$textColumn,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-											$mdgriffith$elm_ui$Element$Border$width(1),
-											$mdgriffith$elm_ui$Element$padding(8),
-											A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
-										]),
-									_List_fromArray(
-										[
-											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
-											_List_fromArray(
-												[$mdgriffith$elm_ui$Element$Font$bold]),
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text('Discussion')
-												])),
-											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
-											_List_Nil,
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text(
-													$author$project$Note$getContent(discussion))
-												]))
-										])),
-									A2(
-									$mdgriffith$elm_ui$Element$textColumn,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-											$mdgriffith$elm_ui$Element$Border$width(1),
-											$mdgriffith$elm_ui$Element$padding(8),
-											A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
-										]),
-									_List_fromArray(
-										[
-											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
-											_List_fromArray(
-												[$mdgriffith$elm_ui$Element$Font$bold]),
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text('Selected Note')
-												])),
-											A2(
-											$mdgriffith$elm_ui$Element$paragraph,
-											_List_Nil,
-											_List_fromArray(
-												[
-													$mdgriffith$elm_ui$Element$text(
-													$author$project$Note$getContent(selectedNote))
-												])),
-											viewDiscussionNode
-										])),
+									A3(container, 'Discussion', discussion, $mdgriffith$elm_ui$Element$none),
+									A3(container, 'Selected Note', selectedNote, viewDiscussionNode),
 									$author$project$Main$selectedNoteLegend,
 									$author$project$Main$discussionLegend,
 									$author$project$Main$circleLegend
@@ -21393,11 +21324,7 @@ var $author$project$Main$tabView = function (content) {
 				return $author$project$Main$column(
 					_List_fromArray(
 						[
-							A2(
-							$mdgriffith$elm_ui$Element$el,
-							_List_fromArray(
-								[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$heavy]),
-							$mdgriffith$elm_ui$Element$text('Select Discussion')),
+							$author$project$Main$headingCenter('Select Discussion'),
 							tableNode
 						]));
 			}

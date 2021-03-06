@@ -626,11 +626,7 @@ tabView content =
                 Element.none
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Write a Permanent Note"
+            [ headingCenter "Write a Permanent Note"
             , coaching coachingOpen coachingText
             , multiline ( \n -> CreateTabUpdateInput <| Create.Note n ) noteInput "Note Content (required)"
             , continueNode
@@ -735,11 +731,7 @@ tabView content =
                   ]
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Further Existing Arguments"
+            [ headingCenter "Further Existing Arguments"
             , coaching coachingOpen coachingText
             , Element.paragraph
               [ Element.Font.center
@@ -820,7 +812,7 @@ tabView content =
                 , Element.centerX
                 , Element.spacingXY 10 10
                 ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
+                [ heading "Discussion"
                 , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
                 ]
               , Element.textColumn
@@ -832,7 +824,7 @@ tabView content =
                 , Element.padding 8
                 , Element.spacingXY 10 10
                 ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Created Note" ]
+                [ heading "Created Note"
                 , Element.paragraph [] [ Element.text note ]
                 ]
               , Element.column
@@ -845,7 +837,7 @@ tabView content =
                 [ Element.textColumn
                   [ Element.spacingXY 10 10
                   ]
-                  [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+                  [ heading "Selected Note"
                   , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
                   ]
                 , linkNode
@@ -882,11 +874,7 @@ tabView content =
                   button ( Just CreateTabSubmitNewDiscussion ) ( Element.text "Create and Link Discussion" )
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Is this note the start of its own discussion/a new discussion?"
+            [ headingCenter "Is this note the start of its own discussion/a new discussion?"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -914,11 +902,7 @@ tabView content =
                   Element.none
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Attribute a Source"
+            [ headingCenter "Attribute a Source"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -955,11 +939,7 @@ tabView content =
             msgLambda updateMethod = \s -> CreateTabUpdateInput <| updateMethod s
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Create a Source"
+            [ headingCenter "Create a Source"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -975,11 +955,7 @@ tabView content =
 
         Create.PromptCreateAnotherView note ->
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Success! You've smartly added to your external mind. "
+            [ headingCenter "Success! You've smartly added to your external mind. "
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1013,6 +989,16 @@ tabView content =
                   ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
               else
                 Element.none
+            container title note element = Element.textColumn
+              [ Element.width Element.fill
+              , Element.Border.width 1
+              , Element.padding 8
+              , Element.spacingXY 10 10
+              ]
+              [ heading title
+              , Element.paragraph [] [ Element.text <| Note.getContent note ]
+              , element
+              ]
           in
           Element.row
             [ Element.inFront <|
@@ -1035,25 +1021,8 @@ tabView content =
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ Element.textColumn
-                [ Element.width Element.fill
-                , Element.Border.width 1
-                , Element.padding 8
-                , Element.spacingXY 10 10
-                ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
-                , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
-                ]
-              , Element.textColumn
-                [ Element.width Element.fill
-                , Element.Border.width 1
-                , Element.padding 8
-                , Element.spacingXY 10 10
-                ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
-                , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
-                , viewDiscussionNode
-                ]
+              [ container "Discussion" discussion Element.none
+              , container "Selected Note" selectedNote viewDiscussionNode
               , selectedNoteLegend
               , discussionLegend
               , circleLegend
@@ -1142,11 +1111,7 @@ tabView content =
                   ]
           in
           column
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Select Discussion"
+            [ headingCenter "Select Discussion"
             , tableNode
             ]
 
@@ -1632,7 +1597,7 @@ itemHeaderBuilder contents =
 normalItemHeader : String -> Item.Item -> Element Msg
 normalItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| editButton item
     , Element.el [ Element.alignRight ] <| deleteButton item
     , Element.el [ Element.alignRight ] <| dismissButton item
@@ -1641,7 +1606,7 @@ normalItemHeader text item =
 conditionalSubmitItemHeader : String -> Bool -> Item.Item -> Element Msg
 conditionalSubmitItemHeader text canSubmit item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| chooseSubmitButton item canSubmit
     ]
@@ -1649,7 +1614,7 @@ conditionalSubmitItemHeader text canSubmit item =
 deleteItemHeader : String -> Item.Item -> Element Msg
 deleteItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| confirmButton item
     ]
@@ -1657,7 +1622,7 @@ deleteItemHeader text item =
 submitItemHeader : String -> Item.Item -> Element Msg
 submitItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| submitButton item
     ]
@@ -1759,8 +1724,7 @@ toItemView content item =
           , Element.width Element.fill
           , Element.spacingXY 8 8
           ]
-          [ Element.el [ Element.alignLeft, Element.Font.heavy ]
-            <| Element.text "Select Note to Link"
+          [ heading "Select Note to Link"
           , searchInput search
             <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
           , Element.column
@@ -1888,10 +1852,6 @@ buttonTray maybeItem =
     , button_ Slipbox.NewDiscussion "Create Discussion"
     ]
 
-headerText : String -> Element Msg
-headerText text =
-  Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text text
-
 linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 linkedNotesNode item note slipbox =
   let
@@ -1910,7 +1870,7 @@ linkedNotesNode item note slipbox =
         []
         [ Element.row
           [ Element.width Element.fill]
-          [ headerText "Linked Notes"
+          [ heading "Linked Notes"
           , Element.el [ Element.alignRight ] <| addLinkButton item ]
         , linkedNotesDomRep
         ]
@@ -1934,7 +1894,7 @@ associatedNotesNode item source slipbox =
   else
     Element.column
       [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ headerText "Associated Notes"
+      [ heading "Associated Notes"
       , Element.column containerWithScrollAttributes
           ( List.map (\n -> toAssociatedNoteButton ( Just item ) n ) associatedNotes )
       ]
@@ -2377,6 +2337,9 @@ multiline onChange text label =
     , label = Element.Input.labelAbove [] <| Element.text label
     , spellcheck = True
     }
+
+heading title = Element.paragraph [ Element.Font.bold ] [ Element.text title ]
+headingCenter title = Element.el [ Element.centerX ] <| heading title
 
 -- SVG HELPERS
 
