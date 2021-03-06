@@ -1110,13 +1110,7 @@ tabView content =
                   , Element.Border.rounded 6
                   , Element.centerX
                   ]
-                  [ Element.Input.text
-                    []
-                    { onChange = DiscoveryModeUpdateInput
-                    , text = filterInput
-                    , placeholder = Nothing
-                    , label = Element.Input.labelAbove [] <| Element.text "Filter Discussion"
-                    }
+                  [ multiline DiscoveryModeUpdateInput filterInput "Filter Discussion"
                   , Element.row [ Element.width Element.fill ]
                     [ Element.el (Element.width Element.fill :: headerAttrs) <| Element.text "Discussion"
                     ]
