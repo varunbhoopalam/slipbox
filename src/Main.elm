@@ -874,17 +874,7 @@ tabView content =
                 , Element.spacingXY 8 8
                 ]
                 [ selectedNoteLegend
-                , Element.row
-                  []
-                  [ Element.html <| svgLegend
-                    [ Svg.g []
-                      [ svgCircle "20" "20" "10"
-                      , svgLine "10" "30" "20" "20"
-                      , svgLine "20" "20" "10" "30"
-                      ]
-                    ]
-                  , Element.text "Note Marked to link (if not selected)"
-                  ]
+                , linkedCircleLegend
                 , discussionLegend
                 , circleLegend
                 ]
@@ -2515,4 +2505,17 @@ circleLegend =
     []
     [ Element.html <| svgLegend [ svgCircle "20" "20" "10" ]
     , Element.text "Regular Note"
+    ]
+
+linkedCircleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend
+      [ Svg.g []
+        [ svgCircle "20" "20" "10"
+        , svgLine "10" "30" "20" "20"
+        , svgLine "20" "20" "10" "30"
+        ]
+      ]
+    , Element.text "Note Marked to link (if not selected)"
     ]
