@@ -876,28 +876,13 @@ tabView content =
                 [ selectedNoteLegend
                 , Element.row
                   []
-                  [ Element.html <|
-                    svgLegend
-                      [ Svg.g []
-                        [ svgCircle "20" "20" "10"
-                        , Svg.line
-                          [ Svg.Attributes.x1 "10"
-                          , Svg.Attributes.x2 "30"
-                          , Svg.Attributes.y1 "20"
-                          , Svg.Attributes.y2 "20"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        , Svg.line
-                          [ Svg.Attributes.x1 "20"
-                          , Svg.Attributes.x2 "20"
-                          , Svg.Attributes.y1 "10"
-                          , Svg.Attributes.y2 "30"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        ]
+                  [ Element.html <| svgLegend
+                    [ Svg.g []
+                      [ svgCircle "20" "20" "10"
+                      , svgLine "10" "30" "20" "20"
+                      , svgLine "20" "20" "10" "30"
                       ]
+                    ]
                   , Element.text "Note Marked to link (if not selected)"
                   ]
                 , discussionLegend
@@ -1326,22 +1311,8 @@ viewGraphNote msg graphNote =
       in
       gLambda note
         [ svgCircle x y "5"
-        , Svg.line
-          [ Svg.Attributes.x1 <| modify x -5
-          , Svg.Attributes.x2 <| modify x 5
-          , Svg.Attributes.y1 y
-          , Svg.Attributes.y2 y
-          , Svg.Attributes.stroke "black"
-          ]
-          []
-        , Svg.line
-          [ Svg.Attributes.x1 x
-          , Svg.Attributes.x2 x
-          , Svg.Attributes.y1 <| modify y -5
-          , Svg.Attributes.y2 <| modify y 5
-          , Svg.Attributes.stroke "black"
-          ]
-          []
+        , svgLine ( modify x -5 ) ( modify x 5 ) y y
+        , svgLine x x ( modify y -5 ) ( modify y 5 )
         ]
 
     Discussion note x y ->
@@ -1407,20 +1378,15 @@ toCreateTabGraphLink notePositions link =
             identifier link notePosition.note
           )
           notePositions
+    line note1 note2 = Svg.line
+      [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+      , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+      , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+      , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+      , Svg.Attributes.stroke "rgb(0,0,0)"
+      , Svg.Attributes.strokeWidth "2" ] []
   in
-  Maybe.map2 createTabSvgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
-
-createTabSvgLine : NotePosition -> NotePosition -> Svg.Svg Msg
-createTabSvgLine note1 note2 =
-  Svg.line
-    [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
-    , Svg.Attributes.y1 <| String.fromFloat <| note1.y
-    , Svg.Attributes.x2 <| String.fromFloat <| note2.x
-    , Svg.Attributes.y2 <| String.fromFloat <| note2.y
-    , Svg.Attributes.stroke "rgb(0,0,0)"
-    , Svg.Attributes.strokeWidth "2"
-    ]
-    []
+  Maybe.map2 line (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
 
 createTabSourceInput: String -> (List String) -> Element Msg
 createTabSourceInput input suggestions =
@@ -2501,7 +2467,6 @@ svgCircle cx cy r =
     ]
     []
 
-
 svgRectTransform x y transform =
   Svg.rect
     [ Svg.Attributes.fill "rgb(0,0,0)"
@@ -2514,6 +2479,16 @@ svgRectTransform x y transform =
     []
 
 svgRect x y = svgRectTransform x y ""
+
+svgLine x1 x2 y1 y2 =
+  Svg.line
+    [ Svg.Attributes.x1 x1
+    , Svg.Attributes.x2 x2
+    , Svg.Attributes.y1 y1
+    , Svg.Attributes.y2 y2
+    , Svg.Attributes.stroke "black"
+    ]
+    []
 
 discussionLegend =
   Element.row
