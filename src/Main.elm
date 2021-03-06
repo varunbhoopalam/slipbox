@@ -613,20 +613,15 @@ tabView content =
                 , Element.width <| Element.maximum 800 Element.fill
                 , Element.centerX
                 ]
-                [ Element.text "Transform your learning into clear, concise notes with one idea. "
-                , Element.text "Write as if you'll forget all about this note. "
-                , Element.text "When you come across it again, you should be able to read and understand. "
-                , Element.text "Take your time, this isn't always an easy endeavor. "
+                [ Element.text
+                  """
+                  Transform your learning into clear, concise notes with one idea. Write as if you'll forget all about this note.
+                  When you come across it again, you should be able to read and understand. Take your time, this isn't always an easy endeavor.
+                  """
                 ]
             continueNode =
               if canContinue then
-                Element.Input.button
-                  [ Element.Border.width 1
-                  , Element.padding 8
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Next"
-                  }
+                button ( Just CreateTabNextStep ) ( Element.text "Next" )
               else
                 Element.none
           in
@@ -637,14 +632,7 @@ tabView content =
               ] <|
               Element.text "Write a Permanent Note"
             , coaching coachingOpen coachingText
-            , Element.Input.multiline
-              []
-              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
-              , text = noteInput
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
-              , spellcheck = True
-              }
+            , multiline ( \n -> CreateTabUpdateInput <| Create.Note n ) noteInput "Note Content (required)"
             , continueNode
             ]
 
@@ -656,11 +644,12 @@ tabView content =
                 , Element.width <| Element.maximum 800 Element.fill
                 , Element.centerX
                 ]
-                [ Element.text "Add to existing discussions by linking relevant notes/ideas to that discussion. "
-                , Element.text "Click a discussion to get started! "
-                -- TODO: word this better! What's a sustainable way to link ideas together?
-                , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
-                , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
+                [ Element.text
+                  """
+                  Add to existing discussions by linking relevant notes/ideas to that discussion. Click a discussion to get started!
+                  Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments.
+                  Because of confirmation bias, it is hard for us to gather information that opposes what we already know.
+                  """
                 ]
             continueLabel =
               if canContinue then
@@ -905,14 +894,7 @@ tabView content =
               ]
               [ Element.text note
               ]
-            , Element.Input.multiline
-              []
-              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
-              , text = input
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <| Element.text "Discussion"
-              , spellcheck = True
-              }
+            , multiline ( \n -> CreateTabUpdateInput <| Create.Note n ) input "Discussion"
             , continueNode
             , button ( Just CreateTabNextStep ) ( Element.text "This isn't the start of a new discussion" )
             ]
@@ -958,18 +940,19 @@ tabView content =
             existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
             ( titleLabel, submitNode ) =
               if Source.titleIsValid existingTitles title then
-                ( Element.text "Title (required)"
+                ( "Title (required)"
                 , button ( Just CreateTabSubmitNewSource ) ( Element.text "Submit New Source" )
                 )
               else
                 if String.isEmpty title then
-                  ( Element.text "Title (required)"
+                  ( "Title (required)"
                   , Element.none
                   )
                 else
-                  ( Element.text "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
+                  ( "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
                   , Element.none
                   )
+            msgLambda updateMethod = \s -> CreateTabUpdateInput <| updateMethod s
           in
           column
             [ Element.el
@@ -984,32 +967,9 @@ tabView content =
               ]
               [ Element.text note
               ]
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceTitle s
-              , text = title
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] titleLabel
-              , spellcheck = True
-              }
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceAuthor s
-              , text = author
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <|
-                Element.text "Author (not required)"
-              , spellcheck = True
-              }
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceContent s
-              , text = sourceContent
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <|
-                Element.text "Content (not required)"
-              , spellcheck = True
-              }
+            , multiline ( msgLambda Create.SourceTitle ) title titleLabel
+            , multiline ( msgLambda Create.SourceAuthor ) author "Author (not required)"
+            , multiline ( msgLambda Create.SourceContent ) sourceContent "Content (not required)"
             , submitNode
             ]
 
@@ -2247,26 +2207,10 @@ dismissButton item =
     }
 
 contentInput: Item.Item -> String -> Element Msg
-contentInput item input =
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Content"
-    , spellcheck = True
-    }
+contentInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Content"
 
 discussionInput: Item.Item -> String -> Element Msg
-discussionInput item input =
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Discussion"
-    , spellcheck = True
-    }
+discussionInput item input = multiline (\s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Discussion"
 
 sourceInput: Int -> Item.Item -> String -> (List String) -> Element Msg
 sourceInput itemId item input suggestions =
@@ -2327,29 +2271,16 @@ titleInput item input existingTitles =
   let
     titleLabel =
       if Source.titleIsValid existingTitles input then
-        Element.text "Title"
+        "Title"
+      else if String.isEmpty input then
+        "Title"
       else
-        Element.text "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
+        "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
   in
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateTitle s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] titleLabel
-    , spellcheck = True
-    }
+  multiline (\s -> UpdateItem item <| Slipbox.UpdateTitle s ) input titleLabel
 
 authorInput : Item.Item -> String -> Element Msg
-authorInput item input =
-  Element.Input.multiline
-    []
-    { onChange = ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Author"
-    , spellcheck = True
-    }
+authorInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s ) input "Author"
 
 -- MISC VIEW FUNCTIONS
 
@@ -2420,6 +2351,8 @@ smallOldLavenderButton buttonFunction =
     ]
     buttonFunction
 
+-- Element Helpers
+
 button : Maybe Msg -> Element Msg -> Element Msg
 button msg label =
   Element.Input.button
@@ -2440,6 +2373,16 @@ column contents =
     , Element.spacingXY 32 32
     ]
     contents
+
+multiline onChange text label =
+  Element.Input.multiline
+    []
+    { onChange = onChange
+    , text = text
+    , placeholder = Nothing
+    , label = Element.Input.labelAbove [] <| Element.text label
+    , spellcheck = True
+    }
 
 -- SVG HELPERS
 
