@@ -64,7 +64,7 @@ toAddLinkState question slipbox create =
       FindLinksForDiscussion
         coachingModal
         ( Graph.simulatePositions
-          <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox )
+          <| Slipbox.getDiscussionTreeWithCollapsedDiscussions question slipbox )
         updatedInternal
         question
         question
