@@ -19,17 +19,15 @@ module Create exposing
   , CreateView(..)
   )
 
-import Force
+import Graph
 import Note
-import Link
 import Slipbox
 import Source
 
--- TODO: Add section for checking if this is the entry point to a new discussion
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseDiscussion CoachingModal CreateModeInternal
-  | FindLinksForDiscussion CoachingModal Graph CreateModeInternal Discussion SelectedNote
+  | FindLinksForDiscussion CoachingModal Graph.Graph CreateModeInternal Discussion SelectedNote
   | DesignateDiscussionEntryPoint CoachingModal CreateModeInternal String
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
@@ -60,13 +58,12 @@ toAddLinkState question slipbox create =
   case create of
     ChooseDiscussion coachingModal createModeInternal ->
       let
-        (notePositions, links) = simulatePositions
-          <| Slipbox.getAllNotesAndLinksInQuestionTree question slipbox
         updatedInternal = read question createModeInternal
       in
       FindLinksForDiscussion
         coachingModal
-        (Graph notePositions links)
+        ( Graph.simulatePositions
+          <| Slipbox.getDiscussionTreeWithCollapsedDiscussions question slipbox )
         updatedInternal
         question
         question
@@ -205,7 +202,7 @@ type alias NotesAssociatedToCreatedLinks = List Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
   | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
-  | DiscussionChosenView Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
@@ -371,21 +368,6 @@ addLink newLink internal =
   in
   setCreatedLinks updatedCreatedLinks internal
 
--- GRAPH
-type alias Graph =
-  { positions :  List NotePosition
-  , links : List Link.Link
-  }
-
-type alias NotePosition =
-  { id : Int
-  , note : Note.Note
-  , x : Float
-  , y : Float
-  , vx : Float
-  , vy : Float
-  }
-
 -- CREATEMODESOURCE
 type Source
   = None
@@ -449,29 +431,6 @@ setCoachingModal coachingModal model =
      ChooseSourceCategory _ internal input -> ChooseSourceCategory coachingModal internal input
      CreateNewSource _ internal title author content -> CreateNewSource coachingModal internal title author content
      PromptCreateAnother _ -> model
-
-
-simulatePositions : ( List Note.Note, List Link.Link ) -> ( List NotePosition, List Link.Link )
-simulatePositions (notes, links) =
-  let
-    toEntity note =
-      { id = Note.getId note
-      , x = Note.getX note
-      , y = Note.getY note
-      , vx = Note.getVx note
-      , vy = Note.getVy note
-      , note = note
-      }
-    entities = List.map toEntity notes
-    state =
-      Force.simulation
-        [ Force.manyBody (List.map (\n -> n.id) entities)
-        , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
-        , Force.center 0 0
-        ]
-    notePositions = Force.computeSimulation state entities
-  in
-  ( notePositions, links )
 
 getInternal : Create -> CreateModeInternal
 getInternal create =

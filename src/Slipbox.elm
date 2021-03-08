@@ -1,7 +1,6 @@
 module Slipbox exposing 
   ( Slipbox
   , new
-  , getGraphItems
   , getNotes
   , getDiscussions
   , getSources
@@ -9,20 +8,16 @@ module Slipbox exposing
   , getLinkedNotes
   , getNotesThatCanLinkToNote
   , getNotesAssociatedToSource
-  , compressNote
-  , expandNote
   , AddAction(..)
   , addItem
   , dismissItem
   , updateItem
   , UpdateAction(..)
-  , tick
-  , simulationIsCompleted
   , decode
   , encode
   , unsavedChanges
   , saveChanges
-  , getAllNotesAndLinksInQuestionTree
+  , getDiscussionTreeWithCollapsedDiscussions
   , addNote
   , addDiscussion
   , addSource
@@ -36,7 +31,6 @@ import Source
 import IdGenerator
 import Json.Encode
 import Json.Decode
-import Force
 
 --Types
 type Slipbox = Slipbox Content
@@ -46,7 +40,6 @@ type alias Content =
   , links: List Link.Link
   , items: List Item.Item
   , sources: List Source.Source
-  , state: State Int
   , idGenerator: IdGenerator.IdGenerator
   , unsavedChanges: Bool
   }
@@ -59,25 +52,7 @@ getContent slipbox =
 -- Returns Slipbox
 
 new :  Slipbox
-new  =
-  let
-    ( state, _ ) = simulation [] []
-  in
-  Slipbox <| Content [] [] [] [] state IdGenerator.init False
-
-getGraphItems : (Maybe String) -> Slipbox -> ((List Note.Note), (List Link.Link))
-getGraphItems maybeSearch slipbox =
-  let
-      content = getContent slipbox
-  in
-  case maybeSearch of
-    Just search -> 
-      let
-        filteredNotes = List.filter ( Note.contains search ) content.notes
-        relevantLinks = List.filter ( linkIsRelevant filteredNotes ) content.links
-      in
-      ( filteredNotes,  relevantLinks )
-    Nothing -> ( content.notes, content.links )
+new  = Slipbox <| Content [] [] [] [] IdGenerator.init False
 
 isNote : Note.Note -> Bool
 isNote note =
@@ -151,28 +126,6 @@ getNotesThatCanLinkToNote note slipbox =
 getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
 getNotesAssociatedToSource source slipbox =
   List.filter ( Note.isAssociated source ) <| .notes <| getContent slipbox
-
-compressNote : Note.Note -> Slipbox -> Slipbox
-compressNote note slipbox =
-  let
-    content = getContent slipbox
-    conditionallyCompressNote = \n -> if Note.is note n then Note.compress n else n
-    (state, notes) = simulation
-      (List.map conditionallyCompressNote content.notes)
-      content.links
-  in
-  Slipbox { content | notes = notes, state = state}
-
-expandNote : Note.Note -> Slipbox -> Slipbox
-expandNote note slipbox =
-  let
-      content = getContent slipbox
-      conditionallyExpandNote = \n -> if Note.is note n then Note.expand n else n
-      (state, notes) = simulation
-        (List.map conditionallyExpandNote content.notes)
-        content.links
-  in
-  Slipbox { content | notes = notes, state = state}
 
 type AddAction
   = OpenNote Note.Note
@@ -378,14 +331,12 @@ updateItem item updateAction slipbox =
         Item.ConfirmDeleteNote _ _ noteToDelete ->
           let
             links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-            notesWithDeletedNoteRemoved = List.filter (isNotLambda Note.is noteToDelete) content.notes
-            (state, notes) = simulation notesWithDeletedNoteRemoved links
+            notes = List.filter (isNotLambda Note.is noteToDelete) content.notes
           in
           Slipbox
             { content | notes = notes
             , links = links
             , items = List.map (deleteNoteItemStateChange noteToDelete) <| removeItemFromList item content.items
-            , state = state
             , unsavedChanges = True
             }
 
@@ -405,12 +356,10 @@ updateItem item updateAction slipbox =
                   noteContent.source
               (note, idGenerator) = Note.create content.idGenerator
                 <| { content = noteContent.content, source = source, variant = Note.Regular }
-              (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
-            { content | notes = notes
+            { content | notes = (note :: content.notes)
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , state = state
             , idGenerator = idGenerator
             , unsavedChanges = True
             }
@@ -452,13 +401,10 @@ updateItem item updateAction slipbox =
               let
                   (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
                   links = link :: content.links
-                  (state, notes) = simulation content.notes links
               in
               Slipbox
-                { content | notes = notes
-                , links = links
+                { content | links = links
                 , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-                , state = state
                 , idGenerator = idGenerator
                 , unsavedChanges = True
                 }
@@ -468,13 +414,10 @@ updateItem item updateAction slipbox =
           let
             trueIfNotTargetLink = isNotLambda Link.is link
             links = List.filter trueIfNotTargetLink content.links
-            (state, notes) = simulation content.notes links
           in
           Slipbox
-            { content | notes = notes
-            , links = links
+            { content | links = links
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , state = state
             , unsavedChanges = True
             }
 
@@ -488,12 +431,10 @@ updateItem item updateAction slipbox =
           let
               (note, idGenerator) = Note.create content.idGenerator
                 <| { content = question, source = "n/a", variant = Note.Discussion }
-              (state, notes) = simulation (note :: content.notes) content.links
           in
           Slipbox
-            { content | notes = notes
+            { content | notes = (note :: content.notes)
             , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , state = state
             , idGenerator = idGenerator
             , unsavedChanges = True
             }
@@ -526,29 +467,14 @@ isNotLambda is target =
     else
       True
 
-tick : Slipbox -> Slipbox
-tick slipbox =
-  let
-    content = getContent slipbox
-    ( state, notes ) = tick_ content.notes content.state
-  in
-  Slipbox { content | notes = notes, state = state }
-
-simulationIsCompleted : Slipbox -> Bool
-simulationIsCompleted slipbox =
-  let
-    content = getContent slipbox
-    thereAreNoNotes = ( List.length <| content.notes ) == 0
-  in
-  if thereAreNoNotes then
-    True
-  else
-    extract content.state |> Force.isCompleted
-
 decode : Json.Decode.Decoder Slipbox
 decode =
+  let
+    slipbox notes links sources idGenerator =
+      Slipbox <| Content notes links [] sources idGenerator False
+  in
   Json.Decode.map4
-    slipbox_
+    slipbox
     ( Json.Decode.field "notes" (Json.Decode.list Note.decode) )
     ( Json.Decode.field "links" (Json.Decode.list Link.decode) )
     ( Json.Decode.field "sources" (Json.Decode.list Source.decode) )
@@ -577,16 +503,70 @@ saveChanges slipbox =
   case slipbox of
     Slipbox content -> Slipbox { content | unsavedChanges = False }
 
-{-| This will get all linked notes to a question and all linked notes to those linked notes
-except for if the note is a question. Confusing I know but perhaps this is a confusing feature.
+{-| Returns all notes in discussion tree with a few conditions around other discussion entry points
+(Discussion Entry point is a note linked to a discussion)
+1. If a note is ca different discussion entry point, the discussion is swapped with the entry point.
+Ignore any other links from that entry point or on the discussion.
+2. If a note is not a different discussion entry point, normal tree behavior.
 -}
-getAllNotesAndLinksInQuestionTree : Note.Note -> Slipbox -> ( List Note.Note, List Link.Link )
-getAllNotesAndLinksInQuestionTree question slipbox =
+getDiscussionTreeWithCollapsedDiscussions : Note.Note -> Slipbox -> ( List Note.Note, List Link.Link )
+getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
   let
     content = getContent slipbox
-    noteLinkTuples = getAllNotesInQuestionTreeRecursion question content.notes content.links
+    recurs rootNote links =
+      if isADifferentDiscussion rootNote discussion then
+        []
+      else
+        List.map
+          ( \( linkedNote, link ) ->
+            case noteIsEntryPointForDifferentDiscussion linkedNote discussion slipbox of
+              Just differentDiscussionList ->
+                ( linkedNote, link ) :: differentDiscussionList
+              Nothing ->
+                ( (linkedNote,link) ::
+                  recurs
+                    linkedNote
+                    ( List.filter (\l -> not <| Link.is link l ) links )
+                )
+          )
+          ( getLinkedNotes_ rootNote content.notes links )
+          |> flatten2D
+    allTuples = recurs discussion content.links
   in
-  ( question :: List.map Tuple.first noteLinkTuples, List.map Tuple.second noteLinkTuples )
+  ( discussion :: List.map Tuple.first allTuples
+  , List.map Tuple.second allTuples
+  )
+
+isADifferentDiscussion : Note.Note -> Note.Note -> Bool
+isADifferentDiscussion note discussion =
+  Note.getVariant note == Note.Discussion && ( not <| Note.is note discussion )
+
+noteIsEntryPointForDifferentDiscussion : Note.Note -> Note.Note -> Slipbox -> Maybe ( List ( Note.Note, Link.Link ) )
+noteIsEntryPointForDifferentDiscussion note discussion slipbox =
+  let
+    noteLinkTuples = getLinkedNotes note slipbox
+    differentLinkedDiscussions =
+        List.filter
+          ( \( linkedNote, _ ) -> isADifferentDiscussion linkedNote discussion )
+          noteLinkTuples
+    isEntryPointForGivenDiscussion =
+      List.any
+        ( \( linkedNote, _ ) ->
+          Note.is linkedNote discussion
+        )
+        noteLinkTuples
+  in
+  if List.isEmpty differentLinkedDiscussions || isEntryPointForGivenDiscussion then
+    Nothing
+  else
+    Just differentLinkedDiscussions
+
+getLinkedNotes_ : Note.Note -> ( List Note.Note ) -> ( List Link.Link ) -> ( List ( Note.Note, Link.Link ) )
+getLinkedNotes_ note notes links =
+  let
+      relevantLinks = List.filter ( isAssociated note ) links
+  in
+  List.filterMap ( convertLinktoLinkNoteTuple note notes ) relevantLinks
 
 addNote : String -> String -> Slipbox -> ( Slipbox, Note.Note )
 addNote noteContent sourceTitle slipbox =
@@ -599,11 +579,9 @@ addNote noteContent sourceTitle slipbox =
         sourceTitle
     (note, idGenerator) = Note.create content.idGenerator <|
       { content = noteContent, source = source, variant = Note.Regular }
-    (state, notes) = simulation (note :: content.notes) content.links
   in
   ( Slipbox
-    { content | notes = notes
-    , state = state
+    { content | notes = (note :: content.notes)
     , idGenerator = idGenerator
     , unsavedChanges = True
     }
@@ -617,11 +595,9 @@ addDiscussion discussion slipbox =
     source = "n/a"
     (note, idGenerator) = Note.create content.idGenerator <|
       { content = discussion, source = source, variant = Note.Discussion }
-    (state, notes) = simulation (note :: content.notes) content.links
   in
   ( Slipbox
-    { content | notes = notes
-    , state = state
+    { content | notes = (note :: content.notes)
     , idGenerator = idGenerator
     , unsavedChanges = True
     }
@@ -647,102 +623,18 @@ addLink note1 note2 slipbox =
       content = getContent slipbox
       (link, idGenerator) = Link.create content.idGenerator note1 note2
       links = link :: content.links
-      (state, notes) = simulation content.notes links
   in
   Slipbox
-    { content | notes = notes
-    , links = links
-    , state = state
+    { content | links = links
     , idGenerator = idGenerator
     , unsavedChanges = True
     }
-
-getAllNotesInQuestionTreeRecursion : Note.Note -> ( List Note.Note ) -> ( List Link.Link) -> List ( Note.Note, Link.Link )
-getAllNotesInQuestionTreeRecursion note notes links =
-  let
-    linkNoteTuples = getLinkedNotesWithoutQuestions note notes links
-    linksAlreadyAccountedFor = List.map Tuple.second linkNoteTuples
-    remainingLinks =
-      List.filter
-        ( \l ->
-          if List.any ( Link.is l ) linksAlreadyAccountedFor then
-            False
-          else
-            True
-        )
-        links
-    recursedLinkNoteTuples =
-      List.map
-        ( \linkedNote ->
-          getAllNotesInQuestionTreeRecursion
-            linkedNote
-            ( removeNoteFromList linkedNote notes )
-            remainingLinks
-        )
-        ( List.map Tuple.first linkNoteTuples )
-  in
-   List.concat
-    [ linkNoteTuples
-    , flatten2D recursedLinkNoteTuples
-    ]
 
 flatten2D : List (List a) -> List a
 flatten2D list =
   List.foldr (++) [] list
 
-removeNoteFromList : Note.Note -> ( List Note.Note ) -> ( List Note.Note )
-removeNoteFromList note notes =
-  List.filter (\n -> not <| Note.is note n ) notes
-
-getLinkedNotesWithoutQuestions : Note.Note -> ( List Note.Note ) -> ( List Link.Link ) -> ( List ( Note.Note, Link.Link ) )
-getLinkedNotesWithoutQuestions note notes links =
-  let
-      relevantLinks = List.filter ( isAssociated note ) links
-  in
-  List.filterMap ( convertLinktoLinkNoteTupleNoQ note notes ) relevantLinks
-
-convertLinktoLinkNoteTupleNoQ : Note.Note -> ( List Note.Note ) -> Link.Link -> ( Maybe ( Note.Note, Link.Link ) )
-convertLinktoLinkNoteTupleNoQ targetNote notes link =
-  if Link.isTarget link targetNote then
-    case List.head <| List.filter ( Link.isSource link ) notes of
-
-      Just note ->
-
-        case Note.getVariant note of
-
-          Note.Discussion -> Nothing
-
-          Note.Regular -> Just ( note, link )
-
-      Nothing -> Nothing
-
-  else if Link.isSource link targetNote then
-
-    case List.head <| List.filter ( Link.isTarget link ) notes of
-
-      Just note ->
-
-        case Note.getVariant note of
-
-            Note.Discussion -> Nothing
-
-            Note.Regular -> Just ( note, link )
-
-      Nothing -> Nothing
-
-  else
-
-    Nothing
-
-
 -- Helper Functions
-slipbox_: ( List Note.Note ) -> ( List Link.Link ) -> ( List Source.Source ) -> IdGenerator.IdGenerator -> Slipbox
-slipbox_ notesBeforeSimulation links sources idGenerator =
-  let
-    ( state, notes ) = simulation notesBeforeSimulation links
-  in
-  Slipbox <| Content notes links [] sources state idGenerator False
-
 buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
 buildItemList itemToMatch itemToAdd =
   \item list -> if Item.is item itemToMatch then item :: (itemToAdd :: list) else item :: list
@@ -786,14 +678,6 @@ updateSourceEdits sourceWithEdits originalSource =
     <| Source.updateAuthor updatedAuthor
       <| Source.updateContent updatedContent originalSource
 
-linkIsRelevant : ( List Note.Note ) -> Link.Link -> Bool
-linkIsRelevant notes link =
-  let
-    sourceInNotes = getSource link notes /= Nothing
-    targetInNotes = getTarget link notes /= Nothing
-  in
-  sourceInNotes && targetInNotes
-
 tryFindItemFromComponent : ( List Item.Item ) -> ( Item.Item -> (Bool) ) -> ( Maybe Item.Item )
 tryFindItemFromComponent items filterCondition =
   List.head <| List.filter filterCondition items
@@ -813,70 +697,3 @@ hasSource source item =
 isAssociated : Note.Note -> Link.Link -> Bool
 isAssociated note link =
   Link.isSource link note || Link.isTarget link note
-
-getSource : Link.Link -> (List Note.Note) -> (Maybe Note.Note)
-getSource link notes =
-  List.head <| List.filter (Link.isSource link) notes
-
-getTarget : Link.Link -> (List Note.Note) -> (Maybe Note.Note)
-getTarget link notes =
-  List.head <| List.filter (Link.isTarget link) notes
-
--- SIMULATION
-
-type alias SimulationRecord =
-  { id: Int
-  , x: Float
-  , y: Float
-  , vx: Float
-  , vy: Float
-  }
-
-type State comparable = State (Force.State comparable)
-
--- EXPOSED
-
-simulation : ( List Note.Note ) -> ( List Link.Link ) -> ( State Int, (List Note.Note) )
-simulation notes links =
-  let
-    entities = List.map toEntity notes
-    state = stateBuilder entities links
-  in
-  Force.tick state entities |> toStateRecordTuple
-
-tick_ : ( List Note.Note ) -> State Int -> ( State Int, (List Note.Note) )
-tick_ notes state =
-  let
-    entities = List.map toEntity notes
-  in
-   Force.tick (extract state) entities |> toStateRecordTuple
-
-
--- HELPERS
-
-stateBuilder : ( List (Force.Entity Int { note : Note.Note })) -> ( List Link.Link ) -> Force.State Int
-stateBuilder entities links =
-  Force.simulation
-        [ Force.manyBodyStrength -15 (List.map (\n -> n.id) entities)
-        , Force.links <| List.map (\link -> ( Link.getSourceId link, Link.getTargetId link)) links
-        , Force.center 0 0
-        ]
-
-toEntity : Note.Note -> (Force.Entity Int { note : Note.Note })
-toEntity note =
-  { id = Note.getId note, x = Note.getX note, y = Note.getY note, vx = Note.getVx note, vy = Note.getVy note, note = note }
-
-updateNote: (Force.Entity Int { note : Note.Note }) -> Note.Note
-updateNote entity =
-  Note.updateX entity.x <| Note.updateY entity.y <| Note.updateVx entity.vx <| Note.updateVy entity.vy entity.note
-
-extract : State Int -> Force.State Int
-extract state =
-  case state of
-     State simState -> simState
-
-toStateRecordTuple : ( Force.State Int, List ( Force.Entity Int { note : Note.Note } ) ) -> ( State Int, (List Note.Note) )
-toStateRecordTuple ( simState, records ) =
-  ( State simState
-  , List.map updateNote records
-  )

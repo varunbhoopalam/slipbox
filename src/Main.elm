@@ -1,10 +1,10 @@
 port module Main exposing (..)
 
 import Browser
-import Browser.Events
 import Browser.Navigation
 import Color
 import Create
+import Discovery
 import Element.Background
 import Element.Border
 import Element.Events
@@ -22,11 +22,7 @@ import Svg.Events
 import Svg.Attributes
 import Element exposing (Element)
 import Json.Decode
-import Time
-import Viewport
-import Browser.Dom
 import Url
-import Task
 import Note
 import Source
 import Item
@@ -47,40 +43,32 @@ main =
 
 -- MODEL
 
-type alias Model =
-  { state: State 
-  , deviceViewport: ( Int, Int )
-  }
+type Model
+  = Setup
+  | FailureToParse
+  | Session Content
 
 updateTab : Tab -> Model -> Model
 updateTab tab model =
-  case model.state of
-    Session content ->
-      let
-        state = Session { content | tab = tab }
-      in
-      { model | state = state }
+  case model of
+    Session content -> Session { content | tab = tab }
     _ -> model
 
 setSlipbox : Slipbox.Slipbox -> Model -> Model
 setSlipbox slipbox model =
-  case model.state of
-    Session content ->
-      let
-        state = Session { content | slipbox = slipbox }
-      in
-      { model | state = state }
+  case model of
+    Session content -> Session { content | slipbox = slipbox }
     _ -> model
 
 getSlipbox : Model -> ( Maybe Slipbox.Slipbox )
 getSlipbox model =
-  case model.state of
+  case model of
     Session content -> Just content.slipbox
     _ -> Nothing
 
 getCreate : Model -> Maybe Create.Create
 getCreate model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         CreateModeTab create -> Just create
@@ -89,22 +77,32 @@ getCreate model =
 
 setCreate : Create.Create -> Model -> Model
 setCreate create model =
-  case model.state of
+  case model of
     Session content ->
       case content.tab of
         CreateModeTab _ ->
-          let
-            state = Session { content | tab = CreateModeTab create }
-          in
-          { model | state = state }
+          Session { content | tab = CreateModeTab create }
         _ -> model
     _ -> model
 
+getDiscovery : Model -> Maybe Discovery.Discovery
+getDiscovery model =
+  case model of
+    Session content ->
+      case content.tab of
+        DiscoveryModeTab create -> Just create
+        _ -> Nothing
+    _ -> Nothing
 
-type State 
-  = Setup 
-  | FailureToParse
-  | Session Content
+setDiscovery : Discovery.Discovery -> Model -> Model
+setDiscovery create model =
+  case model of
+    Session content ->
+      case content.tab of
+        DiscoveryModeTab _ ->
+          Session { content | tab = DiscoveryModeTab create }
+        _ -> model
+    _ -> model
 
 -- CONTENT
 type alias Content = 
@@ -123,55 +121,43 @@ toggle state =
 
 -- TAB
 type Tab
-  = BrainTab String Viewport.Viewport
-  | NotesTab String
+  = NotesTab String
   | SourcesTab String
   | WorkspaceTab
   | DiscussionsTab String
   | CreateModeTab Create.Create
+  | DiscoveryModeTab Discovery.Discovery
 
 type Tab_
-  = Brain
-  | Workspace
+  = Workspace
   | Notes
   | Sources
   | Discussions
   | CreateMode
+  | Discovery
 
 -- INIT
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ _ _ =
-  ( Model Setup ( 0, 0 )
-  , Cmd.batch [ getViewport ]
+  ( Setup
+  , Cmd.none
   )
-
-getViewport: Cmd Msg
-getViewport = Task.perform GotViewport Browser.Dom.getViewport
 
 -- UPDATE
 type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
-  | ExploreTabUpdateInput String
   | NoteTabUpdateInput String
   | SourceTabUpdateInput String
   | AddItem ( Maybe Item.Item ) Slipbox.AddAction
   | UpdateItem Item.Item Slipbox.UpdateAction
   | DismissItem Item.Item
-  | CompressNote Note.Note
-  | ExpandNote Note.Note
-  | StartMoveView Viewport.MouseEvent
-  | MoveView Viewport.MouseEvent
-  | StopMoveView
-  | GotViewport Browser.Dom.Viewport
-  | GotWindowResize ( Int, Int )
   | InitializeNewSlipbox
   | FileRequested
   | FileLoaded String
   | FileSaved Int
   | FileDownload
-  | Tick Time.Posix
   | ChangeTab Tab_
   | ToggleSideNav
   | CreateTabToggleCoaching
@@ -188,6 +174,12 @@ type Msg
   | CreateTabUpdateInput Create.Input
   | CreateTabCreateAnotherNote
   | CreateTabSubmitNewDiscussion
+  | DiscoveryModeUpdateInput String
+  | DiscoveryModeSelectDiscussion Note.Note
+  | DiscoveryModeBack
+  | DiscoveryModeSelectNote Note.Note
+  | DiscoveryModeSubmit
+  | DiscoveryModeStartNewDiscussion
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -196,24 +188,21 @@ update message model =
        Just slipbox ->
          ( setSlipbox (s slipbox) model, Cmd.none )
        _ -> ( model, Cmd.none)
-    updateExploreTabViewportLambda = \toViewport ->
-      case model.state of
-        Session content ->
-          case content.tab of
-            BrainTab input viewport ->
-              ({ model | state = Session
-                { content | tab =
-                  BrainTab input (toViewport viewport)
-                }
-              }, Cmd.none )
-            _ -> ( model, Cmd.none )
-        _ -> ( model , Cmd.none)
 
     createModeLambda createUpdate =
       case getCreate model of
         Just create ->
           ( setCreate
             ( createUpdate create )
+            model
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+    discoveryModeLambda discoveryUpdate =
+      case getDiscovery model of
+        Just discovery ->
+          ( setDiscovery
+            ( discoveryUpdate discovery )
             model
           , Cmd.none
           )
@@ -231,6 +220,19 @@ update message model =
               )
             Nothing -> ( model, Cmd.none )
         Nothing -> ( model, Cmd.none )
+    discoveryModeAndSlipboxLambda discoveryUpdate =
+      case getSlipbox model of
+        Just slipbox ->
+          case getDiscovery model of
+            Just discovery ->
+              let
+                ( updatedSlipbox, updatedDiscovery ) = discoveryUpdate slipbox discovery
+              in
+              ( setDiscovery updatedDiscovery model |> setSlipbox updatedSlipbox
+              , Cmd.none
+              )
+            Nothing -> ( model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
   in
   case message of
     
@@ -238,17 +240,8 @@ update message model =
 
     UrlChanged _ -> (model, Cmd.none)
 
-    ExploreTabUpdateInput input ->
-      case model.state of
-        Session content ->
-          case content.tab of
-            BrainTab _ viewport ->
-              ( updateTab ( BrainTab input viewport ) model, Cmd.none )
-            _ -> ( model, Cmd.none)
-        _ -> ( model, Cmd.none)
-
     NoteTabUpdateInput input ->
-      case model.state of
+      case model of
         Session content ->
           case content.tab of
             NotesTab _ ->
@@ -257,7 +250,7 @@ update message model =
         _ -> ( model, Cmd.none)
     
     SourceTabUpdateInput input ->
-      case model.state of
+      case model of
         Session content ->
           case content.tab of
             SourcesTab _ ->
@@ -277,54 +270,33 @@ update message model =
           )
         _ -> ( model, Cmd.none)
 
-    CompressNote note -> updateSlipboxWrapper <| Slipbox.compressNote note
-
-    ExpandNote note -> updateSlipboxWrapper <| Slipbox.expandNote note
-
     UpdateItem item updateAction -> updateSlipboxWrapper <| Slipbox.updateItem item updateAction
 
     DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
 
-    StartMoveView mouseEvent -> updateExploreTabViewportLambda <| Viewport.startMove mouseEvent
-    
-    MoveView mouseEvent ->
-      case getSlipbox model of
-        Just slipbox -> updateExploreTabViewportLambda <| Viewport.move mouseEvent ( Slipbox.getNotes Nothing slipbox )
-        Nothing -> ( model, Cmd.none )
-    
-    StopMoveView -> updateExploreTabViewportLambda Viewport.stopMove
-    
-    GotViewport viewport ->
-      let
-        windowInfo = ( round viewport.viewport.width, round viewport.viewport.height )
-      in
-      ( handleWindowInfo windowInfo model, Cmd.none )
-
-    GotWindowResize windowInfo -> (handleWindowInfo windowInfo model, Cmd.none)
-
     InitializeNewSlipbox ->
-      case model.state of
+      case model of
         Setup ->
-          ({ model | state = Session <| newContent model.deviceViewport }, Cmd.none)
+          ( Session newContent, Cmd.none)
         _ -> ( model, Cmd.none )
 
     FileRequested ->
-      case model.state of
+      case model of
         Setup -> ( model, open () )
         _ -> ( model, Cmd.none )
 
     FileLoaded fileContentAsString ->
-      case model.state of
+      case model of
         Setup ->
           let
             maybeSlipbox = Json.Decode.decodeString Slipbox.decode fileContentAsString
           in
           case maybeSlipbox of
             Ok slipbox ->
-              ({ model | state = Session <| Content ( BrainTab "" Viewport.initialize ) slipbox Expanded }
+              ( Session <| Content ( CreateModeTab Create.init ) slipbox Expanded
               , Cmd.none
               )
-            Err _ -> ( { model | state = FailureToParse }, Cmd.none )
+            Err _ -> ( FailureToParse, Cmd.none )
         _ -> ( model, Cmd.none )
 
     FileSaved _ ->
@@ -343,44 +315,22 @@ update message model =
           )
         Nothing -> ( model, Cmd.none )
 
-    Tick _ ->
-      case getSlipbox model of
-        Just slipbox ->
-          if not <| Slipbox.simulationIsCompleted slipbox then
-            ( setSlipbox ( Slipbox.tick slipbox ) model, Cmd.none )
-          else
-            ( model, Cmd.none )
-        _ -> ( model, Cmd.none )
-
     ChangeTab tab ->
-      case model.state of
+      case model of
         Session content ->
           case tab of
-            Brain ->
-              case content.tab of
-                BrainTab _ _ -> ( model, Cmd.none )
-                _ ->
-                  ( { model | state =
-                    Session { content | tab = BrainTab "" Viewport.initialize }
-                    }
-                  , Cmd.none
-                  )
             Notes ->
               case content.tab of
                 NotesTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = NotesTab "" }
-                    }
+                  ( Session { content | tab = NotesTab "" }
                   , Cmd.none
                   )
             Sources ->
               case content.tab of
                 SourcesTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = SourcesTab "" }
-                    }
+                  ( Session { content | tab = SourcesTab "" }
                   , Cmd.none
                   )
 
@@ -391,9 +341,7 @@ update message model =
               case content.tab of
                 DiscussionsTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = DiscussionsTab "" }
-                    }
+                  ( Session { content | tab = DiscussionsTab "" }
                   , Cmd.none
                   )
 
@@ -401,18 +349,24 @@ update message model =
               case content.tab of
                 CreateModeTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( { model | state =
-                    Session { content | tab = CreateModeTab Create.init }
-                    }
+                  ( Session { content | tab = CreateModeTab Create.init }
+                  , Cmd.none
+                  )
+
+            Discovery ->
+              case content.tab of
+                DiscoveryModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  ( Session { content | tab = DiscoveryModeTab Discovery.init }
                   , Cmd.none
                   )
 
         _ -> ( model, Cmd.none )
 
     ToggleSideNav ->
-      case model.state of
+      case model of
         Session content ->
-          ( { model | state = ( Session { content | sideNavState = toggle content.sideNavState } ) }
+          ( Session { content | sideNavState = toggle content.sideNavState }
           , Cmd.none
           )
 
@@ -436,27 +390,23 @@ update message model =
     CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
     CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
 
+    DiscoveryModeUpdateInput input -> discoveryModeLambda <| Discovery.updateInput input
+    DiscoveryModeSelectDiscussion discussion ->
+      case getSlipbox model of
+        Just slipbox -> discoveryModeLambda <| Discovery.viewDiscussion discussion slipbox
+        Nothing -> ( model, Cmd.none )
+    DiscoveryModeBack -> discoveryModeLambda Discovery.back
+    DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
+    DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
+    DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
 
-newContent : ( Int, Int ) -> Content
-newContent deviceViewport =
+
+newContent : Content
+newContent =
   Content
-    (BrainTab "" Viewport.initialize )
+    ( CreateModeTab Create.init )
     Slipbox.new
     Expanded
-
-handleWindowInfo: ( Int, Int ) -> Model -> Model
-handleWindowInfo windowInfo model = 
-  case model.state of
-    Session content ->
-      case content.tab of
-        BrainTab input viewport ->
-          { model | deviceViewport = windowInfo
-          , state = Session { content | tab =
-            BrainTab input <| Viewport.updateSvgContainerDimensions windowInfo viewport
-            }
-          }
-        _ -> { model | deviceViewport = windowInfo }
-    _ -> { model | deviceViewport = windowInfo }
 
 -- PORTS
 
@@ -467,26 +417,11 @@ port fileSaved : (Int -> msg) -> Sub msg
 
 -- SUBSCRIPTIONS
 subscriptions: Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
   Sub.batch
-    [ Browser.Events.onResize (\w h -> GotWindowResize (w,h))
-    , maybeSubscribeOnAnimationFrame model
-    , fileContent FileLoaded
+    [ fileContent FileLoaded
     , fileSaved FileSaved
     ]
-
-maybeSubscribeOnAnimationFrame : Model -> Sub Msg
-maybeSubscribeOnAnimationFrame model =
-  case model.state of
-    Session content ->
-      case content.tab of
-        BrainTab _ _ ->
-          if Slipbox.simulationIsCompleted content.slipbox then
-            Sub.none
-          else
-            Browser.Events.onAnimationFrame Tick
-        _ -> Sub.none
-    _ -> Sub.none
 
 -- VIEW
 versionString = "0.1"
@@ -496,13 +431,13 @@ biggerElement = Element.fillPortion 1618
 
 view: Model -> Browser.Document Msg
 view model =
-  case model.state of
-    Setup -> { title = webpageTitle , body = [ setupView model.deviceViewport ] }
+  case model of
+    Setup -> { title = webpageTitle , body = [ setupView ] }
     FailureToParse -> { title = webpageTitle, body = [ Element.layout [] <| Element.text "Failure to read file, please reload the page." ] }
-    Session content -> { title = webpageTitle, body = [ sessionView model.deviceViewport content ] }
+    Session content -> { title = webpageTitle, body = [ sessionView content ] }
 
-setupView : ( Int, Int ) -> Html.Html Msg
-setupView deviceViewport =
+setupView : Html.Html Msg
+setupView =
   Html.div
     [ Html.Attributes.style "height" "100%"
     , Html.Attributes.style "width" "100%"
@@ -512,7 +447,7 @@ setupView deviceViewport =
       [ Element.inFront setupOverlay ]
       <| Element.el
         [ Element.alpha 0.3, Element.height Element.fill, Element.width Element.fill ]
-        <| sessionNode deviceViewport (newContent deviceViewport)
+        <| sessionNode newContent
     ]
 
 setupOverlay : Element Msg
@@ -590,12 +525,12 @@ layoutWithFontAwesomeStyles node =
       node
     ]
 
-sessionView : ( Int, Int ) -> Content -> Html.Html Msg
-sessionView deviceViewport content =
-  layoutWithFontAwesomeStyles <| sessionNode deviceViewport content
+sessionView : Content -> Html.Html Msg
+sessionView content =
+  layoutWithFontAwesomeStyles <| sessionNode content
 
-sessionNode : ( Int, Int ) -> Content -> Element Msg
-sessionNode deviceViewport content =
+sessionNode : Content -> Element Msg
+sessionNode content =
   Element.row
     [ Element.width Element.fill
     , Element.height Element.fill
@@ -604,24 +539,15 @@ sessionNode deviceViewport content =
     , Element.el
       [ Element.width biggerElement
       , Element.height Element.fill]
-      <| tabView deviceViewport content
+      <| tabView content
     ]
 
 contactUrl = "https://github.com/varunbhoopalam/slipbox"
 
 -- TAB
-tabView: ( Int, Int ) -> Content -> Element Msg
-tabView deviceViewport content =
+tabView: Content -> Element Msg
+tabView content =
   case content.tab of
-    BrainTab input viewport ->
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        ]
-        [ exploreTabToolbar input
-        , graph deviceViewport viewport <| Slipbox.getGraphItems ( searchConverter input ) content.slipbox
-        ]
-
     NotesTab input ->
       Element.column
         [ Element.width Element.fill
@@ -704,43 +630,22 @@ tabView deviceViewport content =
                 , Element.width <| Element.maximum 800 Element.fill
                 , Element.centerX
                 ]
-                [ Element.text "Transform your learning into clear, concise notes with one idea. "
-                , Element.text "Write as if you'll forget all about this note. "
-                , Element.text "When you come across it again, you should be able to read and understand. "
-                , Element.text "Take your time, this isn't always an easy endeavor. "
+                [ Element.text
+                  """
+                  Transform your learning into clear, concise notes with one idea. Write as if you'll forget all about this note.
+                  When you come across it again, you should be able to read and understand. Take your time, this isn't always an easy endeavor.
+                  """
                 ]
             continueNode =
               if canContinue then
-                Element.Input.button
-                  [ Element.Border.width 1
-                  , Element.padding 8
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Next"
-                  }
+                button ( Just CreateTabNextStep ) ( Element.text "Next" )
               else
                 Element.none
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Write a Permanent Note"
+          column
+            [ headingCenter "Write a Permanent Note"
             , coaching coachingOpen coachingText
-            , Element.Input.multiline
-              []
-              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
-              , text = noteInput
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <| Element.text "Note Content (required)"
-              , spellcheck = True
-              }
+            , multiline ( \n -> CreateTabUpdateInput <| Create.Note n ) noteInput "Note Content (required)"
             , continueNode
             ]
 
@@ -752,31 +657,18 @@ tabView deviceViewport content =
                 , Element.width <| Element.maximum 800 Element.fill
                 , Element.centerX
                 ]
-                [ Element.text "Add to existing discussions by linking relevant notes/ideas to that discussion. "
-                , Element.text "Click a discussion to get started! "
-                -- TODO: word this better! What's a sustainable way to link ideas together?
-                , Element.text "Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments. "
-                , Element.text "Because of confirmation bias, it is hard for us to gather information that opposes what we already know. "
+                [ Element.text
+                  """
+                  Add to existing discussions by linking relevant notes/ideas to that discussion. Click a discussion to get started!
+                  Linking knowledge can anything from finding supporting arguments, expanding on a thought, and especially finding counter arguments.
+                  Because of confirmation bias, it is hard for us to gather information that opposes what we already know.
+                  """
                 ]
-            continueNode =
+            continueLabel =
               if canContinue then
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Continue without linking"
-                  }
+                  ( Element.text "Continue without linking" )
               else
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabNextStep
-                  , label = Element.text "Next"
-                  }
+                  ( Element.text "Next" )
             discussions = Slipbox.getDiscussions Nothing content.slipbox
             discussionTabularData =
               let
@@ -855,17 +747,8 @@ tabView deviceViewport content =
                     }
                   ]
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Further Existing Arguments"
+          column
+            [ headingCenter "Further Existing Arguments"
             , coaching coachingOpen coachingText
             , Element.paragraph
               [ Element.Font.center
@@ -874,7 +757,9 @@ tabView deviceViewport content =
               ]
               [ Element.text note
               ]
-            , continueNode
+            , button
+              ( Just CreateTabNextStep )
+              continueLabel
             , tableNode
             ]
 
@@ -907,10 +792,11 @@ tabView deviceViewport content =
                 [ Svg.Attributes.width "100%"
                 , Svg.Attributes.height "100%"
                 , Svg.Attributes.viewBox <| computeViewbox createTabGraph.positions
+                , Svg.Attributes.style "position: absolute"
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
-                  , List.map viewGraphNote <|
+                  , List.map ( \n -> viewGraphNote CreateTabSelectNote n ) <|
                     List.map ( toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote ) createTabGraph.positions
                   ]
           in
@@ -937,31 +823,24 @@ tabView deviceViewport content =
               ]
               [ Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 1
                 , Element.padding 8
                 , Element.Border.width 1
-                , Element.centerY
-                , Element.centerX
                 , Element.spacingXY 10 10
                 ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Discussion" ]
+                [ heading "Discussion"
                 , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
                 ]
               , Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 1
-                , Element.centerY
-                , Element.centerX
                 , Element.Border.width 1
                 , Element.padding 8
                 , Element.spacingXY 10 10
                 ]
-                [ Element.paragraph [ Element.Font.bold ] [ Element.text "Created Note" ]
+                [ heading "Created Note"
                 , Element.paragraph [] [ Element.text note ]
                 ]
               , Element.column
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 3
                 , Element.Border.width 1
                 , Element.padding 8
                 , Element.spacingXY 10 10
@@ -969,113 +848,28 @@ tabView deviceViewport content =
                 [ Element.textColumn
                   [ Element.spacingXY 10 10
                   ]
-                  [ Element.paragraph [ Element.Font.bold ] [ Element.text "Selected Note" ]
+                  [ heading "Selected Note"
                   , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
                   ]
                 , linkNode
                 ]
-              ]
-            , Element.column
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              ]
-              [ viewGraph
-              , Element.wrappedRow
+              , Element.column
                 [ Element.width Element.fill
                 , Element.height Element.shrink
                 , Element.padding 8
                 , Element.spacingXY 8 8
                 ]
-                [ Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.g []
-                        [ Svg.rect
-                          [ Svg.Attributes.fill "rgb(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
-                        , Svg.rect
-                          [ Svg.Attributes.fill "rgba(0,0,0)"
-                          , Svg.Attributes.width "20"
-                          , Svg.Attributes.height "20"
-                          , Svg.Attributes.transform "rotate(45 20 20)"
-                          , Svg.Attributes.x "10"
-                          , Svg.Attributes.y "10"
-                          ]
-                          []
-                        ]
-                      ]
-                  , Element.text "Currently Selected Note"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.g []
-                        [ Svg.circle
-                          [ Svg.Attributes.r "10"
-                          , Svg.Attributes.stroke "black"
-                          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                          , Svg.Attributes.cx "20"
-                          , Svg.Attributes.cy "20"
-                          ]
-                          []
-                        , Svg.line
-                          [ Svg.Attributes.x1 "10"
-                          , Svg.Attributes.x2 "30"
-                          , Svg.Attributes.y1 "20"
-                          , Svg.Attributes.y2 "20"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        , Svg.line
-                          [ Svg.Attributes.x1 "20"
-                          , Svg.Attributes.x2 "20"
-                          , Svg.Attributes.y1 "10"
-                          , Svg.Attributes.y2 "30"
-                          , Svg.Attributes.stroke "black"
-                          ]
-                          []
-                        ]
-                      ]
-                  , Element.text "Note Marked to link (if not selected)"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.rect
-                        [ Svg.Attributes.fill "rgb(0,0,0)"
-                        , Svg.Attributes.width "20"
-                        , Svg.Attributes.height "20"
-                        , Svg.Attributes.x "10"
-                        , Svg.Attributes.y "10"
-                        ]
-                        []
-                      ]
-                  , Element.text "Discussion (if not selected)"
-                  ]
-                , Element.row
-                  []
-                  [ Element.html <|
-                    Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
-                      [ Svg.circle
-                        [ Svg.Attributes.r "10"
-                        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-                        , Svg.Attributes.cx "20"
-                        , Svg.Attributes.cy "20"
-                        ]
-                        []
-                      ]
-                  , Element.text "Regular Note"
-                  ]
+                [ selectedNoteLegend
+                , linkedCircleLegend
+                , discussionLegend
+                , circleLegend
                 ]
               ]
+            , Element.el
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              ]
+              viewGraph
             ]
 
         Create.DesignateDiscussionEntryPointView note input ->
@@ -1086,27 +880,11 @@ tabView deviceViewport content =
                   [ Element.height <| Element.px 38
                   ] Element.none
               else
-                Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  , Element.moveRight 16
-                  ]
-                  { onPress = Just CreateTabSubmitNewDiscussion
-                  , label = Element.text "Create and Link Discussion"
-                  }
+                Element.el [ Element.moveRight 16 ] <|
+                  button ( Just CreateTabSubmitNewDiscussion ) ( Element.text "Create and Link Discussion" )
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Is this note the start of its own discussion/a new discussion?"
+          column
+            [ headingCenter "Is this note the start of its own discussion/a new discussion?"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1114,23 +892,9 @@ tabView deviceViewport content =
               ]
               [ Element.text note
               ]
-            , Element.Input.multiline
-              []
-              { onChange = \n -> CreateTabUpdateInput <| Create.Note n
-              , text = input
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <| Element.text "Discussion"
-              , spellcheck = True
-              }
+            , multiline ( \n -> CreateTabUpdateInput <| Create.Note n ) input "Discussion"
             , continueNode
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNextStep
-              , label = Element.text "This isn't the start of a new discussion"
-              }
+            , button ( Just CreateTabNextStep ) ( Element.text "This isn't the start of a new discussion" )
             ]
 
         Create.ChooseSourceCategoryView note input  ->
@@ -1140,29 +904,15 @@ tabView deviceViewport content =
             useExistingSourceNode =
               case maybeSourceSelected of
                 Just source ->
-                  Element.Input.button
-                    [ Element.centerX
-                    , Element.padding 8
-                    , Element.Border.width 1
-                    , Element.moveRight 16
-                    ]
-                    { onPress = Just <| CreateTabContinueWithSelectedSource source
-                    , label = Element.text "Use Selected Source"
-                    }
+                  Element.el [ Element.moveRight 16 ] <|
+                  button
+                    ( Just <| CreateTabContinueWithSelectedSource source )
+                    ( Element.text "Use Selected Source" )
                 Nothing ->
                   Element.none
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Attribute a Source"
+          column
+            [ headingCenter "Attribute a Source"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1175,22 +925,8 @@ tabView deviceViewport content =
               , Element.onRight useExistingSourceNode
               ] <|
               createTabSourceInput input <| List.map Source.getTitle existingSources
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNoSource
-              , label = Element.text "No Source"
-              }
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabNewSource
-              , label = Element.text "New Source"
-              }
+            , button ( Just CreateTabNoSource ) ( Element.text "No Source" )
+            , button ( Just CreateTabNewSource ) ( Element.text "New Source" )
             ]
 
         Create.CreateNewSourceView note title author sourceContent ->
@@ -1198,37 +934,22 @@ tabView deviceViewport content =
             existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
             ( titleLabel, submitNode ) =
               if Source.titleIsValid existingTitles title then
-                ( Element.text "Title (required)"
-                , Element.Input.button
-                  [ Element.centerX
-                  , Element.padding 8
-                  , Element.Border.width 1
-                  ]
-                  { onPress = Just CreateTabSubmitNewSource
-                  , label = Element.text "Submit New Source"
-                  }
+                ( "Title (required)"
+                , button ( Just CreateTabSubmitNewSource ) ( Element.text "Submit New Source" )
                 )
               else
                 if String.isEmpty title then
-                  ( Element.text "Title (required)"
+                  ( "Title (required)"
                   , Element.none
                   )
                 else
-                  ( Element.text "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
+                  ( "Title is not valid. Titles must be unique and may not be 'n/a' or empty"
                   , Element.none
                   )
+            msgLambda updateMethod = \s -> CreateTabUpdateInput <| updateMethod s
           in
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Create a Source"
+          column
+            [ headingCenter "Create a Source"
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1236,47 +957,15 @@ tabView deviceViewport content =
               ]
               [ Element.text note
               ]
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceTitle s
-              , text = title
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] titleLabel
-              , spellcheck = True
-              }
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceAuthor s
-              , text = author
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <|
-                Element.text "Author (not required)"
-              , spellcheck = True
-              }
-            , Element.Input.multiline
-              []
-              { onChange = \s -> CreateTabUpdateInput <| Create.SourceContent s
-              , text = sourceContent
-              , placeholder = Nothing
-              , label = Element.Input.labelAbove [] <|
-                Element.text "Content (not required)"
-              , spellcheck = True
-              }
+            , multiline ( msgLambda Create.SourceTitle ) title titleLabel
+            , multiline ( msgLambda Create.SourceAuthor ) author "Author (not required)"
+            , multiline ( msgLambda Create.SourceContent ) sourceContent "Content (not required)"
             , submitNode
             ]
 
         Create.PromptCreateAnotherView note ->
-          Element.column
-            [ Element.padding 16
-            , Element.centerX
-            , Element.width Element.fill
-            , Element.spacingXY 32 32
-            ]
-            [ Element.el
-              [ Element.centerX
-              , Element.Font.heavy
-              ] <|
-              Element.text "Success! You've smartly added to your external mind. "
+          column
+            [ headingCenter "Success! You've smartly added to your external mind. "
             , Element.paragraph
               [ Element.Font.center
               , Element.width <| Element.maximum 800 Element.fill
@@ -1284,15 +973,192 @@ tabView deviceViewport content =
               ]
               [ Element.text note
               ]
-            , Element.Input.button
-              [ Element.centerX
-              , Element.padding 8
-              , Element.Border.width 1
-              ]
-              { onPress = Just CreateTabCreateAnotherNote
-              , label = Element.text "Create Another Note?"
-              }
+            , button ( Just CreateTabCreateAnotherNote ) ( Element.text "Create Another Note?" )
             ]
+
+    DiscoveryModeTab discovery ->
+      case Discovery.view discovery of
+        Discovery.ViewDiscussionView discussion selectedNote discussionGraph ->
+          let
+            viewGraph = Element.html <|
+              Svg.svg
+                [ Svg.Attributes.width "100%"
+                , Svg.Attributes.height "100%"
+                , Svg.Attributes.viewBox <| computeViewbox discussionGraph.positions
+                , Svg.Attributes.style "position: absolute"
+                ] <|
+                List.concat
+                  [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
+                  , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote n ) <|
+                    List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
+                  ]
+            viewDiscussionNode =
+              if Note.getVariant selectedNote == Note.Discussion && ( not <| Note.is discussion selectedNote ) then
+                button
+                  ( Just <| DiscoveryModeSelectDiscussion selectedNote )
+                  ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
+              else if Note.getVariant selectedNote == Note.Regular then
+                button
+                  ( Just DiscoveryModeStartNewDiscussion )
+                  ( Element.el [ Element.centerX ] <| Element.text "Designate New Discussion Entry Point" )
+              else
+                Element.none
+            container title note element = Element.textColumn
+              [ Element.width Element.fill
+              , Element.Border.width 1
+              , Element.padding 8
+              , Element.spacingXY 10 10
+              ]
+              [ heading title
+              , Element.paragraph [] [ Element.text <| Note.getContent note ]
+              , element
+              ]
+          in
+          Element.row
+            [ Element.inFront <|
+              Element.el
+                [ Element.padding 16
+                , Element.alignRight
+                , Element.alignTop
+                ] <|
+                Element.Input.button
+                  [ Element.Border.width 1
+                  , Element.padding 8
+                  ]
+                  { onPress = Just DiscoveryModeBack
+                  , label = Element.text "Done"
+                  }
+            , Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ container "Selected Discussion" discussion Element.none
+              , container "Selected Note" selectedNote viewDiscussionNode
+              , selectedNoteLegend
+              , discussionLegend
+              , circleLegend
+              ]
+            , Element.el
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
+              ]
+              viewGraph
+            ]
+
+        Discovery.ChooseDiscussionView filterInput ->
+          let
+            discussionFilter =
+              if String.isEmpty filterInput then
+                Nothing
+              else
+                Just filterInput
+            discussions = Slipbox.getDiscussions discussionFilter content.slipbox
+            discussionTabularData =
+              let
+                toDiscussionRecord =
+                  \q ->
+                    { discussion = Note.getContent q
+                    , note = q
+                    }
+              in
+              List.map toDiscussionRecord discussions
+            tableNode =
+              if List.isEmpty discussions then
+                Element.paragraph
+                  [ Element.Font.center
+                  , Element.width <| Element.maximum 800 Element.fill
+                  , Element.centerX
+                  ]
+                  [ Element.text "There are no discussions in your slipbox! "
+                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. "
+                  , Element.text "Add a discussion to use discovery mode! "
+                  ]
+              else
+                let
+                    headerAttrs =
+                        [ Element.Font.bold
+                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                        ]
+                in
+                Element.column
+                  [ Element.width <| Element.maximum 600 Element.fill
+                  , Element.height Element.fill
+                  , Element.spacingXY 10 10
+                  , Element.padding 5
+                  , Element.Border.width 2
+                  , Element.Border.rounded 6
+                  , Element.centerX
+                  ]
+                  [ multiline DiscoveryModeUpdateInput filterInput "Filter Discussion"
+                  , Element.row [ Element.width Element.fill ]
+                    [ Element.el (Element.width Element.fill :: headerAttrs) <| Element.text "Discussion"
+                    ]
+                  , Element.el [ Element.width Element.fill ] <| Element.table
+                    [ Element.width Element.fill
+                    , Element.spacingXY 8 8
+                    , Element.centerX
+                    , Element.height <| Element.maximum 600 Element.fill
+                    , Element.scrollbarY
+                    ]
+                    { data = discussionTabularData
+                    , columns =
+                      [ { header = Element.none
+                        , width = Element.fillPortion 4
+                        , view =
+                              \row ->
+                                  Element.Input.button
+                                    []
+                                    { onPress = Just <| DiscoveryModeSelectDiscussion row.note
+                                    , label =
+                                      Element.paragraph
+                                        []
+                                        [ Element.text row.discussion
+                                        ]
+                                    }
+                        }
+                      ]
+                    }
+                  ]
+          in
+          column
+            [ headingCenter "Select Discussion"
+            , tableNode
+            ]
+
+        Discovery.DesignateDiscussionEntryPointView selectedNote input ->
+          let
+            matchingDiscussionExists = List.any ( \discussion -> Note.getContent discussion == input )
+              <| Slipbox.getDiscussions Nothing content.slipbox
+            submitNode =
+              if matchingDiscussionExists then
+                Element.el [ Element.centerX ] <| Element.text "Discussion already exists!"
+              else if String.isEmpty input then
+                Element.el
+                  [ Element.height <| Element.minimum 10 Element.fill
+                  , Element.width Element.fill
+                  ]
+                  Element.none
+              else
+                button ( Just DiscoveryModeSubmit ) ( Element.text "Submit New Discussion" )
+          in
+          column
+            [ headingCenter "New Discussion Discovery"
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text selectedNote
+              ]
+            , multiline DiscoveryModeUpdateInput input "Discussion"
+            , submitNode
+            , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
+            ]
+
 
 -- CREATETAB HELPERS
 
@@ -1368,8 +1234,10 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
         False -> Regular note x y
 
 
-viewGraphNote : GraphNote -> Svg.Svg Msg
-viewGraphNote graphNote =
+viewGraphNote : ( Note.Note -> Msg ) ->  GraphNote -> Svg.Svg Msg
+viewGraphNote msg graphNote =
+  let gLambda note content = Svg.g [ Svg.Attributes.cursor "Pointer", Svg.Events.onClick <| msg note ] content
+  in
   case graphNote of
     Selected note x y ->
       let
@@ -1381,27 +1249,9 @@ viewGraphNote graphNote =
         yCenter = center y
         transformation = "rotate(45 " ++ x ++ " " ++ y ++ ")"
       in
-      Svg.g
-        [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
-        ]
-        [ Svg.rect
-          [ Svg.Attributes.fill "rgb(0,0,0)"
-          , Svg.Attributes.width "20"
-          , Svg.Attributes.height "20"
-          , Svg.Attributes.x xCenter
-          , Svg.Attributes.y yCenter
-          ]
-          []
-        , Svg.rect
-          [ Svg.Attributes.fill "rgba(0,0,0)"
-          , Svg.Attributes.width "20"
-          , Svg.Attributes.height "20"
-          , Svg.Attributes.x xCenter
-          , Svg.Attributes.y yCenter
-          , Svg.Attributes.transform transformation
-          ]
-          []
+      gLambda note
+        [ svgRect xCenter yCenter
+        , svgRectTransform xCenter yCenter transformation
         ]
 
 
@@ -1412,34 +1262,10 @@ viewGraphNote graphNote =
             Just s -> String.fromFloat <| s + increment
             Nothing -> str
       in
-      Svg.g
-        [ Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
-        ]
-        [ Svg.circle
-          [ Svg.Attributes.r "5"
-          , Svg.Attributes.stroke "black"
-          , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-          , Svg.Attributes.cx x
-          , Svg.Attributes.cy y
-          ]
-          []
-        , Svg.line
-          [ Svg.Attributes.x1 <| modify x -5
-          , Svg.Attributes.x2 <| modify x 5
-          , Svg.Attributes.y1 y
-          , Svg.Attributes.y2 y
-          , Svg.Attributes.stroke "black"
-          ]
-          []
-        , Svg.line
-          [ Svg.Attributes.x1 x
-          , Svg.Attributes.x2 x
-          , Svg.Attributes.y1 <| modify y -5
-          , Svg.Attributes.y2 <| modify y 5
-          , Svg.Attributes.stroke "black"
-          ]
-          []
+      gLambda note
+        [ svgCircle x y "5"
+        , svgLine ( modify x -5 ) ( modify x 5 ) y y
+        , svgLine x x ( modify y -5 ) ( modify y 5 )
         ]
 
     Discussion note x y ->
@@ -1451,27 +1277,10 @@ viewGraphNote graphNote =
         xCenter = center x
         yCenter = center y
       in
-      Svg.rect
-        [ Svg.Attributes.fill "rgb(0,0,0)"
-        , Svg.Attributes.width "20"
-        , Svg.Attributes.height "20"
-        , Svg.Attributes.x xCenter
-        , Svg.Attributes.y yCenter
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
-        ]
-        []
+      gLambda note
+        [ svgRect xCenter yCenter ]
 
-    Regular note x y ->
-      Svg.circle
-        [ Svg.Attributes.cx x
-        , Svg.Attributes.cy y
-        , Svg.Attributes.r "5"
-        , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| CreateTabSelectNote note
-        ]
-        []
+    Regular note x y -> gLambda note [ svgCircle x y "5" ]
 
 type alias PositionExtremes =
   { minX : Float
@@ -1522,20 +1331,15 @@ toCreateTabGraphLink notePositions link =
             identifier link notePosition.note
           )
           notePositions
+    line note1 note2 = Svg.line
+      [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+      , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+      , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+      , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+      , Svg.Attributes.stroke "rgb(0,0,0)"
+      , Svg.Attributes.strokeWidth "2" ] []
   in
-  Maybe.map2 createTabSvgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
-
-createTabSvgLine : NotePosition -> NotePosition -> Svg.Svg Msg
-createTabSvgLine note1 note2 =
-  Svg.line
-    [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
-    , Svg.Attributes.y1 <| String.fromFloat <| note1.y
-    , Svg.Attributes.x2 <| String.fromFloat <| note2.x
-    , Svg.Attributes.y2 <| String.fromFloat <| note2.y
-    , Svg.Attributes.stroke "rgb(0,0,0)"
-    , Svg.Attributes.strokeWidth "2"
-    ]
-    []
+  Maybe.map2 line (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
 
 createTabSourceInput: String -> (List String) -> Element Msg
 createTabSourceInput input suggestions =
@@ -1705,7 +1509,7 @@ leftNav sideNavState selectedTab slipbox =
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Brain" ( ChangeTab Brain ) <| sameTab selectedTab Brain
+          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab Discovery ) <| sameTab selectedTab Discovery
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
           , leftNavExpandedButtonLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
           , leftNavExpandedButtonLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
@@ -1733,7 +1537,7 @@ leftNav sideNavState selectedTab slipbox =
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Brain ) brainIcon <| sameTab selectedTab Brain
+          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Discovery ) brainIcon <| sameTab selectedTab Discovery
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
@@ -1744,11 +1548,6 @@ leftNav sideNavState selectedTab slipbox =
 sameTab : Tab -> Tab_ -> Bool
 sameTab tab tab_ =
   case tab of
-    BrainTab _ _ ->
-      case tab_ of
-        Brain -> True
-        _ -> False
-
     NotesTab _ ->
       case tab_ of
         Notes -> True
@@ -1772,6 +1571,11 @@ sameTab tab tab_ =
     CreateModeTab _ ->
       case tab_ of
         CreateMode -> True
+        _ -> False
+
+    DiscoveryModeTab _ ->
+      case tab_ of
+        Discovery -> True
         _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -1837,7 +1641,7 @@ itemHeaderBuilder contents =
 normalItemHeader : String -> Item.Item -> Element Msg
 normalItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| editButton item
     , Element.el [ Element.alignRight ] <| deleteButton item
     , Element.el [ Element.alignRight ] <| dismissButton item
@@ -1846,7 +1650,7 @@ normalItemHeader text item =
 conditionalSubmitItemHeader : String -> Bool -> Item.Item -> Element Msg
 conditionalSubmitItemHeader text canSubmit item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| chooseSubmitButton item canSubmit
     ]
@@ -1854,7 +1658,7 @@ conditionalSubmitItemHeader text canSubmit item =
 deleteItemHeader : String -> Item.Item -> Element Msg
 deleteItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| confirmButton item
     ]
@@ -1862,7 +1666,7 @@ deleteItemHeader text item =
 submitItemHeader : String -> Item.Item -> Element Msg
 submitItemHeader text item =
   itemHeaderBuilder
-    [ headerText text
+    [ heading text
     , Element.el [ Element.alignRight ] <| cancelButton item
     , Element.el [ Element.alignRight ] <| submitButton item
     ]
@@ -1964,8 +1768,7 @@ toItemView content item =
           , Element.width Element.fill
           , Element.spacingXY 8 8
           ]
-          [ Element.el [ Element.alignLeft, Element.Font.heavy ]
-            <| Element.text "Select Note to Link"
+          [ heading "Select Note to Link"
           , searchInput search
             <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
           , Element.column
@@ -2070,7 +1873,7 @@ onHoverButtonTray item =
 buttonTray : ( Maybe Item.Item ) -> Element Msg
 buttonTray maybeItem =
   let
-    button addAction text=
+    button_ addAction text=
       smallOldLavenderButton
           { onPress = Just <| AddItem maybeItem addAction
           , label = Element.el
@@ -2088,14 +1891,10 @@ buttonTray maybeItem =
     , Element.spacingXY 8 8
     , Element.height Element.fill
     ]
-    [ button Slipbox.NewNote "Create Note"
-    , button Slipbox.NewSource "Create Source"
-    , button Slipbox.NewDiscussion "Create Discussion"
+    [ button_ Slipbox.NewNote "Create Note"
+    , button_ Slipbox.NewSource "Create Source"
+    , button_ Slipbox.NewDiscussion "Create Discussion"
     ]
-
-headerText : String -> Element Msg
-headerText text =
-  Element.el [ Element.alignLeft, Element.Font.heavy ] <| Element.text text
 
 linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
 linkedNotesNode item note slipbox =
@@ -2115,7 +1914,7 @@ linkedNotesNode item note slipbox =
         []
         [ Element.row
           [ Element.width Element.fill]
-          [ headerText "Linked Notes"
+          [ heading "Linked Notes"
           , Element.el [ Element.alignRight ] <| addLinkButton item ]
         , linkedNotesDomRep
         ]
@@ -2139,7 +1938,7 @@ associatedNotesNode item source slipbox =
   else
     Element.column
       [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ headerText "Associated Notes"
+      [ heading "Associated Notes"
       , Element.column containerWithScrollAttributes
           ( List.map (\n -> toAssociatedNoteButton ( Just item ) n ) associatedNotes )
       ]
@@ -2306,161 +2105,6 @@ toEditingSourceRepresentation item title author content existingTitles =
     , contentInput item content
     ]
 
-exploreTabToolbar: String -> Element Msg
-exploreTabToolbar input = 
-  Element.el 
-    [ Element.width Element.fill
-    , Element.height <| Element.px barHeight
-    , Element.padding 8
-    ]
-    <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ searchInput input (\s -> ExploreTabUpdateInput s)
-      ]
-
-graph : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Element Msg
-graph deviceViewport viewport elements =
-  Element.el
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    ]
-    <| Element.html
-      <| Html.div (graphWrapperAttributes viewport) <| [ graph_ deviceViewport viewport elements ]
-
-graphWrapperAttributes : Viewport.Viewport -> ( List ( Html.Attribute Msg ) )
-graphWrapperAttributes viewport =
-  case Viewport.getState viewport of
-    Viewport.Moving _ -> [ Html.Events.onMouseEnter StopMoveView ]
-    Viewport.Stationary -> []
-
-graph_ : ( Int, Int ) -> Viewport.Viewport -> ((List Note.Note, List Link.Link)) -> Svg.Svg Msg
-graph_ deviceViewport viewport (notes, links) =
-  Svg.svg ( graphAttributes deviceViewport viewport )
-    <| List.concat
-      [ List.filterMap (toGraphLink notes) links
-      , List.map toGraphNote notes
-      , maybePanningFrame viewport notes
-      ]
-
-graphAttributes : ( Int, Int ) -> Viewport.Viewport -> (List ( Svg.Attribute Msg ) )
-graphAttributes ( width, _ ) viewport =
-  let
-      mouseEventDecoder =
-        Json.Decode.map2 Viewport.MouseEvent
-        ( Json.Decode.field "offsetX" Json.Decode.int )
-        ( Json.Decode.field "offsetY" Json.Decode.int )
-  in
-  case Viewport.getState viewport of
-    Viewport.Moving _ ->
-      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
-        , Svg.Events.on "mousemove" <| Json.Decode.map MoveView mouseEventDecoder
-        , Svg.Events.onMouseUp StopMoveView
-        , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "100%"
-      ]
-    Viewport.Stationary -> 
-      [ Svg.Attributes.viewBox <| Viewport.getViewbox viewport
-        , Svg.Events.on "mousedown" <| Json.Decode.map StartMoveView mouseEventDecoder
-        , Svg.Attributes.width "100%"
-        , Svg.Attributes.height "100%"
-      ]
-
-toGraphNote: Note.Note -> Svg.Svg Msg
-toGraphNote note =
-  case Note.getGraphState note of
-    Note.Expanded width height ->
-      Svg.g [ Svg.Attributes.transform <| Note.getTransform note ]
-        [ Svg.rect
-            [ Svg.Attributes.width <| String.fromInt width
-            , Svg.Attributes.height <| String.fromInt height
-            , Svg.Attributes.fill "none"
-            ]
-            []
-        , Svg.foreignObject
-          [ Svg.Attributes.width <| String.fromInt width
-          , Svg.Attributes.height <| String.fromInt height
-          ]
-          <| [ Element.layoutWith
-            { options = [ Element.noStaticStyleSheet ] }
-            [ Element.width <| Element.px width, Element.height <| Element.px height ]
-            <| Element.column
-              [ Element.width Element.fill
-              , Element.height Element.fill
-              , Element.Border.width 3
-              ]
-              [ Element.Input.button [Element.alignRight]
-                { onPress = Just <| CompressNote note
-                , label = Element.text "X"
-                }
-              , Element.Input.button
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.Font.size 8
-                ]
-                { onPress = Just <| AddItem Nothing <| Slipbox.OpenNote note
-                , label = Element.paragraph
-                  [ Element.scrollbarY ]
-                  [ Element.text <| Note.getContent note ]
-                }
-              ]
-              ]
-        ]
-    Note.Compressed radius ->
-      Svg.circle
-        [ Svg.Attributes.cx <| String.fromFloat <| Note.getX note
-        , Svg.Attributes.cy <| String.fromFloat <| Note.getY note
-        , Svg.Attributes.r <| String.fromInt radius
-        , Svg.Attributes.fill <| noteColor <| Note.getVariant note
-        , Svg.Attributes.cursor "Pointer"
-        , Svg.Events.onClick <| ExpandNote note
-        ]
-        []
-
-toGraphLink: (List Note.Note) -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
-toGraphLink notes link =
-  let
-    maybeGetNoteByIdentifier = \identifier -> List.head <| List.filter (identifier link) notes
-  in
-  Maybe.map2 svgLine (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
-
-svgLine : Note.Note -> Note.Note -> Svg.Svg Msg
-svgLine note1 note2 =
-  Svg.line 
-    [ Svg.Attributes.x1 <| String.fromFloat <| Note.getX note1
-    , Svg.Attributes.y1 <| String.fromFloat <| Note.getY note1
-    , Svg.Attributes.x2 <| String.fromFloat <| Note.getX note2
-    , Svg.Attributes.y2 <| String.fromFloat <| Note.getY note2
-    , Svg.Attributes.stroke "rgb(0,0,0)"
-    , Svg.Attributes.strokeWidth "2"
-    ] 
-    []
-
-maybePanningFrame: Viewport.Viewport -> ( List Note.Note ) -> ( List ( Svg.Svg Msg ) )
-maybePanningFrame viewport notes =
-  let
-      maybeAttr = Viewport.getPanningAttributes viewport notes
-  in
-  case maybeAttr of
-    Just attr ->
-      [ Svg.g
-        [ Svg.Attributes.transform attr.bottomRight]
-        [ Svg.rect
-          [ Svg.Attributes.width attr.outerWidth
-          , Svg.Attributes.height attr.outerHeight
-          , Svg.Attributes.style "border: 2px solid gray;"
-          , Svg.Attributes.fillOpacity "0.1"
-          ]
-          []
-        , Svg.rect
-          [ Svg.Attributes.width attr.innerWidth
-          , Svg.Attributes.height attr.innerHeight
-          , Svg.Attributes.style attr.innerStyle
-          , Svg.Attributes.transform attr.innerTransform
-          ]
-          []
-        ]
-      ]
-    Nothing -> []
-
 noteTabToolbar: String -> Element Msg
 noteTabToolbar input = 
   Element.el 
@@ -2524,13 +2168,6 @@ toOpenSourceButton source =
       , label = toSourceRepresentationFromSource source
       }
 
--- COLORS
-noteColor : Note.Variant -> String
-noteColor variant =
-  case variant of
-    Note.Discussion -> "rgba(250, 190, 88, 1)"
-    Note.Regular -> "rgba(137, 196, 244, 1)"
-
 -- UTILITIES
 
 searchInput : String -> (String -> Msg) -> Element Msg
@@ -2568,26 +2205,10 @@ dismissButton item =
     }
 
 contentInput: Item.Item -> String -> Element Msg
-contentInput item input =
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Content"
-    , spellcheck = True
-    }
+contentInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Content"
 
 discussionInput: Item.Item -> String -> Element Msg
-discussionInput item input =
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateContent s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Discussion"
-    , spellcheck = True
-    }
+discussionInput item input = multiline (\s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Discussion"
 
 sourceInput: Int -> Item.Item -> String -> (List String) -> Element Msg
 sourceInput itemId item input suggestions =
@@ -2648,29 +2269,16 @@ titleInput item input existingTitles =
   let
     titleLabel =
       if Source.titleIsValid existingTitles input then
-        Element.text "Title"
+        "Title"
+      else if String.isEmpty input then
+        "Title"
       else
-        Element.text "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
+        "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
   in
-  Element.Input.multiline
-    []
-    { onChange = (\s -> UpdateItem item <| Slipbox.UpdateTitle s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] titleLabel
-    , spellcheck = True
-    }
+  multiline (\s -> UpdateItem item <| Slipbox.UpdateTitle s ) input titleLabel
 
 authorInput : Item.Item -> String -> Element Msg
-authorInput item input =
-  Element.Input.multiline
-    []
-    { onChange = ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s )
-    , text = input
-    , placeholder = Nothing
-    , label = Element.Input.labelAbove [] <| Element.text "Author"
-    , spellcheck = True
-    }
+authorInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s ) input "Author"
 
 -- MISC VIEW FUNCTIONS
 
@@ -2740,3 +2348,118 @@ smallOldLavenderButton buttonFunction =
     , Element.Font.heavy
     ]
     buttonFunction
+
+-- Element Helpers
+
+button : Maybe Msg -> Element Msg -> Element Msg
+button msg label =
+  Element.Input.button
+    [ Element.centerX
+    , Element.padding 8
+    , Element.Border.width 1
+    ]
+    { onPress =  msg
+    , label = label
+    }
+
+column : List ( Element Msg ) -> Element Msg
+column contents =
+  Element.column
+    [ Element.padding 16
+    , Element.centerX
+    , Element.width Element.fill
+    , Element.spacingXY 32 32
+    ]
+    contents
+
+multiline onChange text label =
+  Element.Input.multiline
+    []
+    { onChange = onChange
+    , text = text
+    , placeholder = Nothing
+    , label = Element.Input.labelAbove [] <| Element.text label
+    , spellcheck = True
+    }
+
+heading title = Element.paragraph [ Element.Font.bold ] [ Element.text title ]
+headingCenter title = Element.el [ Element.centerX ] <| heading title
+
+-- SVG HELPERS
+
+svgLegend : List ( Svg.Svg Msg ) -> Svg.Svg Msg
+svgLegend contents =
+  Svg.svg [ Svg.Attributes.height "40", Svg.Attributes.width "40", Svg.Attributes.viewBox "0 0 40 40" ]
+    contents
+
+svgCircle cx cy r =
+  Svg.circle
+    [ Svg.Attributes.r r
+    , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+    , Svg.Attributes.cx cx
+    , Svg.Attributes.cy cy
+    ]
+    []
+
+svgRectTransform x y transform =
+  Svg.rect
+    [ Svg.Attributes.fill "rgb(0,0,0)"
+    , Svg.Attributes.width "20"
+    , Svg.Attributes.height "20"
+    , Svg.Attributes.x x
+    , Svg.Attributes.y y
+    , Svg.Attributes.transform transform
+    ]
+    []
+
+svgRect x y = svgRectTransform x y ""
+
+svgLine x1 x2 y1 y2 =
+  Svg.line
+    [ Svg.Attributes.x1 x1
+    , Svg.Attributes.x2 x2
+    , Svg.Attributes.y1 y1
+    , Svg.Attributes.y2 y2
+    , Svg.Attributes.stroke "black"
+    ]
+    []
+
+discussionLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgRect "10" "10" ]
+    , Element.text "Discussion (if not selected)"
+    ]
+
+selectedNoteLegend =
+  Element.row
+    []
+    [ Element.html <|
+      svgLegend
+        [ Svg.g []
+          [ svgRect "10" "10"
+          , svgRectTransform "10" "10" "rotate(45 20 20)"
+          ]
+        ]
+    , Element.text "Currently Selected Note"
+    ]
+
+circleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgCircle "20" "20" "10" ]
+    , Element.text "Regular Note"
+    ]
+
+linkedCircleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend
+      [ Svg.g []
+        [ svgCircle "20" "20" "10"
+        , svgLine "10" "30" "20" "20"
+        , svgLine "20" "20" "10" "30"
+        ]
+      ]
+    , Element.text "Note Marked to link (if not selected)"
+    ]
