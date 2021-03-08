@@ -20760,7 +20760,8 @@ var $author$project$Main$tabView = function (content) {
 									$elm$svg$Svg$Attributes$width('100%'),
 									$elm$svg$Svg$Attributes$height('100%'),
 									$elm$svg$Svg$Attributes$viewBox(
-									$author$project$Main$computeViewbox(createTabGraph.hg))
+									$author$project$Main$computeViewbox(createTabGraph.hg)),
+									$elm$svg$Svg$Attributes$style('position: absolute')
 								]),
 							$elm$core$List$concat(
 								_List_fromArray(
@@ -20853,12 +20854,8 @@ var $author$project$Main$tabView = function (content) {
 										_List_fromArray(
 											[
 												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												$mdgriffith$elm_ui$Element$height(
-												$mdgriffith$elm_ui$Element$fillPortion(1)),
 												$mdgriffith$elm_ui$Element$padding(8),
 												$mdgriffith$elm_ui$Element$Border$width(1),
-												$mdgriffith$elm_ui$Element$centerY,
-												$mdgriffith$elm_ui$Element$centerX,
 												A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
 											]),
 										_List_fromArray(
@@ -20878,10 +20875,6 @@ var $author$project$Main$tabView = function (content) {
 										_List_fromArray(
 											[
 												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												$mdgriffith$elm_ui$Element$height(
-												$mdgriffith$elm_ui$Element$fillPortion(1)),
-												$mdgriffith$elm_ui$Element$centerY,
-												$mdgriffith$elm_ui$Element$centerX,
 												$mdgriffith$elm_ui$Element$Border$width(1),
 												$mdgriffith$elm_ui$Element$padding(8),
 												A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
@@ -20902,8 +20895,6 @@ var $author$project$Main$tabView = function (content) {
 										_List_fromArray(
 											[
 												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												$mdgriffith$elm_ui$Element$height(
-												$mdgriffith$elm_ui$Element$fillPortion(3)),
 												$mdgriffith$elm_ui$Element$Border$width(1),
 												$mdgriffith$elm_ui$Element$padding(8),
 												A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
@@ -20929,20 +20920,9 @@ var $author$project$Main$tabView = function (content) {
 															]))
 													])),
 												linkNode
-											]))
-									])),
-								A2(
-								$mdgriffith$elm_ui$Element$column,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
-									]),
-								_List_fromArray(
-									[
-										viewGraph,
+											])),
 										A2(
-										$mdgriffith$elm_ui$Element$wrappedRow,
+										$mdgriffith$elm_ui$Element$column,
 										_List_fromArray(
 											[
 												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
@@ -20952,7 +20932,15 @@ var $author$project$Main$tabView = function (content) {
 											]),
 										_List_fromArray(
 											[$author$project$Main$selectedNoteLegend, $author$project$Main$linkedCircleLegend, $author$project$Main$discussionLegend, $author$project$Main$circleLegend]))
-									]))
+									])),
+								A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+									]),
+								viewGraph)
 							]));
 				case 3:
 					var note = _v1.a;

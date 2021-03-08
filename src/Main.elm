@@ -792,6 +792,7 @@ tabView content =
                 [ Svg.Attributes.width "100%"
                 , Svg.Attributes.height "100%"
                 , Svg.Attributes.viewBox <| computeViewbox createTabGraph.positions
+                , Svg.Attributes.style "position: absolute"
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
@@ -822,11 +823,8 @@ tabView content =
               ]
               [ Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 1
                 , Element.padding 8
                 , Element.Border.width 1
-                , Element.centerY
-                , Element.centerX
                 , Element.spacingXY 10 10
                 ]
                 [ heading "Discussion"
@@ -834,9 +832,6 @@ tabView content =
                 ]
               , Element.textColumn
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 1
-                , Element.centerY
-                , Element.centerX
                 , Element.Border.width 1
                 , Element.padding 8
                 , Element.spacingXY 10 10
@@ -846,7 +841,6 @@ tabView content =
                 ]
               , Element.column
                 [ Element.width Element.fill
-                , Element.height <| Element.fillPortion 3
                 , Element.Border.width 1
                 , Element.padding 8
                 , Element.spacingXY 10 10
@@ -859,13 +853,7 @@ tabView content =
                   ]
                 , linkNode
                 ]
-              ]
-            , Element.column
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              ]
-              [ viewGraph
-              , Element.wrappedRow
+              , Element.column
                 [ Element.width Element.fill
                 , Element.height Element.shrink
                 , Element.padding 8
@@ -877,6 +865,11 @@ tabView content =
                 , circleLegend
                 ]
               ]
+            , Element.el
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              ]
+              viewGraph
             ]
 
         Create.DesignateDiscussionEntryPointView note input ->
