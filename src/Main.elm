@@ -178,6 +178,8 @@ type Msg
   | DiscoveryModeSelectDiscussion Note.Note
   | DiscoveryModeBack
   | DiscoveryModeSelectNote Note.Note
+  | DiscoveryModeSubmit
+  | DiscoveryModeStartNewDiscussion
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -214,6 +216,19 @@ update message model =
                 ( updatedSlipbox, updatedCreate ) = createUpdate slipbox create
               in
               ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+              , Cmd.none
+              )
+            Nothing -> ( model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
+    discoveryModeAndSlipboxLambda discoveryUpdate =
+      case getSlipbox model of
+        Just slipbox ->
+          case getDiscovery model of
+            Just discovery ->
+              let
+                ( updatedSlipbox, updatedDiscovery ) = discoveryUpdate slipbox discovery
+              in
+              ( setDiscovery updatedDiscovery model |> setSlipbox updatedSlipbox
               , Cmd.none
               )
             Nothing -> ( model, Cmd.none )
@@ -382,6 +397,8 @@ update message model =
         Nothing -> ( model, Cmd.none )
     DiscoveryModeBack -> discoveryModeLambda Discovery.back
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
+    DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
+    DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
 
 
 newContent : Content
@@ -987,6 +1004,10 @@ tabView content =
                 button
                   ( Just <| DiscoveryModeSelectDiscussion selectedNote )
                   ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
+              else if Note.getVariant selectedNote == Note.Regular then
+                button
+                  ( Just DiscoveryModeStartNewDiscussion )
+                  ( Element.el [ Element.centerX ] <| Element.text "Designate New Discussion Entry Point" )
               else
                 Element.none
             container title note element = Element.textColumn
@@ -1021,7 +1042,7 @@ tabView content =
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ container "Discussion" discussion Element.none
+              [ container "Selected Discussion" discussion Element.none
               , container "Selected Note" selectedNote viewDiscussionNode
               , selectedNoteLegend
               , discussionLegend
@@ -1113,6 +1134,36 @@ tabView content =
           column
             [ headingCenter "Select Discussion"
             , tableNode
+            ]
+
+        Discovery.DesignateDiscussionEntryPointView selectedNote input ->
+          let
+            matchingDiscussionExists = List.any ( \discussion -> Note.getContent discussion == input )
+              <| Slipbox.getDiscussions Nothing content.slipbox
+            submitNode =
+              if matchingDiscussionExists then
+                Element.el [ Element.centerX ] <| Element.text "Discussion already exists!"
+              else if String.isEmpty input then
+                Element.el
+                  [ Element.height <| Element.minimum 10 Element.fill
+                  , Element.width Element.fill
+                  ]
+                  Element.none
+              else
+                button ( Just DiscoveryModeSubmit ) ( Element.text "Submit New Discussion" )
+          in
+          column
+            [ headingCenter "New Discussion Discovery"
+            , Element.paragraph
+              [ Element.Font.center
+              , Element.width <| Element.maximum 800 Element.fill
+              , Element.centerX
+              ]
+              [ Element.text selectedNote
+              ]
+            , multiline DiscoveryModeUpdateInput input "Discussion"
+            , submitNode
+            , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
 
 

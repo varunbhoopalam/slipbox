@@ -24,7 +24,6 @@ import Note
 import Slipbox
 import Source
 
--- TODO: Add section for checking if this is the entry point to a new discussion
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseDiscussion CoachingModal CreateModeInternal

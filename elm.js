@@ -4804,7 +4804,7 @@ var $elm$core$Array$treeFromBuilder = F2(
 	});
 var $elm$core$Array$builderToArray = F2(
 	function (reverseNodeList, builder) {
-		if (!builder.s) {
+		if (!builder.t) {
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
 				$elm$core$Elm$JsArray$length(builder.w),
@@ -4812,11 +4812,11 @@ var $elm$core$Array$builderToArray = F2(
 				$elm$core$Elm$JsArray$empty,
 				builder.w);
 		} else {
-			var treeLen = builder.s * $elm$core$Array$branchFactor;
+			var treeLen = builder.t * $elm$core$Array$branchFactor;
 			var depth = $elm$core$Basics$floor(
 				A2($elm$core$Basics$logBase, $elm$core$Array$branchFactor, treeLen - 1));
 			var correctNodeList = reverseNodeList ? $elm$core$List$reverse(builder.x) : builder.x;
-			var tree = A2($elm$core$Array$treeFromBuilder, correctNodeList, builder.s);
+			var tree = A2($elm$core$Array$treeFromBuilder, correctNodeList, builder.t);
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
 				$elm$core$Elm$JsArray$length(builder.w) + treeLen,
@@ -4835,7 +4835,7 @@ var $elm$core$Array$initializeHelp = F5(
 				return A2(
 					$elm$core$Array$builderToArray,
 					false,
-					{x: nodeList, s: (len / $elm$core$Array$branchFactor) | 0, w: tail});
+					{x: nodeList, t: (len / $elm$core$Array$branchFactor) | 0, w: tail});
 			} else {
 				var leaf = $elm$core$Array$Leaf(
 					A3($elm$core$Elm$JsArray$initialize, $elm$core$Array$branchFactor, fromIndex, fn));
@@ -5209,7 +5209,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 };
 var $author$project$Main$Content = F3(
 	function (tab, slipbox, sideNavState) {
-		return {cg: sideNavState, t: slipbox, r: tab};
+		return {cg: sideNavState, s: slipbox, r: tab};
 	});
 var $author$project$Main$CreateModeTab = function (a) {
 	return {$: 4, a: a};
@@ -5939,7 +5939,7 @@ var $author$project$Main$getDiscovery = function (model) {
 var $author$project$Main$getSlipbox = function (model) {
 	if (model.$ === 2) {
 		var content = model.a;
-		return $elm$core$Maybe$Just(content.t);
+		return $elm$core$Maybe$Just(content.s);
 	} else {
 		return $elm$core$Maybe$Nothing;
 	}
@@ -6347,73 +6347,23 @@ var $author$project$Main$setSlipbox = F2(
 			return $author$project$Main$Session(
 				_Utils_update(
 					content,
-					{t: slipbox}));
+					{s: slipbox}));
 		} else {
 			return model;
 		}
 	});
-var $author$project$Create$setDiscussion = F2(
-	function (discussion, internal) {
-		var note = internal.a;
-		var questionsRead = internal.b;
-		var linksCreated = internal.c;
-		var source = internal.d;
-		return A5(
-			$author$project$Create$CreateModeInternal,
-			note,
-			questionsRead,
-			linksCreated,
-			source,
-			$elm$core$Maybe$Just(discussion));
+var $author$project$Discovery$DesignateDiscussionEntryPoint = F2(
+	function (a, b) {
+		return {$: 2, a: a, b: b};
 	});
-var $author$project$Create$submitNewDiscussion = function (create) {
-	if (create.$ === 3) {
-		var coachingModal = create.a;
-		var internal = create.b;
-		var discussion = create.c;
-		return A3(
-			$author$project$Create$ChooseSourceCategory,
-			coachingModal,
-			A2($author$project$Create$setDiscussion, discussion, internal),
-			'');
+var $author$project$Discovery$startNewDiscussion = function (discovery) {
+	if (!discovery.$) {
+		var selectedNote = discovery.b;
+		return A2($author$project$Discovery$DesignateDiscussionEntryPoint, selectedNote, '');
 	} else {
-		return create;
+		return discovery;
 	}
 };
-var $author$project$Create$New = F3(
-	function (a, b, c) {
-		return {$: 1, a: a, b: b, c: c};
-	});
-var $author$project$Create$setNewSource = F4(
-	function (title, author, content, internal) {
-		var note = internal.a;
-		var questionsRead = internal.b;
-		var linksCreated = internal.c;
-		var discussion = internal.e;
-		return A5(
-			$author$project$Create$CreateModeInternal,
-			note,
-			questionsRead,
-			linksCreated,
-			A3($author$project$Create$New, title, author, content),
-			discussion);
-	});
-var $author$project$Create$submitNewSource = F2(
-	function (slipbox, create) {
-		if (create.$ === 5) {
-			var internal = create.b;
-			var title = create.c;
-			var author = create.d;
-			var content = create.e;
-			var updatedCreate = $author$project$Create$PromptCreateAnother(
-				A4($author$project$Create$setNewSource, title, author, content, internal));
-			return _Utils_Tuple2(
-				A2($author$project$Create$updateSlipbox, updatedCreate, slipbox),
-				updatedCreate);
-		} else {
-			return _Utils_Tuple2(slipbox, create);
-		}
-	});
 var $author$project$Slipbox$flatten2D = function (list) {
 	return A3($elm$core$List$foldr, $elm$core$Basics$append, _List_Nil, list);
 };
@@ -6610,21 +6560,6 @@ var $author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions = F2(
 				discussion,
 				A2($elm$core$List$map, $elm$core$Tuple$first, allTuples)),
 			A2($elm$core$List$map, $elm$core$Tuple$second, allTuples));
-	});
-var $author$project$Create$read = F2(
-	function (question, internal) {
-		var note = internal.a;
-		var questionsRead = internal.b;
-		var linksCreated = internal.c;
-		var source = internal.d;
-		var discussion = internal.e;
-		return A5(
-			$author$project$Create$CreateModeInternal,
-			note,
-			A2($elm$core$List$cons, question, questionsRead),
-			linksCreated,
-			source,
-			discussion);
 	});
 var $author$project$Graph$Graph = F2(
 	function (positions, links) {
@@ -8177,6 +8112,108 @@ var $author$project$Graph$simulatePositions = function (_v0) {
 	var notePositions = A2($gampleman$elm_visualization$Force$computeSimulation, state, entities);
 	return A2($author$project$Graph$Graph, notePositions, links);
 };
+var $author$project$Discovery$viewDiscussion = F3(
+	function (discussion, slipbox, _v0) {
+		return A3(
+			$author$project$Discovery$ViewDiscussion,
+			discussion,
+			discussion,
+			$author$project$Graph$simulatePositions(
+				A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, discussion, slipbox)));
+	});
+var $author$project$Discovery$submit = F2(
+	function (slipbox, discovery) {
+		if (discovery.$ === 2) {
+			var selectedNote = discovery.a;
+			var discussionInput = discovery.b;
+			var _v1 = A2($author$project$Slipbox$addDiscussion, discussionInput, slipbox);
+			var slipboxWithNewDiscussion = _v1.a;
+			var discussion = _v1.b;
+			var newSlipbox = A3($author$project$Slipbox$addLink, discussion, selectedNote, slipboxWithNewDiscussion);
+			return _Utils_Tuple2(
+				newSlipbox,
+				A3($author$project$Discovery$viewDiscussion, discussion, newSlipbox, discovery));
+		} else {
+			return _Utils_Tuple2(slipbox, discovery);
+		}
+	});
+var $author$project$Create$setDiscussion = F2(
+	function (discussion, internal) {
+		var note = internal.a;
+		var questionsRead = internal.b;
+		var linksCreated = internal.c;
+		var source = internal.d;
+		return A5(
+			$author$project$Create$CreateModeInternal,
+			note,
+			questionsRead,
+			linksCreated,
+			source,
+			$elm$core$Maybe$Just(discussion));
+	});
+var $author$project$Create$submitNewDiscussion = function (create) {
+	if (create.$ === 3) {
+		var coachingModal = create.a;
+		var internal = create.b;
+		var discussion = create.c;
+		return A3(
+			$author$project$Create$ChooseSourceCategory,
+			coachingModal,
+			A2($author$project$Create$setDiscussion, discussion, internal),
+			'');
+	} else {
+		return create;
+	}
+};
+var $author$project$Create$New = F3(
+	function (a, b, c) {
+		return {$: 1, a: a, b: b, c: c};
+	});
+var $author$project$Create$setNewSource = F4(
+	function (title, author, content, internal) {
+		var note = internal.a;
+		var questionsRead = internal.b;
+		var linksCreated = internal.c;
+		var discussion = internal.e;
+		return A5(
+			$author$project$Create$CreateModeInternal,
+			note,
+			questionsRead,
+			linksCreated,
+			A3($author$project$Create$New, title, author, content),
+			discussion);
+	});
+var $author$project$Create$submitNewSource = F2(
+	function (slipbox, create) {
+		if (create.$ === 5) {
+			var internal = create.b;
+			var title = create.c;
+			var author = create.d;
+			var content = create.e;
+			var updatedCreate = $author$project$Create$PromptCreateAnother(
+				A4($author$project$Create$setNewSource, title, author, content, internal));
+			return _Utils_Tuple2(
+				A2($author$project$Create$updateSlipbox, updatedCreate, slipbox),
+				updatedCreate);
+		} else {
+			return _Utils_Tuple2(slipbox, create);
+		}
+	});
+var $author$project$Create$read = F2(
+	function (question, internal) {
+		var note = internal.a;
+		var questionsRead = internal.b;
+		var linksCreated = internal.c;
+		var source = internal.d;
+		var discussion = internal.e;
+		return A5(
+			$author$project$Create$CreateModeInternal,
+			note,
+			A2($elm$core$List$cons, question, questionsRead),
+			linksCreated,
+			source,
+			discussion);
+	});
 var $author$project$Create$toAddLinkState = F3(
 	function (question, slipbox, create) {
 		if (create.$ === 1) {
@@ -8359,10 +8396,14 @@ var $author$project$Create$updateInput = F2(
 	});
 var $author$project$Discovery$updateInput = F2(
 	function (input, discovery) {
-		if (discovery.$ === 1) {
-			return $author$project$Discovery$ChooseDiscussion(input);
-		} else {
-			return discovery;
+		switch (discovery.$) {
+			case 1:
+				return $author$project$Discovery$ChooseDiscussion(input);
+			case 2:
+				var note = discovery.a;
+				return A2($author$project$Discovery$DesignateDiscussionEntryPoint, note, input);
+			default:
+				return discovery;
 		}
 	});
 var $author$project$Item$AddingLinkToNoteForm = F5(
@@ -9177,21 +9218,12 @@ var $author$project$Main$updateTab = F2(
 			return model;
 		}
 	});
-var $author$project$Discovery$viewDiscussion = F3(
-	function (discussion, slipbox, _v0) {
-		return A3(
-			$author$project$Discovery$ViewDiscussion,
-			discussion,
-			discussion,
-			$author$project$Graph$simulatePositions(
-				A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, discussion, slipbox)));
-	});
 var $author$project$Main$update = F2(
 	function (message, model) {
 		var updateSlipboxWrapper = function (s) {
-			var _v27 = $author$project$Main$getSlipbox(model);
-			if (!_v27.$) {
-				var slipbox = _v27.a;
+			var _v30 = $author$project$Main$getSlipbox(model);
+			if (!_v30.$) {
+				var slipbox = _v30.a;
 				return _Utils_Tuple2(
 					A2(
 						$author$project$Main$setSlipbox,
@@ -9203,15 +9235,38 @@ var $author$project$Main$update = F2(
 			}
 		};
 		var discoveryModeLambda = function (discoveryUpdate) {
-			var _v26 = $author$project$Main$getDiscovery(model);
-			if (!_v26.$) {
-				var discovery = _v26.a;
+			var _v29 = $author$project$Main$getDiscovery(model);
+			if (!_v29.$) {
+				var discovery = _v29.a;
 				return _Utils_Tuple2(
 					A2(
 						$author$project$Main$setDiscovery,
 						discoveryUpdate(discovery),
 						model),
 					$elm$core$Platform$Cmd$none);
+			} else {
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			}
+		};
+		var discoveryModeAndSlipboxLambda = function (discoveryUpdate) {
+			var _v26 = $author$project$Main$getSlipbox(model);
+			if (!_v26.$) {
+				var slipbox = _v26.a;
+				var _v27 = $author$project$Main$getDiscovery(model);
+				if (!_v27.$) {
+					var discovery = _v27.a;
+					var _v28 = A2(discoveryUpdate, slipbox, discovery);
+					var updatedSlipbox = _v28.a;
+					var updatedDiscovery = _v28.b;
+					return _Utils_Tuple2(
+						A2(
+							$author$project$Main$setSlipbox,
+							updatedSlipbox,
+							A2($author$project$Main$setDiscovery, updatedDiscovery, model)),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 			} else {
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			}
@@ -9538,10 +9593,14 @@ var $author$project$Main$update = F2(
 				}
 			case 30:
 				return discoveryModeLambda($author$project$Discovery$back);
-			default:
+			case 31:
 				var note = message.a;
 				return discoveryModeLambda(
 					$author$project$Discovery$selectNote(note));
+			case 32:
+				return discoveryModeAndSlipboxLambda($author$project$Discovery$submit);
+			default:
+				return discoveryModeLambda($author$project$Discovery$startNewDiscussion);
 		}
 	});
 var $mdgriffith$elm_ui$Internal$Style$classes = {fN: 'a', cr: 'atv', fP: 'ab', fQ: 'cx', fR: 'cy', fS: 'acb', fT: 'accx', fU: 'accy', fV: 'acr', d6: 'al', d7: 'ar', fW: 'at', cs: 'ah', ct: 'av', fZ: 's', f2: 'bh', f3: 'b', f4: 'w7', f6: 'bd', f7: 'bdt', bS: 'bn', f8: 'bs', bW: 'cpe', ge: 'cp', gf: 'cpx', gg: 'cpy', ay: 'c', bY: 'ctr', bZ: 'cb', b_: 'ccx', az: 'ccy', bq: 'cl', b$: 'cr', gj: 'ct', gl: 'cptr', gm: 'ctxt', gA: 'fcs', er: 'focus-within', gC: 'fs', gD: 'g', cM: 'hbh', cP: 'hc', ew: 'he', cQ: 'hf', ex: 'hfp', gG: 'hv', gI: 'ic', gK: 'fr', b4: 'lbl', gO: 'iml', gP: 'imlf', gQ: 'imlp', gR: 'implw', gS: 'it', gU: 'i', eN: 'lnk', a8: 'nb', eW: 'notxt', g5: 'ol', g6: 'or', aS: 'oq', hc: 'oh', e2: 'pg', e3: 'p', hd: 'ppe', hm: 'ui', fk: 'r', hs: 'sb', ht: 'sbx', hu: 'sby', hw: 'sbt', hz: 'e', hA: 'cap', hB: 'sev', hJ: 'sk', fx: 't', hO: 'tc', hP: 'w8', hQ: 'w2', hR: 'w9', hS: 'tj', ci: 'tja', hT: 'tl', hU: 'w3', hV: 'w5', hW: 'w4', hX: 'tr', hY: 'w6', hZ: 'w1', h_: 'tun', _: 'ts', aY: 'clr', h7: 'u', dV: 'wc', fI: 'we', dW: 'wf', fJ: 'wfp', dX: 'wrp'};
@@ -16552,6 +16611,8 @@ var $author$project$Main$DiscoveryModeSelectDiscussion = function (a) {
 var $author$project$Main$DiscoveryModeSelectNote = function (a) {
 	return {$: 31, a: a};
 };
+var $author$project$Main$DiscoveryModeStartNewDiscussion = {$: 33};
+var $author$project$Main$DiscoveryModeSubmit = {$: 32};
 var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
 	return {$: 28, a: a};
 };
@@ -19796,7 +19857,7 @@ var $author$project$Main$toItemView = F2(
 						[
 							A2($author$project$Main$normalItemHeader, text, item),
 							$author$project$Main$toNoteRepresentationFromNote(note),
-							A3($author$project$Main$linkedNotesNode, item, note, content.t)
+							A3($author$project$Main$linkedNotesNode, item, note, content.s)
 						]));
 			case 2:
 				var itemId = item.a;
@@ -19816,7 +19877,7 @@ var $author$project$Main$toItemView = F2(
 							A2(
 								$elm$core$List$map,
 								$author$project$Source$getTitle,
-								A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.t)),
+								A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.s)),
 							note.bp,
 							note.fs,
 							0)
@@ -19844,7 +19905,7 @@ var $author$project$Main$toItemView = F2(
 					_List_fromArray(
 						[
 							A2($author$project$Main$submitItemHeader, text, item),
-							A4($author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox, itemId, item, noteWithEdits, content.t)
+							A4($author$project$Main$toEditingNoteRepresentationFromItemNoteSlipbox, itemId, item, noteWithEdits, content.s)
 						]));
 			case 11:
 				var note = item.c;
@@ -19936,7 +19997,7 @@ var $author$project$Main$toItemView = F2(
 										A2(
 											$elm$core$List$filter,
 											$author$project$Note$contains(search),
-											A2($author$project$Slipbox$getNotesThatCanLinkToNote, note, content.t))))
+											A2($author$project$Slipbox$getNotesThatCanLinkToNote, note, content.s))))
 								]))
 						]));
 			case 1:
@@ -19946,11 +20007,11 @@ var $author$project$Main$toItemView = F2(
 						[
 							A2($author$project$Main$normalItemHeader, 'Source', item),
 							$author$project$Main$toSourceRepresentationFromSource(source),
-							A3($author$project$Main$associatedNotesNode, item, source, content.t)
+							A3($author$project$Main$associatedNotesNode, item, source, content.s)
 						]));
 			case 3:
 				var source = item.c;
-				var existingTitles = $author$project$Main$getTitlesFromSlipbox(content.t);
+				var existingTitles = $author$project$Main$getTitlesFromSlipbox(content.s);
 				return itemContainerLambda(
 					_List_fromArray(
 						[
@@ -19980,7 +20041,7 @@ var $author$project$Main$toItemView = F2(
 				var existingTitlesExcludingThisSourcesTitle = A2(
 					$elm$core$List$filter,
 					titlesThatArentTheOriginalSourcesTitle,
-					$author$project$Main$getTitlesFromSlipbox(content.t));
+					$author$project$Main$getTitlesFromSlipbox(content.s));
 				return itemContainerLambda(
 					_List_fromArray(
 						[
@@ -20186,19 +20247,31 @@ var $author$project$Create$view = function (create) {
 var $author$project$Discovery$ChooseDiscussionView = function (a) {
 	return {$: 1, a: a};
 };
+var $author$project$Discovery$DesignateDiscussionEntryPointView = F2(
+	function (a, b) {
+		return {$: 2, a: a, b: b};
+	});
 var $author$project$Discovery$ViewDiscussionView = F3(
 	function (a, b, c) {
 		return {$: 0, a: a, b: b, c: c};
 	});
 var $author$project$Discovery$view = function (discovery) {
-	if (!discovery.$) {
-		var discussion = discovery.a;
-		var selectedNote = discovery.b;
-		var graph = discovery.c;
-		return A3($author$project$Discovery$ViewDiscussionView, discussion, selectedNote, graph);
-	} else {
-		var filterInput = discovery.a;
-		return $author$project$Discovery$ChooseDiscussionView(filterInput);
+	switch (discovery.$) {
+		case 0:
+			var discussion = discovery.a;
+			var selectedNote = discovery.b;
+			var graph = discovery.c;
+			return A3($author$project$Discovery$ViewDiscussionView, discussion, selectedNote, graph);
+		case 1:
+			var filterInput = discovery.a;
+			return $author$project$Discovery$ChooseDiscussionView(filterInput);
+		default:
+			var selectedNote = discovery.a;
+			var discussionInput = discovery.b;
+			return A2(
+				$author$project$Discovery$DesignateDiscussionEntryPointView,
+				$author$project$Note$getContent(selectedNote),
+				discussionInput);
 	}
 };
 var $elm$svg$Svg$Attributes$cursor = _VirtualDom_attribute('cursor');
@@ -20352,7 +20425,7 @@ var $author$project$Main$tabView = function (content) {
 								A2(
 									$author$project$Slipbox$getNotes,
 									$author$project$Main$searchConverter(input),
-									content.t))))
+									content.s))))
 					]));
 		case 1:
 			var input = _v0.a;
@@ -20373,7 +20446,7 @@ var $author$project$Main$tabView = function (content) {
 							A2(
 								$author$project$Slipbox$getSources,
 								$author$project$Main$searchConverter(input),
-								content.t)))
+								content.s)))
 					]));
 		case 2:
 			return A2(
@@ -20416,7 +20489,7 @@ var $author$project$Main$tabView = function (content) {
 						A2(
 							$elm$core$List$map,
 							$author$project$Main$toItemView(content),
-							$author$project$Slipbox$getItems(content.t)))
+							$author$project$Slipbox$getItems(content.s)))
 					]));
 		case 3:
 			var input = _v0.a;
@@ -20451,7 +20524,7 @@ var $author$project$Main$tabView = function (content) {
 								A2(
 									$author$project$Slipbox$getDiscussions,
 									$author$project$Main$searchConverter(input),
-									content.t))))
+									content.s))))
 					]));
 		case 4:
 			var create = _v0.a;
@@ -20498,7 +20571,7 @@ var $author$project$Main$tabView = function (content) {
 					var canContinue = _v1.b;
 					var note = _v1.c;
 					var discussionsRead = _v1.d;
-					var discussions = A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, content.t);
+					var discussions = A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, content.s);
 					var discussionTabularData = function () {
 						var toDiscussionRecord = function (q) {
 							return {
@@ -20935,7 +21008,7 @@ var $author$project$Main$tabView = function (content) {
 				case 4:
 					var note = _v1.a;
 					var input = _v1.b;
-					var existingSources = A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.t);
+					var existingSources = A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.s);
 					var maybeSourceSelected = $elm$core$List$head(
 						A2(
 							$elm$core$List$filter,
@@ -21014,7 +21087,7 @@ var $author$project$Main$tabView = function (content) {
 					var existingTitles = A2(
 						$elm$core$List$map,
 						$author$project$Source$getTitle,
-						A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.t));
+						A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.s));
 					var _v4 = A2($author$project$Source$titleIsValid, existingTitles, title) ? _Utils_Tuple2(
 						'Title (required)',
 						A2(
@@ -21085,248 +21158,307 @@ var $author$project$Main$tabView = function (content) {
 		default:
 			var discovery = _v0.a;
 			var _v5 = $author$project$Discovery$view(discovery);
-			if (!_v5.$) {
-				var discussion = _v5.a;
-				var selectedNote = _v5.b;
-				var discussionGraph = _v5.c;
-				var viewGraph = $mdgriffith$elm_ui$Element$html(
-					A2(
-						$elm$svg$Svg$svg,
-						_List_fromArray(
-							[
-								$elm$svg$Svg$Attributes$width('100%'),
-								$elm$svg$Svg$Attributes$height('100%'),
-								$elm$svg$Svg$Attributes$viewBox(
-								$author$project$Main$computeViewbox(discussionGraph.hg)),
-								$elm$svg$Svg$Attributes$style('position: absolute')
-							]),
-						$elm$core$List$concat(
+			switch (_v5.$) {
+				case 0:
+					var discussion = _v5.a;
+					var selectedNote = _v5.b;
+					var discussionGraph = _v5.c;
+					var viewGraph = $mdgriffith$elm_ui$Element$html(
+						A2(
+							$elm$svg$Svg$svg,
 							_List_fromArray(
 								[
-									A2(
-									$elm$core$List$filterMap,
-									$author$project$Main$toCreateTabGraphLink(discussionGraph.hg),
-									discussionGraph.gW),
-									A2(
-									$elm$core$List$map,
-									function (n) {
-										return A2($author$project$Main$viewGraphNote, $author$project$Main$DiscoveryModeSelectNote, n);
-									},
-									A2(
-										$elm$core$List$map,
-										A2($author$project$Main$toCreateTabGraphNote, _List_Nil, selectedNote),
-										discussionGraph.hg))
-								]))));
-				var viewDiscussionNode = (($author$project$Note$getVariant(selectedNote) === 1) && (!A2($author$project$Note$is, discussion, selectedNote))) ? A2(
-					$author$project$Main$button,
-					$elm$core$Maybe$Just(
-						$author$project$Main$DiscoveryModeSelectDiscussion(selectedNote)),
-					A2(
-						$mdgriffith$elm_ui$Element$el,
-						_List_fromArray(
-							[$mdgriffith$elm_ui$Element$centerX]),
-						$mdgriffith$elm_ui$Element$text('Go to Discussion'))) : $mdgriffith$elm_ui$Element$none;
-				var container = F3(
-					function (title, note, element) {
-						return A2(
-							$mdgriffith$elm_ui$Element$textColumn,
-							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-									$mdgriffith$elm_ui$Element$Border$width(1),
-									$mdgriffith$elm_ui$Element$padding(8),
-									A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+									$elm$svg$Svg$Attributes$width('100%'),
+									$elm$svg$Svg$Attributes$height('100%'),
+									$elm$svg$Svg$Attributes$viewBox(
+									$author$project$Main$computeViewbox(discussionGraph.hg)),
+									$elm$svg$Svg$Attributes$style('position: absolute')
 								]),
-							_List_fromArray(
-								[
-									$author$project$Main$heading(title),
-									A2(
-									$mdgriffith$elm_ui$Element$paragraph,
-									_List_Nil,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$text(
-											$author$project$Note$getContent(note))
-										])),
-									element
-								]));
-					});
-				return A2(
-					$mdgriffith$elm_ui$Element$row,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$inFront(
-							A2(
-								$mdgriffith$elm_ui$Element$el,
+							$elm$core$List$concat(
 								_List_fromArray(
 									[
-										$mdgriffith$elm_ui$Element$padding(16),
-										$mdgriffith$elm_ui$Element$alignRight,
-										$mdgriffith$elm_ui$Element$alignTop
-									]),
-								A2(
-									$mdgriffith$elm_ui$Element$Input$button,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$Border$width(1),
-											$mdgriffith$elm_ui$Element$padding(8)
-										]),
-									{
-										e: $mdgriffith$elm_ui$Element$text('Done'),
-										i: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
-									}))),
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-							$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
-						]),
-					_List_fromArray(
-						[
-							A2(
-							$mdgriffith$elm_ui$Element$column,
-							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$width($author$project$Main$smallerElement),
-									$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
-								]),
-							_List_fromArray(
-								[
-									A3(container, 'Discussion', discussion, $mdgriffith$elm_ui$Element$none),
-									A3(container, 'Selected Note', selectedNote, viewDiscussionNode),
-									$author$project$Main$selectedNoteLegend,
-									$author$project$Main$discussionLegend,
-									$author$project$Main$circleLegend
-								])),
-							A2(
+										A2(
+										$elm$core$List$filterMap,
+										$author$project$Main$toCreateTabGraphLink(discussionGraph.hg),
+										discussionGraph.gW),
+										A2(
+										$elm$core$List$map,
+										function (n) {
+											return A2($author$project$Main$viewGraphNote, $author$project$Main$DiscoveryModeSelectNote, n);
+										},
+										A2(
+											$elm$core$List$map,
+											A2($author$project$Main$toCreateTabGraphNote, _List_Nil, selectedNote),
+											discussionGraph.hg))
+									]))));
+					var viewDiscussionNode = (($author$project$Note$getVariant(selectedNote) === 1) && (!A2($author$project$Note$is, discussion, selectedNote))) ? A2(
+						$author$project$Main$button,
+						$elm$core$Maybe$Just(
+							$author$project$Main$DiscoveryModeSelectDiscussion(selectedNote)),
+						A2(
 							$mdgriffith$elm_ui$Element$el,
 							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-									$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-									$mdgriffith$elm_ui$Element$htmlAttribute(
-									A2($elm$html$Html$Attributes$style, 'position', 'relative'))
-								]),
-							viewGraph)
-						]));
-			} else {
-				var filterInput = _v5.a;
-				var discussionFilter = $elm$core$String$isEmpty(filterInput) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(filterInput);
-				var discussions = A2($author$project$Slipbox$getDiscussions, discussionFilter, content.t);
-				var discussionTabularData = function () {
-					var toDiscussionRecord = function (q) {
-						return {
-							b1: $author$project$Note$getContent(q),
-							eX: q
-						};
-					};
-					return A2($elm$core$List$map, toDiscussionRecord, discussions);
-				}();
-				var tableNode = function () {
-					if ($elm$core$List$isEmpty(discussions)) {
-						return A2(
-							$mdgriffith$elm_ui$Element$paragraph,
+								[$mdgriffith$elm_ui$Element$centerX]),
+							$mdgriffith$elm_ui$Element$text('Go to Discussion'))) : ((!$author$project$Note$getVariant(selectedNote)) ? A2(
+						$author$project$Main$button,
+						$elm$core$Maybe$Just($author$project$Main$DiscoveryModeStartNewDiscussion),
+						A2(
+							$mdgriffith$elm_ui$Element$el,
 							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$Font$center,
-									$mdgriffith$elm_ui$Element$width(
-									A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
-									$mdgriffith$elm_ui$Element$centerX
-								]),
-							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$text('There are no discussions in your slipbox! '),
-									$mdgriffith$elm_ui$Element$text('We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. '),
-									$mdgriffith$elm_ui$Element$text('Add a discussion to use discovery mode! ')
-								]));
-					} else {
-						var headerAttrs = _List_fromArray(
+								[$mdgriffith$elm_ui$Element$centerX]),
+							$mdgriffith$elm_ui$Element$text('Designate New Discussion Entry Point'))) : $mdgriffith$elm_ui$Element$none);
+					var container = F3(
+						function (title, note, element) {
+							return A2(
+								$mdgriffith$elm_ui$Element$textColumn,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$Border$width(1),
+										$mdgriffith$elm_ui$Element$padding(8),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$heading(title),
+										A2(
+										$mdgriffith$elm_ui$Element$paragraph,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$text(
+												$author$project$Note$getContent(note))
+											])),
+										element
+									]));
+						});
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
 							[
-								$mdgriffith$elm_ui$Element$Font$bold,
-								$mdgriffith$elm_ui$Element$Border$widthEach(
-								{bT: 2, b6: 0, ce: 0, cl: 0})
-							]);
-						return A2(
-							$mdgriffith$elm_ui$Element$column,
-							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$width(
-									A2($mdgriffith$elm_ui$Element$maximum, 600, $mdgriffith$elm_ui$Element$fill)),
-									$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-									A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10),
-									$mdgriffith$elm_ui$Element$padding(5),
-									$mdgriffith$elm_ui$Element$Border$width(2),
-									$mdgriffith$elm_ui$Element$Border$rounded(6),
-									$mdgriffith$elm_ui$Element$centerX
-								]),
-							_List_fromArray(
-								[
-									A3($author$project$Main$multiline, $author$project$Main$DiscoveryModeUpdateInput, filterInput, 'Filter Discussion'),
-									A2(
-									$mdgriffith$elm_ui$Element$row,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
-										]),
-									_List_fromArray(
-										[
-											A2(
-											$mdgriffith$elm_ui$Element$el,
-											A2(
-												$elm$core$List$cons,
-												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												headerAttrs),
-											$mdgriffith$elm_ui$Element$text('Discussion'))
-										])),
-									A2(
+								$mdgriffith$elm_ui$Element$inFront(
+								A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[
-											$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+											$mdgriffith$elm_ui$Element$padding(16),
+											$mdgriffith$elm_ui$Element$alignRight,
+											$mdgriffith$elm_ui$Element$alignTop
 										]),
 									A2(
-										$mdgriffith$elm_ui$Element$table,
+										$mdgriffith$elm_ui$Element$Input$button,
 										_List_fromArray(
 											[
-												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
-												$mdgriffith$elm_ui$Element$centerX,
-												$mdgriffith$elm_ui$Element$height(
-												A2($mdgriffith$elm_ui$Element$maximum, 600, $mdgriffith$elm_ui$Element$fill)),
-												$mdgriffith$elm_ui$Element$scrollbarY
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(8)
 											]),
 										{
-											ef: _List_fromArray(
+											e: $mdgriffith$elm_ui$Element$text('Done'),
+											i: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
+										}))),
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$smallerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+									]),
+								_List_fromArray(
+									[
+										A3(container, 'Selected Discussion', discussion, $mdgriffith$elm_ui$Element$none),
+										A3(container, 'Selected Note', selectedNote, viewDiscussionNode),
+										$author$project$Main$selectedNoteLegend,
+										$author$project$Main$discussionLegend,
+										$author$project$Main$circleLegend
+									])),
+								A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$htmlAttribute(
+										A2($elm$html$Html$Attributes$style, 'position', 'relative'))
+									]),
+								viewGraph)
+							]));
+				case 1:
+					var filterInput = _v5.a;
+					var discussionFilter = $elm$core$String$isEmpty(filterInput) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(filterInput);
+					var discussions = A2($author$project$Slipbox$getDiscussions, discussionFilter, content.s);
+					var discussionTabularData = function () {
+						var toDiscussionRecord = function (q) {
+							return {
+								b1: $author$project$Note$getContent(q),
+								eX: q
+							};
+						};
+						return A2($elm$core$List$map, toDiscussionRecord, discussions);
+					}();
+					var tableNode = function () {
+						if ($elm$core$List$isEmpty(discussions)) {
+							return A2(
+								$mdgriffith$elm_ui$Element$paragraph,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$Font$center,
+										$mdgriffith$elm_ui$Element$width(
+										A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+										$mdgriffith$elm_ui$Element$centerX
+									]),
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$text('There are no discussions in your slipbox! '),
+										$mdgriffith$elm_ui$Element$text('We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. '),
+										$mdgriffith$elm_ui$Element$text('Add a discussion to use discovery mode! ')
+									]));
+						} else {
+							var headerAttrs = _List_fromArray(
+								[
+									$mdgriffith$elm_ui$Element$Font$bold,
+									$mdgriffith$elm_ui$Element$Border$widthEach(
+									{bT: 2, b6: 0, ce: 0, cl: 0})
+								]);
+							return A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width(
+										A2($mdgriffith$elm_ui$Element$maximum, 600, $mdgriffith$elm_ui$Element$fill)),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10),
+										$mdgriffith$elm_ui$Element$padding(5),
+										$mdgriffith$elm_ui$Element$Border$width(2),
+										$mdgriffith$elm_ui$Element$Border$rounded(6),
+										$mdgriffith$elm_ui$Element$centerX
+									]),
+								_List_fromArray(
+									[
+										A3($author$project$Main$multiline, $author$project$Main$DiscoveryModeUpdateInput, filterInput, 'Filter Discussion'),
+										A2(
+										$mdgriffith$elm_ui$Element$row,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$mdgriffith$elm_ui$Element$el,
+												A2(
+													$elm$core$List$cons,
+													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+													headerAttrs),
+												$mdgriffith$elm_ui$Element$text('Discussion'))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+											]),
+										A2(
+											$mdgriffith$elm_ui$Element$table,
+											_List_fromArray(
 												[
-													{
-													cN: $mdgriffith$elm_ui$Element$none,
-													cq: function (row) {
-														return A2(
-															$mdgriffith$elm_ui$Element$Input$button,
-															_List_Nil,
-															{
-																e: A2(
-																	$mdgriffith$elm_ui$Element$paragraph,
-																	_List_Nil,
-																	_List_fromArray(
-																		[
-																			$mdgriffith$elm_ui$Element$text(row.b1)
-																		])),
-																i: $elm$core$Maybe$Just(
-																	$author$project$Main$DiscoveryModeSelectDiscussion(row.eX))
-															});
-													},
-													bk: $mdgriffith$elm_ui$Element$fillPortion(4)
-												}
+													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+													A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8),
+													$mdgriffith$elm_ui$Element$centerX,
+													$mdgriffith$elm_ui$Element$height(
+													A2($mdgriffith$elm_ui$Element$maximum, 600, $mdgriffith$elm_ui$Element$fill)),
+													$mdgriffith$elm_ui$Element$scrollbarY
 												]),
-											eh: discussionTabularData
-										}))
-								]));
-					}
-				}();
-				return $author$project$Main$column(
-					_List_fromArray(
-						[
-							$author$project$Main$headingCenter('Select Discussion'),
-							tableNode
-						]));
+											{
+												ef: _List_fromArray(
+													[
+														{
+														cN: $mdgriffith$elm_ui$Element$none,
+														cq: function (row) {
+															return A2(
+																$mdgriffith$elm_ui$Element$Input$button,
+																_List_Nil,
+																{
+																	e: A2(
+																		$mdgriffith$elm_ui$Element$paragraph,
+																		_List_Nil,
+																		_List_fromArray(
+																			[
+																				$mdgriffith$elm_ui$Element$text(row.b1)
+																			])),
+																	i: $elm$core$Maybe$Just(
+																		$author$project$Main$DiscoveryModeSelectDiscussion(row.eX))
+																});
+														},
+														bk: $mdgriffith$elm_ui$Element$fillPortion(4)
+													}
+													]),
+												eh: discussionTabularData
+											}))
+									]));
+						}
+					}();
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('Select Discussion'),
+								tableNode
+							]));
+				default:
+					var selectedNote = _v5.a;
+					var input = _v5.b;
+					var matchingDiscussionExists = A2(
+						$elm$core$List$any,
+						function (discussion) {
+							return _Utils_eq(
+								$author$project$Note$getContent(discussion),
+								input);
+						},
+						A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, content.s));
+					var submitNode = matchingDiscussionExists ? A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[$mdgriffith$elm_ui$Element$centerX]),
+						$mdgriffith$elm_ui$Element$text('Discussion already exists!')) : ($elm$core$String$isEmpty(input) ? A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$height(
+								A2($mdgriffith$elm_ui$Element$minimum, 10, $mdgriffith$elm_ui$Element$fill)),
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
+							]),
+						$mdgriffith$elm_ui$Element$none) : A2(
+						$author$project$Main$button,
+						$elm$core$Maybe$Just($author$project$Main$DiscoveryModeSubmit),
+						$mdgriffith$elm_ui$Element$text('Submit New Discussion')));
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('New Discussion Discovery'),
+								A2(
+								$mdgriffith$elm_ui$Element$paragraph,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$Font$center,
+										$mdgriffith$elm_ui$Element$width(
+										A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+										$mdgriffith$elm_ui$Element$centerX
+									]),
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$text(selectedNote)
+									])),
+								A3($author$project$Main$multiline, $author$project$Main$DiscoveryModeUpdateInput, input, 'Discussion'),
+								submitNode,
+								A2(
+								$author$project$Main$button,
+								$elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack),
+								$mdgriffith$elm_ui$Element$text('Cancel'))
+							]));
 			}
 	}
 };
@@ -21340,7 +21472,7 @@ var $author$project$Main$sessionNode = function (content) {
 			]),
 		_List_fromArray(
 			[
-				A3($author$project$Main$leftNav, content.cg, content.r, content.t),
+				A3($author$project$Main$leftNav, content.cg, content.r, content.s),
 				A2(
 				$mdgriffith$elm_ui$Element$el,
 				_List_fromArray(
