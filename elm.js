@@ -21278,7 +21278,6 @@ var $author$project$Main$tabView = function (content) {
 				case 1:
 					var filterInput = _v5.a;
 					var discussionFilter = $elm$core$String$isEmpty(filterInput) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(filterInput);
-					var discussions = A2($author$project$Slipbox$getDiscussions, discussionFilter, content.s);
 					var discussionTabularData = function () {
 						var toDiscussionRecord = function (q) {
 							return {
@@ -21286,33 +21285,16 @@ var $author$project$Main$tabView = function (content) {
 								eX: q
 							};
 						};
-						return A2($elm$core$List$map, toDiscussionRecord, discussions);
+						return A2(
+							$elm$core$List$map,
+							toDiscussionRecord,
+							A2($author$project$Slipbox$getDiscussions, discussionFilter, content.s));
 					}();
-					var tableNode = function () {
-						if ($elm$core$List$isEmpty(discussions)) {
-							return A2(
-								$mdgriffith$elm_ui$Element$paragraph,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$Font$center,
-										$mdgriffith$elm_ui$Element$width(
-										A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
-										$mdgriffith$elm_ui$Element$centerX
-									]),
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$text('There are no discussions in your slipbox! '),
-										$mdgriffith$elm_ui$Element$text('We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. '),
-										$mdgriffith$elm_ui$Element$text('Add a discussion to use discovery mode! ')
-									]));
-						} else {
-							var headerAttrs = _List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$Font$bold,
-									$mdgriffith$elm_ui$Element$Border$widthEach(
-									{bT: 2, b6: 0, ce: 0, cl: 0})
-								]);
-							return A2(
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('Select Discussion'),
+								A2(
 								$mdgriffith$elm_ui$Element$column,
 								_List_fromArray(
 									[
@@ -21338,10 +21320,13 @@ var $author$project$Main$tabView = function (content) {
 											[
 												A2(
 												$mdgriffith$elm_ui$Element$el,
-												A2(
-													$elm$core$List$cons,
-													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-													headerAttrs),
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+														$mdgriffith$elm_ui$Element$Font$bold,
+														$mdgriffith$elm_ui$Element$Border$widthEach(
+														{bT: 2, b6: 0, ce: 0, cl: 0})
+													]),
 												$mdgriffith$elm_ui$Element$text('Discussion'))
 											])),
 										A2(
@@ -21387,14 +21372,7 @@ var $author$project$Main$tabView = function (content) {
 													]),
 												eh: discussionTabularData
 											}))
-									]));
-						}
-					}();
-					return $author$project$Main$column(
-						_List_fromArray(
-							[
-								$author$project$Main$headingCenter('Select Discussion'),
-								tableNode
+									]))
 							]));
 				default:
 					var selectedNote = _v5.a;

@@ -1056,7 +1056,6 @@ tabView content =
                 Nothing
               else
                 Just filterInput
-            discussions = Slipbox.getDiscussions discussionFilter content.slipbox
             discussionTabularData =
               let
                 toDiscussionRecord =
@@ -1065,68 +1064,55 @@ tabView content =
                     , note = q
                     }
               in
-              List.map toDiscussionRecord discussions
-            tableNode =
-              if List.isEmpty discussions then
-                Element.paragraph
-                  [ Element.Font.center
-                  , Element.width <| Element.maximum 800 Element.fill
-                  , Element.centerX
-                  ]
-                  [ Element.text "There are no discussions in your slipbox! "
-                  , Element.text "We smartly add to our external mind by framing our minds to the perspective of continuing conversation on discussions that interest us. "
-                  , Element.text "Add a discussion to use discovery mode! "
-                  ]
-              else
-                let
-                    headerAttrs =
-                        [ Element.Font.bold
-                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                        ]
-                in
-                Element.column
-                  [ Element.width <| Element.maximum 600 Element.fill
-                  , Element.height Element.fill
-                  , Element.spacingXY 10 10
-                  , Element.padding 5
-                  , Element.Border.width 2
-                  , Element.Border.rounded 6
-                  , Element.centerX
-                  ]
-                  [ multiline DiscoveryModeUpdateInput filterInput "Filter Discussion"
-                  , Element.row [ Element.width Element.fill ]
-                    [ Element.el (Element.width Element.fill :: headerAttrs) <| Element.text "Discussion"
-                    ]
-                  , Element.el [ Element.width Element.fill ] <| Element.table
-                    [ Element.width Element.fill
-                    , Element.spacingXY 8 8
-                    , Element.centerX
-                    , Element.height <| Element.maximum 600 Element.fill
-                    , Element.scrollbarY
-                    ]
-                    { data = discussionTabularData
-                    , columns =
-                      [ { header = Element.none
-                        , width = Element.fillPortion 4
-                        , view =
-                              \row ->
-                                  Element.Input.button
-                                    []
-                                    { onPress = Just <| DiscoveryModeSelectDiscussion row.note
-                                    , label =
-                                      Element.paragraph
-                                        []
-                                        [ Element.text row.discussion
-                                        ]
-                                    }
-                        }
-                      ]
-                    }
-                  ]
+              List.map toDiscussionRecord <|
+                Slipbox.getDiscussions discussionFilter content.slipbox
           in
           column
             [ headingCenter "Select Discussion"
-            , tableNode
+            , Element.column
+              [ Element.width <| Element.maximum 600 Element.fill
+              , Element.height Element.fill
+              , Element.spacingXY 10 10
+              , Element.padding 5
+              , Element.Border.width 2
+              , Element.Border.rounded 6
+              , Element.centerX
+              ]
+              [ multiline DiscoveryModeUpdateInput filterInput "Filter Discussion"
+              , Element.row [ Element.width Element.fill ]
+                [ Element.el
+                  [ Element.width Element.fill
+                  , Element.Font.bold
+                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                  ]
+                  <| Element.text "Discussion"
+                ]
+              , Element.el [ Element.width Element.fill ] <| Element.table
+                [ Element.width Element.fill
+                , Element.spacingXY 8 8
+                , Element.centerX
+                , Element.height <| Element.maximum 600 Element.fill
+                , Element.scrollbarY
+                ]
+                { data = discussionTabularData
+                , columns =
+                  [ { header = Element.none
+                    , width = Element.fillPortion 4
+                    , view =
+                          \row ->
+                              Element.Input.button
+                                []
+                                { onPress = Just <| DiscoveryModeSelectDiscussion row.note
+                                , label =
+                                  Element.paragraph
+                                    []
+                                    [ Element.text row.discussion
+                                    ]
+                                }
+                    }
+                  ]
+                }
+              ]
             ]
 
         Discovery.DesignateDiscussionEntryPointView selectedNote input ->
