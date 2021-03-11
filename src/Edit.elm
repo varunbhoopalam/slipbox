@@ -10,6 +10,7 @@ module Edit exposing
 import Note
 import Slipbox
 import Source
+import SourceTitle
 
 type Edit
   = SelectNote Filter
@@ -19,13 +20,13 @@ init : Edit
 init = SelectNote ""
 
 type alias Filter = String
-type alias LinkedDiscussions = List Note.Note
-type alias DiscussionEntryPoints = List Note.Note
-type alias ConnectedNotes = List Note.Note
+type alias LinkedDiscussions = Maybe ( List Note.Note )
+type alias EntryPointForDiscussion = Maybe ( List Note.Note )
+type alias ConnectedNotes = Maybe ( List Note.Note )
 
 type EditView
   = ViewSelectNote Filter
-  | ViewNoteSelected Note.Note ( Maybe Source.Source ) LinkedDiscussions DiscussionEntryPoints ConnectedNotes
+  | ViewNoteSelected Note.Note ( Maybe Source.Source ) LinkedDiscussions EntryPointForDiscussion ConnectedNotes
 
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
@@ -34,7 +35,7 @@ view slipbox edit =
     NoteSelected note ->
       let
         source =
-          case Note.getSource note of
+          case SourceTitle.getTitle <| Note.getSource note of
             Nothing -> Nothing
             Just sourceTitle ->
               List.head <| Slipbox.getSources ( Just sourceTitle ) slipbox
@@ -42,6 +43,9 @@ view slipbox edit =
       ViewNoteSelected
         note
         source
+        Nothing
+        Nothing
+        Nothing
 
 toSelectNote : Edit -> Edit
 toSelectNote edit =
