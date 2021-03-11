@@ -24,6 +24,7 @@ import Source
 import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Link
+import SourceTitle
 
 type Item 
   = Note ItemId ButtonTray Note.Note
@@ -101,7 +102,7 @@ sourceCanSubmit : NewSourceContent -> ( List String ) -> Bool
 sourceCanSubmit newSourceContent existingTitles =
   ( not <| String.isEmpty newSourceContent.title ) &&
   ( not <| String.isEmpty newSourceContent.author ) &&
-  ( Source.titleIsValid existingTitles newSourceContent.title )
+  ( SourceTitle.validateNewSourceTitle existingTitles newSourceContent.title )
 
 is : Item -> Item -> Bool
 is item1 item2 =

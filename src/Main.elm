@@ -17,6 +17,7 @@ import Html.Events
 import Html.Attributes
 import Link
 import Slipbox
+import SourceTitle
 import Svg
 import Svg.Events
 import Svg.Attributes
@@ -933,7 +934,7 @@ tabView content =
           let
             existingTitles = List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox
             ( titleLabel, submitNode ) =
-              if Source.titleIsValid existingTitles title then
+              if SourceTitle.validateNewSourceTitle existingTitles title then
                 ( "Title (required)"
                 , button ( Just CreateTabSubmitNewSource ) ( Element.text "Submit New Source" )
                 )
@@ -1701,7 +1702,7 @@ toItemView content item =
 
     Item.ConfirmDiscardNewNoteForm _ _ note -> itemContainerLambda
       [ deleteItemHeader "Discard New Note" item
-      , toNoteRepresentation note.content note.source Note.Regular
+      , toNoteRepresentation note.content ( SourceTitle.sourceTitle note.source ) Note.Regular
       ]
 
 
@@ -1799,7 +1800,7 @@ toItemView content item =
         itemContainerLambda
           [ conditionalSubmitItemHeader
             "Editing Source"
-            ( Source.titleIsValid existingTitlesExcludingThisSourcesTitle ( Source.getTitle sourceWithEdits ) )
+            ( SourceTitle.validateNewSourceTitle existingTitlesExcludingThisSourcesTitle ( Source.getTitle sourceWithEdits ) )
             item
           , toEditingSourceRepresentationFromItemSource item sourceWithEdits existingTitlesExcludingThisSourcesTitle
           ]
@@ -1989,7 +1990,7 @@ toNoteRepresentationFromNote note =
     ( Note.getSource note )
     ( Note.getVariant note )
 
-toNoteRepresentation : String -> String -> Note.Variant -> Element Msg
+toNoteRepresentation : String -> SourceTitle.SourceTitle -> Note.Variant -> Element Msg
 toNoteRepresentation content source variant =
   case variant of
     Note.Regular ->
@@ -2023,7 +2024,7 @@ toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
     item
     ( List.map Source.getTitle <| Slipbox.getSources Nothing slipbox )
     ( Note.getContent note )
-    ( Note.getSource note )
+    ( SourceTitle.encode <| Note.getSource note )
     ( Note.getVariant note )
 
 toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
@@ -2254,7 +2255,7 @@ titleInput : Item.Item -> String -> ( List String ) -> Element Msg
 titleInput item input existingTitles =
   let
     titleLabel =
-      if Source.titleIsValid existingTitles input then
+      if SourceTitle.validateNewSourceTitle existingTitles input then
         "Title"
       else if String.isEmpty input then
         "Title"
@@ -2282,8 +2283,11 @@ labeledViewBuilder label content =
 noteContentView : String -> Element Msg
 noteContentView noteContent = labeledViewBuilder "Content" noteContent
 
-noteSourceView : String -> Element Msg
-noteSourceView noteSource = labeledViewBuilder "Source" noteSource
+noteSourceView : SourceTitle.SourceTitle -> Element Msg
+noteSourceView sourceTitle =
+  case SourceTitle.getTitle sourceTitle of
+    Just title -> labeledViewBuilder "Source" title
+    Nothing -> Element.text "No source"
 
 discussionView : String -> Element Msg
 discussionView sourceTitle = labeledViewBuilder "Discussion" sourceTitle

@@ -377,7 +377,7 @@ updateItem item updateAction slipbox =
 
         Item.EditingNote itemId tray _ editingNote ->
           let
-              conditionallyUpdateTargetNoteWithEdits = updateLambda Note.is ( updateNoteEdits editingNote ) editingNote
+              conditionallyUpdateTargetNoteWithEdits = updateLambda Note.is ( \n -> editingNote ) editingNote
           in
           Slipbox
             { content | notes = List.map conditionallyUpdateTargetNoteWithEdits content.notes
@@ -656,16 +656,16 @@ conditionalUpdate : a -> (a -> Bool) -> (a -> a)
 conditionalUpdate updatedItem itemIdentifier =
   (\i -> if itemIdentifier i then updatedItem else i)
 
-updateNoteEdits : Note.Note -> Note.Note -> Note.Note
-updateNoteEdits noteWithEdits originalNote =
-  let
-      updatedContent = Note.getContent noteWithEdits
-      updatedSource = Note.getSource noteWithEdits
-      updatedVariant = Note.getVariant noteWithEdits
-  in
-  Note.updateContent updatedContent
-    <| Note.updateSource updatedSource
-      <| Note.updateVariant updatedVariant originalNote
+--updateNoteEdits : Note.Note -> Note.Note -> Note.Note
+--updateNoteEdits noteWithEdits originalNote =
+--  let
+--      updatedContent = Note.getContent noteWithEdits
+--      updatedSource = Note.getSource noteWithEdits
+--      updatedVariant = Note.getVariant noteWithEdits
+--  in
+--  Note.updateContent updatedContent
+--    <| Note.updateSource updatedSource
+--      <| Note.updateVariant updatedVariant originalNote
 
 updateSourceEdits : Source.Source -> Source.Source -> Source.Source
 updateSourceEdits sourceWithEdits originalSource =
