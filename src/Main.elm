@@ -544,19 +544,17 @@ tabView content =
                 ]
               , Element.el [ Element.width Element.fill ] <| Element.table
                 [ Element.width Element.fill
+                , Element.padding 8
                 , Element.spacingXY 8 8
                 , Element.centerX
-                , Element.height <| Element.maximum 600 Element.fill
+                , Element.height <| Element.maximum 300 Element.fill
                 , Element.scrollbarY
                 ]
                 { data = data
                 , columns =
                   [ { header = Element.none
                     , width = Element.fillPortion 4
-                    , view = \row -> Element.Input.button []
-                      { onPress = Just <| EditModeSelectNote row.note
-                      , label = Element.paragraph [] [ Element.text row.discussion ]
-                      }
+                    , view = \row -> listButton ( Just <| EditModeSelectNote row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
                     }
                   ]
                 }
@@ -565,26 +563,37 @@ tabView content =
 
         Edit.ViewNoteSelected note maybeSource directlyLinkedDiscussions connectedNotes ->
           let
-            textLambda text = Element.paragraph [ Element.padding 8, Element.width Element.fill, Element.Border.width 1 ] [ Element.text text ]
+            textLambda title text =
+              Element.column
+                [ Element.padding 8, Element.width Element.fill, Element.Border.width 1, Element.spacingXY 8 8 ]
+                [ heading title, textWrap text ]
             source = case maybeSource of
-              Just source -> textLambda <| Source.getTitle source
-              Nothing -> textLambda "No Source"
+              Just s -> textLambda "Source" <| Source.getTitle s
+              Nothing ->
+                Element.el [ Element.padding 8, Element.width Element.fill, Element.Border.width 1, Element.spacingXY 8 8 ]
+                  <| heading "No Source"
+            toDiscussionButton ( n, _ ) = listButton Nothing ( textWrap <| Note.getContent n )
+            toLinkedNoteButton ( n, _ ) = listButton ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
             discussions = case directlyLinkedDiscussions of
               Just linkedDiscussions -> Element.column
                 [ Element.width Element.fill
                 , Element.height Element.fill
                 , Element.scrollbarY
                 ]
-                ( Element.text "Directly Linked Discussions" :: ( List.map textLambda <| List.map ( \(n,_) -> Note.getContent n ) linkedDiscussions ) )
+                ( Element.text "Directly Linked Discussions" :: List.map toDiscussionButton linkedDiscussions )
               Nothing -> Element.none
             linkedNotes = case connectedNotes of
-               Just notes -> Element.column
-                 [ Element.width Element.fill
-                 , Element.height Element.fill
-                 , Element.scrollbarY
-                 ]
-                 ( Element.text "Linked Notes" :: ( List.map textLambda <| List.map ( \(n,_) -> Note.getContent n ) notes ) )
-               Nothing -> Element.none
+              Just tuples ->
+                Element.column
+                  [ Element.width Element.fill
+                  , Element.height Element.fill
+                  ]
+                  [ Element.el [ Element.padding 8 ] <| headingCenter "Linked Notes"
+                  , Element.column
+                    [ Element.scrollbarY, Element.width Element.fill, Element.height Element.fill] <|
+                    List.map toLinkedNoteButton tuples
+                  ]
+              Nothing -> Element.none
           in
           Element.row
             [ Element.width Element.fill
@@ -594,7 +603,8 @@ tabView content =
               [ Element.width Element.fill
               , Element.height Element.fill
               ]
-              [ textLambda <| Note.getContent note
+              [ Element.el [ Element.padding 8 ] <| headingCenter "Note"
+              , textLambda "Content" <| Note.getContent note
               , source
               , discussions
               ]
@@ -1450,7 +1460,7 @@ leftNav sideNavState selectedTab slipbox =
           , Element.spacingXY 0 8
           ]
           [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab DiscoveryMode ) <| sameTab selectedTab DiscoveryMode
-          , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
+          , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Edit Mode" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
           ]
         ]
     Contracted ->
@@ -1541,6 +1551,12 @@ button msg label =
     { onPress =  msg
     , label = label
     }
+listButton : Maybe Msg -> Element Msg -> Element Msg
+listButton onPress label =
+  Element.Input.button [ Element.Border.width 2, Element.padding 8 ]
+    { onPress = onPress
+    , label = label
+    }
 
 column : List ( Element Msg ) -> Element Msg
 column contents =
@@ -1564,6 +1580,8 @@ multiline onChange text label =
 
 heading title = Element.paragraph [ Element.Font.bold ] [ Element.text title ]
 headingCenter title = Element.el [ Element.centerX ] <| heading title
+
+textWrap text = Element.paragraph [] [ Element.text text ]
 
 -- SVG HELPERS
 
