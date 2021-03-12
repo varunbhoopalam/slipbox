@@ -54,6 +54,12 @@ setSlipbox slipbox model =
     Session content -> Session { content | slipbox = slipbox }
     _ -> model
 
+setTab : Tab -> Model -> Model
+setTab tab model =
+  case model of
+    Session content -> Session { content | tab = tab }
+    _ -> model
+
 getSlipbox : Model -> ( Maybe Slipbox.Slipbox )
 getSlipbox model =
   case model of
@@ -95,6 +101,25 @@ setDiscovery create model =
       case content.tab of
         DiscoveryModeTab _ ->
           Session { content | tab = DiscoveryModeTab create }
+        _ -> model
+    _ -> model
+
+getEdit : Model -> Maybe Edit.Edit
+getEdit model =
+  case model of
+    Session content ->
+      case content.tab of
+        EditModeTab create -> Just create
+        _ -> Nothing
+    _ -> Nothing
+
+setEdit : Edit.Edit -> Model -> Model
+setEdit create model =
+  case model of
+    Session content ->
+      case content.tab of
+        EditModeTab _ ->
+          Session { content | tab = EditModeTab create }
         _ -> model
     _ -> model
 
@@ -163,6 +188,8 @@ type Msg
   | DiscoveryModeSelectNote Note.Note
   | DiscoveryModeSubmit
   | DiscoveryModeStartNewDiscussion
+  | EditModeUpdateInput String
+  | EditModeSelectNote Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -181,6 +208,15 @@ update message model =
         Just discovery ->
           ( setDiscovery
             ( discoveryUpdate discovery )
+            model
+          , Cmd.none
+          )
+        Nothing -> ( model, Cmd.none )
+    editModeLambda editUpdate =
+      case getEdit model of
+        Just edit ->
+          ( setEdit
+            ( editUpdate edit )
             model
           , Cmd.none
           )
@@ -325,6 +361,9 @@ update message model =
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
     DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
     DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
+
+    EditModeUpdateInput input -> editModeLambda <| Edit.updateInput input
+    EditModeSelectNote note -> ( setTab ( EditModeTab <| Edit.select note ) model, Cmd.none )
 
 
 newContent : Content
@@ -474,7 +513,94 @@ contactUrl = "https://github.com/varunbhoopalam/slipbox"
 tabView: Content -> Element Msg
 tabView content =
   case content.tab of
-    EditModeTab _ -> Element.text "todo"
+    EditModeTab edit ->
+      case Edit.view content.slipbox edit of
+        Edit.ViewSelectNote filter ->
+          let
+            discussionFilter = if String.isEmpty filter then Nothing else Just filter
+            data =
+              let toDiscussionRecord = \q -> { discussion = Note.getContent q, note = q }
+              in
+              List.map toDiscussionRecord <| Slipbox.getNotes discussionFilter content.slipbox
+          in
+          column
+            [ headingCenter "Select Note"
+            , Element.column
+              [ Element.width <| Element.maximum 600 Element.fill
+              , Element.height Element.fill
+              , Element.spacingXY 10 10
+              , Element.padding 5
+              , Element.Border.width 2
+              , Element.Border.rounded 6
+              , Element.centerX
+              ]
+              [ multiline EditModeUpdateInput filter "Filter Note"
+              , Element.row [ Element.width Element.fill ]
+                [ Element.el
+                  [ Element.width Element.fill
+                  , Element.Font.bold
+                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                  ] <| Element.text "Note"
+                ]
+              , Element.el [ Element.width Element.fill ] <| Element.table
+                [ Element.width Element.fill
+                , Element.spacingXY 8 8
+                , Element.centerX
+                , Element.height <| Element.maximum 600 Element.fill
+                , Element.scrollbarY
+                ]
+                { data = data
+                , columns =
+                  [ { header = Element.none
+                    , width = Element.fillPortion 4
+                    , view = \row -> Element.Input.button []
+                      { onPress = Just <| EditModeSelectNote row.note
+                      , label = Element.paragraph [] [ Element.text row.discussion ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            ]
+
+        Edit.ViewNoteSelected note maybeSource directlyLinkedDiscussions connectedNotes ->
+          let
+            textLambda text = Element.paragraph [ Element.padding 8, Element.width Element.fill, Element.Border.width 1 ] [ Element.text text ]
+            source = case maybeSource of
+              Just source -> textLambda <| Source.getTitle source
+              Nothing -> textLambda "No Source"
+            discussions = case directlyLinkedDiscussions of
+              Just linkedDiscussions -> Element.column
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
+                ]
+                ( Element.text "Directly Linked Discussions" :: ( List.map textLambda <| List.map ( \(n,_) -> Note.getContent n ) linkedDiscussions ) )
+              Nothing -> Element.none
+            linkedNotes = case connectedNotes of
+               Just notes -> Element.column
+                 [ Element.width Element.fill
+                 , Element.height Element.fill
+                 , Element.scrollbarY
+                 ]
+                 ( Element.text "Linked Notes" :: ( List.map textLambda <| List.map ( \(n,_) -> Note.getContent n ) notes ) )
+               Nothing -> Element.none
+          in
+          Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width Element.fill
+              , Element.height Element.fill
+              ]
+              [ textLambda <| Note.getContent note
+              , source
+              , discussions
+              ]
+            , linkedNotes
+            ]
+
 
     CreateModeTab create ->
       case Create.view create of
@@ -954,17 +1080,10 @@ tabView content =
                 , columns =
                   [ { header = Element.none
                     , width = Element.fillPortion 4
-                    , view =
-                          \row ->
-                              Element.Input.button
-                                []
-                                { onPress = Just <| DiscoveryModeSelectDiscussion row.note
-                                , label =
-                                  Element.paragraph
-                                    []
-                                    [ Element.text row.discussion
-                                    ]
-                                }
+                    , view = \row -> Element.Input.button []
+                      { onPress = Just <| DiscoveryModeSelectDiscussion row.note
+                      , label = Element.paragraph [] [ Element.text row.discussion ]
+                      }
                     }
                   ]
                 }
@@ -1002,7 +1121,8 @@ tabView content =
             ]
 
 
--- CREATETAB HELPERS
+
+
 
 coaching : Bool -> Element Msg -> Element Msg
 coaching coachingOpen text =
@@ -1211,8 +1331,6 @@ createTabSourceInput input suggestions =
 toHtmlOption: String -> Html.Html Msg
 toHtmlOption value =
   Html.option [ Html.Attributes.value value ] []
-
--- END CREATETAB HELPERS
 
 barHeight = 65
 

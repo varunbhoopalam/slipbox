@@ -5,6 +5,7 @@ module Edit exposing
   , view
   , toSelectNote
   , select
+  , updateInput
   )
 
 import Link
@@ -59,3 +60,9 @@ toSelectNote edit =
 
 select : Note.Note -> Edit
 select note = NoteSelected note
+
+updateInput : String -> Edit -> Edit
+updateInput input edit =
+  case edit of
+    SelectNote _ -> SelectNote input
+    _ -> edit
