@@ -7,6 +7,7 @@ module Edit exposing
   , select
   )
 
+import Link
 import Note
 import Slipbox
 import Source
@@ -20,13 +21,13 @@ init : Edit
 init = SelectNote ""
 
 type alias Filter = String
-type alias LinkedDiscussions = Maybe ( List Note.Note )
-type alias EntryPointForDiscussion = Maybe ( List Note.Note )
-type alias ConnectedNotes = Maybe ( List Note.Note )
+type alias NoteLinkTuple = ( Note.Note, Link.Link )
+type alias DirectlyLinkedDiscussions = Maybe ( List NoteLinkTuple )
+type alias ConnectedNotes = Maybe ( List NoteLinkTuple )
 
 type EditView
   = ViewSelectNote Filter
-  | ViewNoteSelected Note.Note ( Maybe Source.Source ) LinkedDiscussions EntryPointForDiscussion ConnectedNotes
+  | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
 
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
@@ -39,13 +40,16 @@ view slipbox edit =
             Nothing -> Nothing
             Just sourceTitle ->
               List.head <| Slipbox.getSources ( Just sourceTitle ) slipbox
+        linkedNodes = Slipbox.getLinkedNotes note slipbox
+        linkedDiscussions = List.filter ( \(n,_) -> Note.getVariant n == Note.Discussion ) linkedNodes
+        linkedNotes = List.filter ( \(n,_) -> Note.getVariant n == Note.Regular ) linkedNodes
+        lambda list = if List.isEmpty list then Nothing else Just list
       in
       ViewNoteSelected
         note
         source
-        Nothing
-        Nothing
-        Nothing
+        ( lambda linkedDiscussions )
+        ( lambda linkedNotes )
 
 toSelectNote : Edit -> Edit
 toSelectNote edit =
