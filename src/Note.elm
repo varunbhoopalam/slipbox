@@ -5,7 +5,6 @@ module Note exposing
   , getContent
   , getSource
   , contains
-  , isAssociated
   , is
   , updateContent
   , updateSource
@@ -21,7 +20,6 @@ import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Json.Decode
 import Json.Encode
-import Source
 import SourceTitle
 
 type Note = Note Info
@@ -69,12 +67,6 @@ contains string note =
           Nothing -> False
   in
   has info.content || containsSourceTitle
-
-isAssociated : Source.Source -> Note -> Bool
-isAssociated source note =
-  case SourceTitle.getTitle <| getSource note of
-    Just sourceTitle -> Source.getTitle source == sourceTitle
-    Nothing -> False
 
 is : Note -> Note -> Bool
 is note1 note2 =

@@ -4,15 +4,7 @@ module Slipbox exposing
   , getNotes
   , getDiscussions
   , getSources
-  , getItems
   , getLinkedNotes
-  , getNotesThatCanLinkToNote
-  , getNotesAssociatedToSource
-  , AddAction(..)
-  , addItem
-  , dismissItem
-  , updateItem
-  , UpdateAction(..)
   , decode
   , encode
   , unsavedChanges
@@ -26,7 +18,6 @@ module Slipbox exposing
 
 import Note
 import Link
-import Item
 import Source
 import IdGenerator
 import Json.Encode
@@ -38,7 +29,6 @@ type Slipbox = Slipbox Content
 type alias Content =
   { notes: List Note.Note
   , links: List Link.Link
-  , items: List Item.Item
   , sources: List Source.Source
   , idGenerator: IdGenerator.IdGenerator
   , unsavedChanges: Bool
@@ -52,7 +42,7 @@ getContent slipbox =
 -- Returns Slipbox
 
 new :  Slipbox
-new  = Slipbox <| Content [] [] [] [] IdGenerator.init False
+new  = Slipbox <| Content [] [] [] IdGenerator.init False
 
 isNote : Note.Note -> Bool
 isNote note =
@@ -90,10 +80,6 @@ getSources maybeSearch slipbox =
     Just search -> List.filter (Source.contains search) content.sources
     Nothing -> content.sources
 
-getItems : Slipbox -> (List Item.Item)
-getItems slipbox =
-  .items <| getContent slipbox
-
 getLinkedNotes : Note.Note -> Slipbox -> ( List ( Note.Note, Link.Link ) )
 getLinkedNotes note slipbox =
   let
@@ -115,363 +101,11 @@ convertLinktoLinkNoteTuple targetNote notes link =
   else
     Nothing
 
-getNotesThatCanLinkToNote : Note.Note -> Slipbox -> (List Note.Note)
-getNotesThatCanLinkToNote note slipbox =
-  let
-      content = getContent slipbox
-  in
-  List.filter ( Link.canLink content.links note )
-    <| List.filter (\n -> not <|  Note.is note n ) content.notes
-
-getNotesAssociatedToSource : Source.Source -> Slipbox -> (List Note.Note)
-getNotesAssociatedToSource source slipbox =
-  List.filter ( Note.isAssociated source ) <| .notes <| getContent slipbox
-
-type AddAction
-  = OpenNote Note.Note
-  | OpenSource Source.Source
-  | NewNote
-  | NewSource
-  | NewDiscussion
-
-addItem : ( Maybe Item.Item ) -> AddAction -> Slipbox -> Slipbox
-addItem maybeItem addAction slipbox =
-  let
-    content = getContent slipbox
-
-    itemExistsLambda = \existingItem ->
-      let
-        updatedContent = getContent <| dismissItem existingItem slipbox
-      in
-      case maybeItem of
-        Just itemToMatch -> Slipbox { updatedContent | items = List.foldr (buildItemList itemToMatch existingItem) [] updatedContent.items }
-        Nothing -> Slipbox { updatedContent | items = existingItem :: updatedContent.items }
-
-    itemDoesNotExistLambda = \(newItem,idGenerator) ->
-      case maybeItem of
-       Just itemToMatch -> Slipbox { content | items = List.foldr (buildItemList itemToMatch newItem) [] content.items
-        , idGenerator = idGenerator
-        }
-       Nothing -> Slipbox { content | items = newItem :: content.items, idGenerator = idGenerator }
-  in
-  case addAction of
-    OpenNote note ->
-      case tryFindItemFromComponent content.items <| hasNote note of
-        Just existingItem -> itemExistsLambda existingItem
-        Nothing -> itemDoesNotExistLambda <| Item.openNote content.idGenerator note
-
-    OpenSource source ->
-      case tryFindItemFromComponent content.items <| hasSource source of
-        Just existingItem -> itemExistsLambda existingItem
-        Nothing -> itemDoesNotExistLambda <| Item.openSource content.idGenerator source
-
-    NewNote -> itemDoesNotExistLambda <| Item.newNote content.idGenerator
-
-    NewSource -> itemDoesNotExistLambda <| Item.newSource content.idGenerator
-
-    NewDiscussion -> itemDoesNotExistLambda <| Item.newQuestion content.idGenerator
-
-dismissItem : Item.Item -> Slipbox -> Slipbox
-dismissItem item slipbox =
-  let
-      content = getContent slipbox
-  in
-  Slipbox { content | items = removeItemFromList item content.items }
-
-removeItemFromList : Item.Item -> ( List (Item.Item ) ) -> ( List ( Item.Item ) )
-removeItemFromList item items =
-  List.filter ( isNotLambda Item.is item ) items
-
-type UpdateAction
-  = UpdateContent String
-  | UpdateSource String
-  | UpdateTitle String
-  | UpdateAuthor String
-  | UpdateSearch String
-  | AddLink Note.Note
-  | Edit
-  | PromptConfirmDelete
-  | AddLinkForm
-  | PromptConfirmRemoveLink Note.Note Link.Link
-  | Cancel
-  | Submit
-  | OpenTray
-  | CloseTray
-
-updateItem : Item.Item -> UpdateAction -> Slipbox -> Slipbox
-updateItem item updateAction slipbox =
-  let
-      content = getContent slipbox
-      update = \updatedItem -> Slipbox 
-        { content | items = List.map (conditionalUpdate updatedItem (Item.is item)) content.items}
-  in
-  case updateAction of
-    UpdateContent input ->
-      case item of
-        Item.EditingNote itemId tray originalNote noteWithEdits ->
-          update <| Item.EditingNote itemId tray originalNote
-            <| Note.updateContent input noteWithEdits
-        Item.EditingSource itemId tray originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId tray originalSource
-            <| Source.updateContent input sourceWithEdits
-        Item.NewNote itemId tray newNoteContent ->
-          update <| Item.NewNote itemId tray { newNoteContent | content = input }
-        Item.NewSource itemId tray newSourceContent ->
-          update <| Item.NewSource itemId tray { newSourceContent | content = input }
-        Item.NewDiscussion itemId tray _ ->
-          update <| Item.NewDiscussion itemId tray input
-        _ -> slipbox
-
-    UpdateSource input ->
-      case item of
-        Item.EditingNote itemId tray originalNote noteWithEdits ->
-          update
-            <| Item.EditingNote itemId tray originalNote
-              <| Note.updateSource input noteWithEdits
-        Item.NewNote itemId tray newNoteContent ->
-          update <| Item.NewNote itemId tray { newNoteContent | source = input }
-        _ -> slipbox
-
-    UpdateTitle input ->
-      case item of
-        Item.EditingSource itemId tray originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId tray originalSource
-            <| Source.updateTitle input sourceWithEdits
-        Item.NewSource itemId tray newSourceContent ->
-          update <| Item.NewSource itemId tray { newSourceContent | title = input }
-        _ -> slipbox
-
-    UpdateAuthor input ->
-      case item of
-        Item.EditingSource itemId tray originalSource sourceWithEdits ->
-          update <| Item.EditingSource itemId tray originalSource
-            <| Source.updateAuthor input sourceWithEdits
-        Item.NewSource itemId tray newSourceContent ->
-          update <| Item.NewSource itemId tray { newSourceContent | author = input }
-        _ -> slipbox
-
-    UpdateSearch input ->
-      case item of 
-        Item.AddingLinkToNoteForm itemId tray _ note maybeNote ->
-          update <| Item.AddingLinkToNoteForm itemId tray input note maybeNote
-        _ -> slipbox
-
-    AddLink noteToBeAdded ->
-      case item of 
-        Item.AddingLinkToNoteForm itemId tray search note _ ->
-          update <| Item.AddingLinkToNoteForm itemId tray search note <| Just noteToBeAdded
-        _ -> slipbox
-
-    Edit ->
-      case item of
-        Item.Note itemId tray note ->
-          update <| Item.EditingNote itemId tray note note
-        Item.Source itemId tray source ->
-          update <| Item.EditingSource itemId tray source source
-        _ -> slipbox
-            
-    PromptConfirmDelete ->
-      case item of
-        Item.Note itemId tray note ->
-          update <| Item.ConfirmDeleteNote itemId tray note
-        Item.Source itemId tray source ->
-          update <| Item.ConfirmDeleteSource itemId tray source
-        _ -> slipbox
-
-    AddLinkForm ->
-      case item of 
-        Item.Note itemId tray note ->
-          update <| Item.AddingLinkToNoteForm itemId tray "" note Nothing
-        _ -> slipbox
-    
-    PromptConfirmRemoveLink linkedNote link ->
-      case item of 
-        Item.Note itemId tray note ->
-          update <| Item.ConfirmDeleteLink itemId tray note linkedNote link
-        _ -> slipbox
-    
-    Cancel ->
-      let
-        conditionallyDismissOrTransformLambda =
-          \transformation ->
-            if Item.isEmpty item then
-              dismissItem item slipbox
-            else
-              update transformation
-      in
-      case item of
-        Item.NewNote itemId tray note ->
-          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewNoteForm itemId tray note
-        Item.ConfirmDiscardNewNoteForm itemId tray note ->
-          update <| Item.NewNote itemId tray note
-        Item.EditingNote itemId tray originalNote _ ->
-          update <| Item.Note itemId tray originalNote
-        Item.ConfirmDeleteNote itemId tray note ->
-          update <| Item.Note itemId tray note
-        Item.AddingLinkToNoteForm itemId tray _ note _ ->
-          update <| Item.Note itemId tray note
-        Item.NewSource itemId tray source ->
-          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewSourceForm itemId tray source
-        Item.ConfirmDiscardNewSourceForm itemId tray source ->
-          update <| Item.NewSource itemId tray source
-        Item.EditingSource itemId tray originalSource _ ->
-          update <| Item.Source itemId tray originalSource
-        Item.ConfirmDeleteSource itemId tray source ->
-          update <| Item.Source itemId tray source
-        Item.ConfirmDeleteLink itemId tray note _ _ ->
-          update <| Item.Note itemId tray note
-        Item.NewDiscussion itemId tray question ->
-          conditionallyDismissOrTransformLambda <| Item.ConfirmDiscardNewDiscussion itemId tray question
-        Item.ConfirmDiscardNewDiscussion itemId tray question ->
-          update <| Item.ConfirmDiscardNewDiscussion itemId tray question
-        _ -> slipbox
-
-    Submit ->
-      case item of
-        Item.ConfirmDeleteNote _ _ noteToDelete ->
-          let
-            links = List.filter (\l -> not <| isAssociated noteToDelete l ) content.links
-            notes = List.filter (isNotLambda Note.is noteToDelete) content.notes
-          in
-          Slipbox
-            { content | notes = notes
-            , links = links
-            , items = List.map (deleteNoteItemStateChange noteToDelete) <| removeItemFromList item content.items
-            , unsavedChanges = True
-            }
-
-        Item.ConfirmDeleteSource _ _ source ->
-          Slipbox
-            { content | sources = List.filter (isNotLambda Source.is source) content.sources
-            , items = removeItemFromList item content.items
-            , unsavedChanges = True
-            }
-
-        Item.NewNote itemId tray noteContent ->
-          let
-              source =
-                if String.isEmpty noteContent.source then
-                  "n/a"
-                else
-                  noteContent.source
-              (note, idGenerator) = Note.create content.idGenerator
-                <| { content = noteContent.content, source = source, variant = Note.Regular }
-          in
-          Slipbox
-            { content | notes = (note :: content.notes)
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , idGenerator = idGenerator
-            , unsavedChanges = True
-            }
-
-        Item.NewSource itemId tray sourceContent ->
-          let
-              ( source, generator ) = Source.createSource content.idGenerator sourceContent
-          in
-          Slipbox
-            { content | sources = source :: content.sources
-            , items = List.map (\i -> if Item.is item i then Item.Source itemId tray source else i) content.items
-            , idGenerator = generator
-            , unsavedChanges = True
-            }
-
-        Item.EditingNote itemId tray _ editingNote ->
-          let
-              conditionallyUpdateTargetNoteWithEdits = updateLambda Note.is ( \n -> editingNote ) editingNote
-          in
-          Slipbox
-            { content | notes = List.map conditionallyUpdateTargetNoteWithEdits content.notes
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray editingNote else i) content.items
-            , unsavedChanges = True
-            }
-
-        Item.EditingSource itemId tray _ sourceWithEdits ->
-          let
-              conditionallyUpdateTargetSourceWithEdits = updateLambda Source.is ( updateSourceEdits sourceWithEdits ) sourceWithEdits
-          in
-          Slipbox
-            { content | sources = List.map conditionallyUpdateTargetSourceWithEdits content.sources
-            , items = List.map (\i -> if Item.is item i then Item.Source itemId tray sourceWithEdits else i) content.items
-            , unsavedChanges = True
-            }
-
-        Item.AddingLinkToNoteForm itemId tray _ note maybeNoteToBeLinked ->
-          case maybeNoteToBeLinked of
-            Just noteToBeLinked ->
-              let
-                  (link, idGenerator) = Link.create content.idGenerator note noteToBeLinked
-                  links = link :: content.links
-              in
-              Slipbox
-                { content | links = links
-                , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-                , idGenerator = idGenerator
-                , unsavedChanges = True
-                }
-            _ -> slipbox
-
-        Item.ConfirmDeleteLink itemId tray note _ link ->
-          let
-            trueIfNotTargetLink = isNotLambda Link.is link
-            links = List.filter trueIfNotTargetLink content.links
-          in
-          Slipbox
-            { content | links = links
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , unsavedChanges = True
-            }
-
-        Item.ConfirmDiscardNewNoteForm _ _ _ ->
-          Slipbox { content | items = removeItemFromList item content.items }
-
-        Item.ConfirmDiscardNewSourceForm _ _ _ ->
-          Slipbox { content | items = removeItemFromList item content.items }
-
-        Item.NewDiscussion itemId tray question ->
-          let
-              (note, idGenerator) = Note.create content.idGenerator
-                <| { content = question, source = "n/a", variant = Note.Discussion }
-          in
-          Slipbox
-            { content | notes = (note :: content.notes)
-            , items = List.map (\i -> if Item.is item i then Item.Note itemId tray note else i) content.items
-            , idGenerator = idGenerator
-            , unsavedChanges = True
-            }
-
-        Item.ConfirmDiscardNewDiscussion _ _ _ ->
-          Slipbox { content | items = removeItemFromList item content.items }
-
-        _ -> slipbox
-
-    OpenTray ->
-      Slipbox { content | items = List.map ( updateLambda Item.is Item.openTray item ) content.items }
-
-    CloseTray ->
-      Slipbox { content | items = List.map ( updateLambda Item.is Item.closeTray item ) content.items }
-
-
-updateLambda : ( a -> a -> Bool ) -> ( a -> a ) -> a -> ( a -> a )
-updateLambda is update target =
-  \maybeTarget ->
-    if is target maybeTarget then
-      update maybeTarget
-    else
-      maybeTarget
-
-isNotLambda : ( a -> a -> Bool) -> a -> ( a -> Bool )
-isNotLambda is target =
-  \maybeTarget ->
-    if is target maybeTarget then
-      False
-    else
-      True
-
 decode : Json.Decode.Decoder Slipbox
 decode =
   let
     slipbox notes links sources idGenerator =
-      Slipbox <| Content notes links [] sources idGenerator False
+      Slipbox <| Content notes links sources idGenerator False
   in
   Json.Decode.map4
     slipbox
@@ -633,66 +267,6 @@ addLink note1 note2 slipbox =
 flatten2D : List (List a) -> List a
 flatten2D list =
   List.foldr (++) [] list
-
--- Helper Functions
-buildItemList : Item.Item -> Item.Item -> (Item.Item -> (List Item.Item) -> (List Item.Item))
-buildItemList itemToMatch itemToAdd =
-  \item list -> if Item.is item itemToMatch then item :: (itemToAdd :: list) else item :: list
-
-deleteNoteItemStateChange : Note.Note -> Item.Item -> Item.Item
-deleteNoteItemStateChange deletedNote item =
-  case item of
-    Item.AddingLinkToNoteForm itemId tray search note maybeNoteToBeLinked ->
-      case maybeNoteToBeLinked of
-        Just noteToBeLinked -> 
-          if Note.is noteToBeLinked deletedNote then
-            Item.AddingLinkToNoteForm itemId tray search note Nothing
-          else 
-            item
-        _ -> item   
-    _ -> item
-
-conditionalUpdate : a -> (a -> Bool) -> (a -> a)
-conditionalUpdate updatedItem itemIdentifier =
-  (\i -> if itemIdentifier i then updatedItem else i)
-
---updateNoteEdits : Note.Note -> Note.Note -> Note.Note
---updateNoteEdits noteWithEdits originalNote =
---  let
---      updatedContent = Note.getContent noteWithEdits
---      updatedSource = Note.getSource noteWithEdits
---      updatedVariant = Note.getVariant noteWithEdits
---  in
---  Note.updateContent updatedContent
---    <| Note.updateSource updatedSource
---      <| Note.updateVariant updatedVariant originalNote
-
-updateSourceEdits : Source.Source -> Source.Source -> Source.Source
-updateSourceEdits sourceWithEdits originalSource =
-  let
-      updatedTitle = Source.getTitle sourceWithEdits
-      updatedAuthor = Source.getAuthor sourceWithEdits
-      updatedContent = Source.getContent sourceWithEdits
-  in
-  Source.updateTitle updatedTitle
-    <| Source.updateAuthor updatedAuthor
-      <| Source.updateContent updatedContent originalSource
-
-tryFindItemFromComponent : ( List Item.Item ) -> ( Item.Item -> (Bool) ) -> ( Maybe Item.Item )
-tryFindItemFromComponent items filterCondition =
-  List.head <| List.filter filterCondition items
-
-hasNote : Note.Note -> Item.Item -> Bool
-hasNote note item =
-  case Item.getNote item of
-    Just noteOnItem -> Note.is note noteOnItem
-    Nothing -> False
-
-hasSource : Source.Source -> Item.Item -> Bool
-hasSource source item =
-  case Item.getSource item of
-    Just sourceOnItem -> Source.is source sourceOnItem
-    Nothing -> False
 
 isAssociated : Note.Note -> Link.Link -> Bool
 isAssociated note link =

@@ -1,7 +1,10 @@
 module Source exposing 
-  ( Source, getTitle
-  , getAuthor, getContent
-  , contains, is
+  ( Source
+  , getTitle
+  , getAuthor
+  , getContent
+  , contains
+  , is
   , createSource
   , updateContent
   , updateTitle

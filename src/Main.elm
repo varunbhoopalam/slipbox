@@ -5,9 +5,9 @@ import Browser.Navigation
 import Color
 import Create
 import Discovery
+import Edit
 import Element.Background
 import Element.Border
-import Element.Events
 import Element.Font
 import Element.Input
 import FontAwesome.Attributes
@@ -26,7 +26,6 @@ import Json.Decode
 import Url
 import Note
 import Source
-import Item
 import FontAwesome.Icon
 import FontAwesome.Styles
 
@@ -48,12 +47,6 @@ type Model
   = Setup
   | FailureToParse
   | Session Content
-
-updateTab : Tab -> Model -> Model
-updateTab tab model =
-  case model of
-    Session content -> Session { content | tab = tab }
-    _ -> model
 
 setSlipbox : Slipbox.Slipbox -> Model -> Model
 setSlipbox slipbox model =
@@ -122,20 +115,14 @@ toggle state =
 
 -- TAB
 type Tab
-  = NotesTab String
-  | SourcesTab String
-  | WorkspaceTab
-  | DiscussionsTab String
+  = EditModeTab Edit.Edit
   | CreateModeTab Create.Create
   | DiscoveryModeTab Discovery.Discovery
 
 type Tab_
-  = Workspace
-  | Notes
-  | Sources
-  | Discussions
+  = EditMode
   | CreateMode
-  | Discovery
+  | DiscoveryMode
 
 -- INIT
 
@@ -149,11 +136,6 @@ init _ _ _ =
 type Msg
   = LinkClicked Browser.UrlRequest
   | UrlChanged Url.Url
-  | NoteTabUpdateInput String
-  | SourceTabUpdateInput String
-  | AddItem ( Maybe Item.Item ) Slipbox.AddAction
-  | UpdateItem Item.Item Slipbox.UpdateAction
-  | DismissItem Item.Item
   | InitializeNewSlipbox
   | FileRequested
   | FileLoaded String
@@ -185,11 +167,6 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
   let
-    updateSlipboxWrapper = \s -> case getSlipbox model of
-       Just slipbox ->
-         ( setSlipbox (s slipbox) model, Cmd.none )
-       _ -> ( model, Cmd.none)
-
     createModeLambda createUpdate =
       case getCreate model of
         Just create ->
@@ -241,40 +218,6 @@ update message model =
 
     UrlChanged _ -> (model, Cmd.none)
 
-    NoteTabUpdateInput input ->
-      case model of
-        Session content ->
-          case content.tab of
-            NotesTab _ ->
-              ( updateTab ( NotesTab input ) model, Cmd.none )
-            _ -> ( model, Cmd.none)
-        _ -> ( model, Cmd.none)
-    
-    SourceTabUpdateInput input ->
-      case model of
-        Session content ->
-          case content.tab of
-            SourcesTab _ ->
-              ( updateTab ( SourcesTab input ) model, Cmd.none )
-            _ -> ( model, Cmd.none)
-        _ -> ( model, Cmd.none)
-
-    AddItem maybeItem addAction ->
-      let
-         modelWithUpdatedTab = updateTab WorkspaceTab model
-         addItemToSlipboxLambda = Slipbox.addItem maybeItem addAction
-      in
-      case getSlipbox model of
-        Just slipbox ->
-          ( setSlipbox ( addItemToSlipboxLambda slipbox ) modelWithUpdatedTab
-          , Cmd.none
-          )
-        _ -> ( model, Cmd.none)
-
-    UpdateItem item updateAction -> updateSlipboxWrapper <| Slipbox.updateItem item updateAction
-
-    DismissItem item -> updateSlipboxWrapper <| Slipbox.dismissItem item
-
     InitializeNewSlipbox ->
       case model of
         Setup ->
@@ -320,29 +263,11 @@ update message model =
       case model of
         Session content ->
           case tab of
-            Notes ->
+            EditMode ->
               case content.tab of
-                NotesTab _ -> ( model, Cmd.none )
+                EditModeTab _ -> ( model, Cmd.none )
                 _ ->
-                  ( Session { content | tab = NotesTab "" }
-                  , Cmd.none
-                  )
-            Sources ->
-              case content.tab of
-                SourcesTab _ -> ( model, Cmd.none )
-                _ ->
-                  ( Session { content | tab = SourcesTab "" }
-                  , Cmd.none
-                  )
-
-            Workspace ->
-              ( updateTab WorkspaceTab model, Cmd.none )
-
-            Discussions ->
-              case content.tab of
-                DiscussionsTab _ -> ( model, Cmd.none )
-                _ ->
-                  ( Session { content | tab = DiscussionsTab "" }
+                  ( Session { content | tab = EditModeTab Edit.init }
                   , Cmd.none
                   )
 
@@ -354,7 +279,7 @@ update message model =
                   , Cmd.none
                   )
 
-            Discovery ->
+            DiscoveryMode ->
               case content.tab of
                 DiscoveryModeTab _ -> ( model, Cmd.none )
                 _ ->
@@ -549,77 +474,7 @@ contactUrl = "https://github.com/varunbhoopalam/slipbox"
 tabView: Content -> Element Msg
 tabView content =
   case content.tab of
-    NotesTab input ->
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        ]
-        [ noteTabToolbar input
-        , tabTextContentContainer
-          <| List.map ( \n -> Element.el
-            [ Element.width <| Element.minimum 300 Element.fill
-            , Element.alignTop
-            , Element.alignLeft
-            ]
-            n )
-            <| List.map ( toOpenNoteButton Nothing )
-              <| Slipbox.getNotes ( searchConverter input ) content.slipbox
-        ]
-
-    SourcesTab input ->
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        ]
-        [ sourceTabToolbar input
-        , tabTextContentContainer
-          <| List.map toOpenSourceButton
-            <| Slipbox.getSources ( searchConverter input ) content.slipbox
-        ]
-
-    WorkspaceTab ->
-      Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.padding 8
-        , Element.spacingXY 8 8
-        ]
-        [ Element.el
-          [ Element.Font.heavy
-          , Element.Border.width 1
-          , Element.padding 4
-          , Element.Font.color Color.oldLavenderRegular
-          , Element.centerX
-          ]
-          <| Element.text "Workspace"
-        , Element.el [ Element.centerX ] <| buttonTray Nothing
-        , Element.column
-          [ Element.height Element.fill
-          , Element.padding 8
-          , Element.spacingXY 8 8
-          , Element.width Element.fill
-          , Element.scrollbarY
-          ]
-          <| List.map ( toItemView content )
-            <| Slipbox.getItems content.slipbox
-        ]
-
-    DiscussionsTab input ->
-      Element.column
-      [ Element.width Element.fill
-      , Element.height Element.fill
-      ]
-        [ noteTabToolbar input
-        , tabTextContentContainer
-          <| List.map ( \n -> Element.el
-            [ Element.width <| Element.minimum 300 Element.fill
-            , Element.alignTop
-            , Element.alignLeft
-            ]
-            n )
-            <| List.map ( toOpenNoteButton Nothing )
-              <| Slipbox.getDiscussions ( searchConverter input ) content.slipbox
-        ]
+    EditModeTab _ -> Element.text "todo"
 
     CreateModeTab create ->
       case Create.view create of
@@ -1359,24 +1214,6 @@ toHtmlOption value =
 
 -- END CREATETAB HELPERS
 
-tabTextContentContainer : ( List ( Element Msg ) ) -> Element Msg
-tabTextContentContainer contents =
-  Element.wrappedRow
-    [ Element.height Element.fill
-    , Element.padding 8
-    , Element.spacingXY 8 8
-    , Element.width Element.fill
-    , Element.scrollbarY
-    ]
-    contents
-
-searchConverter : String -> ( Maybe String )
-searchConverter input =
-  if String.isEmpty input then
-    Nothing
-  else
-    Just input
-
 barHeight = 65
 
 leftNavExpandedButtonLambda : Element.Attribute Msg -> Element Msg -> String -> Msg -> Bool -> Element Msg
@@ -1488,19 +1325,14 @@ leftNav sideNavState selectedTab slipbox =
                   ]
               }
           , leftNavExpandedButtonLambda Element.alignBottom plusIcon "Create Mode" ( ChangeTab CreateMode ) <| sameTab selectedTab CreateMode
-          , leftNavExpandedButtonLambda Element.alignBottom newspaperIcon "Create Source" ( AddItem Nothing Slipbox.NewSource ) False
-          , leftNavExpandedButtonLambda Element.alignBottom handPaperIcon "Create Discussion" ( AddItem Nothing Slipbox.NewDiscussion ) False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.width Element.fill
           , Element.spacingXY 0 8
           ]
-          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab Discovery ) <| sameTab selectedTab Discovery
-          , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab Workspace ) <| sameTab selectedTab Workspace
-          , leftNavExpandedButtonLambda Element.alignLeft fileAltIcon "Notes" ( ChangeTab Notes ) <| sameTab selectedTab Notes
-          , leftNavExpandedButtonLambda Element.alignLeft scrollIcon "Sources" ( ChangeTab Sources ) <| sameTab selectedTab Sources
-          , leftNavExpandedButtonLambda Element.alignLeft questionIcon "Discussions" ( ChangeTab Discussions ) <| sameTab selectedTab Discussions
+          [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab DiscoveryMode ) <| sameTab selectedTab DiscoveryMode
+          , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Workspace" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
           ]
         ]
     Contracted ->
@@ -1516,43 +1348,22 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ barsButton
           , leftNavContractedButtonLambda Element.alignBottom FileDownload saveIcon False
-          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewNote ) plusIcon False
-          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewSource ) newspaperIcon False
-          , leftNavContractedButtonLambda Element.alignBottom ( AddItem Nothing Slipbox.NewDiscussion ) handPaperIcon False
           ]
         , Element.column
           [ Element.height biggerElement
           , Element.spacingXY 0 8
           ]
-          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Discovery ) brainIcon <| sameTab selectedTab Discovery
-          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Workspace ) toolsIcon <| sameTab selectedTab Workspace
-          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Notes ) fileAltIcon <| sameTab selectedTab Notes
-          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Sources ) scrollIcon <| sameTab selectedTab Sources
-          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab Discussions ) questionIcon <| sameTab selectedTab Discussions
+          [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab DiscoveryMode ) brainIcon <| sameTab selectedTab DiscoveryMode
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab EditMode ) toolsIcon <| sameTab selectedTab EditMode
           ]
         ]
 
 sameTab : Tab -> Tab_ -> Bool
 sameTab tab tab_ =
   case tab of
-    NotesTab _ ->
+    EditModeTab _ ->
       case tab_ of
-        Notes -> True
-        _ -> False
-
-    SourcesTab _ ->
-      case tab_ of
-        Sources -> True
-        _ -> False
-
-    WorkspaceTab ->
-      case tab_ of
-        Workspace -> True
-        _ -> False
-
-    DiscussionsTab _ ->
-      case tab_ of
-        Discussions -> True
+        EditMode -> True
         _ -> False
 
     CreateModeTab _ ->
@@ -1562,7 +1373,7 @@ sameTab tab tab_ =
 
     DiscoveryModeTab _ ->
       case tab_ of
-        Discovery -> True
+        DiscoveryMode -> True
         _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -1578,12 +1389,6 @@ iconBuilder icon =
 plusIcon : Element Msg
 plusIcon = iconBuilder FontAwesome.Solid.plus
 
-newspaperIcon : Element Msg
-newspaperIcon = iconBuilder FontAwesome.Solid.newspaper
-
-handPaperIcon : Element Msg
-handPaperIcon = iconBuilder FontAwesome.Solid.handPaper
-
 saveIcon : Element Msg
 saveIcon = iconBuilder FontAwesome.Solid.save
 
@@ -1592,15 +1397,6 @@ brainIcon = iconBuilder FontAwesome.Solid.brain
 
 toolsIcon : Element Msg
 toolsIcon = iconBuilder FontAwesome.Solid.tools
-
-fileAltIcon : Element Msg
-fileAltIcon = iconBuilder FontAwesome.Solid.fileAlt
-
-scrollIcon : Element Msg
-scrollIcon = iconBuilder FontAwesome.Solid.scroll
-
-questionIcon : Element Msg
-questionIcon = iconBuilder FontAwesome.Solid.question
 
 barsButton : Element Msg
 barsButton =
@@ -1614,730 +1410,6 @@ barsButton =
           ]
           FontAwesome.Solid.bars
     }
-
--- ITEMS
-
-itemHeaderBuilder : ( List ( Element Msg ) ) -> Element Msg
-itemHeaderBuilder contents =
-  Element.row
-    [ Element.width Element.fill
-    , Element.spacingXY 8 0
-    ]
-    contents
-
-normalItemHeader : String -> Item.Item -> Element Msg
-normalItemHeader text item =
-  itemHeaderBuilder
-    [ heading text
-    , Element.el [ Element.alignRight ] <| editButton item
-    , Element.el [ Element.alignRight ] <| deleteButton item
-    , Element.el [ Element.alignRight ] <| dismissButton item
-    ]
-
-conditionalSubmitItemHeader : String -> Bool -> Item.Item -> Element Msg
-conditionalSubmitItemHeader text canSubmit item =
-  itemHeaderBuilder
-    [ heading text
-    , Element.el [ Element.alignRight ] <| cancelButton item
-    , Element.el [ Element.alignRight ] <| chooseSubmitButton item canSubmit
-    ]
-
-deleteItemHeader : String -> Item.Item -> Element Msg
-deleteItemHeader text item =
-  itemHeaderBuilder
-    [ heading text
-    , Element.el [ Element.alignRight ] <| cancelButton item
-    , Element.el [ Element.alignRight ] <| confirmButton item
-    ]
-
-submitItemHeader : String -> Item.Item -> Element Msg
-submitItemHeader text item =
-  itemHeaderBuilder
-    [ heading text
-    , Element.el [ Element.alignRight ] <| cancelButton item
-    , Element.el [ Element.alignRight ] <| submitButton item
-    ]
-
-toItemView: Content -> Item.Item -> Element Msg
-toItemView content item =
-  let
-    itemContainerLambda =
-      \contents ->
-        Element.column
-          [ Element.spacingXY 8 8
-          , Element.width Element.fill
-          , Element.centerX
-          ]
-          [ Element.el
-            [ Element.width <| Element.maximum 600 Element.fill
-            , Element.centerX
-            ]
-            <| Element.column
-              containerAttributes
-              contents
-          , onHoverButtonTray item
-          ]
-  in
-  case item of
-    Item.Note _ _ note ->
-      let
-        text =
-          case Note.getVariant note of
-            Note.Regular -> "Note"
-            Note.Discussion -> "Discussion"
-      in
-      itemContainerLambda
-        [ normalItemHeader text item
-        , toNoteRepresentationFromNote note
-        , linkedNotesNode item note content.slipbox
-        ]
-
-
-    Item.NewNote itemId _ note -> itemContainerLambda
-      [ conditionalSubmitItemHeader "New Note" ( Item.noteCanSubmit note ) item
-      , toEditingNoteRepresentation
-        itemId item ( List.map Source.getTitle <| Slipbox.getSources Nothing content.slipbox ) note.content note.source Note.Regular
-      ]
-
-
-    Item.ConfirmDiscardNewNoteForm _ _ note -> itemContainerLambda
-      [ deleteItemHeader "Discard New Note" item
-      , toNoteRepresentation note.content ( SourceTitle.sourceTitle note.source ) Note.Regular
-      ]
-
-
-    Item.EditingNote itemId _ _ noteWithEdits ->
-      let
-        text =
-          case Note.getVariant noteWithEdits of
-            Note.Regular -> "Editing Note"
-            Note.Discussion -> "Editing Discussion"
-      in
-      itemContainerLambda
-        [ submitItemHeader text item
-        , toEditingNoteRepresentationFromItemNoteSlipbox itemId item noteWithEdits content.slipbox
-        ]
-
-
-    Item.ConfirmDeleteNote _ _ note ->
-      let
-        text =
-          case Note.getVariant note of
-            Note.Regular -> "Delete Note"
-            Note.Discussion -> "Delete Discussion"
-      in
-      itemContainerLambda
-        [ deleteItemHeader text item
-        , toNoteRepresentationFromNote note
-        ]
-
-
-    Item.AddingLinkToNoteForm _ _ search note maybeNote ->
-      let
-        maybeChoice =
-          case maybeNote of
-            Just chosenNoteToLink -> toNoteRepresentationFromNote chosenNoteToLink
-            Nothing -> Element.paragraph [] [ Element.text "Select note to add link to from below" ]
-      in
-      itemContainerLambda
-        [ conditionalSubmitItemHeader "Add Link" ( maybeNote /= Nothing ) item
-        , Element.row
-          [ Element.width Element.fill ]
-          [ Element.el
-            [ Element.Border.widthEach { right = 3, top = 0, left = 0, bottom = 0 }
-            , Element.width Element.fill
-            ]
-            <| toNoteRepresentationFromNote note
-          , maybeChoice
-          ]
-        , Element.column
-          [ Element.height Element.fill
-          , Element.width Element.fill
-          , Element.spacingXY 8 8
-          ]
-          [ heading "Select Note to Link"
-          , searchInput search
-            <| ( \inp -> UpdateItem item <| Slipbox.UpdateSearch inp )
-          , Element.column
-            containerWithScrollAttributes
-              <| List.map (toNoteDetailAddingLinkForm item)
-                <| List.filter ( Note.contains search )
-                  <| Slipbox.getNotesThatCanLinkToNote note content.slipbox
-          ]
-        ]
-
-
-    Item.Source _ _ source -> itemContainerLambda
-      [ normalItemHeader "Source" item
-      , toSourceRepresentationFromSource source
-      , associatedNotesNode item source content.slipbox
-      ]
-
-
-    Item.NewSource _ _ source ->
-      let
-        existingTitles = getTitlesFromSlipbox content.slipbox
-      in
-      itemContainerLambda
-        [ conditionalSubmitItemHeader "New Source" ( Item.sourceCanSubmit source existingTitles ) item
-        , toEditingSourceRepresentation item source.title source.author source.content existingTitles
-        ]
-
-
-    Item.ConfirmDiscardNewSourceForm _ _ source -> itemContainerLambda
-      [ deleteItemHeader "Confirm Discard New Source" item
-      , toSourceRepresentation source.title source.author source.content
-      ]
-
-
-    Item.EditingSource _ _ source sourceWithEdits ->
-      let
-        titlesThatArentTheOriginalSourcesTitle = ( \title -> title /= Source.getTitle source )
-        existingTitlesExcludingThisSourcesTitle =
-          List.filter titlesThatArentTheOriginalSourcesTitle
-            <| getTitlesFromSlipbox content.slipbox
-      in
-        itemContainerLambda
-          [ conditionalSubmitItemHeader
-            "Editing Source"
-            ( SourceTitle.validateNewSourceTitle existingTitlesExcludingThisSourcesTitle ( Source.getTitle sourceWithEdits ) )
-            item
-          , toEditingSourceRepresentationFromItemSource item sourceWithEdits existingTitlesExcludingThisSourcesTitle
-          ]
-
-
-    Item.ConfirmDeleteSource _ _ source -> itemContainerLambda
-      [ deleteItemHeader "Confirm Delete Source" item
-      , toSourceRepresentationFromSource source
-      ]
-
-
-    Item.ConfirmDeleteLink _ _ note linkedNote _ -> itemContainerLambda
-      [ deleteItemHeader "Confirm Delete Link" item
-      , Element.row
-        [ Element.spaceEvenly ]
-        [ toNoteRepresentationFromNote note
-        , toNoteRepresentationFromNote linkedNote
-        ]
-      ]
-
-    Item.NewDiscussion _ _ discussion -> itemContainerLambda
-      [ conditionalSubmitItemHeader "New Discussion" ( not <| String.isEmpty discussion ) item
-      , contentContainer
-        [ Element.el [ Element.width Element.fill ] <| discussionInput item discussion
-        ]
-      ]
-
-    Item.ConfirmDiscardNewDiscussion _ _ discussion -> itemContainerLambda
-      [ deleteItemHeader "Confirm Discard New Discussion" item
-      , toDiscussionRepresentation discussion
-      ]
-
-getTitlesFromSlipbox : Slipbox.Slipbox -> ( List String )
-getTitlesFromSlipbox slipbox =
-  List.map (Source.getTitle) <| Slipbox.getSources Nothing slipbox
-
-onHoverButtonTray : Item.Item -> Element Msg
-onHoverButtonTray item =
-  let
-    tray =
-      if Item.isTrayOpen item then
-        buttonTray <| Just item
-      else
-        Element.el
-          [ Element.height <| Element.minimum 10 Element.fill
-          , Element.width Element.fill
-          ]
-          Element.none
-  in
-  Element.el
-    [ Element.Events.onMouseEnter <| UpdateItem item Slipbox.OpenTray
-    , Element.Events.onMouseLeave <| UpdateItem item Slipbox.CloseTray
-    , Element.width Element.fill
-    ]
-    tray
-
-buttonTray : ( Maybe Item.Item ) -> Element Msg
-buttonTray maybeItem =
-  let
-    button_ addAction text=
-      smallOldLavenderButton
-          { onPress = Just <| AddItem maybeItem addAction
-          , label = Element.el
-            [ Element.centerX
-            , Element.centerY
-            , Element.Font.heavy
-            , Element.Font.color Color.white
-            ]
-            <| Element.text text
-          }
-  in
-  Element.row
-    [ Element.width Element.fill
-    , Element.padding 8
-    , Element.spacingXY 8 8
-    , Element.height Element.fill
-    ]
-    [ button_ Slipbox.NewNote "Create Note"
-    , button_ Slipbox.NewSource "Create Source"
-    , button_ Slipbox.NewDiscussion "Create Discussion"
-    ]
-
-linkedNotesNode : Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
-linkedNotesNode item note slipbox =
-  let
-    linkedNotes = Slipbox.getLinkedNotes note slipbox
-    canAddLinkToNote = not <| List.isEmpty <| Slipbox.getNotesThatCanLinkToNote note slipbox
-    noLinkedNotes = List.isEmpty linkedNotes
-    linkedNotesDomRep = Element.column
-      containerWithScrollAttributes
-      <| List.map (toLinkedNoteView item) linkedNotes
-  in
-  if canAddLinkToNote then
-    if noLinkedNotes then
-      addLinkButton item
-    else
-      Element.column
-        []
-        [ Element.row
-          [ Element.width Element.fill]
-          [ heading "Linked Notes"
-          , Element.el [ Element.alignRight ] <| addLinkButton item ]
-        , linkedNotesDomRep
-        ]
-  else
-    if noLinkedNotes then
-      Element.none
-    else
-      Element.column []
-        [ Element.el [ Element.alignLeft ] <| Element.text "Linked Notes"
-        , linkedNotesDomRep
-        ]
-
-associatedNotesNode : Item.Item -> Source.Source -> Slipbox.Slipbox -> Element Msg
-associatedNotesNode item source slipbox =
-  let
-    associatedNotes = Slipbox.getNotesAssociatedToSource source slipbox
-    noAssociatedNotes = List.isEmpty associatedNotes
-  in
-  if noAssociatedNotes then
-    Element.none
-  else
-    Element.column
-      [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ heading "Associated Notes"
-      , Element.column containerWithScrollAttributes
-          ( List.map (\n -> toAssociatedNoteButton ( Just item ) n ) associatedNotes )
-      ]
-
-addLinkButton: Item.Item -> Element Msg
-addLinkButton item =
-  smallOldLavenderButton
-    { onPress = Just <| UpdateItem item Slipbox.AddLinkForm
-    , label = Element.text "Add Link"
-    }
-
-containerAttributes : ( List ( Element.Attribute Msg) )
-containerAttributes =
-  [ Element.Border.width 3
-  , Element.Border.color Color.heliotropeGrayRegular
-  , Element.padding 8
-  , Element.spacingXY 8 8
-  , Element.width Element.fill
-  , Element.centerX
-  ]
-
-containerWithScrollAttributes : ( List ( Element.Attribute Msg) )
-containerWithScrollAttributes =
-  [ Element.Border.width 3
-  , Element.Border.color Color.heliotropeGrayRegular
-  , Element.padding 8
-  , Element.spacingXY 8 8
-  , Element.width Element.fill
-  , Element.centerX
-  , Element.height <| Element.minimum 250 Element.fill
-  , Element.scrollbarY
-  ]
-
-toLinkedNoteView: Item.Item -> ( Note.Note, Link.Link ) -> Element Msg
-toLinkedNoteView item ( linkedNote, link ) =
-  Element.row
-    containerAttributes
-    [ toOpenNoteButton ( Just item ) linkedNote
-    , removeLinkButton item linkedNote link
-    ]
-
-removeLinkButton: Item.Item -> Note.Note -> Link.Link -> Element Msg
-removeLinkButton item linkedNote link =
-  smallRedButton
-    { onPress = Just <| UpdateItem item <| Slipbox.PromptConfirmRemoveLink linkedNote link
-    , label = Element.text "Remove Link"
-    }
-
-contentContainer : ( List ( Element Msg ) ) -> Element Msg
-contentContainer contents =
-  Element.column
-    [ Element.padding 8
-    , Element.spacingXY 8 8
-    , Element.width Element.fill
-    ]
-    contents
-
-toNoteRepresentationFromNote : Note.Note -> Element Msg
-toNoteRepresentationFromNote note =
-  toNoteRepresentation
-    ( Note.getContent note )
-    ( Note.getSource note )
-    ( Note.getVariant note )
-
-toNoteRepresentation : String -> SourceTitle.SourceTitle -> Note.Variant -> Element Msg
-toNoteRepresentation content source variant =
-  case variant of
-    Note.Regular ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill] <| noteContentView content
-        , Element.el [ Element.width Element.fill] <| noteSourceView source
-        ]
-    Note.Discussion ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill] <| discussionView content
-        ]
-
-toAssociatedNoteRepresentation : String -> Note.Variant -> Element Msg
-toAssociatedNoteRepresentation content variant =
-  case variant of
-    Note.Regular ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill] <| labeledViewBuilder "Note" content ]
-    Note.Discussion ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill] <| discussionView content ]
-
-toAssociatedNoteRepresentationFromNote : Note.Note -> Element Msg
-toAssociatedNoteRepresentationFromNote note =
-  toAssociatedNoteRepresentation ( Note.getContent note ) ( Note.getVariant note )
-
-toEditingNoteRepresentationFromItemNoteSlipbox : Int -> Item.Item -> Note.Note -> Slipbox.Slipbox -> Element Msg
-toEditingNoteRepresentationFromItemNoteSlipbox itemId item note slipbox =
-  toEditingNoteRepresentation
-    itemId
-    item
-    ( List.map Source.getTitle <| Slipbox.getSources Nothing slipbox )
-    ( Note.getContent note )
-    ( SourceTitle.encode <| Note.getSource note )
-    ( Note.getVariant note )
-
-toEditingNoteRepresentation : Int -> Item.Item -> ( List String ) -> String -> String -> Note.Variant -> Element Msg
-toEditingNoteRepresentation itemId item titles content source variant =
-  case variant of
-    Note.Regular ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill ] <| contentInput item content
-        , Element.el [ Element.width Element.fill ] <| sourceInput itemId item source titles
-        ]
-    Note.Discussion ->
-      contentContainer
-        [ Element.el [ Element.width Element.fill ] <| contentInput item content
-        ]
-
-toNoteDetailAddingLinkForm: Item.Item -> Note.Note -> Element Msg
-toNoteDetailAddingLinkForm item note =
-  Element.Input.button
-    [ Element.paddingXY 8 0
-    , Element.spacingXY 8 0
-    , Element.Border.solid
-    , Element.Border.color Color.gray
-    , Element.Border.width 4
-    , Element.width Element.fill
-    ]
-    { onPress = Just <| UpdateItem item <| Slipbox.AddLink note
-    , label = toNoteRepresentationFromNote note
-    }
-
-toSourceRepresentationFromSource : Source.Source -> Element Msg
-toSourceRepresentationFromSource source =
-  toSourceRepresentation
-    ( Source.getTitle source )
-    ( Source.getAuthor source )
-    ( Source.getContent source )
-
-toSourceRepresentation : String -> String -> String -> Element Msg
-toSourceRepresentation title author content =
-  contentContainer
-    [ Element.el [ Element.width Element.fill] <| sourceTitleView title
-    , Element.el [ Element.width Element.fill] <| sourceAuthorView author
-    , Element.el [ Element.width Element.fill] <| sourceContentView content
-    ]
-
-toDiscussionRepresentation : String -> Element Msg
-toDiscussionRepresentation dicussion =
-  contentContainer
-    [ Element.el [ Element.width Element.fill] <| discussionView dicussion
-    ]
-
-toEditingSourceRepresentationFromItemSource : Item.Item -> Source.Source -> ( List String ) -> Element Msg
-toEditingSourceRepresentationFromItemSource item source existingTitles =
-  toEditingSourceRepresentation
-    item
-    ( Source.getTitle source )
-    ( Source.getAuthor source )
-    ( Source.getContent source )
-    existingTitles
-
-toEditingSourceRepresentation : Item.Item -> String -> String -> String -> ( List String ) -> Element Msg
-toEditingSourceRepresentation item title author content existingTitles =
-  contentContainer
-    [ titleInput item title existingTitles
-    , authorInput item author
-    , contentInput item content
-    ]
-
-noteTabToolbar: String -> Element Msg
-noteTabToolbar input = 
-  Element.el 
-    [ Element.width Element.fill
-    , Element.height <| Element.px barHeight
-    , Element.padding 8
-    ]
-    <| Element.row [ Element.width Element.fill, Element.spacingXY 8 8 ]
-      [ searchInput input (\s -> NoteTabUpdateInput s)
-      ]
-
-toOpenNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
-toOpenNoteButton maybeItemOpenedFrom note =
-  Element.el 
-    [ Element.paddingXY 8 0
-    , Element.spacingXY 8 8
-    , Element.Border.solid
-    , Element.Border.color Color.gray
-    , Element.Border.width 4
-    , Element.width Element.fill
-    ] 
-    <| Element.Input.button
-      [ Element.width Element.fill, Element.height Element.fill]
-      { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
-      , label = toNoteRepresentationFromNote note
-      }
-
-toAssociatedNoteButton : ( Maybe Item.Item ) -> Note.Note -> Element Msg
-toAssociatedNoteButton maybeItemOpenedFrom note =
-  Element.el
-    [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid, Element.Border.color Color.gray
-    , Element.Border.width 4
-    ]
-    <| Element.Input.button []
-      { onPress = Just <| AddItem maybeItemOpenedFrom <| Slipbox.OpenNote note
-      , label = toAssociatedNoteRepresentationFromNote note
-      }
-
-sourceTabToolbar: String -> Element Msg
-sourceTabToolbar input =
-  Element.row
-    [ Element.width Element.fill
-    , Element.padding 8
-    , Element.spacingXY 8 8
-    , Element.height <| Element.px barHeight
-    ] 
-    [ searchInput input SourceTabUpdateInput
-    ]
-
-toOpenSourceButton : Source.Source -> Element Msg
-toOpenSourceButton source =
-  Element.el
-    [ Element.paddingXY 8 0, Element.spacingXY 8 8
-    , Element.Border.solid
-    , Element.Border.color Color.heliotropeGrayRegular
-    , Element.Border.width 4
-    ]
-    <| Element.Input.button []
-      { onPress = Just <| AddItem Nothing <| Slipbox.OpenSource source
-      , label = toSourceRepresentationFromSource source
-      }
-
--- UTILITIES
-
-searchInput : String -> (String -> Msg) -> Element Msg
-searchInput input onChange = Element.Input.text
-  [Element.width Element.fill] 
-  { onChange = onChange
-  , text = input
-  , placeholder = Nothing
-  , label = Element.Input.labelLeft [] <| Element.text "search"
-  }
-
-editButton: Item.Item -> Element Msg
-editButton item =
-  smallOldLavenderButton
-    { onPress = Just <| UpdateItem item Slipbox.Edit
-    , label = Element.text "Edit"
-    }
-
-deleteButton: Item.Item -> Element Msg
-deleteButton item =
-  smallRedButton
-    { onPress = Just <| UpdateItem item Slipbox.PromptConfirmDelete
-    , label = Element.text "Delete"
-    }
-
-dismissButton: Item.Item -> Element Msg
-dismissButton item =
-  Element.Input.button
-    [ Element.width Element.fill
-    , Element.height Element.fill
-    , Element.Font.heavy
-    ]
-    { onPress = Just <| DismissItem item
-    , label = Element.text "X"
-    }
-
-contentInput: Item.Item -> String -> Element Msg
-contentInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Content"
-
-discussionInput: Item.Item -> String -> Element Msg
-discussionInput item input = multiline (\s -> UpdateItem item <| Slipbox.UpdateContent s ) input "Discussion"
-
-sourceInput: Int -> Item.Item -> String -> (List String) -> Element Msg
-sourceInput itemId item input suggestions =
-  let
-    sourceInputid = "Source: " ++ (String.fromInt itemId)
-    dataitemId = "Sources: " ++ (String.fromInt itemId)
-    suggestionsWithNA = "n/a" :: suggestions
-  in
-    Element.html
-      <| Html.div
-        []
-        [ Html.label 
-          [ Html.Attributes.for sourceInputid ]
-          [ Html.text "Source: " ]
-        , Html.input
-          [ Html.Attributes.list dataitemId 
-          , Html.Attributes.name sourceInputid
-          , Html.Attributes.id sourceInputid 
-          , Html.Attributes.value input
-          , Html.Events.onInput (\s -> UpdateItem item <| Slipbox.UpdateSource s)
-          ]
-          []
-        , Html.datalist 
-          [ Html.Attributes.id dataitemId ]
-          <| List.map toHtmlOption suggestionsWithNA
-        ]
-
-chooseSubmitButton : Item.Item -> Bool -> Element Msg
-chooseSubmitButton item canSubmit =
-  if canSubmit then
-    submitButton item
-  else
-    Element.none
-
-submitButton : Item.Item -> Element Msg
-submitButton item =
-  smallOldLavenderButton
-    { onPress = Just <| UpdateItem item Slipbox.Submit
-    , label = Element.text "Submit"
-    }
-
-confirmButton : Item.Item -> Element Msg
-confirmButton item =
-  smallRedButton
-    { onPress = Just <| UpdateItem item Slipbox.Submit
-    , label = Element.text "Confirm"
-    }
-
-cancelButton : Item.Item -> Element Msg
-cancelButton item =
-  smallRedButton
-    { onPress = Just <| UpdateItem item Slipbox.Cancel
-    , label = Element.text "Cancel"
-    }
-
-titleInput : Item.Item -> String -> ( List String ) -> Element Msg
-titleInput item input existingTitles =
-  let
-    titleLabel =
-      if SourceTitle.validateNewSourceTitle existingTitles input then
-        "Title"
-      else if String.isEmpty input then
-        "Title"
-      else
-        "Title is not valid. Titles must be unique and Please use a different title than 'n/a'"
-  in
-  multiline (\s -> UpdateItem item <| Slipbox.UpdateTitle s ) input titleLabel
-
-authorInput : Item.Item -> String -> Element Msg
-authorInput item input = multiline ( \s -> UpdateItem item <| Slipbox.UpdateAuthor s ) input "Author"
-
--- MISC VIEW FUNCTIONS
-
-toParagraph : String -> Element Msg
-toParagraph content =
-  Element.paragraph [] [ Element.text content ]
-
-labeledViewBuilder : String -> String -> Element Msg
-labeledViewBuilder label content =
-  Element.textColumn
-    [ Element.spacingXY 0 8, Element.width Element.fill ]
-    [ Element.el [ Element.Font.underline ] <| Element.text label
-    , Element.paragraph [ Element.width Element.fill ] [ Element.text content ] ]
-
-noteContentView : String -> Element Msg
-noteContentView noteContent = labeledViewBuilder "Content" noteContent
-
-noteSourceView : SourceTitle.SourceTitle -> Element Msg
-noteSourceView sourceTitle =
-  case SourceTitle.getTitle sourceTitle of
-    Just title -> labeledViewBuilder "Source" title
-    Nothing -> Element.text "No source"
-
-discussionView : String -> Element Msg
-discussionView sourceTitle = labeledViewBuilder "Discussion" sourceTitle
-
-sourceTitleView : String -> Element Msg
-sourceTitleView sourceTitle = labeledViewBuilder "Title" sourceTitle
-
-sourceAuthorView : String -> Element Msg
-sourceAuthorView sourceAuthor = labeledViewBuilder "Author" sourceAuthor
-
-sourceContentView : String -> Element Msg
-sourceContentView sourceContent =
-  Element.column
-    [ Element.spacingXY 0 8
-    , Element.scrollbarY
-    , Element.height <| Element.maximum 300 Element.fill
-    ]
-    [ Element.el [ Element.Font.underline ] <| Element.text "Content"
-    , Element.textColumn
-      [ Element.spacingXY 0 16]
-      ( List.map toParagraph <| String.lines sourceContent )
-    ]
-
--- VIEW BUTTON BUILDER
-
-smallRedButton : { onPress: Maybe Msg, label: Element Msg } -> Element Msg
-smallRedButton buttonFunction =
-  Element.Input.button
-    [ Element.Background.color Color.indianred
-    , Element.mouseOver
-        [ Element.Background.color Color.thistle ]
-    , Element.padding 8
-    , Element.Font.heavy
-    ]
-    buttonFunction
-
-smallOldLavenderButton : { onPress: Maybe Msg, label: Element Msg } -> Element Msg
-smallOldLavenderButton buttonFunction =
-  Element.Input.button
-    [ Element.Background.color Color.oldLavenderRegular
-    , Element.mouseOver
-      [ Element.Background.color Color.oldLavenderHighlighted
-      , Element.Font.color Color.oldLavenderRegular
-      ]
-    , Element.centerX
-    , Element.height Element.fill
-    , Element.padding 8
-    , Element.Font.heavy
-    ]
-    buttonFunction
 
 -- Element Helpers
 
