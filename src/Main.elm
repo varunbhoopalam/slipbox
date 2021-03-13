@@ -190,6 +190,9 @@ type Msg
   | DiscoveryModeStartNewDiscussion
   | EditModeUpdateInput String
   | EditModeSelectNote Note.Note
+  | EditModeConfirmBreakLink Note.Note Link.Link
+  | EditModeSelectNoteOnGraph Note.Note
+  | EditModeCancel
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -364,7 +367,13 @@ update message model =
 
     EditModeUpdateInput input -> editModeLambda <| Edit.updateInput input
     EditModeSelectNote note -> ( setTab ( EditModeTab <| Edit.select note ) model, Cmd.none )
-
+    EditModeConfirmBreakLink note link ->
+      case getSlipbox model of
+        Just slipbox ->
+          ( setTab ( EditModeTab <| Edit.confirmBreakLink note link slipbox ) model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
+    EditModeSelectNoteOnGraph note -> editModeLambda <| Edit.selectNoteOnGraph note
+    EditModeCancel -> editModeLambda Edit.cancel
 
 newContent : Content
 newContent =
@@ -573,7 +582,9 @@ tabView content =
                 Element.el [ Element.padding 8, Element.width Element.fill, Element.Border.width 1, Element.spacingXY 8 8 ]
                   <| heading "No Source"
             toDiscussionButton ( n, _ ) = listButton Nothing ( textWrap <| Note.getContent n )
-            toLinkedNoteButton ( n, _ ) = listButton ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
+            toLinkedNoteButton ( n, l ) =
+              listButtonWithBreakLink
+                ( Just <| EditModeConfirmBreakLink n l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
             discussions = case directlyLinkedDiscussions of
               Just linkedDiscussions -> Element.column
                 [ Element.width Element.fill
@@ -588,7 +599,7 @@ tabView content =
                   [ Element.width Element.fill
                   , Element.height Element.fill
                   ]
-                  [ Element.el [ Element.padding 8 ] <| headingCenter "Linked Notes"
+                  [ Element.el [ Element.padding 8 ] <| heading "Linked Notes"
                   , Element.column
                     [ Element.scrollbarY, Element.width Element.fill, Element.height Element.fill] <|
                     List.map toLinkedNoteButton tuples
@@ -603,7 +614,7 @@ tabView content =
               [ Element.width Element.fill
               , Element.height Element.fill
               ]
-              [ Element.el [ Element.padding 8 ] <| headingCenter "Note"
+              [ Element.el [ Element.padding 8 ] <| heading "Note"
               , textLambda "Content" <| Note.getContent note
               , source
               , discussions
@@ -611,6 +622,64 @@ tabView content =
             , linkedNotes
             ]
 
+        Edit.ViewConfirmBreakLink linkToBreak graph selectedNote ->
+          let
+            viewGraph = Element.html <|
+              Svg.svg
+                [ Svg.Attributes.width "100%"
+                , Svg.Attributes.height "100%"
+                , Svg.Attributes.viewBox <| computeViewbox graph.positions
+                , Svg.Attributes.style "position: absolute"
+                ] <|
+                List.concat
+                  [ List.filterMap (toGraphLinkDeleteLink graph.positions linkToBreak ) graph.links
+                  , List.map ( \n -> viewGraphNote EditModeSelectNoteOnGraph n ) <|
+                    List.map ( toCreateTabGraphNote [] selectedNote ) graph.positions
+                  ]
+            container title note = Element.textColumn
+              [ Element.width Element.fill
+              , Element.Border.width 1
+              , Element.padding 8
+              , Element.spacingXY 10 10
+              ]
+              [ heading title
+              , Element.paragraph [] [ Element.text <| Note.getContent note ]
+              ]
+          in
+          Element.row
+            [ Element.inFront <|
+              Element.el
+                [ Element.padding 16
+                , Element.alignRight
+                , Element.alignTop
+                ] <|
+                Element.Input.button
+                  [ Element.Border.width 1
+                  , Element.padding 8
+                  ]
+                  { onPress = Just EditModeCancel
+                  , label = Element.text "Cancel"
+                  }
+            , Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ container "Selected Note" selectedNote
+              , selectedNoteLegend
+              , discussionLegend
+              , circleLegend
+              , linkBreakLegend
+              ]
+            , Element.el
+              [ Element.width biggerElement
+              , Element.height Element.fill
+              , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
+              ]
+              viewGraph
+            ]
 
     CreateModeTab create ->
       case Create.view create of
@@ -1313,6 +1382,39 @@ toCreateTabGraphLink notePositions link =
   in
   Maybe.map2 line (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
 
+toGraphLinkDeleteLink: (List NotePosition) -> Link.Link -> Link.Link -> ( Maybe ( Svg.Svg Msg ) )
+toGraphLinkDeleteLink notePositions linkToDelete link =
+  let
+    maybeGetNoteByIdentifier =
+      \identifier ->
+        List.head <|
+          List.filter
+          ( \notePosition ->
+            identifier link notePosition.note
+          )
+          notePositions
+    line note1 note2 =
+      if Link.is linkToDelete link then
+        Svg.line
+          [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+          , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+          , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+          , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+          , Svg.Attributes.stroke "rgb(0,0,0)"
+          , Svg.Attributes.strokeWidth "2"
+          , Svg.Attributes.strokeDasharray "5,5"
+          ] []
+      else
+        Svg.line
+          [ Svg.Attributes.x1 <| String.fromFloat <| note1.x
+          , Svg.Attributes.y1 <| String.fromFloat <| note1.y
+          , Svg.Attributes.x2 <| String.fromFloat <| note2.x
+          , Svg.Attributes.y2 <| String.fromFloat <| note2.y
+          , Svg.Attributes.stroke "rgb(0,0,0)"
+          , Svg.Attributes.strokeWidth "2" ] []
+  in
+  Maybe.map2 line (maybeGetNoteByIdentifier Link.isSource) (maybeGetNoteByIdentifier Link.isTarget)
+
 createTabSourceInput: String -> (List String) -> Element Msg
 createTabSourceInput input suggestions =
   let
@@ -1558,6 +1660,16 @@ listButton onPress label =
     , label = label
     }
 
+listButtonWithBreakLink : Maybe Msg -> Maybe Msg -> Element Msg -> Element Msg
+listButtonWithBreakLink cancelPress onPress label =
+  Element.row
+    [ Element.Border.width 2, Element.width Element.fill ]
+    [ Element.el [ Element.width biggerElement] <| listButton onPress label
+    , Element.Input.button [ Element.width smallerElement, Element.height Element.fill ]
+      { onPress = cancelPress
+      , label = Element.el [ Element.centerX, Element.centerY ] <| Element.text "Break Link"}
+    ]
+
 column : List ( Element Msg ) -> Element Msg
 column contents =
   Element.column
@@ -1622,6 +1734,17 @@ svgLine x1 x2 y1 y2 =
     ]
     []
 
+svgDashedLine x1 x2 y1 y2 =
+  Svg.line
+    [ Svg.Attributes.x1 x1
+    , Svg.Attributes.x2 x2
+    , Svg.Attributes.y1 y1
+    , Svg.Attributes.y2 y2
+    , Svg.Attributes.stroke "black"
+    , Svg.Attributes.strokeDasharray "5,5"
+    ]
+    []
+
 discussionLegend =
   Element.row
     []
@@ -1647,6 +1770,13 @@ circleLegend =
     []
     [ Element.html <| svgLegend [ svgCircle "20" "20" "10" ]
     , Element.text "Regular Note"
+    ]
+
+linkBreakLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgDashedLine "10" "30" "20" "20"]
+    , Element.text "Link to Break"
     ]
 
 linkedCircleLegend =
