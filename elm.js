@@ -5247,6 +5247,12 @@ var $author$project$Edit$cancel = function (edit) {
 		return edit;
 	}
 };
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $author$project$Main$changesMade = _Platform_outgoingPort(
+	'changesMade',
+	function ($) {
+		return $elm$json$Json$Encode$null;
+	});
 var $author$project$Slipbox$Slipbox = $elm$core$Basics$identity;
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
@@ -6046,7 +6052,6 @@ var $author$project$Create$noSource = F2(
 			return _Utils_Tuple2(slipbox, create);
 		}
 	});
-var $elm$json$Json$Encode$null = _Json_encodeNull;
 var $author$project$Main$open = _Platform_outgoingPort(
 	'open',
 	function ($) {
@@ -8371,7 +8376,7 @@ var $author$project$Main$update = F2(
 								$author$project$Main$setSlipbox,
 								updatedSlipbox,
 								A2(setter, updatedModule, model)),
-							$elm$core$Platform$Cmd$none);
+							$author$project$Main$changesMade(0));
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
@@ -19217,31 +19222,6 @@ var $author$project$Main$tabView = function (content) {
 							_List_fromArray(
 								[$mdgriffith$elm_ui$Element$centerX]),
 							$mdgriffith$elm_ui$Element$text('Designate New Discussion Entry Point'))) : $mdgriffith$elm_ui$Element$none);
-					var container = F3(
-						function (title, note, element) {
-							return A2(
-								$mdgriffith$elm_ui$Element$textColumn,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-										$mdgriffith$elm_ui$Element$Border$width(1),
-										$mdgriffith$elm_ui$Element$padding(8),
-										A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
-									]),
-								_List_fromArray(
-									[
-										$author$project$Main$heading(title),
-										A2(
-										$mdgriffith$elm_ui$Element$paragraph,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$mdgriffith$elm_ui$Element$text(
-												$author$project$Note$getContent(note))
-											])),
-										element
-									]));
-						});
 					return A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(

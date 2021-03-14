@@ -228,7 +228,7 @@ update message model =
                 ( updatedSlipbox, updatedModule ) = updater slipbox create
               in
               ( setSlipbox updatedSlipbox ( setter updatedModule model )
-              , Cmd.none
+              , changesMade ()
               )
             Nothing -> ( model, Cmd.none )
         Nothing -> ( model, Cmd.none )
@@ -379,6 +379,7 @@ newContent =
 
 port open : () -> Cmd msg
 port save : String -> Cmd msg
+port changesMade : () -> Cmd msg
 port fileContent : (String -> msg) -> Sub msg
 port fileSaved : (Int -> msg) -> Sub msg
 
@@ -1035,16 +1036,6 @@ tabView content =
                   ( Element.el [ Element.centerX ] <| Element.text "Designate New Discussion Entry Point" )
               else
                 Element.none
-            container title note element = Element.textColumn
-              [ Element.width Element.fill
-              , Element.Border.width 1
-              , Element.padding 8
-              , Element.spacingXY 10 10
-              ]
-              [ heading title
-              , Element.paragraph [] [ Element.text <| Note.getContent note ]
-              , element
-              ]
           in
           Element.row
             [ Element.width Element.fill
