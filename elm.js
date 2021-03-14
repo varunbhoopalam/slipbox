@@ -15477,7 +15477,13 @@ var $author$project$Main$leftNav = F3(
 						_List_fromArray(
 							[
 								$author$project$Main$barsButton,
-								A4($author$project$Main$leftNavContractedButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$FileDownload, $author$project$Main$saveIcon, false)
+								A4($author$project$Main$leftNavContractedButtonLambda, $mdgriffith$elm_ui$Element$alignBottom, $author$project$Main$FileDownload, $author$project$Main$saveIcon, false),
+								A4(
+								$author$project$Main$leftNavContractedButtonLambda,
+								$mdgriffith$elm_ui$Element$alignBottom,
+								$author$project$Main$ChangeTab(1),
+								$author$project$Main$plusIcon,
+								A2($author$project$Main$sameTab, selectedTab, 1))
 							])),
 						A2(
 						$mdgriffith$elm_ui$Element$column,
