@@ -620,7 +620,7 @@ tabView content =
               , textLambda "Content" <| Note.getContent note
               , source
               , discussions
-              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Back")
+              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
             , linkedNotes
             ]
@@ -663,7 +663,7 @@ tabView content =
               ]
               [ Element.el [ Element.padding 8 ] <| heading "Discussion"
               , textLambda "Content" <| Note.getContent note
-              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Back")
+              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
             , linkedNotes
             ]
@@ -1054,8 +1054,28 @@ tabView content =
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ container "Selected Discussion" discussion Element.none
-              , container "Selected Note" selectedNote viewDiscussionNode
+              [ Element.textColumn
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Selected Discussion"
+                , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
+                ]
+              , Element.textColumn
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Selected Note"
+                , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                , button
+                  ( Just <| EditModeSelectNote selectedNote )
+                  ( Element.el [ Element.centerX ] <| Element.text "Open Note")
+                , viewDiscussionNode
+                ]
               , button ( Just DiscoveryModeBack ) ( Element.text "Back" )
               ]
             , svgGraph discussionGraph ViewDiscussionView selectedNote hoverNote

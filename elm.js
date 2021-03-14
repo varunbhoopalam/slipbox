@@ -18434,7 +18434,7 @@ var $author$project$Main$tabView = function (content) {
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$EditModeSelectNoteScreen),
-										$mdgriffith$elm_ui$Element$text('Back'))
+										$mdgriffith$elm_ui$Element$text('Select Note Screen'))
 									])),
 								linkedNotes
 							]));
@@ -18544,7 +18544,7 @@ var $author$project$Main$tabView = function (content) {
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$EditModeSelectNoteScreen),
-										$mdgriffith$elm_ui$Element$text('Back'))
+										$mdgriffith$elm_ui$Element$text('Select Note Screen'))
 									])),
 								linkedNotes
 							]));
@@ -19260,8 +19260,58 @@ var $author$project$Main$tabView = function (content) {
 									]),
 								_List_fromArray(
 									[
-										A3(container, 'Selected Discussion', discussion, $mdgriffith$elm_ui$Element$none),
-										A3(container, 'Selected Note', selectedNote, viewDiscussionNode),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(8),
+												A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+											]),
+										_List_fromArray(
+											[
+												$author$project$Main$heading('Selected Discussion'),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text(
+														$author$project$Note$getContent(discussion))
+													]))
+											])),
+										A2(
+										$mdgriffith$elm_ui$Element$textColumn,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+												$mdgriffith$elm_ui$Element$Border$width(1),
+												$mdgriffith$elm_ui$Element$padding(8),
+												A2($mdgriffith$elm_ui$Element$spacingXY, 10, 10)
+											]),
+										_List_fromArray(
+											[
+												$author$project$Main$heading('Selected Note'),
+												A2(
+												$mdgriffith$elm_ui$Element$paragraph,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$mdgriffith$elm_ui$Element$text(
+														$author$project$Note$getContent(selectedNote))
+													])),
+												A2(
+												$author$project$Main$button,
+												$elm$core$Maybe$Just(
+													$author$project$Main$EditModeSelectNote(selectedNote)),
+												A2(
+													$mdgriffith$elm_ui$Element$el,
+													_List_fromArray(
+														[$mdgriffith$elm_ui$Element$centerX]),
+													$mdgriffith$elm_ui$Element$text('Open Note'))),
+												viewDiscussionNode
+											])),
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack),
