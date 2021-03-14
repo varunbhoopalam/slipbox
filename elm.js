@@ -4804,7 +4804,7 @@ var $elm$core$Array$treeFromBuilder = F2(
 	});
 var $elm$core$Array$builderToArray = F2(
 	function (reverseNodeList, builder) {
-		if (!builder.n) {
+		if (!builder.m) {
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
 				$elm$core$Elm$JsArray$length(builder.r),
@@ -4812,11 +4812,11 @@ var $elm$core$Array$builderToArray = F2(
 				$elm$core$Elm$JsArray$empty,
 				builder.r);
 		} else {
-			var treeLen = builder.n * $elm$core$Array$branchFactor;
+			var treeLen = builder.m * $elm$core$Array$branchFactor;
 			var depth = $elm$core$Basics$floor(
 				A2($elm$core$Basics$logBase, $elm$core$Array$branchFactor, treeLen - 1));
 			var correctNodeList = reverseNodeList ? $elm$core$List$reverse(builder.s) : builder.s;
-			var tree = A2($elm$core$Array$treeFromBuilder, correctNodeList, builder.n);
+			var tree = A2($elm$core$Array$treeFromBuilder, correctNodeList, builder.m);
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
 				$elm$core$Elm$JsArray$length(builder.r) + treeLen,
@@ -4835,7 +4835,7 @@ var $elm$core$Array$initializeHelp = F5(
 				return A2(
 					$elm$core$Array$builderToArray,
 					false,
-					{s: nodeList, n: (len / $elm$core$Array$branchFactor) | 0, r: tail});
+					{s: nodeList, m: (len / $elm$core$Array$branchFactor) | 0, r: tail});
 			} else {
 				var leaf = $elm$core$Array$Leaf(
 					A3($elm$core$Elm$JsArray$initialize, $elm$core$Array$branchFactor, fromIndex, fn));
@@ -5209,7 +5209,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 };
 var $author$project$Main$Content = F3(
 	function (tab, slipbox, sideNavState) {
-		return {cj: sideNavState, Y: slipbox, p: tab};
+		return {cj: sideNavState, Y: slipbox, o: tab};
 	});
 var $author$project$Main$CreateModeTab = function (a) {
 	return {$: 1, a: a};
@@ -5660,7 +5660,7 @@ var $author$project$Slipbox$encode = function (slipbox) {
 var $author$project$Main$getCreate = function (model) {
 	if (model.$ === 2) {
 		var content = model.a;
-		var _v1 = content.p;
+		var _v1 = content.o;
 		if (_v1.$ === 1) {
 			var create = _v1.a;
 			return $elm$core$Maybe$Just(create);
@@ -5674,7 +5674,7 @@ var $author$project$Main$getCreate = function (model) {
 var $author$project$Main$getDiscovery = function (model) {
 	if (model.$ === 2) {
 		var content = model.a;
-		var _v1 = content.p;
+		var _v1 = content.o;
 		if (_v1.$ === 2) {
 			var create = _v1.a;
 			return $elm$core$Maybe$Just(create);
@@ -5688,7 +5688,7 @@ var $author$project$Main$getDiscovery = function (model) {
 var $author$project$Main$getEdit = function (model) {
 	if (model.$ === 2) {
 		var content = model.a;
-		var _v1 = content.p;
+		var _v1 = content.o;
 		if (!_v1.$) {
 			var create = _v1.a;
 			return $elm$core$Maybe$Just(create);
@@ -5725,6 +5725,26 @@ var $author$project$Create$hover = F2(
 				$elm$core$Maybe$Just(note));
 		} else {
 			return create;
+		}
+	});
+var $author$project$Discovery$ViewDiscussion = F4(
+	function (a, b, c, d) {
+		return {$: 0, a: a, b: b, c: c, d: d};
+	});
+var $author$project$Discovery$hover = F2(
+	function (note, discovery) {
+		if (!discovery.$) {
+			var discussion = discovery.a;
+			var selectedNote = discovery.b;
+			var graph = discovery.c;
+			return A4(
+				$author$project$Discovery$ViewDiscussion,
+				discussion,
+				selectedNote,
+				graph,
+				$elm$core$Maybe$Just(note));
+		} else {
+			return discovery;
 		}
 	});
 var $author$project$Edit$ConfirmBreakLink = F5(
@@ -6075,16 +6095,13 @@ var $author$project$Create$selectNote = F2(
 			return create;
 		}
 	});
-var $author$project$Discovery$ViewDiscussion = F3(
-	function (a, b, c) {
-		return {$: 0, a: a, b: b, c: c};
-	});
 var $author$project$Discovery$selectNote = F2(
 	function (note, discovery) {
 		if (!discovery.$) {
 			var discussion = discovery.a;
 			var graph = discovery.c;
-			return A3($author$project$Discovery$ViewDiscussion, discussion, note, graph);
+			var hoverNote = discovery.d;
+			return A4($author$project$Discovery$ViewDiscussion, discussion, note, graph, hoverNote);
 		} else {
 			return discovery;
 		}
@@ -6135,13 +6152,13 @@ var $author$project$Main$setCreate = F2(
 	function (create, model) {
 		if (model.$ === 2) {
 			var content = model.a;
-			var _v1 = content.p;
+			var _v1 = content.o;
 			if (_v1.$ === 1) {
 				return $author$project$Main$Session(
 					_Utils_update(
 						content,
 						{
-							p: $author$project$Main$CreateModeTab(create)
+							o: $author$project$Main$CreateModeTab(create)
 						}));
 			} else {
 				return model;
@@ -6154,13 +6171,13 @@ var $author$project$Main$setDiscovery = F2(
 	function (create, model) {
 		if (model.$ === 2) {
 			var content = model.a;
-			var _v1 = content.p;
+			var _v1 = content.o;
 			if (_v1.$ === 2) {
 				return $author$project$Main$Session(
 					_Utils_update(
 						content,
 						{
-							p: $author$project$Main$DiscoveryModeTab(create)
+							o: $author$project$Main$DiscoveryModeTab(create)
 						}));
 			} else {
 				return model;
@@ -6173,13 +6190,13 @@ var $author$project$Main$setEdit = F2(
 	function (create, model) {
 		if (model.$ === 2) {
 			var content = model.a;
-			var _v1 = content.p;
+			var _v1 = content.o;
 			if (!_v1.$) {
 				return $author$project$Main$Session(
 					_Utils_update(
 						content,
 						{
-							p: $author$project$Main$EditModeTab(create)
+							o: $author$project$Main$EditModeTab(create)
 						}));
 			} else {
 				return model;
@@ -6207,7 +6224,7 @@ var $author$project$Main$setTab = F2(
 			return $author$project$Main$Session(
 				_Utils_update(
 					content,
-					{p: tab}));
+					{o: tab}));
 		} else {
 			return model;
 		}
@@ -6234,6 +6251,16 @@ var $author$project$Create$stopHover = function (create) {
 		return A6($author$project$Create$FindLinksForDiscussion, coachingModal, graph, createModeInternal, question, selectedNote, $elm$core$Maybe$Nothing);
 	} else {
 		return create;
+	}
+};
+var $author$project$Discovery$stopHover = function (discovery) {
+	if (!discovery.$) {
+		var discussion = discovery.a;
+		var selectedNote = discovery.b;
+		var graph = discovery.c;
+		return A4($author$project$Discovery$ViewDiscussion, discussion, selectedNote, graph, $elm$core$Maybe$Nothing);
+	} else {
+		return discovery;
 	}
 };
 var $author$project$Edit$stopHover = function (edit) {
@@ -7997,12 +8024,13 @@ var $author$project$Graph$simulatePositions = function (_v0) {
 };
 var $author$project$Discovery$viewDiscussion = F3(
 	function (discussion, slipbox, _v0) {
-		return A3(
+		return A4(
 			$author$project$Discovery$ViewDiscussion,
 			discussion,
 			discussion,
 			$author$project$Graph$simulatePositions(
-				A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, discussion, slipbox)));
+				A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, discussion, slipbox)),
+			$elm$core$Maybe$Nothing);
 	});
 var $author$project$Discovery$submit = F2(
 	function (slipbox, discovery) {
@@ -8440,7 +8468,7 @@ var $author$project$Main$update = F2(
 					var content = model.a;
 					switch (tab) {
 						case 0:
-							var _v9 = content.p;
+							var _v9 = content.o;
 							if (!_v9.$) {
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							} else {
@@ -8449,12 +8477,12 @@ var $author$project$Main$update = F2(
 										_Utils_update(
 											content,
 											{
-												p: $author$project$Main$EditModeTab($author$project$Edit$init)
+												o: $author$project$Main$EditModeTab($author$project$Edit$init)
 											})),
 									$elm$core$Platform$Cmd$none);
 							}
 						case 1:
-							var _v10 = content.p;
+							var _v10 = content.o;
 							if (_v10.$ === 1) {
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							} else {
@@ -8463,12 +8491,12 @@ var $author$project$Main$update = F2(
 										_Utils_update(
 											content,
 											{
-												p: $author$project$Main$CreateModeTab($author$project$Create$init)
+												o: $author$project$Main$CreateModeTab($author$project$Create$init)
 											})),
 									$elm$core$Platform$Cmd$none);
 							}
 						default:
-							var _v11 = content.p;
+							var _v11 = content.o;
 							if (_v11.$ === 2) {
 								return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 							} else {
@@ -8477,7 +8505,7 @@ var $author$project$Main$update = F2(
 										_Utils_update(
 											content,
 											{
-												p: $author$project$Main$DiscoveryModeTab($author$project$Discovery$init)
+												o: $author$project$Main$DiscoveryModeTab($author$project$Discovery$init)
 											})),
 									$elm$core$Platform$Cmd$none);
 							}
@@ -8575,10 +8603,16 @@ var $author$project$Main$update = F2(
 			case 30:
 				return discoveryModeLambda($author$project$Discovery$startNewDiscussion);
 			case 31:
+				var note = message.a;
+				return discoveryModeLambda(
+					$author$project$Discovery$hover(note));
+			case 32:
+				return discoveryModeLambda($author$project$Discovery$stopHover);
+			case 33:
 				var input = message.a;
 				return editModeLambda(
 					$author$project$Edit$updateInput(input));
-			case 32:
+			case 34:
 				var note = message.a;
 				return _Utils_Tuple2(
 					A2(
@@ -8587,7 +8621,7 @@ var $author$project$Main$update = F2(
 							$author$project$Edit$select(note)),
 						model),
 					$elm$core$Platform$Cmd$none);
-			case 33:
+			case 35:
 				var note = message.a;
 				var link = message.b;
 				var _v15 = $author$project$Main$getSlipbox(model);
@@ -8603,19 +8637,19 @@ var $author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 34:
+			case 36:
 				var note = message.a;
 				return editModeLambda(
 					$author$project$Edit$selectNoteOnGraph(note));
-			case 35:
-				return editModeLambda($author$project$Edit$cancel);
-			case 36:
-				return editModeAndSlipboxLambda($author$project$Edit$confirm);
 			case 37:
+				return editModeLambda($author$project$Edit$cancel);
+			case 38:
+				return editModeAndSlipboxLambda($author$project$Edit$confirm);
+			case 39:
 				var note = message.a;
 				return editModeLambda(
 					$author$project$Edit$hover(note));
-			case 38:
+			case 40:
 				return editModeLambda($author$project$Edit$stopHover);
 			default:
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -14331,7 +14365,7 @@ var $elm$html$Html$Attributes$target = $elm$html$Html$Attributes$stringProperty(
 var $mdgriffith$elm_ui$Element$newTabLink = F2(
 	function (attrs, _v0) {
 		var url = _v0.h9;
-		var label = _v0.m;
+		var label = _v0.q;
 		return A4(
 			$mdgriffith$elm_ui$Internal$Model$element,
 			$mdgriffith$elm_ui$Internal$Model$asEl,
@@ -14374,7 +14408,7 @@ var $author$project$Main$aboutButton = A2(
 	_List_fromArray(
 		[$mdgriffith$elm_ui$Element$centerY]),
 	{
-		m: A2(
+		q: A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
 				[$mdgriffith$elm_ui$Element$Font$underline]),
@@ -14498,8 +14532,8 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 };
 var $mdgriffith$elm_ui$Element$Input$button = F2(
 	function (attrs, _v0) {
-		var onPress = _v0.t;
-		var label = _v0.m;
+		var onPress = _v0.v;
+		var label = _v0.q;
 		return A4(
 			$mdgriffith$elm_ui$Internal$Model$element,
 			$mdgriffith$elm_ui$Internal$Model$asEl,
@@ -14964,7 +14998,7 @@ var $author$project$Main$barsButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_Nil,
 	{
-		m: A2(
+		q: A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_Nil,
 			$mdgriffith$elm_ui$Element$html(
@@ -14973,7 +15007,7 @@ var $author$project$Main$barsButton = A2(
 					_List_fromArray(
 						[$lattyware$elm_fontawesome$FontAwesome$Attributes$fa2x]),
 					$lattyware$elm_fontawesome$FontAwesome$Solid$bars))),
-		t: $elm$core$Maybe$Just($author$project$Main$ToggleSideNav)
+		v: $elm$core$Maybe$Just($author$project$Main$ToggleSideNav)
 	});
 var $lattyware$elm_fontawesome$FontAwesome$Solid$brain = A5(
 	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
@@ -15046,8 +15080,8 @@ var $author$project$Main$leftNavContractedButtonLambda = F4(
 				$mdgriffith$elm_ui$Element$Input$button,
 				buttonAttributes,
 				{
-					m: icon,
-					t: $elm$core$Maybe$Just(msg)
+					q: icon,
+					v: $elm$core$Maybe$Just(msg)
 				}));
 	});
 var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
@@ -15143,7 +15177,7 @@ var $author$project$Main$leftNavExpandedButtonLambda = F5(
 				$mdgriffith$elm_ui$Element$Input$button,
 				buttonAttributesMaybeWithBackground,
 				{
-					m: A2(
+					q: A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
 							[
@@ -15154,7 +15188,7 @@ var $author$project$Main$leftNavExpandedButtonLambda = F5(
 								icon,
 								$mdgriffith$elm_ui$Element$text(text)
 							])),
-					t: $elm$core$Maybe$Just(msg)
+					v: $elm$core$Maybe$Just(msg)
 				}));
 	});
 var $mdgriffith$elm_ui$Internal$Model$MoveY = function (a) {
@@ -15357,7 +15391,7 @@ var $author$project$Main$leftNav = F3(
 											$mdgriffith$elm_ui$Element$padding(1)
 										]),
 									{
-										m: A2(
+										q: A2(
 											$mdgriffith$elm_ui$Element$row,
 											_List_fromArray(
 												[
@@ -15369,7 +15403,7 @@ var $author$project$Main$leftNav = F3(
 													$author$project$Main$saveIcon,
 													$mdgriffith$elm_ui$Element$text('Save')
 												])),
-										t: $elm$core$Maybe$Just($author$project$Main$FileDownload)
+										v: $elm$core$Maybe$Just($author$project$Main$FileDownload)
 									})),
 								A5(
 								$author$project$Main$leftNavExpandedButtonLambda,
@@ -15480,9 +15514,6 @@ var $author$project$Main$DiscoveryModeBack = {$: 27};
 var $author$project$Main$DiscoveryModeSelectDiscussion = function (a) {
 	return {$: 26, a: a};
 };
-var $author$project$Main$DiscoveryModeSelectNote = function (a) {
-	return {$: 28, a: a};
-};
 var $author$project$Main$DiscoveryModeStartNewDiscussion = {$: 30};
 var $author$project$Main$DiscoveryModeSubmit = {$: 29};
 var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
@@ -15491,22 +15522,21 @@ var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
 var $author$project$Main$DiscussionChosenView = function (a) {
 	return {$: 1, a: a};
 };
-var $author$project$Main$EditModeCancel = {$: 35};
-var $author$project$Main$EditModeConfirm = {$: 36};
+var $author$project$Main$EditModeCancel = {$: 37};
+var $author$project$Main$EditModeConfirm = {$: 38};
 var $author$project$Main$EditModeConfirmBreakLink = F2(
 	function (a, b) {
-		return {$: 33, a: a, b: b};
+		return {$: 35, a: a, b: b};
 	});
 var $author$project$Main$EditModeSelectNote = function (a) {
-	return {$: 32, a: a};
+	return {$: 34, a: a};
 };
 var $author$project$Main$EditModeUpdateInput = function (a) {
-	return {$: 31, a: a};
+	return {$: 33, a: a};
 };
 var $author$project$Create$Note = function (a) {
 	return {$: 0, a: a};
 };
-var $author$project$Main$Placeholder = {$: 39};
 var $author$project$Create$SourceAuthor = function (a) {
 	return {$: 2, a: a};
 };
@@ -15516,10 +15546,7 @@ var $author$project$Create$SourceContent = function (a) {
 var $author$project$Create$SourceTitle = function (a) {
 	return {$: 1, a: a};
 };
-var $mdgriffith$elm_ui$Internal$Model$Right = 2;
-var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX(2);
-var $mdgriffith$elm_ui$Internal$Model$Top = 0;
-var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY(0);
+var $author$project$Main$ViewDiscussionView = {$: 2};
 var $mdgriffith$elm_ui$Internal$Flag$fontWeight = $mdgriffith$elm_ui$Internal$Flag$flag(13);
 var $mdgriffith$elm_ui$Element$Font$bold = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontWeight, $mdgriffith$elm_ui$Internal$Style$classes.f1);
 var $mdgriffith$elm_ui$Internal$Model$CenterX = 1;
@@ -15550,51 +15577,10 @@ var $author$project$Main$button = F2(
 					$mdgriffith$elm_ui$Element$padding(8),
 					$mdgriffith$elm_ui$Element$Border$width(1)
 				]),
-			{m: label, t: msg});
+			{q: label, v: msg});
 	});
 var $mdgriffith$elm_ui$Internal$Flag$fontAlignment = $mdgriffith$elm_ui$Internal$Flag$flag(12);
 var $mdgriffith$elm_ui$Element$Font$center = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontAlignment, $mdgriffith$elm_ui$Internal$Style$classes.hO);
-var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
-var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
-var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
-var $elm$svg$Svg$Attributes$r = _VirtualDom_attribute('r');
-var $author$project$Main$svgCircle = F3(
-	function (cx, cy, r) {
-		return A2(
-			$elm$svg$Svg$circle,
-			_List_fromArray(
-				[
-					$elm$svg$Svg$Attributes$r(r),
-					$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)'),
-					$elm$svg$Svg$Attributes$cx(cx),
-					$elm$svg$Svg$Attributes$cy(cy)
-				]),
-			_List_Nil);
-	});
-var $author$project$Main$svgLegend = function (contents) {
-	return A2(
-		$elm$svg$Svg$svg,
-		_List_fromArray(
-			[
-				$elm$svg$Svg$Attributes$height('40'),
-				$elm$svg$Svg$Attributes$width('40'),
-				$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
-			]),
-		contents);
-};
-var $author$project$Main$circleLegend = A2(
-	$mdgriffith$elm_ui$Element$row,
-	_List_Nil,
-	_List_fromArray(
-		[
-			$mdgriffith$elm_ui$Element$html(
-			$author$project$Main$svgLegend(
-				_List_fromArray(
-					[
-						A3($author$project$Main$svgCircle, '20', '20', '10')
-					]))),
-			$mdgriffith$elm_ui$Element$text('Regular Note')
-		]));
 var $author$project$Main$CreateTabToggleCoaching = {$: 9};
 var $author$project$Main$coaching = F2(
 	function (coachingOpen, text) {
@@ -15608,8 +15594,8 @@ var $author$project$Main$coaching = F2(
 					$mdgriffith$elm_ui$Element$padding(2)
 				]),
 			{
-				m: $mdgriffith$elm_ui$Element$text('Coaching'),
-				t: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleCoaching)
+				q: $mdgriffith$elm_ui$Element$text('Coaching'),
+				v: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleCoaching)
 			});
 		if (!coachingOpen) {
 			return toggleCoachingButton;
@@ -15636,68 +15622,6 @@ var $author$project$Main$column = function (contents) {
 				A2($mdgriffith$elm_ui$Element$spacingXY, 32, 32)
 			]),
 		contents);
-};
-var $author$project$Main$PositionExtremes = F4(
-	function (minX, minY, maxX, maxY) {
-		return {eP: maxX, eQ: maxY, a7: minX, a8: minY};
-	});
-var $elm$core$Maybe$map4 = F5(
-	function (func, ma, mb, mc, md) {
-		if (ma.$ === 1) {
-			return $elm$core$Maybe$Nothing;
-		} else {
-			var a = ma.a;
-			if (mb.$ === 1) {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var b = mb.a;
-				if (mc.$ === 1) {
-					return $elm$core$Maybe$Nothing;
-				} else {
-					var c = mc.a;
-					if (md.$ === 1) {
-						return $elm$core$Maybe$Nothing;
-					} else {
-						var d = md.a;
-						return $elm$core$Maybe$Just(
-							A4(func, a, b, c, d));
-					}
-				}
-			}
-		}
-	});
-var $author$project$Main$computeViewbox = function (notePositions) {
-	var yList = A2(
-		$elm$core$List$map,
-		function ($) {
-			return $.d0;
-		},
-		notePositions);
-	var xList = A2(
-		$elm$core$List$map,
-		function ($) {
-			return $.dZ;
-		},
-		notePositions);
-	var padding = 50;
-	var maybeExtremes = A5(
-		$elm$core$Maybe$map4,
-		$author$project$Main$PositionExtremes,
-		$elm$core$List$minimum(xList),
-		$elm$core$List$minimum(yList),
-		$elm$core$List$maximum(xList),
-		$elm$core$List$maximum(yList));
-	var formatViewbox = function (record) {
-		return $elm$core$String$fromFloat(record.a7) + (' ' + ($elm$core$String$fromFloat(record.a8) + (' ' + ($elm$core$String$fromFloat(record.a_) + (' ' + $elm$core$String$fromFloat(record.cO))))));
-	};
-	if (!maybeExtremes.$) {
-		var extremes = maybeExtremes.a;
-		return formatViewbox(
-			{cO: (extremes.eQ - extremes.a8) + (padding * 2), a7: extremes.a7 - padding, a8: extremes.a8 - padding, a_: (extremes.eP - extremes.a7) + (padding * 2)});
-	} else {
-		return formatViewbox(
-			{cO: 100, a7: 100, a8: 100, a_: 100});
-	}
 };
 var $elm$html$Html$datalist = _VirtualDom_node('datalist');
 var $elm$html$Html$Attributes$for = $elm$html$Html$Attributes$stringProperty('htmlFor');
@@ -15792,38 +15716,6 @@ var $author$project$Main$createTabSourceInput = F2(
 						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestions))
 					])));
 	});
-var $author$project$Main$svgRectTransform = F3(
-	function (x, y, transform) {
-		return A2(
-			$elm$svg$Svg$rect,
-			_List_fromArray(
-				[
-					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
-					$elm$svg$Svg$Attributes$width('20'),
-					$elm$svg$Svg$Attributes$height('20'),
-					$elm$svg$Svg$Attributes$x(x),
-					$elm$svg$Svg$Attributes$y(y),
-					$elm$svg$Svg$Attributes$transform(transform)
-				]),
-			_List_Nil);
-	});
-var $author$project$Main$svgRect = F2(
-	function (x, y) {
-		return A3($author$project$Main$svgRectTransform, x, y, '');
-	});
-var $author$project$Main$discussionLegend = A2(
-	$mdgriffith$elm_ui$Element$row,
-	_List_Nil,
-	_List_fromArray(
-		[
-			$mdgriffith$elm_ui$Element$html(
-			$author$project$Main$svgLegend(
-				_List_fromArray(
-					[
-						A2($author$project$Main$svgRect, '10', '10')
-					]))),
-			$mdgriffith$elm_ui$Element$text('Discussion (if not selected)')
-		]));
 var $author$project$Note$getContent = function (note) {
 	return $author$project$Note$getInfo(note).aM;
 };
@@ -15963,11 +15855,6 @@ var $author$project$Main$headingCenter = function (title) {
 			[$mdgriffith$elm_ui$Element$centerX]),
 		$author$project$Main$heading(title));
 };
-var $mdgriffith$elm_ui$Element$htmlAttribute = $mdgriffith$elm_ui$Internal$Model$Attr;
-var $mdgriffith$elm_ui$Internal$Model$InFront = 4;
-var $mdgriffith$elm_ui$Element$inFront = function (element) {
-	return A2($mdgriffith$elm_ui$Element$createNearby, 4, element);
-};
 var $author$project$Main$listButton = F2(
 	function (onPress, label) {
 		return A2(
@@ -15977,7 +15864,7 @@ var $author$project$Main$listButton = F2(
 					$mdgriffith$elm_ui$Element$Border$width(2),
 					$mdgriffith$elm_ui$Element$padding(8)
 				]),
-			{m: label, t: onPress});
+			{q: label, v: onPress});
 	});
 var $author$project$Main$rightWidth = {bo: 0, bA: 0, bG: 1, bO: 0};
 var $mdgriffith$elm_ui$Element$Border$widthXY = F2(
@@ -16028,7 +15915,7 @@ var $author$project$Main$listButtonWithBreakLink = F3(
 							$mdgriffith$elm_ui$Element$padding(8),
 							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 						]),
-					{m: label, t: onPress}),
+					{q: label, v: onPress}),
 					A2(
 					$mdgriffith$elm_ui$Element$Input$button,
 					_List_fromArray(
@@ -16038,12 +15925,12 @@ var $author$project$Main$listButtonWithBreakLink = F3(
 							$mdgriffith$elm_ui$Element$padding(8)
 						]),
 					{
-						m: A2(
+						q: A2(
 							$mdgriffith$elm_ui$Element$el,
 							_List_fromArray(
 								[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$centerY]),
 							$mdgriffith$elm_ui$Element$text('Break Link')),
-						t: cancelPress
+						v: cancelPress
 					})
 				]));
 	});
@@ -16267,6 +16154,10 @@ var $mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute = function (label) {
 		return $mdgriffith$elm_ui$Internal$Model$NoAttribute;
 	}
 };
+var $mdgriffith$elm_ui$Internal$Model$InFront = 4;
+var $mdgriffith$elm_ui$Element$inFront = function (element) {
+	return A2($mdgriffith$elm_ui$Element$createNearby, 4, element);
+};
 var $mdgriffith$elm_ui$Element$Input$isConstrained = function (len) {
 	isConstrained:
 	while (true) {
@@ -16349,6 +16240,7 @@ var $mdgriffith$elm_ui$Element$paddingEach = function (_v0) {
 				left));
 	}
 };
+var $mdgriffith$elm_ui$Element$htmlAttribute = $mdgriffith$elm_ui$Internal$Model$Attr;
 var $mdgriffith$elm_ui$Element$Input$isFill = function (len) {
 	isFill:
 	while (true) {
@@ -16414,7 +16306,7 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 					els,
 					{
 						l: A2($elm$core$List$cons, attr, els.l),
-						v: A2($elm$core$List$cons, attr, els.v),
+						u: A2($elm$core$List$cons, attr, els.u),
 						c: A2($elm$core$List$cons, attr, els.c)
 					}) : (stacked ? _Utils_update(
 					els,
@@ -16466,7 +16358,7 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 							els,
 							{
 								l: A2($elm$core$List$cons, attr, els.l),
-								v: A2($elm$core$List$cons, attr, els.v),
+								u: A2($elm$core$List$cons, attr, els.u),
 								c: A2($elm$core$List$cons, attr, els.c),
 								bm: A2($elm$core$List$cons, attr, els.bm)
 							});
@@ -16514,10 +16406,10 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 								els,
 								{
 									L: A2($elm$core$List$cons, attr, els.L),
-									v: A2(
+									u: A2(
 										$elm$core$List$cons,
 										newHeight,
-										A2($elm$core$List$cons, newLineHeight, els.v)),
+										A2($elm$core$List$cons, newLineHeight, els.u)),
 									c: A2($elm$core$List$cons, reducedVerticalPadding, els.c)
 								});
 						}
@@ -16565,13 +16457,13 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 				return _Utils_update(
 					els,
 					{
-						v: A2($elm$core$List$cons, attr, els.v)
+						u: A2($elm$core$List$cons, attr, els.u)
 					});
 			case 2:
 				return _Utils_update(
 					els,
 					{
-						v: A2($elm$core$List$cons, attr, els.v)
+						u: A2($elm$core$List$cons, attr, els.u)
 					});
 			case 3:
 				return _Utils_update(
@@ -16583,7 +16475,7 @@ var $mdgriffith$elm_ui$Element$Input$redistributeOver = F4(
 				return _Utils_update(
 					els,
 					{
-						v: A2($elm$core$List$cons, attr, els.v)
+						u: A2($elm$core$List$cons, attr, els.u)
 					});
 		}
 	});
@@ -16593,7 +16485,7 @@ var $mdgriffith$elm_ui$Element$Input$redistribute = F3(
 			return {
 				L: $elm$core$List$reverse(redist.L),
 				l: $elm$core$List$reverse(redist.l),
-				v: $elm$core$List$reverse(redist.v),
+				u: $elm$core$List$reverse(redist.u),
 				c: $elm$core$List$reverse(redist.c),
 				bm: $elm$core$List$reverse(redist.bm)
 			};
@@ -16601,7 +16493,7 @@ var $mdgriffith$elm_ui$Element$Input$redistribute = F3(
 			A3(
 				$elm$core$List$foldl,
 				A2($mdgriffith$elm_ui$Element$Input$redistributeOver, isMultiline, stacked),
-				{L: _List_Nil, l: _List_Nil, v: _List_Nil, c: _List_Nil, bm: _List_Nil},
+				{L: _List_Nil, l: _List_Nil, u: _List_Nil, c: _List_Nil, bm: _List_Nil},
 				attrs));
 	});
 var $mdgriffith$elm_ui$Element$Input$renderBox = function (_v0) {
@@ -16682,7 +16574,7 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 		var redistributed = A3(
 			$mdgriffith$elm_ui$Element$Input$redistribute,
 			_Utils_eq(textInput.B, $mdgriffith$elm_ui$Element$Input$TextArea),
-			$mdgriffith$elm_ui$Element$Input$isStacked(textOptions.m),
+			$mdgriffith$elm_ui$Element$Input$isStacked(textOptions.q),
 			withDefaults);
 		var onlySpacing = function (attr) {
 			if ((attr.$ === 4) && (attr.b.$ === 5)) {
@@ -16795,14 +16687,14 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 							$mdgriffith$elm_ui$Element$Input$value(textOptions.hN),
 							$mdgriffith$elm_ui$Internal$Model$Attr(
 							$elm$html$Html$Events$onInput(textOptions.g2)),
-							$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(textOptions.m),
+							$mdgriffith$elm_ui$Element$Input$hiddenLabelAttribute(textOptions.q),
 							$mdgriffith$elm_ui$Element$Input$spellcheck(textInput.ai),
 							A2(
 							$elm$core$Maybe$withDefault,
 							$mdgriffith$elm_ui$Internal$Model$NoAttribute,
 							A2($elm$core$Maybe$map, $mdgriffith$elm_ui$Element$Input$autofill, textInput.ab))
 						]),
-					redistributed.v)),
+					redistributed.u)),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(_List_Nil));
 		var wrappedInput = function () {
 			var _v0 = textInput.B;
@@ -16916,9 +16808,9 @@ var $mdgriffith$elm_ui$Element$Input$textHelper = F3(
 				A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$cursor, $mdgriffith$elm_ui$Internal$Style$classes.gj),
 				A2(
 					$elm$core$List$cons,
-					$mdgriffith$elm_ui$Element$Input$isHiddenLabel(textOptions.m) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Element$spacing(5),
+					$mdgriffith$elm_ui$Element$Input$isHiddenLabel(textOptions.q) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Element$spacing(5),
 					A2($elm$core$List$cons, $mdgriffith$elm_ui$Element$Region$announce, redistributed.l))),
-			textOptions.m,
+			textOptions.q,
 			wrappedInput);
 	});
 var $mdgriffith$elm_ui$Element$Input$multiline = F2(
@@ -16927,7 +16819,7 @@ var $mdgriffith$elm_ui$Element$Input$multiline = F2(
 			$mdgriffith$elm_ui$Element$Input$textHelper,
 			{ab: $elm$core$Maybe$Nothing, ai: multi.hC, B: $mdgriffith$elm_ui$Element$Input$TextArea},
 			attrs,
-			{m: multi.m, g2: multi.g2, hd: multi.hd, hN: multi.hN});
+			{q: multi.q, g2: multi.g2, hd: multi.hd, hN: multi.hN});
 	});
 var $author$project$Main$multiline = F3(
 	function (onChange, text, label) {
@@ -16935,7 +16827,7 @@ var $author$project$Main$multiline = F3(
 			$mdgriffith$elm_ui$Element$Input$multiline,
 			_List_Nil,
 			{
-				m: A2(
+				q: A2(
 					$mdgriffith$elm_ui$Element$Input$labelAbove,
 					_List_Nil,
 					$mdgriffith$elm_ui$Element$text(label)),
@@ -16945,7 +16837,58 @@ var $author$project$Main$multiline = F3(
 				hN: text
 			});
 	});
-var $author$project$Main$selectedNoteLegend = A2(
+var $author$project$Main$CreateTabHoverNote = function (a) {
+	return {$: 23, a: a};
+};
+var $author$project$Main$CreateTabSelectNote = function (a) {
+	return {$: 15, a: a};
+};
+var $author$project$Main$CreateTabStopHover = {$: 24};
+var $author$project$Main$DiscoveryModeHoverNote = function (a) {
+	return {$: 31, a: a};
+};
+var $author$project$Main$DiscoveryModeSelectNote = function (a) {
+	return {$: 28, a: a};
+};
+var $author$project$Main$DiscoveryModeStopHover = {$: 32};
+var $author$project$Main$EditModeHoverNote = function (a) {
+	return {$: 39, a: a};
+};
+var $author$project$Main$EditModeSelectNoteOnGraph = function (a) {
+	return {$: 36, a: a};
+};
+var $author$project$Main$EditModeStopHover = {$: 40};
+var $mdgriffith$elm_ui$Internal$Model$Top = 0;
+var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY(0);
+var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
+var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
+var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
+var $elm$svg$Svg$Attributes$r = _VirtualDom_attribute('r');
+var $author$project$Main$svgCircle = F3(
+	function (cx, cy, r) {
+		return A2(
+			$elm$svg$Svg$circle,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$r(r),
+					$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)'),
+					$elm$svg$Svg$Attributes$cx(cx),
+					$elm$svg$Svg$Attributes$cy(cy)
+				]),
+			_List_Nil);
+	});
+var $author$project$Main$svgLegend = function (contents) {
+	return A2(
+		$elm$svg$Svg$svg,
+		_List_fromArray(
+			[
+				$elm$svg$Svg$Attributes$height('40'),
+				$elm$svg$Svg$Attributes$width('40'),
+				$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+			]),
+		contents);
+};
+var $author$project$Main$circleLegend = A2(
 	$mdgriffith$elm_ui$Element$row,
 	_List_Nil,
 	_List_fromArray(
@@ -16954,32 +16897,104 @@ var $author$project$Main$selectedNoteLegend = A2(
 			$author$project$Main$svgLegend(
 				_List_fromArray(
 					[
-						A2(
-						$elm$svg$Svg$g,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2($author$project$Main$svgRect, '10', '10'),
-								A3($author$project$Main$svgRectTransform, '10', '10', 'rotate(45 20 20)')
-							]))
+						A3($author$project$Main$svgCircle, '20', '20', '10')
 					]))),
-			$mdgriffith$elm_ui$Element$text('Currently Selected Note')
+			$mdgriffith$elm_ui$Element$text('Regular Note')
 		]));
-var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
-var $author$project$Main$CreateTabHoverNote = function (a) {
-	return {$: 23, a: a};
+var $author$project$Main$PositionExtremes = F4(
+	function (minX, minY, maxX, maxY) {
+		return {eP: maxX, eQ: maxY, a7: minX, a8: minY};
+	});
+var $elm$core$Maybe$map4 = F5(
+	function (func, ma, mb, mc, md) {
+		if (ma.$ === 1) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 1) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				if (mc.$ === 1) {
+					return $elm$core$Maybe$Nothing;
+				} else {
+					var c = mc.a;
+					if (md.$ === 1) {
+						return $elm$core$Maybe$Nothing;
+					} else {
+						var d = md.a;
+						return $elm$core$Maybe$Just(
+							A4(func, a, b, c, d));
+					}
+				}
+			}
+		}
+	});
+var $author$project$Main$computeViewbox = function (notePositions) {
+	var yList = A2(
+		$elm$core$List$map,
+		function ($) {
+			return $.d0;
+		},
+		notePositions);
+	var xList = A2(
+		$elm$core$List$map,
+		function ($) {
+			return $.dZ;
+		},
+		notePositions);
+	var padding = 50;
+	var maybeExtremes = A5(
+		$elm$core$Maybe$map4,
+		$author$project$Main$PositionExtremes,
+		$elm$core$List$minimum(xList),
+		$elm$core$List$minimum(yList),
+		$elm$core$List$maximum(xList),
+		$elm$core$List$maximum(yList));
+	var formatViewbox = function (record) {
+		return $elm$core$String$fromFloat(record.a7) + (' ' + ($elm$core$String$fromFloat(record.a8) + (' ' + ($elm$core$String$fromFloat(record.a_) + (' ' + $elm$core$String$fromFloat(record.cO))))));
+	};
+	if (!maybeExtremes.$) {
+		var extremes = maybeExtremes.a;
+		return formatViewbox(
+			{cO: (extremes.eQ - extremes.a8) + (padding * 2), a7: extremes.a7 - padding, a8: extremes.a8 - padding, a_: (extremes.eP - extremes.a7) + (padding * 2)});
+	} else {
+		return formatViewbox(
+			{cO: 100, a7: 100, a8: 100, a_: 100});
+	}
 };
-var $author$project$Main$CreateTabSelectNote = function (a) {
-	return {$: 15, a: a};
-};
-var $author$project$Main$CreateTabStopHover = {$: 24};
-var $author$project$Main$EditModeHoverNote = function (a) {
-	return {$: 37, a: a};
-};
-var $author$project$Main$EditModeSelectNoteOnGraph = function (a) {
-	return {$: 34, a: a};
-};
-var $author$project$Main$EditModeStopHover = {$: 38};
+var $author$project$Main$svgRectTransform = F3(
+	function (x, y, transform) {
+		return A2(
+			$elm$svg$Svg$rect,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
+					$elm$svg$Svg$Attributes$width('20'),
+					$elm$svg$Svg$Attributes$height('20'),
+					$elm$svg$Svg$Attributes$x(x),
+					$elm$svg$Svg$Attributes$y(y),
+					$elm$svg$Svg$Attributes$transform(transform)
+				]),
+			_List_Nil);
+	});
+var $author$project$Main$svgRect = F2(
+	function (x, y) {
+		return A3($author$project$Main$svgRectTransform, x, y, '');
+	});
+var $author$project$Main$discussionLegend = A2(
+	$mdgriffith$elm_ui$Element$row,
+	_List_Nil,
+	_List_fromArray(
+		[
+			$mdgriffith$elm_ui$Element$html(
+			$author$project$Main$svgLegend(
+				_List_fromArray(
+					[
+						A2($author$project$Main$svgRect, '10', '10')
+					]))),
+			$mdgriffith$elm_ui$Element$text('Discussion (if not selected)')
+		]));
 var $elm$svg$Svg$line = $elm$svg$Svg$trustedNode('line');
 var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
 var $elm$svg$Svg$Attributes$strokeDasharray = _VirtualDom_attribute('stroke-dasharray');
@@ -17050,6 +17065,27 @@ var $author$project$Main$linkedCircleLegend = A2(
 					]))),
 			$mdgriffith$elm_ui$Element$text('Note Marked to link (if not selected)')
 		]));
+var $author$project$Main$selectedNoteLegend = A2(
+	$mdgriffith$elm_ui$Element$row,
+	_List_Nil,
+	_List_fromArray(
+		[
+			$mdgriffith$elm_ui$Element$html(
+			$author$project$Main$svgLegend(
+				_List_fromArray(
+					[
+						A2(
+						$elm$svg$Svg$g,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2($author$project$Main$svgRect, '10', '10'),
+								A3($author$project$Main$svgRectTransform, '10', '10', 'rotate(45 20 20)')
+							]))
+					]))),
+			$mdgriffith$elm_ui$Element$text('Currently Selected Note')
+		]));
+var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
 var $author$project$Main$textWrap = function (text) {
 	return A2(
 		$mdgriffith$elm_ui$Element$paragraph,
@@ -17562,18 +17598,24 @@ var $author$project$Main$svgGraph = F4(
 			}
 		}();
 		var _v0 = function () {
-			if (!tab.$) {
-				var link = tab.a;
-				return _Utils_Tuple2(
-					linkLambda(
-						A2($author$project$Main$toGraphLinkDeleteLink, graph.hf, link)),
-					A4(notesLambda, $author$project$Main$EditModeSelectNoteOnGraph, $author$project$Main$EditModeHoverNote, $author$project$Main$EditModeStopHover, _List_Nil));
-			} else {
-				var newlyLinkedNotes = tab.a;
-				return _Utils_Tuple2(
-					linkLambda(
-						$author$project$Main$toCreateTabGraphLink(graph.hf)),
-					A4(notesLambda, $author$project$Main$CreateTabSelectNote, $author$project$Main$CreateTabHoverNote, $author$project$Main$CreateTabStopHover, newlyLinkedNotes));
+			switch (tab.$) {
+				case 0:
+					var link = tab.a;
+					return _Utils_Tuple2(
+						linkLambda(
+							A2($author$project$Main$toGraphLinkDeleteLink, graph.hf, link)),
+						A4(notesLambda, $author$project$Main$EditModeSelectNoteOnGraph, $author$project$Main$EditModeHoverNote, $author$project$Main$EditModeStopHover, _List_Nil));
+				case 1:
+					var newlyLinkedNotes = tab.a;
+					return _Utils_Tuple2(
+						linkLambda(
+							$author$project$Main$toCreateTabGraphLink(graph.hf)),
+						A4(notesLambda, $author$project$Main$CreateTabSelectNote, $author$project$Main$CreateTabHoverNote, $author$project$Main$CreateTabStopHover, newlyLinkedNotes));
+				default:
+					return _Utils_Tuple2(
+						linkLambda(
+							$author$project$Main$toCreateTabGraphLink(graph.hf)),
+						A4(notesLambda, $author$project$Main$DiscoveryModeSelectNote, $author$project$Main$DiscoveryModeHoverNote, $author$project$Main$DiscoveryModeStopHover, _List_Nil));
 			}
 		}();
 		var links = _v0.a;
@@ -17582,25 +17624,34 @@ var $author$project$Main$svgGraph = F4(
 			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+					$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
 					$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-					$mdgriffith$elm_ui$Element$inFront(legend),
-					$mdgriffith$elm_ui$Element$inFront(hover)
+					$mdgriffith$elm_ui$Element$htmlAttribute(
+					A2($elm$html$Html$Attributes$style, 'position', 'relative'))
 				]),
-			$mdgriffith$elm_ui$Element$html(
-				A2(
-					$elm$svg$Svg$svg,
-					_List_fromArray(
-						[
-							$elm$svg$Svg$Attributes$width('100%'),
-							$elm$svg$Svg$Attributes$height('100%'),
-							$elm$svg$Svg$Attributes$viewBox(
-							$author$project$Main$computeViewbox(graph.hf)),
-							$elm$svg$Svg$Attributes$style('position: absolute')
-						]),
-					$elm$core$List$concat(
+			A2(
+				$mdgriffith$elm_ui$Element$el,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+						$mdgriffith$elm_ui$Element$inFront(legend),
+						$mdgriffith$elm_ui$Element$inFront(hover)
+					]),
+				$mdgriffith$elm_ui$Element$html(
+					A2(
+						$elm$svg$Svg$svg,
 						_List_fromArray(
-							[links, notes])))));
+							[
+								$elm$svg$Svg$Attributes$width('100%'),
+								$elm$svg$Svg$Attributes$height('100%'),
+								$elm$svg$Svg$Attributes$viewBox(
+								$author$project$Main$computeViewbox(graph.hf)),
+								$elm$svg$Svg$Attributes$style('position: absolute')
+							]),
+						$elm$core$List$concat(
+							_List_fromArray(
+								[links, notes]))))));
 	});
 var $mdgriffith$elm_ui$Element$InternalColumn = function (a) {
 	return {$: 1, a: a};
@@ -17976,9 +18027,9 @@ var $author$project$Discovery$DesignateDiscussionEntryPointView = F2(
 	function (a, b) {
 		return {$: 2, a: a, b: b};
 	});
-var $author$project$Discovery$ViewDiscussionView = F3(
-	function (a, b, c) {
-		return {$: 0, a: a, b: b, c: c};
+var $author$project$Discovery$ViewDiscussionView = F4(
+	function (a, b, c, d) {
+		return {$: 0, a: a, b: b, c: c, d: d};
 	});
 var $author$project$Discovery$view = function (discovery) {
 	switch (discovery.$) {
@@ -17986,7 +18037,8 @@ var $author$project$Discovery$view = function (discovery) {
 			var discussion = discovery.a;
 			var selectedNote = discovery.b;
 			var graph = discovery.c;
-			return A3($author$project$Discovery$ViewDiscussionView, discussion, selectedNote, graph);
+			var hoverNote = discovery.d;
+			return A4($author$project$Discovery$ViewDiscussionView, discussion, selectedNote, graph, hoverNote);
 		case 1:
 			var filterInput = discovery.a;
 			return $author$project$Discovery$ChooseDiscussionView(filterInput);
@@ -18068,7 +18120,7 @@ var $author$project$Edit$view = F2(
 		}
 	});
 var $author$project$Main$tabView = function (content) {
-	var _v0 = content.p;
+	var _v0 = content.o;
 	switch (_v0.$) {
 		case 0:
 			var edit = _v0.a;
@@ -18413,21 +18465,12 @@ var $author$project$Main$tabView = function (content) {
 													]))
 											]))
 									])),
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-										$mdgriffith$elm_ui$Element$htmlAttribute(
-										A2($elm$html$Html$Attributes$style, 'position', 'relative'))
-									]),
 								A4(
-									$author$project$Main$svgGraph,
-									graph,
-									$author$project$Main$ConfirmBreakLink(linkToBreak),
-									selectedNote,
-									hoverNote))
+								$author$project$Main$svgGraph,
+								graph,
+								$author$project$Main$ConfirmBreakLink(linkToBreak),
+								selectedNote,
+								hoverNote)
 							]));
 			}
 		case 1:
@@ -18592,14 +18635,14 @@ var $author$project$Main$tabView = function (content) {
 																$mdgriffith$elm_ui$Element$Input$button,
 																_List_Nil,
 																{
-																	m: A2(
+																	q: A2(
 																		$mdgriffith$elm_ui$Element$paragraph,
 																		_List_Nil,
 																		_List_fromArray(
 																			[
 																				$mdgriffith$elm_ui$Element$text(row.a2)
 																			])),
-																	t: $elm$core$Maybe$Just(
+																	v: $elm$core$Maybe$Just(
 																		$author$project$Main$CreateTabToFindLinksForDiscussion(row.eW))
 																});
 														},
@@ -18674,8 +18717,8 @@ var $author$project$Main$tabView = function (content) {
 										$mdgriffith$elm_ui$Element$Border$width(1)
 									]),
 								{
-									m: $mdgriffith$elm_ui$Element$text('Remove'),
-									t: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
+									q: $mdgriffith$elm_ui$Element$text('Remove'),
+									v: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
 								})
 							])) : A2(
 						$mdgriffith$elm_ui$Element$Input$button,
@@ -18685,8 +18728,8 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$Border$width(1)
 							]),
 						{
-							m: $mdgriffith$elm_ui$Element$text('Create Link'),
-							t: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
+							q: $mdgriffith$elm_ui$Element$text('Create Link'),
+							v: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
 						});
 					return A2(
 						$mdgriffith$elm_ui$Element$row,
@@ -18783,19 +18826,12 @@ var $author$project$Main$tabView = function (content) {
 										$elm$core$Maybe$Just($author$project$Main$CreateTabToChooseDiscussion),
 										$mdgriffith$elm_ui$Element$text('Done Linking'))
 									])),
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
-									]),
 								A4(
-									$author$project$Main$svgGraph,
-									createTabGraph,
-									$author$project$Main$DiscussionChosenView(notesAssociatedToCreatedLinks),
-									selectedNote,
-									hoverNote))
+								$author$project$Main$svgGraph,
+								createTabGraph,
+								$author$project$Main$DiscussionChosenView(notesAssociatedToCreatedLinks),
+								selectedNote,
+								hoverNote)
 							]));
 				case 3:
 					var note = _v7.a;
@@ -19006,41 +19042,7 @@ var $author$project$Main$tabView = function (content) {
 					var discussion = _v11.a;
 					var selectedNote = _v11.b;
 					var discussionGraph = _v11.c;
-					var viewGraph = $mdgriffith$elm_ui$Element$html(
-						A2(
-							$elm$svg$Svg$svg,
-							_List_fromArray(
-								[
-									$elm$svg$Svg$Attributes$width('100%'),
-									$elm$svg$Svg$Attributes$height('100%'),
-									$elm$svg$Svg$Attributes$viewBox(
-									$author$project$Main$computeViewbox(discussionGraph.hf)),
-									$elm$svg$Svg$Attributes$style('position: absolute')
-								]),
-							$elm$core$List$concat(
-								_List_fromArray(
-									[
-										A2(
-										$elm$core$List$filterMap,
-										$author$project$Main$toCreateTabGraphLink(discussionGraph.hf),
-										discussionGraph.gT),
-										A2(
-										$elm$core$List$map,
-										function (n) {
-											return A4(
-												$author$project$Main$viewGraphNote,
-												$author$project$Main$DiscoveryModeSelectNote,
-												function (f) {
-													return $author$project$Main$Placeholder;
-												},
-												$author$project$Main$Placeholder,
-												n);
-										},
-										A2(
-											$elm$core$List$map,
-											A2($author$project$Main$toCreateTabGraphNote, _List_Nil, selectedNote),
-											discussionGraph.hf))
-									]))));
+					var hoverNote = _v11.d;
 					var viewDiscussionNode = (($author$project$Note$getVariant(selectedNote) === 1) && (!A2($author$project$Note$is, discussion, selectedNote))) ? A2(
 						$author$project$Main$button,
 						$elm$core$Maybe$Just(
@@ -19086,26 +19088,6 @@ var $author$project$Main$tabView = function (content) {
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
 							[
-								$mdgriffith$elm_ui$Element$inFront(
-								A2(
-									$mdgriffith$elm_ui$Element$el,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$padding(16),
-											$mdgriffith$elm_ui$Element$alignRight,
-											$mdgriffith$elm_ui$Element$alignTop
-										]),
-									A2(
-										$mdgriffith$elm_ui$Element$Input$button,
-										_List_fromArray(
-											[
-												$mdgriffith$elm_ui$Element$Border$width(1),
-												$mdgriffith$elm_ui$Element$padding(8)
-											]),
-										{
-											m: $mdgriffith$elm_ui$Element$text('Done'),
-											t: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
-										}))),
 								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
 							]),
@@ -19122,20 +19104,12 @@ var $author$project$Main$tabView = function (content) {
 									[
 										A3(container, 'Selected Discussion', discussion, $mdgriffith$elm_ui$Element$none),
 										A3(container, 'Selected Note', selectedNote, viewDiscussionNode),
-										$author$project$Main$selectedNoteLegend,
-										$author$project$Main$discussionLegend,
-										$author$project$Main$circleLegend
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack),
+										$mdgriffith$elm_ui$Element$text('Back'))
 									])),
-								A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
-										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
-										$mdgriffith$elm_ui$Element$htmlAttribute(
-										A2($elm$html$Html$Attributes$style, 'position', 'relative'))
-									]),
-								viewGraph)
+								A4($author$project$Main$svgGraph, discussionGraph, $author$project$Main$ViewDiscussionView, selectedNote, hoverNote)
 							]));
 				case 1:
 					var filterInput = _v11.a;
@@ -19218,14 +19192,14 @@ var $author$project$Main$tabView = function (content) {
 																$mdgriffith$elm_ui$Element$Input$button,
 																_List_Nil,
 																{
-																	m: A2(
+																	q: A2(
 																		$mdgriffith$elm_ui$Element$paragraph,
 																		_List_Nil,
 																		_List_fromArray(
 																			[
 																				$mdgriffith$elm_ui$Element$text(row.a2)
 																			])),
-																	t: $elm$core$Maybe$Just(
+																	v: $elm$core$Maybe$Just(
 																		$author$project$Main$DiscoveryModeSelectDiscussion(row.eW))
 																});
 														},
@@ -19300,7 +19274,7 @@ var $author$project$Main$sessionNode = function (content) {
 			]),
 		_List_fromArray(
 			[
-				A3($author$project$Main$leftNav, content.cj, content.p, content.Y),
+				A3($author$project$Main$leftNav, content.cj, content.o, content.Y),
 				A2(
 				$mdgriffith$elm_ui$Element$el,
 				_List_fromArray(
@@ -19317,6 +19291,8 @@ var $author$project$Main$sessionView = function (content) {
 };
 var $author$project$Main$FileRequested = {$: 3};
 var $author$project$Main$InitializeNewSlipbox = {$: 2};
+var $mdgriffith$elm_ui$Internal$Model$Right = 2;
+var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX(2);
 var $author$project$Main$barHeight = 65;
 var $mdgriffith$elm_ui$Element$moveLeft = function (x) {
 	return A2(
@@ -19344,8 +19320,8 @@ var $author$project$Main$setupOverlay = function () {
 					$mdgriffith$elm_ui$Element$moveLeft(2)
 				]),
 			{
-				m: $mdgriffith$elm_ui$Element$text('x'),
-				t: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+				q: $mdgriffith$elm_ui$Element$text('x'),
+				v: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
 			}));
 	var buttonBuilder = function (func) {
 		return A2(
@@ -19397,12 +19373,12 @@ var $author$project$Main$setupOverlay = function () {
 							]),
 						buttonBuilder(
 							{
-								m: A2(
+								q: A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
 									$mdgriffith$elm_ui$Element$text('Start New')),
-								t: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+								v: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
 							})),
 						A2(
 						$mdgriffith$elm_ui$Element$el,
@@ -19413,12 +19389,12 @@ var $author$project$Main$setupOverlay = function () {
 							]),
 						buttonBuilder(
 							{
-								m: A2(
+								q: A2(
 									$mdgriffith$elm_ui$Element$el,
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
 									$mdgriffith$elm_ui$Element$text('Load Slipbox')),
-								t: $elm$core$Maybe$Just($author$project$Main$FileRequested)
+								v: $elm$core$Maybe$Just($author$project$Main$FileRequested)
 							}))
 					]))));
 }();

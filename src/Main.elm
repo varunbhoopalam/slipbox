@@ -191,6 +191,8 @@ type Msg
   | DiscoveryModeSelectNote Note.Note
   | DiscoveryModeSubmit
   | DiscoveryModeStartNewDiscussion
+  | DiscoveryModeHoverNote Note.Note
+  | DiscoveryModeStopHover
   | EditModeUpdateInput String
   | EditModeSelectNote Note.Note
   | EditModeConfirmBreakLink Note.Note Link.Link
@@ -349,6 +351,8 @@ update message model =
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
     DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
     DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
+    DiscoveryModeHoverNote note -> discoveryModeLambda <| Discovery.hover note
+    DiscoveryModeStopHover -> discoveryModeLambda Discovery.stopHover
 
     EditModeUpdateInput input -> editModeLambda <| Edit.updateInput input
     EditModeSelectNote note -> ( setTab ( EditModeTab <| Edit.select note ) model, Cmd.none )
@@ -652,12 +656,7 @@ tabView content =
                   ]
                 ]
               ]
-            , Element.el
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
-              ] <|
-              svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
+            , svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
             ]
 
     CreateModeTab create ->
@@ -870,11 +869,7 @@ tabView content =
                 ]
               , button ( Just CreateTabToChooseDiscussion ) ( Element.text "Done Linking" )
               ]
-            , Element.el
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              ] <|
-              svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks ) selectedNote hoverNote
+            , svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks ) selectedNote hoverNote
             ]
 
         Create.DesignateDiscussionEntryPointView note input ->
@@ -983,20 +978,8 @@ tabView content =
 
     DiscoveryModeTab discovery ->
       case Discovery.view discovery of
-        Discovery.ViewDiscussionView discussion selectedNote discussionGraph ->
+        Discovery.ViewDiscussionView discussion selectedNote discussionGraph hoverNote ->
           let
-            viewGraph = Element.html <|
-              Svg.svg
-                [ Svg.Attributes.width "100%"
-                , Svg.Attributes.height "100%"
-                , Svg.Attributes.viewBox <| computeViewbox discussionGraph.positions
-                , Svg.Attributes.style "position: absolute"
-                ] <|
-                List.concat
-                  [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
-                  , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote (\f -> Placeholder) Placeholder n ) <|
-                    List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
-                  ]
             viewDiscussionNode =
               if Note.getVariant selectedNote == Note.Discussion && ( not <| Note.is discussion selectedNote ) then
                 button
@@ -1020,20 +1003,7 @@ tabView content =
               ]
           in
           Element.row
-            [ Element.inFront <|
-              Element.el
-                [ Element.padding 16
-                , Element.alignRight
-                , Element.alignTop
-                ] <|
-                Element.Input.button
-                  [ Element.Border.width 1
-                  , Element.padding 8
-                  ]
-                  { onPress = Just DiscoveryModeBack
-                  , label = Element.text "Done"
-                  }
-            , Element.width Element.fill
+            [ Element.width Element.fill
             , Element.height Element.fill
             ]
             [ Element.column
@@ -1042,16 +1012,9 @@ tabView content =
               ]
               [ container "Selected Discussion" discussion Element.none
               , container "Selected Note" selectedNote viewDiscussionNode
-              , selectedNoteLegend
-              , discussionLegend
-              , circleLegend
+              , button ( Just DiscoveryModeBack ) ( Element.text "Back" )
               ]
-            , Element.el
-              [ Element.width biggerElement
-              , Element.height Element.fill
-              , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
-              ]
-              viewGraph
+            , svgGraph discussionGraph ViewDiscussionView selectedNote hoverNote
             ]
 
         Discovery.ChooseDiscussionView filterInput ->
@@ -1659,6 +1622,7 @@ textWrap text = Element.paragraph [] [ Element.text text ]
 type TabGraph
  = ConfirmBreakLink Link.Link
  | DiscussionChosenView ( List Note.Note )
+ | ViewDiscussionView
 
 svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
 svgGraph graph tab selectedNote maybeHoverNote =
@@ -1677,9 +1641,15 @@ svgGraph graph tab selectedNote maybeHoverNote =
           ( linkLambda <| toGraphLinkDeleteLink graph.positions link
           , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover []
           )
+
         DiscussionChosenView newlyLinkedNotes ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
           , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover newlyLinkedNotes
+          )
+
+        ViewDiscussionView ->
+          ( linkLambda <| toCreateTabGraphLink graph.positions
+          , notesLambda DiscoveryModeSelectNote DiscoveryModeHoverNote DiscoveryModeStopHover []
           )
 
     legend = Element.el [ Element.alignBottom ] <|
@@ -1702,6 +1672,10 @@ svgGraph graph tab selectedNote maybeHoverNote =
         Nothing -> Element.none
   in
   Element.el
+    [ Element.width biggerElement
+    , Element.height Element.fill
+    , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
+    ] <|Element.el
     [ Element.width Element.fill
     , Element.height Element.fill
     , Element.inFront legend

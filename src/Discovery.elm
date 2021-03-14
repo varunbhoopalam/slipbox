@@ -9,6 +9,8 @@ module Discovery exposing
   , updateInput
   , submit
   , startNewDiscussion
+  , hover
+  , stopHover
   )
 
 import Graph
@@ -16,7 +18,7 @@ import Note
 import Slipbox
 
 type Discovery
-  = ViewDiscussion Discussion SelectedNote Graph.Graph
+  = ViewDiscussion Discussion SelectedNote Graph.Graph HoverNote
   | ChooseDiscussion FilterInput
   | DesignateDiscussionEntryPoint SelectedNote String
 
@@ -24,9 +26,10 @@ type Discovery
 type alias Discussion = Note.Note
 type alias SelectedNote = Note.Note
 type alias FilterInput = String
+type alias HoverNote = Maybe Note.Note
 
 type DiscoveryView
-  = ViewDiscussionView Discussion SelectedNote Graph.Graph
+  = ViewDiscussionView Discussion SelectedNote Graph.Graph HoverNote
   | ChooseDiscussionView String
   | DesignateDiscussionEntryPointView String String
 
@@ -37,8 +40,8 @@ init =
 view : Discovery -> DiscoveryView
 view discovery =
   case discovery of
-    ViewDiscussion discussion selectedNote graph ->
-      ViewDiscussionView discussion selectedNote graph
+    ViewDiscussion discussion selectedNote graph hoverNote ->
+      ViewDiscussionView discussion selectedNote graph hoverNote
 
     ChooseDiscussion filterInput ->
       ChooseDiscussionView filterInput
@@ -53,11 +56,24 @@ viewDiscussion discussion slipbox _ =
     discussion
     ( Graph.simulatePositions
       <| Slipbox.getDiscussionTreeWithCollapsedDiscussions discussion slipbox )
+    Nothing
 
 selectNote : Note.Note -> Discovery -> Discovery
 selectNote note discovery =
   case discovery of
-    ViewDiscussion discussion _ graph -> ViewDiscussion discussion note graph
+    ViewDiscussion discussion _ graph hoverNote -> ViewDiscussion discussion note graph hoverNote
+    _ -> discovery
+
+hover : Note.Note -> Discovery -> Discovery
+hover note discovery =
+  case discovery of
+    ViewDiscussion discussion selectedNote graph _ -> ViewDiscussion discussion selectedNote graph <| Just note
+    _ -> discovery
+
+stopHover : Discovery -> Discovery
+stopHover discovery =
+  case discovery of
+    ViewDiscussion discussion selectedNote graph _ -> ViewDiscussion discussion selectedNote graph Nothing
     _ -> discovery
 
 back : Discovery -> Discovery
@@ -87,6 +103,6 @@ submit slipbox discovery =
 startNewDiscussion : Discovery -> Discovery
 startNewDiscussion discovery =
   case discovery of
-    ViewDiscussion _ selectedNote _ ->
+    ViewDiscussion _ selectedNote _ _ ->
       DesignateDiscussionEntryPoint selectedNote ""
     _ -> discovery
