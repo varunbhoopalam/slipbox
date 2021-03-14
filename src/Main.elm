@@ -12,6 +12,7 @@ import Element.Font
 import Element.Input
 import FontAwesome.Attributes
 import FontAwesome.Solid
+import Graph
 import Html
 import Html.Events
 import Html.Attributes
@@ -193,63 +194,43 @@ type Msg
   | EditModeConfirmBreakLink Note.Note Link.Link
   | EditModeSelectNoteOnGraph Note.Note
   | EditModeCancel
+  | EditModeConfirm
+  | EditModeHoverNote Note.Note
+  | EditModeStopHover
+  | Placeholder
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
   let
-    createModeLambda createUpdate =
-      case getCreate model of
+    getAndSetLambda getter setter updater =
+      case getter model of
         Just create ->
-          ( setCreate
-            ( createUpdate create )
+          ( setter
+            ( updater create )
             model
           , Cmd.none
           )
         Nothing -> ( model, Cmd.none )
-    discoveryModeLambda discoveryUpdate =
-      case getDiscovery model of
-        Just discovery ->
-          ( setDiscovery
-            ( discoveryUpdate discovery )
-            model
-          , Cmd.none
-          )
-        Nothing -> ( model, Cmd.none )
-    editModeLambda editUpdate =
-      case getEdit model of
-        Just edit ->
-          ( setEdit
-            ( editUpdate edit )
-            model
-          , Cmd.none
-          )
-        Nothing -> ( model, Cmd.none )
-    createModeAndSlipboxLambda createUpdate =
+    createModeLambda updater = getAndSetLambda getCreate setCreate updater
+    discoveryModeLambda updater = getAndSetLambda getDiscovery setDiscovery updater
+    editModeLambda updater = getAndSetLambda getEdit setEdit updater
+
+    getAndSetWithSlipboxLambda getter setter updater =
       case getSlipbox model of
         Just slipbox ->
-          case getCreate model of
+          case getter model of
             Just create ->
               let
-                ( updatedSlipbox, updatedCreate ) = createUpdate slipbox create
+                ( updatedSlipbox, updatedModule ) = updater slipbox create
               in
-              ( setCreate updatedCreate model |> setSlipbox updatedSlipbox
+              ( setSlipbox updatedSlipbox ( setter updatedModule model )
               , Cmd.none
               )
             Nothing -> ( model, Cmd.none )
         Nothing -> ( model, Cmd.none )
-    discoveryModeAndSlipboxLambda discoveryUpdate =
-      case getSlipbox model of
-        Just slipbox ->
-          case getDiscovery model of
-            Just discovery ->
-              let
-                ( updatedSlipbox, updatedDiscovery ) = discoveryUpdate slipbox discovery
-              in
-              ( setDiscovery updatedDiscovery model |> setSlipbox updatedSlipbox
-              , Cmd.none
-              )
-            Nothing -> ( model, Cmd.none )
-        Nothing -> ( model, Cmd.none )
+    createModeAndSlipboxLambda updater = getAndSetWithSlipboxLambda getCreate setCreate updater
+    discoveryModeAndSlipboxLambda updater = getAndSetWithSlipboxLambda getDiscovery setDiscovery updater
+    editModeAndSlipboxLambda updater = getAndSetWithSlipboxLambda getEdit setEdit updater
   in
   case message of
     
@@ -370,10 +351,14 @@ update message model =
     EditModeConfirmBreakLink note link ->
       case getSlipbox model of
         Just slipbox ->
-          ( setTab ( EditModeTab <| Edit.confirmBreakLink note link slipbox ) model, Cmd.none )
+          ( setTab ( EditModeTab <| Edit.toConfirmBreakLink note link slipbox ) model, Cmd.none )
         Nothing -> ( model, Cmd.none )
     EditModeSelectNoteOnGraph note -> editModeLambda <| Edit.selectNoteOnGraph note
     EditModeCancel -> editModeLambda Edit.cancel
+    EditModeConfirm -> editModeAndSlipboxLambda Edit.confirm
+    EditModeHoverNote note -> editModeLambda <| Edit.hover note
+    EditModeStopHover -> editModeLambda Edit.stopHover
+    Placeholder -> ( model, Cmd.none )
 
 newContent : Content
 newContent =
@@ -581,17 +566,20 @@ tabView content =
               Nothing ->
                 Element.el [ Element.padding 8, Element.width Element.fill, Element.Border.width 1, Element.spacingXY 8 8 ]
                   <| heading "No Source"
-            toDiscussionButton ( n, _ ) = listButton Nothing ( textWrap <| Note.getContent n )
+            toDiscussionButton ( n, l ) =
+              listButtonWithBreakLink
+               ( Just <| EditModeConfirmBreakLink note l ) Nothing ( textWrap <| Note.getContent n )
             toLinkedNoteButton ( n, l ) =
               listButtonWithBreakLink
-                ( Just <| EditModeConfirmBreakLink n l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
+                ( Just <| EditModeConfirmBreakLink note l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
+            discussionHeader = Element.el [ Element.padding 8 ] <| heading "Directly Linked Discussions"
             discussions = case directlyLinkedDiscussions of
               Just linkedDiscussions -> Element.column
                 [ Element.width Element.fill
                 , Element.height Element.fill
                 , Element.scrollbarY
-                ]
-                ( Element.text "Directly Linked Discussions" :: List.map toDiscussionButton linkedDiscussions )
+                ] <|
+                discussionHeader :: List.map toDiscussionButton linkedDiscussions
               Nothing -> Element.none
             linkedNotes = case connectedNotes of
               Just tuples ->
@@ -604,11 +592,17 @@ tabView content =
                     [ Element.scrollbarY, Element.width Element.fill, Element.height Element.fill] <|
                     List.map toLinkedNoteButton tuples
                   ]
-              Nothing -> Element.none
+              Nothing ->
+                Element.el
+                  [ Element.width Element.fill
+                  , Element.height Element.fill
+                  , Element.padding 8
+                  ] <| heading "No Linked Notes"
           in
           Element.row
             [ Element.width Element.fill
             , Element.height Element.fill
+            , Element.spacingXY 8 8
             ]
             [ Element.column
               [ Element.width Element.fill
@@ -622,63 +616,44 @@ tabView content =
             , linkedNotes
             ]
 
-        Edit.ViewConfirmBreakLink linkToBreak graph selectedNote ->
-          let
-            viewGraph = Element.html <|
-              Svg.svg
-                [ Svg.Attributes.width "100%"
-                , Svg.Attributes.height "100%"
-                , Svg.Attributes.viewBox <| computeViewbox graph.positions
-                , Svg.Attributes.style "position: absolute"
-                ] <|
-                List.concat
-                  [ List.filterMap (toGraphLinkDeleteLink graph.positions linkToBreak ) graph.links
-                  , List.map ( \n -> viewGraphNote EditModeSelectNoteOnGraph n ) <|
-                    List.map ( toCreateTabGraphNote [] selectedNote ) graph.positions
-                  ]
-            container title note = Element.textColumn
-              [ Element.width Element.fill
-              , Element.Border.width 1
-              , Element.padding 8
-              , Element.spacingXY 10 10
-              ]
-              [ heading title
-              , Element.paragraph [] [ Element.text <| Note.getContent note ]
-              ]
-          in
+        Edit.ViewConfirmBreakLink linkToBreak graph selectedNote hoverNote ->
           Element.row
-            [ Element.inFront <|
-              Element.el
-                [ Element.padding 16
-                , Element.alignRight
-                , Element.alignTop
-                ] <|
-                Element.Input.button
-                  [ Element.Border.width 1
-                  , Element.padding 8
-                  ]
-                  { onPress = Just EditModeCancel
-                  , label = Element.text "Cancel"
-                  }
-            , Element.width Element.fill
+            [ Element.width Element.fill
             , Element.height Element.fill
             ]
             [ Element.column
               [ Element.width smallerElement
               , Element.height Element.fill
               ]
-              [ container "Selected Note" selectedNote
-              , selectedNoteLegend
-              , discussionLegend
-              , circleLegend
-              , linkBreakLegend
+              [ Element.textColumn
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Selected Note"
+                , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                ]
+              , Element.column
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Confirm Break Link"
+                , Element.row
+                  [ Element.spacingXY 10 10 ]
+                  [ button ( Just EditModeConfirm ) ( Element.text "Confirm" )
+                  , button ( Just EditModeCancel ) ( Element.text "Cancel" )
+                  ]
+                ]
               ]
             , Element.el
               [ Element.width biggerElement
               , Element.height Element.fill
               , Element.htmlAttribute <| Html.Attributes.style "position" "relative"
-              ]
-              viewGraph
+              ] <|
+              svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
             ]
 
     CreateModeTab create ->
@@ -857,7 +832,7 @@ tabView content =
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
-                  , List.map ( \n -> viewGraphNote CreateTabSelectNote n ) <|
+                  , List.map ( \n -> viewGraphNote CreateTabSelectNote (\f -> Placeholder) Placeholder n ) <|
                     List.map ( toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote ) createTabGraph.positions
                   ]
           in
@@ -1050,7 +1025,7 @@ tabView content =
                 ] <|
                 List.concat
                   [ List.filterMap (toCreateTabGraphLink discussionGraph.positions) discussionGraph.links
-                  , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote n ) <|
+                  , List.map ( \n -> viewGraphNote DiscoveryModeSelectNote (\f -> Placeholder) Placeholder n ) <|
                     List.map ( toCreateTabGraphNote [] selectedNote ) discussionGraph.positions
                   ]
             viewDiscussionNode =
@@ -1275,9 +1250,16 @@ toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
         False -> Regular note x y
 
 
-viewGraphNote : ( Note.Note -> Msg ) ->  GraphNote -> Svg.Svg Msg
-viewGraphNote msg graphNote =
-  let gLambda note content = Svg.g [ Svg.Attributes.cursor "Pointer", Svg.Events.onClick <| msg note ] content
+viewGraphNote : ( Note.Note -> Msg ) -> ( Note.Note -> Msg ) -> Msg -> GraphNote -> Svg.Svg Msg
+viewGraphNote onClick mouseOver mouseOut graphNote =
+  let
+    gLambda note content =
+      Svg.g
+        [ Svg.Attributes.cursor "Pointer"
+        , Svg.Events.onClick <| onClick note
+        , Svg.Events.onMouseOver <| mouseOver note
+        , Svg.Events.onMouseOut mouseOut
+        ] content
   in
   case graphNote of
     Selected note x y ->
@@ -1660,12 +1642,25 @@ listButton onPress label =
     , label = label
     }
 
+rightWidth = {right=1,top=0,bottom=0,left=0}
+
 listButtonWithBreakLink : Maybe Msg -> Maybe Msg -> Element Msg -> Element Msg
 listButtonWithBreakLink cancelPress onPress label =
   Element.row
-    [ Element.Border.width 2, Element.width Element.fill ]
-    [ Element.el [ Element.width biggerElement] <| listButton onPress label
-    , Element.Input.button [ Element.width smallerElement, Element.height Element.fill ]
+    [ Element.Border.width 1, Element.width Element.fill ]
+    [ Element.Input.button
+        [ Element.Border.widthEach rightWidth
+        , Element.padding 8
+        , Element.width Element.fill
+        ]
+        { onPress = onPress
+        , label = label
+        }
+    , Element.Input.button
+      [ Element.height Element.fill
+      , Element.width Element.shrink
+      , Element.padding 8
+      ]
       { onPress = cancelPress
       , label = Element.el [ Element.centerX, Element.centerY ] <| Element.text "Break Link"}
     ]
@@ -1696,6 +1691,55 @@ headingCenter title = Element.el [ Element.centerX ] <| heading title
 textWrap text = Element.paragraph [] [ Element.text text ]
 
 -- SVG HELPERS
+type TabGraph =
+ ConfirmBreakLink Link.Link
+
+svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
+svgGraph graph tab selectedNote maybeHoverNote =
+  let
+    ( links, notes ) =
+      case tab of
+        ConfirmBreakLink link ->
+          ( List.filterMap (toGraphLinkDeleteLink graph.positions link ) graph.links
+          , List.map
+            ( \n ->
+              viewGraphNote
+                EditModeSelectNoteOnGraph
+                EditModeHoverNote
+                EditModeStopHover
+                n
+            )
+              <| List.map ( toCreateTabGraphNote [] selectedNote ) graph.positions
+          )
+    legend = Element.el [ Element.alignBottom ] <|
+      Element.wrappedRow []
+      [ selectedNoteLegend
+      , discussionLegend
+      , circleLegend
+      , linkBreakLegend
+      ]
+    hover =
+      case maybeHoverNote of
+        Just hoverNote ->
+          Element.el
+            [ Element.alignTop
+            , Element.alignLeft
+            , Element.padding 8
+            ] <| textWrap <| Note.getContent hoverNote
+        Nothing -> Element.none
+  in
+  Element.el
+    [ Element.width Element.fill
+    , Element.height Element.fill
+    , Element.inFront legend
+    , Element.inFront hover
+    ]
+    <| Element.html <| Svg.svg
+    [ Svg.Attributes.width "100%"
+    , Svg.Attributes.height "100%"
+    , Svg.Attributes.viewBox <| computeViewbox graph.positions
+    , Svg.Attributes.style "position: absolute"
+    ] <| List.concat [ links, notes ]
 
 svgLegend : List ( Svg.Svg Msg ) -> Svg.Svg Msg
 svgLegend contents =

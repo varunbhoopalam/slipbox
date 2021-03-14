@@ -6,9 +6,12 @@ module Edit exposing
   , toSelectNote
   , select
   , updateInput
-  , confirmBreakLink
+  , toConfirmBreakLink
   , selectNoteOnGraph
   , cancel
+  , confirm
+  , hover
+  , stopHover
   )
 
 import Graph
@@ -21,7 +24,7 @@ import SourceTitle
 type Edit
   = SelectNote Filter
   | NoteSelected Note.Note
-  | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote
+  | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote HoveredNote
 
 init : Edit
 init = SelectNote ""
@@ -32,12 +35,13 @@ type alias DirectlyLinkedDiscussions = Maybe ( List NoteLinkTuple )
 type alias ConnectedNotes = Maybe ( List NoteLinkTuple )
 type alias Discussion = Note.Note
 type alias SelectedNote = Note.Note
+type alias HoveredNote = Maybe Note.Note
 type alias PreviousNoteSelected = Note.Note
 
 type EditView
   = ViewSelectNote Filter
   | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
-  | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote
+  | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
 
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
@@ -62,7 +66,8 @@ view slipbox edit =
         ( lambda linkedDiscussions )
         ( lambda linkedNotes )
 
-    ConfirmBreakLink _ link graph selectedNote -> ViewConfirmBreakLink link graph selectedNote
+    ConfirmBreakLink _ link graph selectedNote hoveredNote ->
+      ViewConfirmBreakLink link graph selectedNote hoveredNote
 
 toSelectNote : Edit -> Edit
 toSelectNote edit =
@@ -79,23 +84,46 @@ updateInput input edit =
     SelectNote _ -> SelectNote input
     _ -> edit
 
-confirmBreakLink : Note.Note -> Link.Link -> Slipbox.Slipbox -> Edit
-confirmBreakLink note link slipbox =
+toConfirmBreakLink : Note.Note -> Link.Link -> Slipbox.Slipbox -> Edit
+toConfirmBreakLink note link slipbox =
   ConfirmBreakLink
     note
     link
     ( Graph.simulatePositions <| Slipbox.getDiscussionTreeWithCollapsedDiscussions note slipbox )
     note
+    Nothing
 
 selectNoteOnGraph : Note.Note -> Edit -> Edit
 selectNoteOnGraph note edit =
   case edit of
-    ConfirmBreakLink pn link graph _ -> ConfirmBreakLink pn link graph note
+    ConfirmBreakLink pn link graph _ hoveredNote ->
+      ConfirmBreakLink pn link graph note hoveredNote
     _ -> edit
 
 cancel : Edit -> Edit
 cancel edit =
   case edit of
-    ConfirmBreakLink previousNoteSelected _ _ _ ->
+    ConfirmBreakLink previousNoteSelected _ _ _ _ ->
       NoteSelected previousNoteSelected
+    _ -> edit
+
+confirm : Slipbox.Slipbox -> Edit -> ( Slipbox.Slipbox, Edit )
+confirm slipbox edit =
+  case edit of
+    ConfirmBreakLink previousNoteSelected link _ _ _ ->
+      ( Slipbox.breakLink link slipbox, NoteSelected previousNoteSelected )
+    _ -> ( slipbox, edit )
+
+hover : Note.Note -> Edit -> Edit
+hover note edit =
+  case edit of
+    ConfirmBreakLink pn link graph selectedNote _ ->
+      ConfirmBreakLink pn link graph selectedNote <| Just note
+    _ -> edit
+
+stopHover : Edit -> Edit
+stopHover edit =
+  case edit of
+    ConfirmBreakLink pn link graph selectedNote _ ->
+      ConfirmBreakLink pn link graph selectedNote Nothing
     _ -> edit

@@ -14,6 +14,7 @@ module Slipbox exposing
   , addDiscussion
   , addSource
   , addLink
+  , breakLink
   )
 
 import Note
@@ -263,6 +264,15 @@ addLink note1 note2 slipbox =
     , idGenerator = idGenerator
     , unsavedChanges = True
     }
+
+breakLink : Link.Link -> Slipbox -> Slipbox
+breakLink link slipbox =
+  let content = getContent slipbox
+  in
+    Slipbox
+      { content | links = List.filter (\l -> not <| Link.is l link ) content.links
+      , unsavedChanges = True
+      }
 
 flatten2D : List (List a) -> List a
 flatten2D list =
