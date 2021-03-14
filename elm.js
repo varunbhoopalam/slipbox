@@ -4807,22 +4807,22 @@ var $elm$core$Array$builderToArray = F2(
 		if (!builder.n) {
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
-				$elm$core$Elm$JsArray$length(builder.s),
+				$elm$core$Elm$JsArray$length(builder.r),
 				$elm$core$Array$shiftStep,
 				$elm$core$Elm$JsArray$empty,
-				builder.s);
+				builder.r);
 		} else {
 			var treeLen = builder.n * $elm$core$Array$branchFactor;
 			var depth = $elm$core$Basics$floor(
 				A2($elm$core$Basics$logBase, $elm$core$Array$branchFactor, treeLen - 1));
-			var correctNodeList = reverseNodeList ? $elm$core$List$reverse(builder.t) : builder.t;
+			var correctNodeList = reverseNodeList ? $elm$core$List$reverse(builder.s) : builder.s;
 			var tree = A2($elm$core$Array$treeFromBuilder, correctNodeList, builder.n);
 			return A4(
 				$elm$core$Array$Array_elm_builtin,
-				$elm$core$Elm$JsArray$length(builder.s) + treeLen,
+				$elm$core$Elm$JsArray$length(builder.r) + treeLen,
 				A2($elm$core$Basics$max, 5, depth * $elm$core$Array$shiftStep),
 				tree,
-				builder.s);
+				builder.r);
 		}
 	});
 var $elm$core$Basics$idiv = _Basics_idiv;
@@ -4835,7 +4835,7 @@ var $elm$core$Array$initializeHelp = F5(
 				return A2(
 					$elm$core$Array$builderToArray,
 					false,
-					{t: nodeList, n: (len / $elm$core$Array$branchFactor) | 0, s: tail});
+					{s: nodeList, n: (len / $elm$core$Array$branchFactor) | 0, r: tail});
 			} else {
 				var leaf = $elm$core$Array$Leaf(
 					A3($elm$core$Elm$JsArray$initialize, $elm$core$Array$branchFactor, fromIndex, fn));
@@ -5304,9 +5304,9 @@ var $author$project$Edit$confirm = F2(
 			return _Utils_Tuple2(slipbox, edit);
 		}
 	});
-var $author$project$Create$FindLinksForDiscussion = F5(
-	function (a, b, c, d, e) {
-		return {$: 2, a: a, b: b, c: c, d: d, e: e};
+var $author$project$Create$FindLinksForDiscussion = F6(
+	function (a, b, c, d, e, f) {
+		return {$: 2, a: a, b: b, c: c, d: d, e: e, f: f};
 	});
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
@@ -5394,7 +5394,8 @@ var $author$project$Create$createLink = function (create) {
 		var createModeInternal = create.c;
 		var question = create.d;
 		var selectedNote = create.e;
-		return A5(
+		var hoveredNote = create.f;
+		return A6(
 			$author$project$Create$FindLinksForDiscussion,
 			coachingModal,
 			graph,
@@ -5403,7 +5404,8 @@ var $author$project$Create$createLink = function (create) {
 				$author$project$Create$makeLink(selectedNote),
 				createModeInternal),
 			question,
-			selectedNote);
+			selectedNote,
+			hoveredNote);
 	} else {
 		return create;
 	}
@@ -5705,6 +5707,26 @@ var $author$project$Main$getSlipbox = function (model) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $author$project$Create$hover = F2(
+	function (note, create) {
+		if (create.$ === 2) {
+			var coachingModal = create.a;
+			var graph = create.b;
+			var createModeInternal = create.c;
+			var question = create.d;
+			var selectedNote = create.e;
+			return A6(
+				$author$project$Create$FindLinksForDiscussion,
+				coachingModal,
+				graph,
+				createModeInternal,
+				question,
+				selectedNote,
+				$elm$core$Maybe$Just(note));
+		} else {
+			return create;
+		}
+	});
 var $author$project$Edit$ConfirmBreakLink = F5(
 	function (a, b, c, d, e) {
 		return {$: 2, a: a, b: b, c: c, d: d, e: e};
@@ -6017,6 +6039,7 @@ var $author$project$Create$removeLink = function (create) {
 		var createModeInternal = create.c;
 		var question = create.d;
 		var selectedNote = create.e;
+		var hoveredNote = create.f;
 		var updatedLinks = A2(
 			$elm$core$List$filter,
 			function (l) {
@@ -6024,7 +6047,7 @@ var $author$project$Create$removeLink = function (create) {
 			},
 			$author$project$Create$getCreatedLinks(createModeInternal));
 		var updatedInternal = A2($author$project$Create$setCreatedLinks, updatedLinks, createModeInternal);
-		return A5($author$project$Create$FindLinksForDiscussion, coachingModal, graph, updatedInternal, question, selectedNote);
+		return A6($author$project$Create$FindLinksForDiscussion, coachingModal, graph, updatedInternal, question, selectedNote, hoveredNote);
 	} else {
 		return create;
 	}
@@ -6046,7 +6069,8 @@ var $author$project$Create$selectNote = F2(
 			var graph = create.b;
 			var createModeInternal = create.c;
 			var question = create.d;
-			return A5($author$project$Create$FindLinksForDiscussion, coachingModal, graph, createModeInternal, question, note);
+			var hoveredNote = create.f;
+			return A6($author$project$Create$FindLinksForDiscussion, coachingModal, graph, createModeInternal, question, note, hoveredNote);
 		} else {
 			return create;
 		}
@@ -6198,6 +6222,18 @@ var $author$project$Discovery$startNewDiscussion = function (discovery) {
 		return A2($author$project$Discovery$DesignateDiscussionEntryPoint, selectedNote, '');
 	} else {
 		return discovery;
+	}
+};
+var $author$project$Create$stopHover = function (create) {
+	if (create.$ === 2) {
+		var coachingModal = create.a;
+		var graph = create.b;
+		var createModeInternal = create.c;
+		var question = create.d;
+		var selectedNote = create.e;
+		return A6($author$project$Create$FindLinksForDiscussion, coachingModal, graph, createModeInternal, question, selectedNote, $elm$core$Maybe$Nothing);
+	} else {
+		return create;
 	}
 };
 var $author$project$Edit$stopHover = function (edit) {
@@ -8067,14 +8103,15 @@ var $author$project$Create$toAddLinkState = F3(
 			var coachingModal = create.a;
 			var createModeInternal = create.b;
 			var updatedInternal = A2($author$project$Create$read, question, createModeInternal);
-			return A5(
+			return A6(
 				$author$project$Create$FindLinksForDiscussion,
 				coachingModal,
 				$author$project$Graph$simulatePositions(
 					A2($author$project$Slipbox$getDiscussionTreeWithCollapsedDiscussions, question, slipbox)),
 				updatedInternal,
 				question,
-				question);
+				question,
+				$elm$core$Maybe$Nothing);
 		} else {
 			return create;
 		}
@@ -8145,7 +8182,8 @@ var $author$project$Create$setCoachingModal = F2(
 				var internal = model.c;
 				var question = model.d;
 				var selectedNote = model.e;
-				return A5($author$project$Create$FindLinksForDiscussion, coachingModal, graph, internal, question, selectedNote);
+				var hoveredNote = model.f;
+				return A6($author$project$Create$FindLinksForDiscussion, coachingModal, graph, internal, question, selectedNote, hoveredNote);
 			case 3:
 				var createModeInternal = model.b;
 				var string = model.c;
@@ -8507,10 +8545,16 @@ var $author$project$Main$update = F2(
 			case 22:
 				return createModeLambda($author$project$Create$submitNewDiscussion);
 			case 23:
+				var note = message.a;
+				return createModeLambda(
+					$author$project$Create$hover(note));
+			case 24:
+				return createModeLambda($author$project$Create$stopHover);
+			case 25:
 				var input = message.a;
 				return discoveryModeLambda(
 					$author$project$Discovery$updateInput(input));
-			case 24:
+			case 26:
 				var discussion = message.a;
 				var _v14 = $author$project$Main$getSlipbox(model);
 				if (!_v14.$) {
@@ -8520,21 +8564,21 @@ var $author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 25:
+			case 27:
 				return discoveryModeLambda($author$project$Discovery$back);
-			case 26:
+			case 28:
 				var note = message.a;
 				return discoveryModeLambda(
 					$author$project$Discovery$selectNote(note));
-			case 27:
-				return discoveryModeAndSlipboxLambda($author$project$Discovery$submit);
-			case 28:
-				return discoveryModeLambda($author$project$Discovery$startNewDiscussion);
 			case 29:
+				return discoveryModeAndSlipboxLambda($author$project$Discovery$submit);
+			case 30:
+				return discoveryModeLambda($author$project$Discovery$startNewDiscussion);
+			case 31:
 				var input = message.a;
 				return editModeLambda(
 					$author$project$Edit$updateInput(input));
-			case 30:
+			case 32:
 				var note = message.a;
 				return _Utils_Tuple2(
 					A2(
@@ -8543,7 +8587,7 @@ var $author$project$Main$update = F2(
 							$author$project$Edit$select(note)),
 						model),
 					$elm$core$Platform$Cmd$none);
-			case 31:
+			case 33:
 				var note = message.a;
 				var link = message.b;
 				var _v15 = $author$project$Main$getSlipbox(model);
@@ -8559,19 +8603,19 @@ var $author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 32:
+			case 34:
 				var note = message.a;
 				return editModeLambda(
 					$author$project$Edit$selectNoteOnGraph(note));
-			case 33:
-				return editModeLambda($author$project$Edit$cancel);
-			case 34:
-				return editModeAndSlipboxLambda($author$project$Edit$confirm);
 			case 35:
+				return editModeLambda($author$project$Edit$cancel);
+			case 36:
+				return editModeAndSlipboxLambda($author$project$Edit$confirm);
+			case 37:
 				var note = message.a;
 				return editModeLambda(
 					$author$project$Edit$hover(note));
-			case 36:
+			case 38:
 				return editModeLambda($author$project$Edit$stopHover);
 			default:
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -14454,7 +14498,7 @@ var $elm$html$Html$Attributes$tabindex = function (n) {
 };
 var $mdgriffith$elm_ui$Element$Input$button = F2(
 	function (attrs, _v0) {
-		var onPress = _v0.r;
+		var onPress = _v0.t;
 		var label = _v0.m;
 		return A4(
 			$mdgriffith$elm_ui$Internal$Model$element,
@@ -14929,7 +14973,7 @@ var $author$project$Main$barsButton = A2(
 					_List_fromArray(
 						[$lattyware$elm_fontawesome$FontAwesome$Attributes$fa2x]),
 					$lattyware$elm_fontawesome$FontAwesome$Solid$bars))),
-		r: $elm$core$Maybe$Just($author$project$Main$ToggleSideNav)
+		t: $elm$core$Maybe$Just($author$project$Main$ToggleSideNav)
 	});
 var $lattyware$elm_fontawesome$FontAwesome$Solid$brain = A5(
 	$lattyware$elm_fontawesome$FontAwesome$Icon$Icon,
@@ -15003,7 +15047,7 @@ var $author$project$Main$leftNavContractedButtonLambda = F4(
 				buttonAttributes,
 				{
 					m: icon,
-					r: $elm$core$Maybe$Just(msg)
+					t: $elm$core$Maybe$Just(msg)
 				}));
 	});
 var $mdgriffith$elm_ui$Internal$Model$PaddingStyle = F5(
@@ -15110,7 +15154,7 @@ var $author$project$Main$leftNavExpandedButtonLambda = F5(
 								icon,
 								$mdgriffith$elm_ui$Element$text(text)
 							])),
-					r: $elm$core$Maybe$Just(msg)
+					t: $elm$core$Maybe$Just(msg)
 				}));
 	});
 var $mdgriffith$elm_ui$Internal$Model$MoveY = function (a) {
@@ -15325,7 +15369,7 @@ var $author$project$Main$leftNav = F3(
 													$author$project$Main$saveIcon,
 													$mdgriffith$elm_ui$Element$text('Save')
 												])),
-										r: $elm$core$Maybe$Just($author$project$Main$FileDownload)
+										t: $elm$core$Maybe$Just($author$project$Main$FileDownload)
 									})),
 								A5(
 								$author$project$Main$leftNavExpandedButtonLambda,
@@ -15411,7 +15455,9 @@ var $author$project$Main$leftNav = F3(
 					]));
 		}
 	});
-var $author$project$Main$ConfirmBreakLink = $elm$core$Basics$identity;
+var $author$project$Main$ConfirmBreakLink = function (a) {
+	return {$: 0, a: a};
+};
 var $author$project$Main$CreateTabContinueWithSelectedSource = function (a) {
 	return {$: 16, a: a};
 };
@@ -15421,9 +15467,6 @@ var $author$project$Main$CreateTabNewSource = {$: 18};
 var $author$project$Main$CreateTabNextStep = {$: 10};
 var $author$project$Main$CreateTabNoSource = {$: 17};
 var $author$project$Main$CreateTabRemoveLink = {$: 14};
-var $author$project$Main$CreateTabSelectNote = function (a) {
-	return {$: 15, a: a};
-};
 var $author$project$Main$CreateTabSubmitNewDiscussion = {$: 22};
 var $author$project$Main$CreateTabSubmitNewSource = {$: 19};
 var $author$project$Main$CreateTabToChooseDiscussion = {$: 12};
@@ -15433,34 +15476,37 @@ var $author$project$Main$CreateTabToFindLinksForDiscussion = function (a) {
 var $author$project$Main$CreateTabUpdateInput = function (a) {
 	return {$: 20, a: a};
 };
-var $author$project$Main$DiscoveryModeBack = {$: 25};
+var $author$project$Main$DiscoveryModeBack = {$: 27};
 var $author$project$Main$DiscoveryModeSelectDiscussion = function (a) {
-	return {$: 24, a: a};
-};
-var $author$project$Main$DiscoveryModeSelectNote = function (a) {
 	return {$: 26, a: a};
 };
-var $author$project$Main$DiscoveryModeStartNewDiscussion = {$: 28};
-var $author$project$Main$DiscoveryModeSubmit = {$: 27};
-var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
-	return {$: 23, a: a};
+var $author$project$Main$DiscoveryModeSelectNote = function (a) {
+	return {$: 28, a: a};
 };
-var $author$project$Main$EditModeCancel = {$: 33};
-var $author$project$Main$EditModeConfirm = {$: 34};
+var $author$project$Main$DiscoveryModeStartNewDiscussion = {$: 30};
+var $author$project$Main$DiscoveryModeSubmit = {$: 29};
+var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
+	return {$: 25, a: a};
+};
+var $author$project$Main$DiscussionChosenView = function (a) {
+	return {$: 1, a: a};
+};
+var $author$project$Main$EditModeCancel = {$: 35};
+var $author$project$Main$EditModeConfirm = {$: 36};
 var $author$project$Main$EditModeConfirmBreakLink = F2(
 	function (a, b) {
-		return {$: 31, a: a, b: b};
+		return {$: 33, a: a, b: b};
 	});
 var $author$project$Main$EditModeSelectNote = function (a) {
-	return {$: 30, a: a};
+	return {$: 32, a: a};
 };
 var $author$project$Main$EditModeUpdateInput = function (a) {
-	return {$: 29, a: a};
+	return {$: 31, a: a};
 };
 var $author$project$Create$Note = function (a) {
 	return {$: 0, a: a};
 };
-var $author$project$Main$Placeholder = {$: 37};
+var $author$project$Main$Placeholder = {$: 39};
 var $author$project$Create$SourceAuthor = function (a) {
 	return {$: 2, a: a};
 };
@@ -15504,7 +15550,7 @@ var $author$project$Main$button = F2(
 					$mdgriffith$elm_ui$Element$padding(8),
 					$mdgriffith$elm_ui$Element$Border$width(1)
 				]),
-			{m: label, r: msg});
+			{m: label, t: msg});
 	});
 var $mdgriffith$elm_ui$Internal$Flag$fontAlignment = $mdgriffith$elm_ui$Internal$Flag$flag(12);
 var $mdgriffith$elm_ui$Element$Font$center = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$fontAlignment, $mdgriffith$elm_ui$Internal$Style$classes.hO);
@@ -15563,7 +15609,7 @@ var $author$project$Main$coaching = F2(
 				]),
 			{
 				m: $mdgriffith$elm_ui$Element$text('Coaching'),
-				r: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleCoaching)
+				t: $elm$core$Maybe$Just($author$project$Main$CreateTabToggleCoaching)
 			});
 		if (!coachingOpen) {
 			return toggleCoachingButton;
@@ -15922,47 +15968,6 @@ var $mdgriffith$elm_ui$Internal$Model$InFront = 4;
 var $mdgriffith$elm_ui$Element$inFront = function (element) {
 	return A2($mdgriffith$elm_ui$Element$createNearby, 4, element);
 };
-var $elm$svg$Svg$line = $elm$svg$Svg$trustedNode('line');
-var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
-var $elm$svg$Svg$Attributes$x1 = _VirtualDom_attribute('x1');
-var $elm$svg$Svg$Attributes$x2 = _VirtualDom_attribute('x2');
-var $elm$svg$Svg$Attributes$y1 = _VirtualDom_attribute('y1');
-var $elm$svg$Svg$Attributes$y2 = _VirtualDom_attribute('y2');
-var $author$project$Main$svgLine = F4(
-	function (x1, x2, y1, y2) {
-		return A2(
-			$elm$svg$Svg$line,
-			_List_fromArray(
-				[
-					$elm$svg$Svg$Attributes$x1(x1),
-					$elm$svg$Svg$Attributes$x2(x2),
-					$elm$svg$Svg$Attributes$y1(y1),
-					$elm$svg$Svg$Attributes$y2(y2),
-					$elm$svg$Svg$Attributes$stroke('black')
-				]),
-			_List_Nil);
-	});
-var $author$project$Main$linkedCircleLegend = A2(
-	$mdgriffith$elm_ui$Element$row,
-	_List_Nil,
-	_List_fromArray(
-		[
-			$mdgriffith$elm_ui$Element$html(
-			$author$project$Main$svgLegend(
-				_List_fromArray(
-					[
-						A2(
-						$elm$svg$Svg$g,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A3($author$project$Main$svgCircle, '20', '20', '10'),
-								A4($author$project$Main$svgLine, '10', '30', '20', '20'),
-								A4($author$project$Main$svgLine, '20', '20', '10', '30')
-							]))
-					]))),
-			$mdgriffith$elm_ui$Element$text('Note Marked to link (if not selected)')
-		]));
 var $author$project$Main$listButton = F2(
 	function (onPress, label) {
 		return A2(
@@ -15972,7 +15977,7 @@ var $author$project$Main$listButton = F2(
 					$mdgriffith$elm_ui$Element$Border$width(2),
 					$mdgriffith$elm_ui$Element$padding(8)
 				]),
-			{m: label, r: onPress});
+			{m: label, t: onPress});
 	});
 var $author$project$Main$rightWidth = {bo: 0, bA: 0, bG: 1, bO: 0};
 var $mdgriffith$elm_ui$Element$Border$widthXY = F2(
@@ -16023,7 +16028,7 @@ var $author$project$Main$listButtonWithBreakLink = F3(
 							$mdgriffith$elm_ui$Element$padding(8),
 							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill)
 						]),
-					{m: label, r: onPress}),
+					{m: label, t: onPress}),
 					A2(
 					$mdgriffith$elm_ui$Element$Input$button,
 					_List_fromArray(
@@ -16038,7 +16043,7 @@ var $author$project$Main$listButtonWithBreakLink = F3(
 							_List_fromArray(
 								[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$centerY]),
 							$mdgriffith$elm_ui$Element$text('Break Link')),
-						r: cancelPress
+						t: cancelPress
 					})
 				]));
 	});
@@ -16961,14 +16966,27 @@ var $author$project$Main$selectedNoteLegend = A2(
 			$mdgriffith$elm_ui$Element$text('Currently Selected Note')
 		]));
 var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
+var $author$project$Main$CreateTabHoverNote = function (a) {
+	return {$: 23, a: a};
+};
+var $author$project$Main$CreateTabSelectNote = function (a) {
+	return {$: 15, a: a};
+};
+var $author$project$Main$CreateTabStopHover = {$: 24};
 var $author$project$Main$EditModeHoverNote = function (a) {
-	return {$: 35, a: a};
+	return {$: 37, a: a};
 };
 var $author$project$Main$EditModeSelectNoteOnGraph = function (a) {
-	return {$: 32, a: a};
+	return {$: 34, a: a};
 };
-var $author$project$Main$EditModeStopHover = {$: 36};
+var $author$project$Main$EditModeStopHover = {$: 38};
+var $elm$svg$Svg$line = $elm$svg$Svg$trustedNode('line');
+var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
 var $elm$svg$Svg$Attributes$strokeDasharray = _VirtualDom_attribute('stroke-dasharray');
+var $elm$svg$Svg$Attributes$x1 = _VirtualDom_attribute('x1');
+var $elm$svg$Svg$Attributes$x2 = _VirtualDom_attribute('x2');
+var $elm$svg$Svg$Attributes$y1 = _VirtualDom_attribute('y1');
+var $elm$svg$Svg$Attributes$y2 = _VirtualDom_attribute('y2');
 var $author$project$Main$svgDashedLine = F4(
 	function (x1, x2, y1, y2) {
 		return A2(
@@ -16997,6 +17015,41 @@ var $author$project$Main$linkBreakLegend = A2(
 					]))),
 			$mdgriffith$elm_ui$Element$text('Link to Break')
 		]));
+var $author$project$Main$svgLine = F4(
+	function (x1, x2, y1, y2) {
+		return A2(
+			$elm$svg$Svg$line,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$x1(x1),
+					$elm$svg$Svg$Attributes$x2(x2),
+					$elm$svg$Svg$Attributes$y1(y1),
+					$elm$svg$Svg$Attributes$y2(y2),
+					$elm$svg$Svg$Attributes$stroke('black')
+				]),
+			_List_Nil);
+	});
+var $author$project$Main$linkedCircleLegend = A2(
+	$mdgriffith$elm_ui$Element$row,
+	_List_Nil,
+	_List_fromArray(
+		[
+			$mdgriffith$elm_ui$Element$html(
+			$author$project$Main$svgLegend(
+				_List_fromArray(
+					[
+						A2(
+						$elm$svg$Svg$g,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A3($author$project$Main$svgCircle, '20', '20', '10'),
+								A4($author$project$Main$svgLine, '10', '30', '20', '20'),
+								A4($author$project$Main$svgLine, '20', '20', '10', '30')
+							]))
+					]))),
+			$mdgriffith$elm_ui$Element$text('Note Marked to link (if not selected)')
+		]));
 var $author$project$Main$textWrap = function (text) {
 	return A2(
 		$mdgriffith$elm_ui$Element$paragraph,
@@ -17006,6 +17059,58 @@ var $author$project$Main$textWrap = function (text) {
 				$mdgriffith$elm_ui$Element$text(text)
 			]));
 };
+var $elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 1) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 1) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return $elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var $elm$svg$Svg$Attributes$strokeWidth = _VirtualDom_attribute('stroke-width');
+var $author$project$Main$toCreateTabGraphLink = F2(
+	function (notePositions, link) {
+		var maybeGetNoteByIdentifier = function (identifier) {
+			return $elm$core$List$head(
+				A2(
+					$elm$core$List$filter,
+					function (notePosition) {
+						return A2(identifier, link, notePosition.eW);
+					},
+					notePositions));
+		};
+		var line = F2(
+			function (note1, note2) {
+				return A2(
+					$elm$svg$Svg$line,
+					_List_fromArray(
+						[
+							$elm$svg$Svg$Attributes$x1(
+							$elm$core$String$fromFloat(note1.dZ)),
+							$elm$svg$Svg$Attributes$y1(
+							$elm$core$String$fromFloat(note1.d0)),
+							$elm$svg$Svg$Attributes$x2(
+							$elm$core$String$fromFloat(note2.dZ)),
+							$elm$svg$Svg$Attributes$y2(
+							$elm$core$String$fromFloat(note2.d0)),
+							$elm$svg$Svg$Attributes$stroke('rgb(0,0,0)'),
+							$elm$svg$Svg$Attributes$strokeWidth('2')
+						]),
+					_List_Nil);
+			});
+		return A3(
+			$elm$core$Maybe$map2,
+			line,
+			maybeGetNoteByIdentifier($author$project$Link$isSource),
+			maybeGetNoteByIdentifier($author$project$Link$isTarget));
+	});
 var $author$project$Main$Discussion = F3(
 	function (a, b, c) {
 		return {$: 2, a: a, b: b, c: c};
@@ -17047,22 +17152,6 @@ var $author$project$Main$toCreateTabGraphNote = F3(
 			}
 		}
 	});
-var $elm$core$Maybe$map2 = F3(
-	function (func, ma, mb) {
-		if (ma.$ === 1) {
-			return $elm$core$Maybe$Nothing;
-		} else {
-			var a = ma.a;
-			if (mb.$ === 1) {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var b = mb.a;
-				return $elm$core$Maybe$Just(
-					A2(func, a, b));
-			}
-		}
-	});
-var $elm$svg$Svg$Attributes$strokeWidth = _VirtualDom_attribute('stroke-width');
 var $author$project$Main$toGraphLinkDeleteLink = F3(
 	function (notePositions, linkToDelete, link) {
 		var maybeGetNoteByIdentifier = function (identifier) {
@@ -17431,6 +17520,21 @@ var $mdgriffith$elm_ui$Element$wrappedRow = F2(
 	});
 var $author$project$Main$svgGraph = F4(
 	function (graph, tab, selectedNote, maybeHoverNote) {
+		var notesLambda = F4(
+			function (onSelect, onMouseOver, onMouseOut, linkedNotes) {
+				return A2(
+					$elm$core$List$map,
+					function (n) {
+						return A4($author$project$Main$viewGraphNote, onSelect, onMouseOver, onMouseOut, n);
+					},
+					A2(
+						$elm$core$List$map,
+						A2($author$project$Main$toCreateTabGraphNote, linkedNotes, selectedNote),
+						graph.hf));
+			});
+		var linkLambda = function (filterMap) {
+			return A2($elm$core$List$filterMap, filterMap, graph.gT);
+		};
 		var legend = A2(
 			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
@@ -17439,7 +17543,7 @@ var $author$project$Main$svgGraph = F4(
 				$mdgriffith$elm_ui$Element$wrappedRow,
 				_List_Nil,
 				_List_fromArray(
-					[$author$project$Main$selectedNoteLegend, $author$project$Main$discussionLegend, $author$project$Main$circleLegend, $author$project$Main$linkBreakLegend])));
+					[$author$project$Main$selectedNoteLegend, $author$project$Main$linkedCircleLegend, $author$project$Main$discussionLegend, $author$project$Main$circleLegend, $author$project$Main$linkBreakLegend])));
 		var hover = function () {
 			if (!maybeHoverNote.$) {
 				var hoverNote = maybeHoverNote.a;
@@ -17458,21 +17562,19 @@ var $author$project$Main$svgGraph = F4(
 			}
 		}();
 		var _v0 = function () {
-			var link = tab;
-			return _Utils_Tuple2(
-				A2(
-					$elm$core$List$filterMap,
-					A2($author$project$Main$toGraphLinkDeleteLink, graph.hf, link),
-					graph.gT),
-				A2(
-					$elm$core$List$map,
-					function (n) {
-						return A4($author$project$Main$viewGraphNote, $author$project$Main$EditModeSelectNoteOnGraph, $author$project$Main$EditModeHoverNote, $author$project$Main$EditModeStopHover, n);
-					},
-					A2(
-						$elm$core$List$map,
-						A2($author$project$Main$toCreateTabGraphNote, _List_Nil, selectedNote),
-						graph.hf)));
+			if (!tab.$) {
+				var link = tab.a;
+				return _Utils_Tuple2(
+					linkLambda(
+						A2($author$project$Main$toGraphLinkDeleteLink, graph.hf, link)),
+					A4(notesLambda, $author$project$Main$EditModeSelectNoteOnGraph, $author$project$Main$EditModeHoverNote, $author$project$Main$EditModeStopHover, _List_Nil));
+			} else {
+				var newlyLinkedNotes = tab.a;
+				return _Utils_Tuple2(
+					linkLambda(
+						$author$project$Main$toCreateTabGraphLink(graph.hf)),
+					A4(notesLambda, $author$project$Main$CreateTabSelectNote, $author$project$Main$CreateTabHoverNote, $author$project$Main$CreateTabStopHover, newlyLinkedNotes));
+			}
 		}();
 		var links = _v0.a;
 		var notes = _v0.b;
@@ -17742,42 +17844,6 @@ var $mdgriffith$elm_ui$Element$textColumn = F2(
 				attrs),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
-var $author$project$Main$toCreateTabGraphLink = F2(
-	function (notePositions, link) {
-		var maybeGetNoteByIdentifier = function (identifier) {
-			return $elm$core$List$head(
-				A2(
-					$elm$core$List$filter,
-					function (notePosition) {
-						return A2(identifier, link, notePosition.eW);
-					},
-					notePositions));
-		};
-		var line = F2(
-			function (note1, note2) {
-				return A2(
-					$elm$svg$Svg$line,
-					_List_fromArray(
-						[
-							$elm$svg$Svg$Attributes$x1(
-							$elm$core$String$fromFloat(note1.dZ)),
-							$elm$svg$Svg$Attributes$y1(
-							$elm$core$String$fromFloat(note1.d0)),
-							$elm$svg$Svg$Attributes$x2(
-							$elm$core$String$fromFloat(note2.dZ)),
-							$elm$svg$Svg$Attributes$y2(
-							$elm$core$String$fromFloat(note2.d0)),
-							$elm$svg$Svg$Attributes$stroke('rgb(0,0,0)'),
-							$elm$svg$Svg$Attributes$strokeWidth('2')
-						]),
-					_List_Nil);
-			});
-		return A3(
-			$elm$core$Maybe$map2,
-			line,
-			maybeGetNoteByIdentifier($author$project$Link$isSource),
-			maybeGetNoteByIdentifier($author$project$Link$isTarget));
-	});
 var $author$project$SourceTitle$titlesAreDifferent = function (title) {
 	return function (t) {
 		return !_Utils_eq(
@@ -17812,9 +17878,9 @@ var $author$project$Create$DesignateDiscussionEntryPointView = F2(
 	function (a, b) {
 		return {$: 3, a: a, b: b};
 	});
-var $author$project$Create$DiscussionChosenView = F6(
-	function (a, b, c, d, e, f) {
-		return {$: 2, a: a, b: b, c: c, d: d, e: e, f: f};
+var $author$project$Create$DiscussionChosenView = F7(
+	function (a, b, c, d, e, f, g) {
+		return {$: 2, a: a, b: b, c: c, d: d, e: e, f: f, g: g};
 	});
 var $author$project$Create$NoteInputView = F3(
 	function (a, b, c) {
@@ -17863,6 +17929,7 @@ var $author$project$Create$view = function (create) {
 			var createModeInternal = create.c;
 			var question = create.d;
 			var selectedNote = create.e;
+			var hoveredNote = create.f;
 			var note = $author$project$Create$getNote(createModeInternal);
 			var createdLinks = $author$project$Create$getCreatedLinks(createModeInternal);
 			var notesAssociatedToCreatedLinks = A2($elm$core$List$map, $author$project$Create$getNoteOnLink, createdLinks);
@@ -17870,7 +17937,7 @@ var $author$project$Create$view = function (create) {
 				$elm$core$List$any,
 				$author$project$Create$linkIsForNote(selectedNote),
 				createdLinks);
-			return A6($author$project$Create$DiscussionChosenView, graph, note, question, selectedNote, selectedNoteIsLinked, notesAssociatedToCreatedLinks);
+			return A7($author$project$Create$DiscussionChosenView, graph, note, question, selectedNote, selectedNoteIsLinked, notesAssociatedToCreatedLinks, hoveredNote);
 		case 3:
 			var createModeInternal = create.b;
 			var string = create.c;
@@ -18355,7 +18422,12 @@ var $author$project$Main$tabView = function (content) {
 										$mdgriffith$elm_ui$Element$htmlAttribute(
 										A2($elm$html$Html$Attributes$style, 'position', 'relative'))
 									]),
-								A4($author$project$Main$svgGraph, graph, linkToBreak, selectedNote, hoverNote))
+								A4(
+									$author$project$Main$svgGraph,
+									graph,
+									$author$project$Main$ConfirmBreakLink(linkToBreak),
+									selectedNote,
+									hoverNote))
 							]));
 			}
 		case 1:
@@ -18527,7 +18599,7 @@ var $author$project$Main$tabView = function (content) {
 																			[
 																				$mdgriffith$elm_ui$Element$text(row.a2)
 																			])),
-																	r: $elm$core$Maybe$Just(
+																	t: $elm$core$Maybe$Just(
 																		$author$project$Main$CreateTabToFindLinksForDiscussion(row.eW))
 																});
 														},
@@ -18584,41 +18656,7 @@ var $author$project$Main$tabView = function (content) {
 					var selectedNote = _v7.d;
 					var selectedNoteIsLinked = _v7.e;
 					var notesAssociatedToCreatedLinks = _v7.f;
-					var viewGraph = $mdgriffith$elm_ui$Element$html(
-						A2(
-							$elm$svg$Svg$svg,
-							_List_fromArray(
-								[
-									$elm$svg$Svg$Attributes$width('100%'),
-									$elm$svg$Svg$Attributes$height('100%'),
-									$elm$svg$Svg$Attributes$viewBox(
-									$author$project$Main$computeViewbox(createTabGraph.hf)),
-									$elm$svg$Svg$Attributes$style('position: absolute')
-								]),
-							$elm$core$List$concat(
-								_List_fromArray(
-									[
-										A2(
-										$elm$core$List$filterMap,
-										$author$project$Main$toCreateTabGraphLink(createTabGraph.hf),
-										createTabGraph.gT),
-										A2(
-										$elm$core$List$map,
-										function (n) {
-											return A4(
-												$author$project$Main$viewGraphNote,
-												$author$project$Main$CreateTabSelectNote,
-												function (f) {
-													return $author$project$Main$Placeholder;
-												},
-												$author$project$Main$Placeholder,
-												n);
-										},
-										A2(
-											$elm$core$List$map,
-											A2($author$project$Main$toCreateTabGraphNote, notesAssociatedToCreatedLinks, selectedNote),
-											createTabGraph.hf))
-									]))));
+					var hoverNote = _v7.g;
 					var linkNode = selectedNoteIsLinked ? A2(
 						$mdgriffith$elm_ui$Element$column,
 						_List_fromArray(
@@ -18637,7 +18675,7 @@ var $author$project$Main$tabView = function (content) {
 									]),
 								{
 									m: $mdgriffith$elm_ui$Element$text('Remove'),
-									r: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
+									t: $elm$core$Maybe$Just($author$project$Main$CreateTabRemoveLink)
 								})
 							])) : A2(
 						$mdgriffith$elm_ui$Element$Input$button,
@@ -18648,32 +18686,12 @@ var $author$project$Main$tabView = function (content) {
 							]),
 						{
 							m: $mdgriffith$elm_ui$Element$text('Create Link'),
-							r: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
+							t: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
 						});
 					return A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
 							[
-								$mdgriffith$elm_ui$Element$inFront(
-								A2(
-									$mdgriffith$elm_ui$Element$el,
-									_List_fromArray(
-										[
-											$mdgriffith$elm_ui$Element$padding(16),
-											$mdgriffith$elm_ui$Element$alignRight,
-											$mdgriffith$elm_ui$Element$alignTop
-										]),
-									A2(
-										$mdgriffith$elm_ui$Element$Input$button,
-										_List_fromArray(
-											[
-												$mdgriffith$elm_ui$Element$Border$width(1),
-												$mdgriffith$elm_ui$Element$padding(8)
-											]),
-										{
-											m: $mdgriffith$elm_ui$Element$text('Done'),
-											r: $elm$core$Maybe$Just($author$project$Main$CreateTabToChooseDiscussion)
-										}))),
 								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
 							]),
@@ -18761,16 +18779,9 @@ var $author$project$Main$tabView = function (content) {
 												linkNode
 											])),
 										A2(
-										$mdgriffith$elm_ui$Element$column,
-										_List_fromArray(
-											[
-												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
-												$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
-												$mdgriffith$elm_ui$Element$padding(8),
-												A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8)
-											]),
-										_List_fromArray(
-											[$author$project$Main$selectedNoteLegend, $author$project$Main$linkedCircleLegend, $author$project$Main$discussionLegend, $author$project$Main$circleLegend]))
+										$author$project$Main$button,
+										$elm$core$Maybe$Just($author$project$Main$CreateTabToChooseDiscussion),
+										$mdgriffith$elm_ui$Element$text('Done Linking'))
 									])),
 								A2(
 								$mdgriffith$elm_ui$Element$el,
@@ -18779,7 +18790,12 @@ var $author$project$Main$tabView = function (content) {
 										$mdgriffith$elm_ui$Element$width($author$project$Main$biggerElement),
 										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
 									]),
-								viewGraph)
+								A4(
+									$author$project$Main$svgGraph,
+									createTabGraph,
+									$author$project$Main$DiscussionChosenView(notesAssociatedToCreatedLinks),
+									selectedNote,
+									hoverNote))
 							]));
 				case 3:
 					var note = _v7.a;
@@ -19088,7 +19104,7 @@ var $author$project$Main$tabView = function (content) {
 											]),
 										{
 											m: $mdgriffith$elm_ui$Element$text('Done'),
-											r: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
+											t: $elm$core$Maybe$Just($author$project$Main$DiscoveryModeBack)
 										}))),
 								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
 								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
@@ -19209,7 +19225,7 @@ var $author$project$Main$tabView = function (content) {
 																			[
 																				$mdgriffith$elm_ui$Element$text(row.a2)
 																			])),
-																	r: $elm$core$Maybe$Just(
+																	t: $elm$core$Maybe$Just(
 																		$author$project$Main$DiscoveryModeSelectDiscussion(row.eW))
 																});
 														},
@@ -19329,7 +19345,7 @@ var $author$project$Main$setupOverlay = function () {
 				]),
 			{
 				m: $mdgriffith$elm_ui$Element$text('x'),
-				r: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+				t: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
 			}));
 	var buttonBuilder = function (func) {
 		return A2(
@@ -19386,7 +19402,7 @@ var $author$project$Main$setupOverlay = function () {
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
 									$mdgriffith$elm_ui$Element$text('Start New')),
-								r: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
+								t: $elm$core$Maybe$Just($author$project$Main$InitializeNewSlipbox)
 							})),
 						A2(
 						$mdgriffith$elm_ui$Element$el,
@@ -19402,7 +19418,7 @@ var $author$project$Main$setupOverlay = function () {
 									_List_fromArray(
 										[$mdgriffith$elm_ui$Element$centerX, $mdgriffith$elm_ui$Element$Font$underline]),
 									$mdgriffith$elm_ui$Element$text('Load Slipbox')),
-								r: $elm$core$Maybe$Just($author$project$Main$FileRequested)
+								t: $elm$core$Maybe$Just($author$project$Main$FileRequested)
 							}))
 					]))));
 }();

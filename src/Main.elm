@@ -183,6 +183,8 @@ type Msg
   | CreateTabUpdateInput Create.Input
   | CreateTabCreateAnotherNote
   | CreateTabSubmitNewDiscussion
+  | CreateTabHoverNote Note.Note
+  | CreateTabStopHover
   | DiscoveryModeUpdateInput String
   | DiscoveryModeSelectDiscussion Note.Note
   | DiscoveryModeBack
@@ -335,6 +337,8 @@ update message model =
     CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
     CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
     CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
+    CreateTabHoverNote note -> createModeLambda <| Create.hover note
+    CreateTabStopHover -> createModeLambda Create.stopHover
 
     DiscoveryModeUpdateInput input -> discoveryModeLambda <| Discovery.updateInput input
     DiscoveryModeSelectDiscussion discussion ->
@@ -799,7 +803,7 @@ tabView content =
             , tableNode
             ]
 
-        Create.DiscussionChosenView createTabGraph note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks ->
+        Create.DiscussionChosenView createTabGraph note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks hoverNote ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -823,34 +827,9 @@ tabView content =
                   { onPress = Just CreateTabCreateLinkForSelectedNote
                   , label = Element.text "Create Link"
                   }
-            viewGraph = Element.html <|
-              Svg.svg
-                [ Svg.Attributes.width "100%"
-                , Svg.Attributes.height "100%"
-                , Svg.Attributes.viewBox <| computeViewbox createTabGraph.positions
-                , Svg.Attributes.style "position: absolute"
-                ] <|
-                List.concat
-                  [ List.filterMap (toCreateTabGraphLink createTabGraph.positions) createTabGraph.links
-                  , List.map ( \n -> viewGraphNote CreateTabSelectNote (\f -> Placeholder) Placeholder n ) <|
-                    List.map ( toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote ) createTabGraph.positions
-                  ]
           in
           Element.row
-            [ Element.inFront <|
-              Element.el
-                [ Element.padding 16
-                , Element.alignRight
-                , Element.alignTop
-                ] <|
-                Element.Input.button
-                  [ Element.Border.width 1
-                  , Element.padding 8
-                  ]
-                  { onPress = Just CreateTabToChooseDiscussion
-                  , label = Element.text "Done"
-                  }
-            , Element.width Element.fill
+            [ Element.width Element.fill
             , Element.height Element.fill
             ]
             [ Element.column
@@ -889,23 +868,13 @@ tabView content =
                   ]
                 , linkNode
                 ]
-              , Element.column
-                [ Element.width Element.fill
-                , Element.height Element.shrink
-                , Element.padding 8
-                , Element.spacingXY 8 8
-                ]
-                [ selectedNoteLegend
-                , linkedCircleLegend
-                , discussionLegend
-                , circleLegend
-                ]
+              , button ( Just CreateTabToChooseDiscussion ) ( Element.text "Done Linking" )
               ]
             , Element.el
               [ Element.width biggerElement
               , Element.height Element.fill
-              ]
-              viewGraph
+              ] <|
+              svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks ) selectedNote hoverNote
             ]
 
         Create.DesignateDiscussionEntryPointView note input ->
@@ -1173,10 +1142,6 @@ tabView content =
             , submitNode
             , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
-
-
-
-
 
 coaching : Bool -> Element Msg -> Element Msg
 coaching coachingOpen text =
@@ -1691,33 +1656,41 @@ headingCenter title = Element.el [ Element.centerX ] <| heading title
 textWrap text = Element.paragraph [] [ Element.text text ]
 
 -- SVG HELPERS
-type TabGraph =
- ConfirmBreakLink Link.Link
+type TabGraph
+ = ConfirmBreakLink Link.Link
+ | DiscussionChosenView ( List Note.Note )
 
 svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
 svgGraph graph tab selectedNote maybeHoverNote =
   let
+
+    linkLambda filterMap = List.filterMap filterMap graph.links
+
+    notesLambda onSelect onMouseOver onMouseOut linkedNotes =
+      List.map
+        ( \n -> viewGraphNote onSelect onMouseOver onMouseOut n )
+        <| List.map ( toCreateTabGraphNote linkedNotes selectedNote ) graph.positions
+
     ( links, notes ) =
       case tab of
         ConfirmBreakLink link ->
-          ( List.filterMap (toGraphLinkDeleteLink graph.positions link ) graph.links
-          , List.map
-            ( \n ->
-              viewGraphNote
-                EditModeSelectNoteOnGraph
-                EditModeHoverNote
-                EditModeStopHover
-                n
-            )
-              <| List.map ( toCreateTabGraphNote [] selectedNote ) graph.positions
+          ( linkLambda <| toGraphLinkDeleteLink graph.positions link
+          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover []
           )
+        DiscussionChosenView newlyLinkedNotes ->
+          ( linkLambda <| toCreateTabGraphLink graph.positions
+          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover newlyLinkedNotes
+          )
+
     legend = Element.el [ Element.alignBottom ] <|
       Element.wrappedRow []
       [ selectedNoteLegend
+      , linkedCircleLegend
       , discussionLegend
       , circleLegend
       , linkBreakLegend
       ]
+
     hover =
       case maybeHoverNote of
         Just hoverNote ->

@@ -17,6 +17,8 @@ module Create exposing
   , Input(..)
   , view
   , CreateView(..)
+  , hover
+  , stopHover
   )
 
 import Graph
@@ -27,7 +29,7 @@ import Source
 type Create
   = NoteInput CoachingModal CreateModeInternal
   | ChooseDiscussion CoachingModal CreateModeInternal
-  | FindLinksForDiscussion CoachingModal Graph.Graph CreateModeInternal Discussion SelectedNote
+  | FindLinksForDiscussion CoachingModal Graph.Graph CreateModeInternal Discussion SelectedNote HoveredNote
   | DesignateDiscussionEntryPoint CoachingModal CreateModeInternal String
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
@@ -67,31 +69,33 @@ toAddLinkState question slipbox create =
         updatedInternal
         question
         question
+        Nothing
     _ -> create
 
 toChooseDiscussionState : Create -> Create
 toChooseDiscussionState create =
   case create of
-    FindLinksForDiscussion coachingModal _ createModeInternal _ _ ->
+    FindLinksForDiscussion coachingModal _ createModeInternal _ _ _ ->
       ChooseDiscussion coachingModal createModeInternal
     _ -> create
 
 createLink : Create -> Create
 createLink create =
   case create of
-    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote hoveredNote ->
       FindLinksForDiscussion
         coachingModal
         graph
         ( addLink ( makeLink selectedNote ) createModeInternal )
         question
         selectedNote
+        hoveredNote
     _ -> create
 
 removeLink : Create -> Create
 removeLink create =
   case create of
-    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote ->
+    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote hoveredNote ->
       let
         updatedLinks =
           List.filter
@@ -99,14 +103,28 @@ removeLink create =
             <| getCreatedLinks createModeInternal
         updatedInternal = setCreatedLinks updatedLinks createModeInternal
       in
-      FindLinksForDiscussion coachingModal graph updatedInternal question selectedNote
+      FindLinksForDiscussion coachingModal graph updatedInternal question selectedNote hoveredNote
     _ -> create
 
 selectNote : Note.Note -> Create -> Create
 selectNote note create =
   case create of
-    FindLinksForDiscussion coachingModal graph createModeInternal question _ ->
-      FindLinksForDiscussion coachingModal graph createModeInternal question note
+    FindLinksForDiscussion coachingModal graph createModeInternal question _ hoveredNote ->
+      FindLinksForDiscussion coachingModal graph createModeInternal question note hoveredNote
+    _ -> create
+
+hover : Note.Note -> Create -> Create
+hover note create =
+  case create of
+    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote _ ->
+      FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote <| Just note
+    _ -> create
+
+stopHover : Create -> Create
+stopHover create =
+  case create of
+    FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote _ ->
+      FindLinksForDiscussion coachingModal graph createModeInternal question selectedNote Nothing
     _ -> create
 
 selectSource : Source.Source -> Slipbox.Slipbox -> Create -> ( Slipbox.Slipbox, Create )
@@ -199,10 +217,11 @@ type alias CoachingOpen = Bool
 type alias CanContinue = Bool
 type alias SelectedNoteIsLinked = Bool
 type alias NotesAssociatedToCreatedLinks = List Note.Note
+type alias HoveredNote = Maybe Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
   | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
-  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks
+  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks HoveredNote
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
@@ -225,7 +244,7 @@ view create =
       in
       ChooseDiscussionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
 
-    FindLinksForDiscussion _ graph createModeInternal question selectedNote ->
+    FindLinksForDiscussion _ graph createModeInternal question selectedNote hoveredNote->
       let
         note = getNote createModeInternal
         createdLinks = getCreatedLinks createModeInternal
@@ -242,6 +261,7 @@ view create =
         selectedNote
         selectedNoteIsLinked
         notesAssociatedToCreatedLinks
+        hoveredNote
 
     DesignateDiscussionEntryPoint _ createModeInternal string ->
       DesignateDiscussionEntryPointView ( getNote createModeInternal ) string
@@ -410,7 +430,7 @@ getCoachingModal model =
   case model of
     NoteInput coachingModal _ -> Just coachingModal
     ChooseDiscussion coachingModal _ -> Just coachingModal
-    FindLinksForDiscussion coachingModal _ _ _ _ -> Just coachingModal
+    FindLinksForDiscussion coachingModal _ _ _ _ _ -> Just coachingModal
     DesignateDiscussionEntryPoint coachingModal _ _ -> Just coachingModal
     ChooseSourceCategory coachingModal _ _ -> Just coachingModal
     CreateNewSource coachingModal _ _ _ _ -> Just coachingModal
@@ -422,8 +442,8 @@ setCoachingModal coachingModal model =
      NoteInput _ internal -> NoteInput coachingModal internal
      ChooseDiscussion _ internal -> ChooseDiscussion coachingModal internal
 
-     FindLinksForDiscussion _ graph internal question selectedNote ->
-       FindLinksForDiscussion coachingModal graph internal question selectedNote
+     FindLinksForDiscussion _ graph internal question selectedNote hoveredNote ->
+       FindLinksForDiscussion coachingModal graph internal question selectedNote hoveredNote
 
      DesignateDiscussionEntryPoint _ createModeInternal string ->
        DesignateDiscussionEntryPoint coachingModal createModeInternal string
@@ -437,7 +457,7 @@ getInternal create =
   case create of
     NoteInput _ createModeInternal -> createModeInternal
     ChooseDiscussion _ createModeInternal -> createModeInternal
-    FindLinksForDiscussion _ _ createModeInternal _ _ -> createModeInternal
+    FindLinksForDiscussion _ _ createModeInternal _ _ _ -> createModeInternal
     DesignateDiscussionEntryPoint _ createModeInternal _ -> createModeInternal
     ChooseSourceCategory _ createModeInternal _ -> createModeInternal
     CreateNewSource _ createModeInternal _ _ _ -> createModeInternal
