@@ -5,7 +5,6 @@ module Note exposing
   , getContent
   , getSource
   , contains
-  , isAssociated
   , is
   , updateContent
   , updateSource
@@ -21,7 +20,7 @@ import IdGenerator
 import IdGenerator exposing (IdGenerator)
 import Json.Decode
 import Json.Encode
-import Source
+import SourceTitle
 
 type Note = Note Info
 getInfo : Note -> Info 
@@ -30,7 +29,7 @@ getInfo note =
 type alias Info =
   { id : NoteId
   , content : String
-  , source : String
+  , sourceTitle : SourceTitle.SourceTitle
   , variant : Variant
   }
 type alias NoteId = Int
@@ -53,21 +52,21 @@ getContent : Note -> String
 getContent note =
   .content <| getInfo note
 
-getSource : Note -> String
+getSource : Note -> SourceTitle.SourceTitle
 getSource note =
-  .source <| getInfo note
+  .sourceTitle <| getInfo note
 
 contains : String -> Note -> Bool
 contains string note =
   let
       info = getInfo note
       has = \s -> String.contains (String.toLower string) <| String.toLower s
+      containsSourceTitle =
+        case SourceTitle.getTitle info.sourceTitle of
+          Just sourceTitle -> has sourceTitle
+          Nothing -> False
   in
-  has info.content || has info.source
-
-isAssociated : Source.Source -> Note -> Bool
-isAssociated source note =
-  Source.getTitle source == getSource note
+  has info.content || containsSourceTitle
 
 is : Note -> Note -> Bool
 is note1 note2 =
@@ -96,7 +95,7 @@ updateSource source note =
   let
       info = getInfo note
   in
-  Note { info | source = source }
+  Note { info | sourceTitle = SourceTitle.sourceTitle source }
 
 updateVariant : Variant -> Note -> Note
 updateVariant variant note =
@@ -113,7 +112,7 @@ encode note =
   Json.Encode.object
     [ ( "id", Json.Encode.int info.id )
     , ( "content", Json.Encode.string info.content )
-    , ( "source", Json.Encode.string info.source )
+    , ( "source", Json.Encode.string <| SourceTitle.encode info.sourceTitle )
     , ( "variant", Json.Encode.string <| variantStringRepresentation info.variant )
     ]
 
@@ -132,8 +131,8 @@ note_ id content source variant =
   Note <| Info
     id
     content
-    source
-    (stringToVariant variant)
+    ( SourceTitle.sourceTitle source )
+    ( stringToVariant variant )
 
 variantStringRepresentation : Variant -> String
 variantStringRepresentation variant =

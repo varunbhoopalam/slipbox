@@ -1,14 +1,16 @@
 module Source exposing 
-  ( Source, getTitle
-  , getAuthor, getContent
-  , contains, is
+  ( Source
+  , getTitle
+  , getAuthor
+  , getContent
+  , contains
+  , is
   , createSource
   , updateContent
   , updateTitle
   , updateAuthor
   , encode
   , decode
-  , titleIsValid
   )
 
 import IdGenerator
@@ -105,19 +107,6 @@ decode =
     ( Json.Decode.field "title" Json.Decode.string )
     ( Json.Decode.field "author" Json.Decode.string )
     ( Json.Decode.field "content" Json.Decode.string )
-
-titleIsValid : ( List String ) -> String -> Bool
-titleIsValid existingTitles title =
-  let
-    titleIsNotNA = ( String.toLower title ) /= "n/a"
-    titlesAreDifferent = ( \t -> (String.toLower t ) /= (String.toLower title ) )
-    allExistingTitlesAreDifferent =
-      List.all
-      titlesAreDifferent
-      existingTitles
-    titleIsNotEmpty = not <| String.isEmpty title
-  in
-  titleIsNotNA && allExistingTitlesAreDifferent && titleIsNotEmpty
 
 -- HELPER
 
