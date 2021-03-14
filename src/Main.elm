@@ -201,7 +201,7 @@ type Msg
   | EditModeConfirm
   | EditModeHoverNote Note.Note
   | EditModeStopHover
-  | Placeholder
+  | EditModeSelectNoteScreen
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -366,7 +366,7 @@ update message model =
     EditModeConfirm -> editModeAndSlipboxLambda Edit.confirm
     EditModeHoverNote note -> editModeLambda <| Edit.hover note
     EditModeStopHover -> editModeLambda Edit.stopHover
-    Placeholder -> ( model, Cmd.none )
+    EditModeSelectNoteScreen -> editModeLambda Edit.toSelectNote
 
 newContent : Content
 newContent =
@@ -576,7 +576,7 @@ tabView content =
                   <| heading "No Source"
             toDiscussionButton ( n, l ) =
               listButtonWithBreakLink
-               ( Just <| EditModeConfirmBreakLink note l ) Nothing ( textWrap <| Note.getContent n )
+               ( Just <| EditModeConfirmBreakLink note l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
             toLinkedNoteButton ( n, l ) =
               listButtonWithBreakLink
                 ( Just <| EditModeConfirmBreakLink note l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
@@ -620,6 +620,50 @@ tabView content =
               , textLambda "Content" <| Note.getContent note
               , source
               , discussions
+              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Back")
+              ]
+            , linkedNotes
+            ]
+
+        Edit.ViewDiscussionSelected note connectedNotes ->
+          let
+            textLambda title text =
+              Element.column
+                [ Element.padding 8, Element.width Element.fill, Element.Border.width 1, Element.spacingXY 8 8 ]
+                [ heading title, textWrap text ]
+            toLinkedNoteButton ( n, l ) =
+              listButtonWithBreakLink
+                ( Just <| EditModeConfirmBreakLink note l ) ( Just <| EditModeSelectNote n ) ( textWrap <| Note.getContent n )
+            linkedNotes = case connectedNotes of
+              Just tuples ->
+                Element.column
+                  [ Element.width Element.fill
+                  , Element.height Element.fill
+                  ]
+                  [ Element.el [ Element.padding 8 ] <| heading "Linked Notes"
+                  , Element.column
+                    [ Element.scrollbarY, Element.width Element.fill, Element.height Element.fill] <|
+                    List.map toLinkedNoteButton tuples
+                  ]
+              Nothing ->
+                Element.el
+                  [ Element.width Element.fill
+                  , Element.height Element.fill
+                  , Element.padding 8
+                  ] <| heading "No Linked Notes"
+          in
+          Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.spacingXY 8 8
+            ]
+            [ Element.column
+              [ Element.width Element.fill
+              , Element.height Element.fill
+              ]
+              [ Element.el [ Element.padding 8 ] <| heading "Discussion"
+              , textLambda "Content" <| Note.getContent note
+              , button ( Just EditModeSelectNoteScreen ) ( Element.text "Back")
               ]
             , linkedNotes
             ]

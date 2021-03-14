@@ -24,6 +24,7 @@ import SourceTitle
 type Edit
   = SelectNote Filter
   | NoteSelected Note.Note
+  | DiscussionSelected Note.Note
   | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote HoveredNote
 
 init : Edit
@@ -41,6 +42,7 @@ type alias PreviousNoteSelected = Note.Note
 type EditView
   = ViewSelectNote Filter
   | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
+  | ViewDiscussionSelected Note.Note ConnectedNotes
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
 
 view : Slipbox.Slipbox -> Edit -> EditView
@@ -66,6 +68,16 @@ view slipbox edit =
         ( lambda linkedDiscussions )
         ( lambda linkedNotes )
 
+    DiscussionSelected discussion ->
+      let
+        linkedNodes = Slipbox.getLinkedNotes discussion slipbox
+        linkedNotes = List.filter ( \(n,_) -> Note.getVariant n == Note.Regular ) linkedNodes
+        lambda list = if List.isEmpty list then Nothing else Just list
+      in
+      ViewDiscussionSelected
+        discussion
+        ( lambda linkedNotes )
+
     ConfirmBreakLink _ link graph selectedNote hoveredNote ->
       ViewConfirmBreakLink link graph selectedNote hoveredNote
 
@@ -76,7 +88,10 @@ toSelectNote edit =
     _ -> SelectNote ""
 
 select : Note.Note -> Edit
-select note = NoteSelected note
+select note =
+  case Note.getVariant note of
+    Note.Regular -> NoteSelected note
+    Note.Discussion -> DiscussionSelected note
 
 updateInput : String -> Edit -> Edit
 updateInput input edit =

@@ -5240,7 +5240,7 @@ var $author$project$Edit$NoteSelected = function (a) {
 	return {$: 1, a: a};
 };
 var $author$project$Edit$cancel = function (edit) {
-	if (edit.$ === 2) {
+	if (edit.$ === 3) {
 		var previousNoteSelected = edit.a;
 		return $author$project$Edit$NoteSelected(previousNoteSelected);
 	} else {
@@ -5294,7 +5294,7 @@ var $author$project$Slipbox$breakLink = F2(
 	});
 var $author$project$Edit$confirm = F2(
 	function (slipbox, edit) {
-		if (edit.$ === 2) {
+		if (edit.$ === 3) {
 			var previousNoteSelected = edit.a;
 			var link = edit.b;
 			return _Utils_Tuple2(
@@ -5749,11 +5749,11 @@ var $author$project$Discovery$hover = F2(
 	});
 var $author$project$Edit$ConfirmBreakLink = F5(
 	function (a, b, c, d, e) {
-		return {$: 2, a: a, b: b, c: c, d: d, e: e};
+		return {$: 3, a: a, b: b, c: c, d: d, e: e};
 	});
 var $author$project$Edit$hover = F2(
 	function (note, edit) {
-		if (edit.$ === 2) {
+		if (edit.$ === 3) {
 			var pn = edit.a;
 			var link = edit.b;
 			var graph = edit.c;
@@ -6079,8 +6079,19 @@ var $author$project$Slipbox$saveChanges = function (slipbox) {
 		content,
 		{aI: false});
 };
+var $author$project$Edit$DiscussionSelected = function (a) {
+	return {$: 2, a: a};
+};
+var $author$project$Note$getVariant = function (note) {
+	return $author$project$Note$getInfo(note).bk;
+};
 var $author$project$Edit$select = function (note) {
-	return $author$project$Edit$NoteSelected(note);
+	var _v0 = $author$project$Note$getVariant(note);
+	if (!_v0) {
+		return $author$project$Edit$NoteSelected(note);
+	} else {
+		return $author$project$Edit$DiscussionSelected(note);
+	}
 };
 var $author$project$Create$selectNote = F2(
 	function (note, create) {
@@ -6108,7 +6119,7 @@ var $author$project$Discovery$selectNote = F2(
 	});
 var $author$project$Edit$selectNoteOnGraph = F2(
 	function (note, edit) {
-		if (edit.$ === 2) {
+		if (edit.$ === 3) {
 			var pn = edit.a;
 			var link = edit.b;
 			var graph = edit.c;
@@ -6264,7 +6275,7 @@ var $author$project$Discovery$stopHover = function (discovery) {
 	}
 };
 var $author$project$Edit$stopHover = function (edit) {
-	if (edit.$ === 2) {
+	if (edit.$ === 3) {
 		var pn = edit.a;
 		var link = edit.b;
 		var graph = edit.c;
@@ -6379,9 +6390,6 @@ var $author$project$Slipbox$getLinkedNotes_ = F3(
 			A2($author$project$Slipbox$convertLinktoLinkNoteTuple, note, notes),
 			relevantLinks);
 	});
-var $author$project$Note$getVariant = function (note) {
-	return $author$project$Note$getInfo(note).bk;
-};
 var $author$project$Slipbox$isADifferentDiscussion = F2(
 	function (note, discussion) {
 		return ($author$project$Note$getVariant(note) === 1) && (!A2($author$project$Note$is, note, discussion));
@@ -8164,6 +8172,13 @@ var $author$project$Edit$toConfirmBreakLink = F3(
 			note,
 			$elm$core$Maybe$Nothing);
 	});
+var $author$project$Edit$toSelectNote = function (edit) {
+	if (!edit.$) {
+		return edit;
+	} else {
+		return $author$project$Edit$SelectNote('');
+	}
+};
 var $author$project$Main$Contracted = 1;
 var $author$project$Main$toggle = function (state) {
 	if (!state) {
@@ -8652,7 +8667,7 @@ var $author$project$Main$update = F2(
 			case 40:
 				return editModeLambda($author$project$Edit$stopHover);
 			default:
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				return editModeLambda($author$project$Edit$toSelectNote);
 		}
 	});
 var $mdgriffith$elm_ui$Internal$Style$classes = {fJ: 'a', cr: 'atv', fL: 'ab', fM: 'cx', fN: 'cy', fO: 'acb', fP: 'accx', fQ: 'accy', fR: 'acr', d7: 'al', d8: 'ar', fS: 'at', cs: 'ah', ct: 'av', fV: 's', f$: 'bh', f0: 'b', f1: 'w7', f3: 'bd', f4: 'bdt', bY: 'bn', f5: 'bs', b$: 'cpe', gb: 'cp', gc: 'cpx', gd: 'cpy', av: 'c', b1: 'ctr', b2: 'cb', b3: 'ccx', aw: 'ccy', br: 'cl', b4: 'cr', gg: 'ct', gi: 'cptr', gj: 'ctxt', gx: 'fcs', eq: 'focus-within', gz: 'fs', gA: 'g', cN: 'hbh', cP: 'hc', ev: 'he', cQ: 'hf', ew: 'hfp', gD: 'hv', gF: 'ic', gH: 'fr', b9: 'lbl', gL: 'iml', gM: 'imlf', gN: 'imlp', gO: 'implw', gP: 'it', gR: 'i', eM: 'lnk', a9: 'nb', eV: 'notxt', g3: 'ol', g4: 'or', aR: 'oq', ha: 'oh', e0: 'pg', e1: 'p', hb: 'ppe', hl: 'ui', fh: 'r', hr: 'sb', hs: 'sbx', ht: 'sby', hv: 'sbt', hy: 'e', hz: 'cap', hA: 'sev', hI: 'sk', hN: 't', hO: 'tc', hP: 'w8', hQ: 'w2', hR: 'w9', hS: 'tj', cl: 'tja', hT: 'tl', hU: 'w3', hV: 'w5', hW: 'w4', hX: 'tr', hY: 'w6', hZ: 'w1', h_: 'tun', V: 'ts', aX: 'clr', h7: 'u', dW: 'wc', fE: 'we', dX: 'wf', fF: 'wfp', dY: 'wrp'};
@@ -15531,6 +15546,7 @@ var $author$project$Main$EditModeConfirmBreakLink = F2(
 var $author$project$Main$EditModeSelectNote = function (a) {
 	return {$: 34, a: a};
 };
+var $author$project$Main$EditModeSelectNoteScreen = {$: 41};
 var $author$project$Main$EditModeUpdateInput = function (a) {
 	return {$: 33, a: a};
 };
@@ -18053,7 +18069,11 @@ var $author$project$Discovery$view = function (discovery) {
 };
 var $author$project$Edit$ViewConfirmBreakLink = F4(
 	function (a, b, c, d) {
-		return {$: 2, a: a, b: b, c: c, d: d};
+		return {$: 3, a: a, b: b, c: c, d: d};
+	});
+var $author$project$Edit$ViewDiscussionSelected = F2(
+	function (a, b) {
+		return {$: 2, a: a, b: b};
 	});
 var $author$project$Edit$ViewNoteSelected = F4(
 	function (a, b, c, d) {
@@ -18110,6 +18130,23 @@ var $author$project$Edit$view = F2(
 					note,
 					source,
 					lambda(linkedDiscussions),
+					lambda(linkedNotes));
+			case 2:
+				var discussion = edit.a;
+				var linkedNodes = A2($author$project$Slipbox$getLinkedNotes, discussion, slipbox);
+				var linkedNotes = A2(
+					$elm$core$List$filter,
+					function (_v4) {
+						var n = _v4.a;
+						return !$author$project$Note$getVariant(n);
+					},
+					linkedNodes);
+				var lambda = function (list) {
+					return $elm$core$List$isEmpty(list) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(list);
+				};
+				return A2(
+					$author$project$Edit$ViewDiscussionSelected,
+					discussion,
 					lambda(linkedNotes));
 			default:
 				var link = edit.b;
@@ -18247,7 +18284,8 @@ var $author$project$Main$tabView = function (content) {
 							$author$project$Main$listButtonWithBreakLink,
 							$elm$core$Maybe$Just(
 								A2($author$project$Main$EditModeConfirmBreakLink, note, l)),
-							$elm$core$Maybe$Nothing,
+							$elm$core$Maybe$Just(
+								$author$project$Main$EditModeSelectNote(n)),
 							$author$project$Main$textWrap(
 								$author$project$Note$getContent(n)));
 					};
@@ -18386,7 +18424,121 @@ var $author$project$Main$tabView = function (content) {
 										'Content',
 										$author$project$Note$getContent(note)),
 										source,
-										discussions
+										discussions,
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just($author$project$Main$EditModeSelectNoteScreen),
+										$mdgriffith$elm_ui$Element$text('Back'))
+									])),
+								linkedNotes
+							]));
+				case 2:
+					var note = _v1.a;
+					var connectedNotes = _v1.b;
+					var toLinkedNoteButton = function (_v8) {
+						var n = _v8.a;
+						var l = _v8.b;
+						return A3(
+							$author$project$Main$listButtonWithBreakLink,
+							$elm$core$Maybe$Just(
+								A2($author$project$Main$EditModeConfirmBreakLink, note, l)),
+							$elm$core$Maybe$Just(
+								$author$project$Main$EditModeSelectNote(n)),
+							$author$project$Main$textWrap(
+								$author$project$Note$getContent(n)));
+					};
+					var textLambda = F2(
+						function (title, text) {
+							return A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$padding(8),
+										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$Border$width(1),
+										A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8)
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$heading(title),
+										$author$project$Main$textWrap(text)
+									]));
+						});
+					var linkedNotes = function () {
+						if (!connectedNotes.$) {
+							var tuples = connectedNotes.a;
+							return A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$padding(8)
+											]),
+										$author$project$Main$heading('Linked Notes')),
+										A2(
+										$mdgriffith$elm_ui$Element$column,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$scrollbarY,
+												$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+												$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+											]),
+										A2($elm$core$List$map, toLinkedNoteButton, tuples))
+									]));
+						} else {
+							return A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$padding(8)
+									]),
+								$author$project$Main$heading('No Linked Notes'));
+						}
+					}();
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
+								A2($mdgriffith$elm_ui$Element$spacingXY, 8, 8)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$mdgriffith$elm_ui$Element$column,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+										$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill)
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$mdgriffith$elm_ui$Element$el,
+										_List_fromArray(
+											[
+												$mdgriffith$elm_ui$Element$padding(8)
+											]),
+										$author$project$Main$heading('Discussion')),
+										A2(
+										textLambda,
+										'Content',
+										$author$project$Note$getContent(note)),
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just($author$project$Main$EditModeSelectNoteScreen),
+										$mdgriffith$elm_ui$Element$text('Back'))
 									])),
 								linkedNotes
 							]));
@@ -18475,12 +18627,12 @@ var $author$project$Main$tabView = function (content) {
 			}
 		case 1:
 			var create = _v0.a;
-			var _v7 = $author$project$Create$view(create);
-			switch (_v7.$) {
+			var _v9 = $author$project$Create$view(create);
+			switch (_v9.$) {
 				case 0:
-					var coachingOpen = _v7.a;
-					var canContinue = _v7.b;
-					var noteInput = _v7.c;
+					var coachingOpen = _v9.a;
+					var canContinue = _v9.b;
+					var noteInput = _v9.c;
 					var continueNode = canContinue ? A2(
 						$author$project$Main$button,
 						$elm$core$Maybe$Just($author$project$Main$CreateTabNextStep),
@@ -18514,10 +18666,10 @@ var $author$project$Main$tabView = function (content) {
 								continueNode
 							]));
 				case 1:
-					var coachingOpen = _v7.a;
-					var canContinue = _v7.b;
-					var note = _v7.c;
-					var discussionsRead = _v7.d;
+					var coachingOpen = _v9.a;
+					var canContinue = _v9.b;
+					var note = _v9.c;
+					var discussionsRead = _v9.d;
 					var discussions = A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, content.Y);
 					var discussionTabularData = function () {
 						var toDiscussionRecord = function (q) {
@@ -18619,8 +18771,8 @@ var $author$project$Main$tabView = function (content) {
 														{
 														b8: $mdgriffith$elm_ui$Element$none,
 														bW: function (row) {
-															var _v8 = row.fb;
-															if (_v8) {
+															var _v10 = row.fb;
+															if (_v10) {
 																return $mdgriffith$elm_ui$Element$text('read');
 															} else {
 																return $mdgriffith$elm_ui$Element$text('unread');
@@ -18693,13 +18845,13 @@ var $author$project$Main$tabView = function (content) {
 								tableNode
 							]));
 				case 2:
-					var createTabGraph = _v7.a;
-					var note = _v7.b;
-					var discussion = _v7.c;
-					var selectedNote = _v7.d;
-					var selectedNoteIsLinked = _v7.e;
-					var notesAssociatedToCreatedLinks = _v7.f;
-					var hoverNote = _v7.g;
+					var createTabGraph = _v9.a;
+					var note = _v9.b;
+					var discussion = _v9.c;
+					var selectedNote = _v9.d;
+					var selectedNoteIsLinked = _v9.e;
+					var notesAssociatedToCreatedLinks = _v9.f;
+					var hoverNote = _v9.g;
 					var linkNode = selectedNoteIsLinked ? A2(
 						$mdgriffith$elm_ui$Element$column,
 						_List_fromArray(
@@ -18834,8 +18986,8 @@ var $author$project$Main$tabView = function (content) {
 								hoverNote)
 							]));
 				case 3:
-					var note = _v7.a;
-					var input = _v7.b;
+					var note = _v9.a;
+					var input = _v9.b;
 					var continueNode = $elm$core$String$isEmpty(input) ? A2(
 						$mdgriffith$elm_ui$Element$el,
 						_List_fromArray(
@@ -18885,8 +19037,8 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$text('This isn\'t the start of a new discussion'))
 							]));
 				case 4:
-					var note = _v7.a;
-					var input = _v7.b;
+					var note = _v9.a;
+					var input = _v9.b;
 					var existingSources = A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.Y);
 					var maybeSourceSelected = $elm$core$List$head(
 						A2(
@@ -18953,10 +19105,10 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$text('New Source'))
 							]));
 				case 5:
-					var note = _v7.a;
-					var title = _v7.b;
-					var author = _v7.c;
-					var sourceContent = _v7.d;
+					var note = _v9.a;
+					var title = _v9.b;
+					var author = _v9.c;
+					var sourceContent = _v9.d;
 					var msgLambda = function (updateMethod) {
 						return function (s) {
 							return $author$project$Main$CreateTabUpdateInput(
@@ -18967,14 +19119,14 @@ var $author$project$Main$tabView = function (content) {
 						$elm$core$List$map,
 						$author$project$Source$getTitle,
 						A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, content.Y));
-					var _v10 = A2($author$project$SourceTitle$validateNewSourceTitle, existingTitles, title) ? _Utils_Tuple2(
+					var _v12 = A2($author$project$SourceTitle$validateNewSourceTitle, existingTitles, title) ? _Utils_Tuple2(
 						'Title (required)',
 						A2(
 							$author$project$Main$button,
 							$elm$core$Maybe$Just($author$project$Main$CreateTabSubmitNewSource),
 							$mdgriffith$elm_ui$Element$text('Submit New Source'))) : ($elm$core$String$isEmpty(title) ? _Utils_Tuple2('Title (required)', $mdgriffith$elm_ui$Element$none) : _Utils_Tuple2('Title is not valid. Titles must be unique and may not be \'n/a\' or empty', $mdgriffith$elm_ui$Element$none));
-					var titleLabel = _v10.a;
-					var submitNode = _v10.b;
+					var titleLabel = _v12.a;
+					var submitNode = _v12.b;
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
@@ -19010,7 +19162,7 @@ var $author$project$Main$tabView = function (content) {
 								submitNode
 							]));
 				default:
-					var note = _v7.a;
+					var note = _v9.a;
 					return $author$project$Main$column(
 						_List_fromArray(
 							[
@@ -19036,13 +19188,13 @@ var $author$project$Main$tabView = function (content) {
 			}
 		default:
 			var discovery = _v0.a;
-			var _v11 = $author$project$Discovery$view(discovery);
-			switch (_v11.$) {
+			var _v13 = $author$project$Discovery$view(discovery);
+			switch (_v13.$) {
 				case 0:
-					var discussion = _v11.a;
-					var selectedNote = _v11.b;
-					var discussionGraph = _v11.c;
-					var hoverNote = _v11.d;
+					var discussion = _v13.a;
+					var selectedNote = _v13.b;
+					var discussionGraph = _v13.c;
+					var hoverNote = _v13.d;
 					var viewDiscussionNode = (($author$project$Note$getVariant(selectedNote) === 1) && (!A2($author$project$Note$is, discussion, selectedNote))) ? A2(
 						$author$project$Main$button,
 						$elm$core$Maybe$Just(
@@ -19112,7 +19264,7 @@ var $author$project$Main$tabView = function (content) {
 								A4($author$project$Main$svgGraph, discussionGraph, $author$project$Main$ViewDiscussionView, selectedNote, hoverNote)
 							]));
 				case 1:
-					var filterInput = _v11.a;
+					var filterInput = _v13.a;
 					var discussionFilter = $elm$core$String$isEmpty(filterInput) ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(filterInput);
 					var discussionTabularData = function () {
 						var toDiscussionRecord = function (q) {
@@ -19211,8 +19363,8 @@ var $author$project$Main$tabView = function (content) {
 									]))
 							]));
 				default:
-					var selectedNote = _v11.a;
-					var input = _v11.b;
+					var selectedNote = _v13.a;
+					var input = _v13.b;
 					var matchingDiscussionExists = A2(
 						$elm$core$List$any,
 						function (discussion) {
