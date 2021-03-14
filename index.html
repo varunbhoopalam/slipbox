@@ -47,13 +47,29 @@
             return handle;
         }
 
+        let unsavedChanges = false;
+
+        app.ports.changesMade.subscribe(async function (message) {
+            unsavedChanges = true;
+        });
+
+        window.addEventListener("beforeunload", function (e) {
+            if ( unsavedChanges === true ) {
+                const confirmationMessage = "There are unsaved changes, are you sure you want to exit?";
+                (e || window.event).returnValue = confirmationMessage;
+                return confirmationMessage;
+            }
+        });
+
         app.ports.save.subscribe(async function (message) {
             if (fileHandle === undefined) {
                 fileHandle = await getNewFileHandle();
             }
             await fileSave(message, {}, fileHandle);
+            unsavedChanges = false;
             app.ports.fileSaved.send(1);
         })
+
     </script>
 </body>
 
