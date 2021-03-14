@@ -1532,6 +1532,7 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ barsButton
           , leftNavContractedButtonLambda Element.alignBottom FileDownload saveIcon False
+          , leftNavContractedButtonLambda Element.alignBottom ( ChangeTab CreateMode) plusIcon <| sameTab selectedTab CreateMode
           ]
         , Element.column
           [ Element.height biggerElement
