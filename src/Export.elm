@@ -10,14 +10,18 @@ import Slipbox
 
 type Export
   = ErrorStateNoDiscussions
-  | InputProjectTitle ProjectTitle
-  | SelectDiscussions ProjectTitle Filter Discussions
-  | ConfigureContent ProjectTitle Notes
+  | InputProjectTitle Title
+  | SelectDiscussions Title Filter Discussions
+  | ConfigureContent Title Notes
   | PromptAnotherExport
 
 type Discussion
   = Selected Note.Note
   | Unselected Note.Note
+
+toUnselectedDiscussion : Note.Note -> Discussion
+toUnselectedDiscussion note =
+  Unselected note
 
 getNote : Discussion -> Note.Note
 getNote discussion =
@@ -34,7 +38,7 @@ isSelected discussion =
 type alias Discussions = List Discussion
 type alias ChosenDiscussions = List Note.Note
 
-type alias ProjectTitle = String
+type alias Title = String
 type alias Filter = String
 type alias Notes = List Note.Note
 
@@ -49,9 +53,9 @@ init slipbox =
 
 type View
   = ErrorStateNoDiscussionsView
-  | InputProjectTitleView ProjectTitle CanContinue
-  | SelectDiscussionsView ProjectTitle Filter ( List DiscussionView ) CanContinue
-  | ConfigureContentView ProjectTitle Notes
+  | InputProjectTitleView Title CanContinue
+  | SelectDiscussionsView Title Filter ( List DiscussionView ) CanContinue
+  | ConfigureContentView Title Notes
   | PromptAnotherExportView
 
 type alias DiscussionView =
@@ -76,13 +80,53 @@ view export =
     InputProjectTitle projectTitle -> InputProjectTitleView projectTitle <| String.isEmpty projectTitle
 
     SelectDiscussions projectTitle filter discussions ->
-      let atLeastOneDiscussionWasChosen = not <| List.isEmpty <| List.filter isSelected discussions
+      let
+        filterDiscussion = (\d -> Note.contains filter ( getNote d ) )
       in
       SelectDiscussionsView
         projectTitle
         filter
-        ( List.map toDiscussionView discussions )
-        atLeastOneDiscussionWasChosen
+        ( List.map toDiscussionView <| List.filter filterDiscussion discussions )
+        ( atLeastOneDiscussionWasChosen discussions )
 
     ConfigureContent projectTitle notes -> ConfigureContentView projectTitle notes
     PromptAnotherExport -> PromptAnotherExportView
+
+finishInputTitle : Slipbox.Slipbox -> Export -> Export
+finishInputTitle slipbox export =
+  case export of
+    InputProjectTitle title ->
+      if String.isEmpty title then
+        export
+      else
+        SelectDiscussions
+          title
+          ""
+          ( List.map toUnselectedDiscussion <| Slipbox.getDiscussions Nothing slipbox )
+    _ -> export
+
+finishSelectingDiscussions : Slipbox.Slipbox -> Export -> Export
+finishSelectingDiscussions slipbox export =
+  case export of
+    SelectDiscussions title filter discussions ->
+      if ( not <| atLeastOneDiscussionWasChosen discussions ) then
+        export
+      else
+        let
+          selectedDiscussions = List.map getNote <| List.filter isSelected discussions
+          notes =
+            List.concatMap
+              ( \n ->
+                Tuple.first <| Slipbox.getDiscussionTreeWithCollapsedDiscussions n slipbox
+              )
+              selectedDiscussions
+        in
+        ConfigureContent
+          title
+          notes
+
+    _ -> export
+
+-- HELPER
+atLeastOneDiscussionWasChosen : ( List Discussion ) -> Bool
+atLeastOneDiscussionWasChosen discussions = not <| List.isEmpty <| List.filter isSelected discussions
