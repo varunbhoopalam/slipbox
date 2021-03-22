@@ -3,6 +3,7 @@ module Source exposing
   , getTitle
   , getAuthor
   , getContent
+  , getId
   , contains
   , is
   , createSource
@@ -45,6 +46,10 @@ getAuthor source =
 getContent : Source -> String
 getContent source =
   .content <| getInfo source
+
+getId : Source -> Int
+getId source =
+  .id <| getInfo source
 
 contains : String -> Source -> Bool
 contains input source =

@@ -12,6 +12,8 @@ module Export exposing
 
 import Note
 import Slipbox
+import Source
+import SourceTitle
 
 type Export
   = ErrorStateNoDiscussions
@@ -181,11 +183,22 @@ encode slipbox export =
     ConfigureContent title notes ->
       let
         relevantSources =
+          List.filter
+            ( \source ->
+              List.any
+                ( \note ->
+                  case SourceTitle.getTitle <|Note.getSource note of
+                    Just sourceTitle -> sourceTitle == Source.getTitle source
+                    Nothing -> False
+                )
+                notes
+            )
+            <| Slipbox.getSources Nothing slipbox
       in
-      Just <| String.concat <| List.intersperse "\n" <|
+      Just <| String.concat <| List.intersperse "\n\n" <|
         List.concat
           [ [ title ]
-          , List.map 
+          , List.map ( toEncodedNote relevantSources ) notes
           , List.map toEncodedSource relevantSources
           ]
     _ -> Nothing
@@ -193,3 +206,37 @@ encode slipbox export =
 -- HELPER
 atLeastOneDiscussionWasChosen : ( List Discussion ) -> Bool
 atLeastOneDiscussionWasChosen discussions = not <| List.isEmpty <| List.filter isSelected discussions
+
+toEncodedSource : Source.Source -> String
+toEncodedSource source =
+  String.concat <|
+    List.intersperse
+      "\n"
+      [ "ID: " ++ ( String.fromInt <| Source.getId source )
+      , "Title: " ++ Source.getTitle source
+      , "Author: " ++ Source.getAuthor source
+      , "Content: " ++ Source.getContent source
+      ]
+
+toEncodedNote : List Source.Source -> Note.Note -> String
+toEncodedNote sources note =
+  let
+    maybeSource = List.head <|
+      List.filter
+        ( \source ->
+          case SourceTitle.getTitle <| Note.getSource note of
+            Just sourceTitle -> Source.getTitle source == sourceTitle
+            Nothing -> False
+        )
+        sources
+    sourceString =
+      case maybeSource of
+        Just source -> "Source ID: " ++ ( String.fromInt <| Source.getId source )
+        Nothing -> "No Source"
+  in
+  String.concat <|
+    List.intersperse
+      "\n"
+      [ Note.getContent note
+      , sourceString
+      ]
