@@ -3,6 +3,11 @@ module Export exposing
   , init
   , View(..)
   , view
+  , continue
+  , updateInput
+  , toggleDiscussion
+  , remove
+  , encode
   )
 
 import Note
@@ -34,6 +39,12 @@ isSelected discussion =
   case discussion of
     Selected _ -> True
     Unselected _ -> False
+
+toggle : Discussion -> Discussion
+toggle discussion =
+  case discussion of
+    Selected note -> Unselected note
+    Unselected note -> Selected note
 
 type alias Discussions = List Discussion
 type alias ChosenDiscussions = List Note.Note
@@ -92,8 +103,8 @@ view export =
     ConfigureContent projectTitle notes -> ConfigureContentView projectTitle notes
     PromptAnotherExport -> PromptAnotherExportView
 
-finishInputTitle : Slipbox.Slipbox -> Export -> Export
-finishInputTitle slipbox export =
+continue : Slipbox.Slipbox -> Export -> Export
+continue slipbox export =
   case export of
     InputProjectTitle title ->
       if String.isEmpty title then
@@ -103,12 +114,8 @@ finishInputTitle slipbox export =
           title
           ""
           ( List.map toUnselectedDiscussion <| Slipbox.getDiscussions Nothing slipbox )
-    _ -> export
 
-finishSelectingDiscussions : Slipbox.Slipbox -> Export -> Export
-finishSelectingDiscussions slipbox export =
-  case export of
-    SelectDiscussions title filter discussions ->
+    SelectDiscussions title _ discussions ->
       if ( not <| atLeastOneDiscussionWasChosen discussions ) then
         export
       else
@@ -125,7 +132,63 @@ finishSelectingDiscussions slipbox export =
           title
           notes
 
+    ConfigureContent _ _ -> PromptAnotherExport
+
     _ -> export
+
+
+
+updateInput : String -> Export -> Export
+updateInput input export =
+  case export of
+    InputProjectTitle _ -> InputProjectTitle input
+    SelectDiscussions title _ discussions -> SelectDiscussions title input discussions
+    _ -> export
+
+toggleDiscussion : Note.Note -> Export -> Export
+toggleDiscussion note export =
+  case export of
+    SelectDiscussions title filter discussions ->
+      let
+        foo = List.map
+          ( \d ->
+            if Note.is note <| getNote d then
+              toggle d
+            else
+              d
+          )
+          discussions
+      in
+      SelectDiscussions
+        title
+        filter
+        foo
+
+    _ -> export
+
+remove : Note.Note -> Export -> Export
+remove note export =
+  case export of
+    ConfigureContent title notes ->
+      ConfigureContent
+        title
+        ( List.filter ( \n -> not <| Note.is note n ) notes )
+    _ -> export
+
+encode : Slipbox.Slipbox -> Export -> Maybe String
+encode slipbox export =
+  case export of
+    ConfigureContent title notes ->
+      let
+        relevantSources =
+      in
+      Just <| String.concat <| List.intersperse "\n" <|
+        List.concat
+          [ [ title ]
+          , List.map 
+          , List.map toEncodedSource relevantSources
+          ]
+    _ -> Nothing
 
 -- HELPER
 atLeastOneDiscussionWasChosen : ( List Discussion ) -> Bool
