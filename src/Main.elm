@@ -10,6 +10,7 @@ import Element.Background
 import Element.Border
 import Element.Font
 import Element.Input
+import Export
 import FontAwesome.Attributes
 import FontAwesome.Solid
 import Graph
@@ -144,11 +145,13 @@ type Tab
   = EditModeTab Edit.Edit
   | CreateModeTab Create.Create
   | DiscoveryModeTab Discovery.Discovery
+  | ExportModeTab Export.Export
 
 type Tab_
   = EditMode
   | CreateMode
   | DiscoveryMode
+  | ExportMode
 
 -- INIT
 
@@ -310,6 +313,17 @@ update message model =
                   ( Session { content | tab = DiscoveryModeTab Discovery.init }
                   , Cmd.none
                   )
+
+            ExportMode ->
+              case content.tab of
+                ExportModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  case getSlipbox model of
+                    Just slipbox ->
+                      ( Session { content | tab = ExportModeTab <| Export.init slipbox }
+                      , Cmd.none
+                      )
+                    _ -> ( model, Cmd.none )
 
         _ -> ( model, Cmd.none )
 
@@ -1161,6 +1175,22 @@ tabView content =
             , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
 
+    ExportModeTab export -> case Export.view export of
+      Export.ErrorStateNoDiscussionsView -> Element.text "todo"
+
+
+      Export.InputProjectTitleView title canContinue -> Element.text "todo"
+
+
+      Export.SelectDiscussionsView title filter discussionViews canContinue -> Element.text "todo"
+
+
+      Export.ConfigureContentView title notes -> Element.text "todo"
+
+
+      Export.PromptAnotherExportView -> Element.text "todo"
+
+
 coaching : Bool -> Element Msg -> Element Msg
 coaching coachingOpen text =
   let
@@ -1528,6 +1558,7 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab DiscoveryMode ) <| sameTab selectedTab DiscoveryMode
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Edit Mode" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
+          , leftNavExpandedButtonLambda Element.alignLeft exportIcon "Export Mode" ( ChangeTab ExportMode ) <| sameTab selectedTab ExportMode
           ]
         ]
     Contracted ->
@@ -1551,6 +1582,7 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab DiscoveryMode ) brainIcon <| sameTab selectedTab DiscoveryMode
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab EditMode ) toolsIcon <| sameTab selectedTab EditMode
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab ExportMode ) exportIcon <| sameTab selectedTab ExportMode
           ]
         ]
 
@@ -1570,6 +1602,11 @@ sameTab tab tab_ =
     DiscoveryModeTab _ ->
       case tab_ of
         DiscoveryMode -> True
+        _ -> False
+
+    ExportModeTab _ ->
+      case tab_ of
+        ExportMode -> True
         _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -1593,6 +1630,9 @@ brainIcon = iconBuilder FontAwesome.Solid.brain
 
 toolsIcon : Element Msg
 toolsIcon = iconBuilder FontAwesome.Solid.tools
+
+exportIcon : Element Msg
+exportIcon = iconBuilder FontAwesome.Solid.fileDownload
 
 barsButton : Element Msg
 barsButton =
