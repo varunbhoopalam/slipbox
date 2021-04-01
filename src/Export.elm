@@ -67,22 +67,12 @@ init slipbox =
 type View
   = ErrorStateNoDiscussionsView
   | InputProjectTitleView Title CanContinue
-  | SelectDiscussionsView Title Filter ( List DiscussionView ) CanContinue
+  | SelectDiscussionsView Title Filter SelectedDiscussions UnselectedFilteredDiscussions CanContinue
   | ConfigureContentView Title Notes
   | PromptAnotherExportView
 
-type alias DiscussionView =
-  { selected : Bool
-  , note : Note.Note
-  }
-
-toDiscussionView : Discussion -> DiscussionView
-toDiscussionView discussion =
-  let note = getNote discussion
-  in
-  { selected = isSelected discussion
-  , note = note
-  }
+type alias SelectedDiscussions = List Note.Note
+type alias UnselectedFilteredDiscussions = List Note.Note
 
 type alias CanContinue = Bool
 
@@ -93,13 +83,14 @@ view export =
     InputProjectTitle projectTitle -> InputProjectTitleView projectTitle <| not <| String.isEmpty projectTitle
 
     SelectDiscussions projectTitle filter discussions ->
-      let
-        filterDiscussion = (\d -> Note.contains filter ( getNote d ) )
-      in
       SelectDiscussionsView
         projectTitle
         filter
-        ( List.map toDiscussionView <| List.filter filterDiscussion discussions )
+        ( List.map getNote <| List.filter isSelected discussions )
+        ( List.map getNote
+          <| List.filter (\d -> Note.contains filter ( getNote d ) )
+            <| List.filter (\d -> not <| isSelected d ) discussions
+        )
         ( atLeastOneDiscussionWasChosen discussions )
 
     ConfigureContent projectTitle notes -> ConfigureContentView projectTitle notes

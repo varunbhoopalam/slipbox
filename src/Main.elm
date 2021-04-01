@@ -226,6 +226,7 @@ type Msg
   | EditModeSelectNoteScreen
   | ExportModeContinue
   | ExportModeUpdateInput String
+  | ExportModeToggleDiscussion Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -408,6 +409,7 @@ update message model =
         Just slipbox -> exportModeLambda <| Export.continue slipbox
         Nothing -> ( model, Cmd.none )
     ExportModeUpdateInput input -> exportModeLambda <| Export.updateInput input
+    ExportModeToggleDiscussion discussion -> exportModeLambda <| Export.toggleDiscussion discussion
 
 newContent : Content
 newContent =
@@ -1219,8 +1221,7 @@ tabView content =
           ]
 
       Export.InputProjectTitleView title canContinue ->
-        let
-          buttonNode = if canContinue then button ( Just ExportModeContinue ) ( Element.text "Continue") else Element.none
+        let buttonNode = if canContinue then button ( Just ExportModeContinue ) ( Element.text "Continue") else Element.none
         in
         column
           [ headingCenter "Give a title to the project you're exporting!"
@@ -1228,7 +1229,66 @@ tabView content =
           , buttonNode
           ]
 
-      Export.SelectDiscussionsView title filter discussionViews canContinue -> Element.text "todo"
+      Export.SelectDiscussionsView title filter selectedDiscussions unselectedFilteredDiscussions canContinue ->
+        let
+          continueNodeWithSelectedDiscussions =
+            if canContinue then
+              column
+                [ headingCenter "Selected Discussions"
+                , column
+                  <| List.map
+                  (\d ->
+                    Element.row
+                      [ Element.Border.width 1, Element.width Element.fill, Element.width <| Element.maximum 600 Element.fill, Element.centerX ]
+                      [ Element.el [ Element.paddingEach leftPad ] <| Element.text <| Note.getContent d
+                      , Element.el [ Element.alignRight ] <| button ( Just <| ExportModeToggleDiscussion d ) ( Element.text "Unselect Discussion" )
+                      ]
+                  )
+                  selectedDiscussions
+                , button ( Just ExportModeContinue ) ( Element.text "Continue")
+                ]
+            else
+              Element.none
+        in
+        column
+          [ headingCenter "Select Relevant Discussions to Project"
+          , Element.el [ Element.centerX ] <| Element.text title
+          , continueNodeWithSelectedDiscussions
+          , Element.column
+            [ Element.width <| Element.maximum 600 Element.fill
+            , Element.height Element.fill
+            , Element.spacingXY 10 10
+            , Element.padding 5
+            , Element.Border.width 2
+            , Element.Border.rounded 6
+            , Element.centerX
+            ]
+            [ multiline ExportModeUpdateInput filter "Filter Note"
+            , Element.row [ Element.width Element.fill ]
+              [ Element.el
+                [ Element.width Element.fill
+                , Element.Font.bold
+                , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                ] <| Element.text "Select Discussions"
+              ]
+            , Element.el [ Element.width Element.fill ] <| Element.table
+              [ Element.width Element.fill
+              , Element.padding 8
+              , Element.spacingXY 8 8
+              , Element.centerX
+              , Element.height <| Element.maximum 300 Element.fill
+              , Element.scrollbarY
+              ]
+              { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) unselectedFilteredDiscussions
+              , columns =
+                [ { header = Element.none
+                  , width = Element.fillPortion 4
+                  , view = \row -> listButton ( Just <| ExportModeToggleDiscussion row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
+                  }
+                ]
+              }
+            ]
+          ]
 
 
       Export.ConfigureContentView title notes -> Element.text "todo"
@@ -1712,6 +1772,7 @@ listButton onPress label =
     , label = label
     }
 
+leftPad = {right=0,top=0,bottom=0,left=8}
 rightWidth = {right=1,top=0,bottom=0,left=0}
 
 listButtonWithBreakLink : Maybe Msg -> Maybe Msg -> Element Msg -> Element Msg
