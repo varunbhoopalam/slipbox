@@ -227,6 +227,7 @@ type Msg
   | ExportModeContinue
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
+  | ExportModeRemove Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -410,6 +411,7 @@ update message model =
         Nothing -> ( model, Cmd.none )
     ExportModeUpdateInput input -> exportModeLambda <| Export.updateInput input
     ExportModeToggleDiscussion discussion -> exportModeLambda <| Export.toggleDiscussion discussion
+    ExportModeRemove note -> exportModeLambda <| Export.remove note
 
 newContent : Content
 newContent =
@@ -1291,7 +1293,22 @@ tabView content =
           ]
 
 
-      Export.ConfigureContentView title notes -> Element.text "todo"
+      Export.ConfigureContentView title notes ->
+        column
+          [ headingCenter "Configure Notes"
+          , Element.el [ Element.centerX ] <| Element.text title
+          , button ( Just ExportModeContinue ) ( Element.text "Continue")
+          , column
+            <| List.map
+            (\d ->
+              Element.row
+                [ Element.Border.width 1, Element.width Element.fill, Element.width <| Element.maximum 600 Element.fill, Element.centerX ]
+                [ Element.paragraph [ Element.width Element.fill, Element.padding 8 ] [ Element.text <| Note.getContent d ]
+                , Element.el [ Element.alignRight ] <| button ( Just <| ExportModeRemove d ) ( Element.text "Remove Note" )
+                ]
+            )
+            notes
+          ]
 
 
       Export.PromptAnotherExportView -> Element.text "todo"

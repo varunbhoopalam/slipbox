@@ -6414,6 +6414,24 @@ var $author$project$Main$open = _Platform_outgoingPort(
 	function ($) {
 		return $elm$json$Json$Encode$null;
 	});
+var $author$project$Export$remove = F2(
+	function (note, _export) {
+		if (_export.$ === 3) {
+			var title = _export.a;
+			var notes = _export.b;
+			return A2(
+				$author$project$Export$ConfigureContent,
+				title,
+				A2(
+					$elm$core$List$filter,
+					function (n) {
+						return !A2($author$project$Note$is, note, n);
+					},
+					notes));
+		} else {
+			return _export;
+		}
+	});
 var $author$project$Create$removeLink = function (create) {
 	if (create.$ === 2) {
 		var coachingModal = create.a;
@@ -8934,10 +8952,14 @@ var $author$project$Main$update = F2(
 				var input = message.a;
 				return exportModeLambda(
 					$author$project$Export$updateInput(input));
-			default:
+			case 44:
 				var discussion = message.a;
 				return exportModeLambda(
 					$author$project$Export$toggleDiscussion(discussion));
+			default:
+				var note = message.a;
+				return exportModeLambda(
+					$author$project$Export$remove(note));
 		}
 	});
 var $mdgriffith$elm_ui$Internal$Style$classes = {fJ: 'a', ct: 'atv', fL: 'ab', fM: 'cx', fN: 'cy', fO: 'acb', fP: 'accx', fQ: 'accy', fR: 'acr', d7: 'al', d8: 'ar', fS: 'at', cu: 'ah', cv: 'av', fV: 's', f$: 'bh', f0: 'b', f1: 'w7', f3: 'bd', f4: 'bdt', bZ: 'bn', f5: 'bs', b0: 'cpe', gb: 'cp', gc: 'cpx', gd: 'cpy', av: 'c', b3: 'ctr', b4: 'cb', b5: 'ccx', aw: 'ccy', bv: 'cl', b6: 'cr', gg: 'ct', gi: 'cptr', gj: 'ctxt', gx: 'fcs', eq: 'focus-within', gz: 'fs', gA: 'g', cN: 'hbh', cP: 'hc', ev: 'he', cQ: 'hf', ew: 'hfp', gD: 'hv', gF: 'ic', gH: 'fr', cb: 'lbl', gL: 'iml', gM: 'imlf', gN: 'imlp', gO: 'implw', gP: 'it', gR: 'i', eM: 'lnk', bd: 'nb', eV: 'notxt', g3: 'ol', g4: 'or', aV: 'oq', ha: 'oh', e0: 'pg', e1: 'p', hb: 'ppe', hl: 'ui', fh: 'r', hr: 'sb', hs: 'sbx', ht: 'sby', hv: 'sbt', hy: 'e', hz: 'cap', hA: 'sev', hI: 'sk', hN: 't', hO: 'tc', hP: 'w8', hQ: 'w2', hR: 'w9', hS: 'tj', cn: 'tja', hT: 'tl', hU: 'w3', hV: 'w5', hW: 'w4', hX: 'tr', hY: 'w6', hZ: 'w1', h_: 'tun', V: 'ts', a1: 'clr', h7: 'u', dW: 'wc', fE: 'we', dX: 'wf', fF: 'wfp', dY: 'wrp'};
@@ -15840,6 +15862,9 @@ var $author$project$Main$EditModeUpdateInput = function (a) {
 	return {$: 33, a: a};
 };
 var $author$project$Main$ExportModeContinue = {$: 42};
+var $author$project$Main$ExportModeRemove = function (a) {
+	return {$: 45, a: a};
+};
 var $author$project$Main$ExportModeToggleDiscussion = function (a) {
 	return {$: 44, a: a};
 };
@@ -19948,7 +19973,60 @@ var $author$project$Main$tabView = function (content) {
 				case 3:
 					var title = _v14.a;
 					var notes = _v14.b;
-					return $mdgriffith$elm_ui$Element$text('todo');
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('Configure Notes'),
+								A2(
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[$mdgriffith$elm_ui$Element$centerX]),
+								$mdgriffith$elm_ui$Element$text(title)),
+								A2(
+								$author$project$Main$button,
+								$elm$core$Maybe$Just($author$project$Main$ExportModeContinue),
+								$mdgriffith$elm_ui$Element$text('Continue')),
+								$author$project$Main$column(
+								A2(
+									$elm$core$List$map,
+									function (d) {
+										return A2(
+											$mdgriffith$elm_ui$Element$row,
+											_List_fromArray(
+												[
+													$mdgriffith$elm_ui$Element$Border$width(1),
+													$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+													$mdgriffith$elm_ui$Element$width(
+													A2($mdgriffith$elm_ui$Element$maximum, 600, $mdgriffith$elm_ui$Element$fill)),
+													$mdgriffith$elm_ui$Element$centerX
+												]),
+											_List_fromArray(
+												[
+													A2(
+													$mdgriffith$elm_ui$Element$paragraph,
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$fill),
+															$mdgriffith$elm_ui$Element$padding(8)
+														]),
+													_List_fromArray(
+														[
+															$mdgriffith$elm_ui$Element$text(
+															$author$project$Note$getContent(d))
+														])),
+													A2(
+													$mdgriffith$elm_ui$Element$el,
+													_List_fromArray(
+														[$mdgriffith$elm_ui$Element$alignRight]),
+													A2(
+														$author$project$Main$button,
+														$elm$core$Maybe$Just(
+															$author$project$Main$ExportModeRemove(d)),
+														$mdgriffith$elm_ui$Element$text('Remove Note')))
+												]));
+									},
+									notes))
+							]));
 				default:
 					return $mdgriffith$elm_ui$Element$text('todo');
 			}
