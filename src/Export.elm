@@ -90,7 +90,7 @@ view : Export -> View
 view export =
   case export of
     ErrorStateNoDiscussions -> ErrorStateNoDiscussionsView
-    InputProjectTitle projectTitle -> InputProjectTitleView projectTitle <| String.isEmpty projectTitle
+    InputProjectTitle projectTitle -> InputProjectTitleView projectTitle <| not <| String.isEmpty projectTitle
 
     SelectDiscussions projectTitle filter discussions ->
       let

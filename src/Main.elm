@@ -125,6 +125,25 @@ setEdit create model =
         _ -> model
     _ -> model
 
+getExport : Model -> Maybe Export.Export
+getExport model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExportModeTab export -> Just export
+        _ -> Nothing
+    _ -> Nothing
+
+setExport : Export.Export -> Model -> Model
+setExport export model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExportModeTab _ ->
+          Session { content | tab = ExportModeTab export }
+        _ -> model
+    _ -> model
+
 -- CONTENT
 type alias Content = 
   { tab: Tab
@@ -205,6 +224,8 @@ type Msg
   | EditModeHoverNote Note.Note
   | EditModeStopHover
   | EditModeSelectNoteScreen
+  | ExportModeContinue
+  | ExportModeUpdateInput String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -221,6 +242,7 @@ update message model =
     createModeLambda updater = getAndSetLambda getCreate setCreate updater
     discoveryModeLambda updater = getAndSetLambda getDiscovery setDiscovery updater
     editModeLambda updater = getAndSetLambda getEdit setEdit updater
+    exportModeLambda updater = getAndSetLambda getExport setExport updater
 
     getAndSetWithSlipboxLambda getter setter updater =
       case getSlipbox model of
@@ -381,6 +403,11 @@ update message model =
     EditModeHoverNote note -> editModeLambda <| Edit.hover note
     EditModeStopHover -> editModeLambda Edit.stopHover
     EditModeSelectNoteScreen -> editModeLambda Edit.toSelectNote
+    ExportModeContinue ->
+      case getSlipbox model of
+        Just slipbox -> exportModeLambda <| Export.continue slipbox
+        Nothing -> ( model, Cmd.none )
+    ExportModeUpdateInput input -> exportModeLambda <| Export.updateInput input
 
 newContent : Content
 newContent =
@@ -1175,6 +1202,7 @@ tabView content =
             , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
 
+
     ExportModeTab export -> case Export.view export of
       Export.ErrorStateNoDiscussionsView ->
         column
@@ -1190,10 +1218,15 @@ tabView content =
           , button ( Just <| ChangeTab CreateMode ) ( Element.text "Create Notes and Discussions")
           ]
 
-
-
-      Export.InputProjectTitleView title canContinue -> Element.text "todo"
-
+      Export.InputProjectTitleView title canContinue ->
+        let
+          buttonNode = if canContinue then button ( Just ExportModeContinue ) ( Element.text "Continue") else Element.none
+        in
+        column
+          [ headingCenter "Give a title to the project you're exporting!"
+          , multiline ExportModeUpdateInput title "Project Title (required)"
+          , buttonNode
+          ]
 
       Export.SelectDiscussionsView title filter discussionViews canContinue -> Element.text "todo"
 
