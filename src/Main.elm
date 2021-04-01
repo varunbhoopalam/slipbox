@@ -1176,7 +1176,20 @@ tabView content =
             ]
 
     ExportModeTab export -> case Export.view export of
-      Export.ErrorStateNoDiscussionsView -> Element.text "todo"
+      Export.ErrorStateNoDiscussionsView ->
+        column
+          [ headingCenter "We cannot start export mode without discussions!"
+          , Element.paragraph [ Element.width <| Element.maximum 800 Element.fill, Element.centerX ]
+            [ Element.text "Export Mode is used to bring discussions out of the app and into your hands! "
+            , Element.text "Start some discussions! Adding relevant facts to discussions is the sustainable way to use this application! "
+            , Element.text "When you have a discussion you want to do something with, come back here! "
+            , Element.text "As you build up your knowledge, your discussions will be come richer with knowledge and more useful to you. "
+            , Element.text "We bet you will much to share soon! "
+            ]
+          -- TODO : What feature can help people more directly create discussions from what they already have?
+          , button ( Just <| ChangeTab CreateMode ) ( Element.text "Create Notes and Discussions")
+          ]
+
 
 
       Export.InputProjectTitleView title canContinue -> Element.text "todo"

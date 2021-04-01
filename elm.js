@@ -19594,7 +19594,32 @@ var $author$project$Main$tabView = function (content) {
 			var _v14 = $author$project$Export$view(_export);
 			switch (_v14.$) {
 				case 0:
-					return $mdgriffith$elm_ui$Element$text('todo');
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('We cannot start export mode without discussions!'),
+								A2(
+								$mdgriffith$elm_ui$Element$paragraph,
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$width(
+										A2($mdgriffith$elm_ui$Element$maximum, 800, $mdgriffith$elm_ui$Element$fill)),
+										$mdgriffith$elm_ui$Element$centerX
+									]),
+								_List_fromArray(
+									[
+										$mdgriffith$elm_ui$Element$text('Export Mode is used to bring discussions out of the app and into your hands! '),
+										$mdgriffith$elm_ui$Element$text('Start some discussions! Adding relevant facts to discussions is the sustainable way to use this application! '),
+										$mdgriffith$elm_ui$Element$text('When you have a discussion you want to do something with, come back here! '),
+										$mdgriffith$elm_ui$Element$text('As you build up your knowledge, your discussions will be come richer with knowledge and more useful to you. '),
+										$mdgriffith$elm_ui$Element$text('We bet you will much to share soon! ')
+									])),
+								A2(
+								$author$project$Main$button,
+								$elm$core$Maybe$Just(
+									$author$project$Main$ChangeTab(1)),
+								$mdgriffith$elm_ui$Element$text('Create Notes and Discussions'))
+							]));
 				case 1:
 					var title = _v14.a;
 					var canContinue = _v14.b;
