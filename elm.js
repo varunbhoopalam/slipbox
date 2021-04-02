@@ -4358,6 +4358,184 @@ function _Browser_load(url)
 
 
 
+// DECODER
+
+var _File_decoder = _Json_decodePrim(function(value) {
+	// NOTE: checks if `File` exists in case this is run on node
+	return (typeof File !== 'undefined' && value instanceof File)
+		? $elm$core$Result$Ok(value)
+		: _Json_expecting('a FILE', value);
+});
+
+
+// METADATA
+
+function _File_name(file) { return file.name; }
+function _File_mime(file) { return file.type; }
+function _File_size(file) { return file.size; }
+
+function _File_lastModified(file)
+{
+	return $elm$time$Time$millisToPosix(file.lastModified);
+}
+
+
+// DOWNLOAD
+
+var _File_downloadNode;
+
+function _File_getDownloadNode()
+{
+	return _File_downloadNode || (_File_downloadNode = document.createElement('a'));
+}
+
+var _File_download = F3(function(name, mime, content)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var blob = new Blob([content], {type: mime});
+
+		// for IE10+
+		if (navigator.msSaveOrOpenBlob)
+		{
+			navigator.msSaveOrOpenBlob(blob, name);
+			return;
+		}
+
+		// for HTML5
+		var node = _File_getDownloadNode();
+		var objectUrl = URL.createObjectURL(blob);
+		node.href = objectUrl;
+		node.download = name;
+		_File_click(node);
+		URL.revokeObjectURL(objectUrl);
+	});
+});
+
+function _File_downloadUrl(href)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var node = _File_getDownloadNode();
+		node.href = href;
+		node.download = '';
+		node.origin === location.origin || (node.target = '_blank');
+		_File_click(node);
+	});
+}
+
+
+// IE COMPATIBILITY
+
+function _File_makeBytesSafeForInternetExplorer(bytes)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/10
+	// all other browsers can just run `new Blob([bytes])` directly with no problem
+	//
+	return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+}
+
+function _File_click(node)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/11
+	// all other browsers have MouseEvent and do not need this conditional stuff
+	//
+	if (typeof MouseEvent === 'function')
+	{
+		node.dispatchEvent(new MouseEvent('click'));
+	}
+	else
+	{
+		var event = document.createEvent('MouseEvents');
+		event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+		document.body.appendChild(node);
+		node.dispatchEvent(event);
+		document.body.removeChild(node);
+	}
+}
+
+
+// UPLOAD
+
+var _File_node;
+
+function _File_uploadOne(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			callback(_Scheduler_succeed(event.target.files[0]));
+		});
+		_File_click(_File_node);
+	});
+}
+
+function _File_uploadOneOrMore(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.multiple = true;
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			var elmFiles = _List_fromArray(event.target.files);
+			callback(_Scheduler_succeed(_Utils_Tuple2(elmFiles.a, elmFiles.b)));
+		});
+		_File_click(_File_node);
+	});
+}
+
+
+// CONTENT
+
+function _File_toString(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsText(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toBytes(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(new DataView(reader.result)));
+		});
+		reader.readAsArrayBuffer(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toUrl(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsDataURL(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+
+
+
 var _Bitwise_and = F2(function(a, b)
 {
 	return a & b;
@@ -5869,6 +6047,187 @@ var $author$project$Slipbox$decode = function () {
 		A2($elm$json$Json$Decode$field, 'idGenerator', $author$project$IdGenerator$decode));
 }();
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$core$String$concat = function (strings) {
+	return A2($elm$core$String$join, '', strings);
+};
+var $author$project$Note$getSource = function (note) {
+	return $author$project$Note$getInfo(note).bM;
+};
+var $author$project$Source$getInfo = function (source) {
+	var info = source;
+	return info;
+};
+var $author$project$Source$contains = F2(
+	function (input, source) {
+		var info = $author$project$Source$getInfo(source);
+		var has = function (s) {
+			return A2(
+				$elm$core$String$contains,
+				$elm$core$String$toLower(input),
+				$elm$core$String$toLower(s));
+		};
+		return has(info.dO) || (has(info.fX) || has(info.aP));
+	});
+var $author$project$Slipbox$getSources = F2(
+	function (maybeSearch, slipbox) {
+		var content = $author$project$Slipbox$getContent(slipbox);
+		if (!maybeSearch.$) {
+			var search = maybeSearch.a;
+			return A2(
+				$elm$core$List$filter,
+				$author$project$Source$contains(search),
+				content.bi);
+		} else {
+			return content.bi;
+		}
+	});
+var $author$project$Source$getTitle = function (source) {
+	return $author$project$Source$getInfo(source).dO;
+};
+var $elm$core$List$intersperse = F2(
+	function (sep, xs) {
+		if (!xs.b) {
+			return _List_Nil;
+		} else {
+			var hd = xs.a;
+			var tl = xs.b;
+			var step = F2(
+				function (x, rest) {
+					return A2(
+						$elm$core$List$cons,
+						sep,
+						A2($elm$core$List$cons, x, rest));
+				});
+			var spersed = A3($elm$core$List$foldr, step, _List_Nil, tl);
+			return A2($elm$core$List$cons, hd, spersed);
+		}
+	});
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
+var $author$project$Note$getContent = function (note) {
+	return $author$project$Note$getInfo(note).aP;
+};
+var $author$project$Source$getId = function (source) {
+	return $author$project$Source$getInfo(source).cT;
+};
+var $author$project$Export$toEncodedNote = F2(
+	function (sources, note) {
+		var maybeSource = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (source) {
+					var _v1 = $author$project$SourceTitle$getTitle(
+						$author$project$Note$getSource(note));
+					if (!_v1.$) {
+						var sourceTitle = _v1.a;
+						return _Utils_eq(
+							$author$project$Source$getTitle(source),
+							sourceTitle);
+					} else {
+						return false;
+					}
+				},
+				sources));
+		var sourceString = function () {
+			if ($author$project$Note$getVariant(note) === 1) {
+				return '';
+			} else {
+				if (!maybeSource.$) {
+					var source = maybeSource.a;
+					return 'Source ID: ' + $elm$core$String$fromInt(
+						$author$project$Source$getId(source));
+				} else {
+					return 'No Source';
+				}
+			}
+		}();
+		return $elm$core$String$concat(
+			A2(
+				$elm$core$List$intersperse,
+				'\n',
+				_List_fromArray(
+					[
+						$author$project$Note$getContent(note),
+						sourceString
+					])));
+	});
+var $author$project$Source$getAuthor = function (source) {
+	return $author$project$Source$getInfo(source).fX;
+};
+var $author$project$Source$getContent = function (source) {
+	return $author$project$Source$getInfo(source).aP;
+};
+var $author$project$Export$toEncodedSource = function (source) {
+	return $elm$core$String$concat(
+		A2(
+			$elm$core$List$intersperse,
+			'\n',
+			_List_fromArray(
+				[
+					'ID: ' + $elm$core$String$fromInt(
+					$author$project$Source$getId(source)),
+					'Title: ' + $author$project$Source$getTitle(source),
+					'Author: ' + $author$project$Source$getAuthor(source),
+					'Content: ' + $author$project$Source$getContent(source)
+				])));
+};
+var $author$project$Export$encode = F2(
+	function (slipbox, _export) {
+		if (_export.$ === 3) {
+			var title = _export.a;
+			var notes = _export.b;
+			var relevantSources = A2(
+				$elm$core$List$filter,
+				function (source) {
+					return A2(
+						$elm$core$List$any,
+						function (note) {
+							var _v1 = $author$project$SourceTitle$getTitle(
+								$author$project$Note$getSource(note));
+							if (!_v1.$) {
+								var sourceTitle = _v1.a;
+								return _Utils_eq(
+									sourceTitle,
+									$author$project$Source$getTitle(source));
+							} else {
+								return false;
+							}
+						},
+						notes);
+				},
+				A2($author$project$Slipbox$getSources, $elm$core$Maybe$Nothing, slipbox));
+			var fileTitle = A3($elm$core$String$replace, ' ', '_', title) + '.txt';
+			return $elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					fileTitle,
+					$elm$core$String$concat(
+						A2(
+							$elm$core$List$intersperse,
+							'\n\n',
+							$elm$core$List$concat(
+								_List_fromArray(
+									[
+										_List_fromArray(
+										[title]),
+										_List_fromArray(
+										['Notes']),
+										A2(
+										$elm$core$List$map,
+										$author$project$Export$toEncodedNote(relevantSources),
+										notes),
+										_List_fromArray(
+										['Sources']),
+										A2($elm$core$List$map, $author$project$Export$toEncodedSource, relevantSources)
+									]))))));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $author$project$IdGenerator$getId = function (idGenerator) {
 	var id = idGenerator;
 	return id;
@@ -5943,10 +6302,6 @@ var $author$project$Note$encode = function (note) {
 				$elm$json$Json$Encode$string(
 					$author$project$Note$variantStringRepresentation(info.bo)))
 			]));
-};
-var $author$project$Source$getInfo = function (source) {
-	var info = source;
-	return info;
 };
 var $author$project$Source$encode = function (source) {
 	var info = $author$project$Source$getInfo(source);
@@ -6341,9 +6696,6 @@ var $author$project$Create$getSource = function (internal) {
 	var source = internal.d;
 	return source;
 };
-var $author$project$Source$getTitle = function (source) {
-	return $author$project$Source$getInfo(source).dO;
-};
 var $author$project$Create$updateSlipboxWithLink = F3(
 	function (note, link, slipbox) {
 		var noteToLink = link;
@@ -6681,6 +7033,15 @@ var $author$project$Edit$stopHover = function (edit) {
 		return edit;
 	}
 };
+var $elm$time$Time$Posix = $elm$core$Basics$identity;
+var $elm$time$Time$millisToPosix = $elm$core$Basics$identity;
+var $elm$file$File$Download$string = F3(
+	function (name, mime, content) {
+		return A2(
+			$elm$core$Task$perform,
+			$elm$core$Basics$never,
+			A3(_File_download, name, mime, content));
+	});
 var $author$project$Graph$Graph = F2(
 	function (positions, links) {
 		return {gT: links, hf: positions};
@@ -8604,15 +8965,15 @@ var $author$project$Main$update = F2(
 	function (message, model) {
 		var getAndSetWithSlipboxLambda = F3(
 			function (getter, setter, updater) {
-				var _v20 = $author$project$Main$getSlipbox(model);
-				if (!_v20.$) {
-					var slipbox = _v20.a;
-					var _v21 = getter(model);
-					if (!_v21.$) {
-						var create = _v21.a;
-						var _v22 = A2(updater, slipbox, create);
-						var updatedSlipbox = _v22.a;
-						var updatedModule = _v22.b;
+				var _v24 = $author$project$Main$getSlipbox(model);
+				if (!_v24.$) {
+					var slipbox = _v24.a;
+					var _v25 = getter(model);
+					if (!_v25.$) {
+						var create = _v25.a;
+						var _v26 = A2(updater, slipbox, create);
+						var updatedSlipbox = _v26.a;
+						var updatedModule = _v26.b;
 						return _Utils_Tuple2(
 							A2(
 								$author$project$Main$setSlipbox,
@@ -8628,9 +8989,9 @@ var $author$project$Main$update = F2(
 			});
 		var getAndSetLambda = F3(
 			function (getter, setter, updater) {
-				var _v19 = getter(model);
-				if (!_v19.$) {
-					var create = _v19.a;
+				var _v23 = getter(model);
+				if (!_v23.$) {
+					var create = _v23.a;
 					return _Utils_Tuple2(
 						A2(
 							setter,
@@ -8956,10 +9317,40 @@ var $author$project$Main$update = F2(
 				var discussion = message.a;
 				return exportModeLambda(
 					$author$project$Export$toggleDiscussion(discussion));
-			default:
+			case 45:
 				var note = message.a;
 				return exportModeLambda(
 					$author$project$Export$remove(note));
+			default:
+				var _v19 = $author$project$Main$getSlipbox(model);
+				if (!_v19.$) {
+					var slipbox = _v19.a;
+					var _v20 = $author$project$Main$getExport(model);
+					if (!_v20.$) {
+						var _export = _v20.a;
+						var cmd = function () {
+							var _v21 = A2($author$project$Export$encode, slipbox, _export);
+							if (!_v21.$) {
+								var _v22 = _v21.a;
+								var title = _v22.a;
+								var file = _v22.b;
+								return A3($elm$file$File$Download$string, title, 'text/plain', file);
+							} else {
+								return $elm$core$Platform$Cmd$none;
+							}
+						}();
+						return _Utils_Tuple2(
+							A2(
+								$author$project$Main$setExport,
+								A2($author$project$Export$continue, slipbox, _export),
+								model),
+							cmd);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $mdgriffith$elm_ui$Internal$Style$classes = {fJ: 'a', ct: 'atv', fL: 'ab', fM: 'cx', fN: 'cy', fO: 'acb', fP: 'accx', fQ: 'accy', fR: 'acr', d7: 'al', d8: 'ar', fS: 'at', cu: 'ah', cv: 'av', fV: 's', f$: 'bh', f0: 'b', f1: 'w7', f3: 'bd', f4: 'bdt', bZ: 'bn', f5: 'bs', b0: 'cpe', gb: 'cp', gc: 'cpx', gd: 'cpy', av: 'c', b3: 'ctr', b4: 'cb', b5: 'ccx', aw: 'ccy', bv: 'cl', b6: 'cr', gg: 'ct', gi: 'cptr', gj: 'ctxt', gx: 'fcs', eq: 'focus-within', gz: 'fs', gA: 'g', cN: 'hbh', cP: 'hc', ev: 'he', cQ: 'hf', ew: 'hfp', gD: 'hv', gF: 'ic', gH: 'fr', cb: 'lbl', gL: 'iml', gM: 'imlf', gN: 'imlp', gO: 'implw', gP: 'it', gR: 'i', eM: 'lnk', bd: 'nb', eV: 'notxt', g3: 'ol', g4: 'or', aV: 'oq', ha: 'oh', e0: 'pg', e1: 'p', hb: 'ppe', hl: 'ui', fh: 'r', hr: 'sb', hs: 'sbx', ht: 'sby', hv: 'sbt', hy: 'e', hz: 'cap', hA: 'sev', hI: 'sk', hN: 't', hO: 'tc', hP: 'w8', hQ: 'w2', hR: 'w9', hS: 'tj', cn: 'tja', hT: 'tl', hU: 'w3', hV: 'w5', hW: 'w4', hX: 'tr', hY: 'w6', hZ: 'w1', h_: 'tun', V: 'ts', a1: 'clr', h7: 'u', dW: 'wc', fE: 'we', dX: 'wf', fF: 'wfp', dY: 'wrp'};
@@ -11292,9 +11683,6 @@ var $mdgriffith$elm_ui$Internal$Style$sliderReset = '\ninput[type=range] {\n  -w
 var $mdgriffith$elm_ui$Internal$Style$thumbReset = '\ninput[type=range]::-webkit-slider-thumb {\n    -webkit-appearance: none;\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range]::-moz-range-thumb {\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range]::-ms-thumb {\n    opacity: 0.5;\n    width: 80px;\n    height: 80px;\n    background-color: black;\n    border:none;\n    border-radius: 5px;\n}\ninput[type=range][orient=vertical]{\n    writing-mode: bt-lr; /* IE */\n    -webkit-appearance: slider-vertical;  /* WebKit */\n}\n';
 var $mdgriffith$elm_ui$Internal$Style$trackReset = '\ninput[type=range]::-moz-range-track {\n    background: transparent;\n    cursor: pointer;\n}\ninput[type=range]::-ms-track {\n    background: transparent;\n    cursor: pointer;\n}\ninput[type=range]::-webkit-slider-runnable-track {\n    background: transparent;\n    cursor: pointer;\n}\n';
 var $mdgriffith$elm_ui$Internal$Style$overrides = '@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fV) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fh) + (' > ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fV) + (' { flex-basis: auto !important; } ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fV) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fh) + (' > ' + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.fV) + ($mdgriffith$elm_ui$Internal$Style$dot($mdgriffith$elm_ui$Internal$Style$classes.b3) + (' { flex-basis: auto !important; }}' + ($mdgriffith$elm_ui$Internal$Style$inputTextReset + ($mdgriffith$elm_ui$Internal$Style$sliderReset + ($mdgriffith$elm_ui$Internal$Style$trackReset + ($mdgriffith$elm_ui$Internal$Style$thumbReset + $mdgriffith$elm_ui$Internal$Style$explainer)))))))))))))));
-var $elm$core$String$concat = function (strings) {
-	return A2($elm$core$String$join, '', strings);
-};
 var $mdgriffith$elm_ui$Internal$Style$Intermediate = $elm$core$Basics$identity;
 var $mdgriffith$elm_ui$Internal$Style$emptyIntermediate = F2(
 	function (selector, closing) {
@@ -15862,6 +16250,7 @@ var $author$project$Main$EditModeUpdateInput = function (a) {
 	return {$: 33, a: a};
 };
 var $author$project$Main$ExportModeContinue = {$: 42};
+var $author$project$Main$ExportModeFinish = {$: 46};
 var $author$project$Main$ExportModeRemove = function (a) {
 	return {$: 45, a: a};
 };
@@ -16055,9 +16444,6 @@ var $author$project$Main$createTabSourceInput = F2(
 						A2($elm$core$List$map, $author$project$Main$toHtmlOption, suggestions))
 					])));
 	});
-var $author$project$Note$getContent = function (note) {
-	return $author$project$Note$getInfo(note).aP;
-};
 var $author$project$Slipbox$isNote = function (note) {
 	return !$author$project$Note$getVariant(note);
 };
@@ -16075,30 +16461,6 @@ var $author$project$Slipbox$getNotes = F2(
 					content.R));
 		} else {
 			return A2($elm$core$List$filter, $author$project$Slipbox$isNote, content.R);
-		}
-	});
-var $author$project$Source$contains = F2(
-	function (input, source) {
-		var info = $author$project$Source$getInfo(source);
-		var has = function (s) {
-			return A2(
-				$elm$core$String$contains,
-				$elm$core$String$toLower(input),
-				$elm$core$String$toLower(s));
-		};
-		return has(info.dO) || (has(info.fX) || has(info.aP));
-	});
-var $author$project$Slipbox$getSources = F2(
-	function (maybeSearch, slipbox) {
-		var content = $author$project$Slipbox$getContent(slipbox);
-		if (!maybeSearch.$) {
-			var search = maybeSearch.a;
-			return A2(
-				$elm$core$List$filter,
-				$author$project$Source$contains(search),
-				content.bi);
-		} else {
-			return content.bi;
 		}
 	});
 var $mdgriffith$elm_ui$Internal$Model$Paragraph = {$: 9};
@@ -18359,9 +18721,6 @@ var $author$project$Edit$ViewNoteSelected = F4(
 var $author$project$Edit$ViewSelectNote = function (a) {
 	return {$: 0, a: a};
 };
-var $author$project$Note$getSource = function (note) {
-	return $author$project$Note$getInfo(note).bM;
-};
 var $author$project$Edit$view = F2(
 	function (slipbox, edit) {
 		switch (edit.$) {
@@ -19984,7 +20343,7 @@ var $author$project$Main$tabView = function (content) {
 								$mdgriffith$elm_ui$Element$text(title)),
 								A2(
 								$author$project$Main$button,
-								$elm$core$Maybe$Just($author$project$Main$ExportModeContinue),
+								$elm$core$Maybe$Just($author$project$Main$ExportModeFinish),
 								$mdgriffith$elm_ui$Element$text('Continue')),
 								$author$project$Main$column(
 								A2(

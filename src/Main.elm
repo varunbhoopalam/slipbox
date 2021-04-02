@@ -11,6 +11,7 @@ import Element.Border
 import Element.Font
 import Element.Input
 import Export
+import File.Download
 import FontAwesome.Attributes
 import FontAwesome.Solid
 import Graph
@@ -228,6 +229,7 @@ type Msg
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
   | ExportModeRemove Note.Note
+  | ExportModeFinish
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -412,6 +414,22 @@ update message model =
     ExportModeUpdateInput input -> exportModeLambda <| Export.updateInput input
     ExportModeToggleDiscussion discussion -> exportModeLambda <| Export.toggleDiscussion discussion
     ExportModeRemove note -> exportModeLambda <| Export.remove note
+    ExportModeFinish ->
+      case getSlipbox model of
+        Just slipbox ->
+          case getExport model of
+            Just export ->
+              let
+                cmd =
+                  case Export.encode slipbox export of
+                    Just ( title, file ) -> File.Download.string title "text/plain" file
+                    Nothing -> Cmd.none
+              in
+              ( setExport ( Export.continue slipbox export ) model
+              , cmd
+              )
+            Nothing -> ( model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
 
 newContent : Content
 newContent =
@@ -1297,7 +1315,7 @@ tabView content =
         column
           [ headingCenter "Configure Notes"
           , Element.el [ Element.centerX ] <| Element.text title
-          , button ( Just ExportModeContinue ) ( Element.text "Continue")
+          , button ( Just ExportModeFinish ) ( Element.text "Continue")
           , column
             <| List.map
             (\d ->

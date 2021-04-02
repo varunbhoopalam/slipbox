@@ -168,7 +168,7 @@ remove note export =
         ( List.filter ( \n -> not <| Note.is note n ) notes )
     _ -> export
 
-encode : Slipbox.Slipbox -> Export -> Maybe String
+encode : Slipbox.Slipbox -> Export -> Maybe ( String, String )
 encode slipbox export =
   case export of
     ConfigureContent title notes ->
@@ -185,13 +185,17 @@ encode slipbox export =
                 notes
             )
             <| Slipbox.getSources Nothing slipbox
+        fileTitle = ( String.replace " " "_" title ) ++ ".txt"
       in
-      Just <| String.concat <| List.intersperse "\n\n" <|
+      Just ( fileTitle, String.concat <| List.intersperse "\n\n" <|
         List.concat
           [ [ title ]
+          , [ "Notes" ]
           , List.map ( toEncodedNote relevantSources ) notes
+          , [ "Sources" ]
           , List.map toEncodedSource relevantSources
           ]
+        )
     _ -> Nothing
 
 -- HELPER
@@ -221,9 +225,12 @@ toEncodedNote sources note =
         )
         sources
     sourceString =
-      case maybeSource of
-        Just source -> "Source ID: " ++ ( String.fromInt <| Source.getId source )
-        Nothing -> "No Source"
+      if Note.getVariant note == Note.Discussion then
+        ""
+      else
+        case maybeSource of
+          Just source -> "Source ID: " ++ ( String.fromInt <| Source.getId source )
+          Nothing -> "No Source"
   in
   String.concat <|
     List.intersperse
