@@ -126,7 +126,7 @@ continue slipbox export =
           notes
 
     ConfigureContent _ _ -> PromptAnotherExport
-
+    PromptAnotherExport -> init slipbox
     _ -> export
 
 

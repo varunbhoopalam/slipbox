@@ -5816,6 +5816,14 @@ var $author$project$Export$getNote = function (discussion) {
 		return note;
 	}
 };
+var $author$project$Export$ErrorStateNoDiscussions = {$: 0};
+var $author$project$Export$InputProjectTitle = function (a) {
+	return {$: 1, a: a};
+};
+var $author$project$Export$init = function (slipbox) {
+	var discussions = A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, slipbox);
+	return $elm$core$List$isEmpty(discussions) ? $author$project$Export$ErrorStateNoDiscussions : $author$project$Export$InputProjectTitle('');
+};
 var $author$project$Export$Unselected = function (a) {
 	return {$: 1, a: a};
 };
@@ -5855,6 +5863,8 @@ var $author$project$Export$continue = F2(
 				}
 			case 3:
 				return $author$project$Export$PromptAnotherExport;
+			case 4:
+				return $author$project$Export$init(slipbox);
 			default:
 				return _export;
 		}
@@ -6491,14 +6501,6 @@ var $author$project$Edit$SelectNote = function (a) {
 	return {$: 0, a: a};
 };
 var $author$project$Edit$init = $author$project$Edit$SelectNote('');
-var $author$project$Export$ErrorStateNoDiscussions = {$: 0};
-var $author$project$Export$InputProjectTitle = function (a) {
-	return {$: 1, a: a};
-};
-var $author$project$Export$init = function (slipbox) {
-	var discussions = A2($author$project$Slipbox$getDiscussions, $elm$core$Maybe$Nothing, slipbox);
-	return $elm$core$List$isEmpty(discussions) ? $author$project$Export$ErrorStateNoDiscussions : $author$project$Export$InputProjectTitle('');
-};
 var $author$project$IdGenerator$init = 0;
 var $author$project$Slipbox$new = A5($author$project$Slipbox$Content, _List_Nil, _List_Nil, _List_Nil, $author$project$IdGenerator$init, false);
 var $author$project$Main$newContent = A3(
@@ -20387,7 +20389,15 @@ var $author$project$Main$tabView = function (content) {
 									notes))
 							]));
 				default:
-					return $mdgriffith$elm_ui$Element$text('todo');
+					return $author$project$Main$column(
+						_List_fromArray(
+							[
+								$author$project$Main$headingCenter('Success! Your new project has downloaded. '),
+								A2(
+								$author$project$Main$button,
+								$elm$core$Maybe$Just($author$project$Main$ExportModeContinue),
+								$mdgriffith$elm_ui$Element$text('Start Another Project'))
+							]));
 			}
 	}
 };

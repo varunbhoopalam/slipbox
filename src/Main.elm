@@ -1329,7 +1329,11 @@ tabView content =
           ]
 
 
-      Export.PromptAnotherExportView -> Element.text "todo"
+      Export.PromptAnotherExportView ->
+        column
+          [ headingCenter "Success! Your new project has downloaded. "
+          , button ( Just ExportModeContinue ) ( Element.text "Start Another Project" )
+          ]
 
 
 coaching : Bool -> Element Msg -> Element Msg
