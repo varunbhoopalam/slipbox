@@ -10,6 +10,8 @@ import Element.Background
 import Element.Border
 import Element.Font
 import Element.Input
+import Export
+import File.Download
 import FontAwesome.Attributes
 import FontAwesome.Solid
 import Graph
@@ -124,6 +126,25 @@ setEdit create model =
         _ -> model
     _ -> model
 
+getExport : Model -> Maybe Export.Export
+getExport model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExportModeTab export -> Just export
+        _ -> Nothing
+    _ -> Nothing
+
+setExport : Export.Export -> Model -> Model
+setExport export model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExportModeTab _ ->
+          Session { content | tab = ExportModeTab export }
+        _ -> model
+    _ -> model
+
 -- CONTENT
 type alias Content = 
   { tab: Tab
@@ -144,11 +165,13 @@ type Tab
   = EditModeTab Edit.Edit
   | CreateModeTab Create.Create
   | DiscoveryModeTab Discovery.Discovery
+  | ExportModeTab Export.Export
 
 type Tab_
   = EditMode
   | CreateMode
   | DiscoveryMode
+  | ExportMode
 
 -- INIT
 
@@ -202,6 +225,11 @@ type Msg
   | EditModeHoverNote Note.Note
   | EditModeStopHover
   | EditModeSelectNoteScreen
+  | ExportModeContinue
+  | ExportModeUpdateInput String
+  | ExportModeToggleDiscussion Note.Note
+  | ExportModeRemove Note.Note
+  | ExportModeFinish
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -218,6 +246,7 @@ update message model =
     createModeLambda updater = getAndSetLambda getCreate setCreate updater
     discoveryModeLambda updater = getAndSetLambda getDiscovery setDiscovery updater
     editModeLambda updater = getAndSetLambda getEdit setEdit updater
+    exportModeLambda updater = getAndSetLambda getExport setExport updater
 
     getAndSetWithSlipboxLambda getter setter updater =
       case getSlipbox model of
@@ -311,6 +340,17 @@ update message model =
                   , Cmd.none
                   )
 
+            ExportMode ->
+              case content.tab of
+                ExportModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  case getSlipbox model of
+                    Just slipbox ->
+                      ( Session { content | tab = ExportModeTab <| Export.init slipbox }
+                      , Cmd.none
+                      )
+                    _ -> ( model, Cmd.none )
+
         _ -> ( model, Cmd.none )
 
     ToggleSideNav ->
@@ -367,6 +407,29 @@ update message model =
     EditModeHoverNote note -> editModeLambda <| Edit.hover note
     EditModeStopHover -> editModeLambda Edit.stopHover
     EditModeSelectNoteScreen -> editModeLambda Edit.toSelectNote
+    ExportModeContinue ->
+      case getSlipbox model of
+        Just slipbox -> exportModeLambda <| Export.continue slipbox
+        Nothing -> ( model, Cmd.none )
+    ExportModeUpdateInput input -> exportModeLambda <| Export.updateInput input
+    ExportModeToggleDiscussion discussion -> exportModeLambda <| Export.toggleDiscussion discussion
+    ExportModeRemove note -> exportModeLambda <| Export.remove note
+    ExportModeFinish ->
+      case getSlipbox model of
+        Just slipbox ->
+          case getExport model of
+            Just export ->
+              let
+                cmd =
+                  case Export.encode slipbox export of
+                    Just ( title, file ) -> File.Download.string title "text/plain" file
+                    Nothing -> Cmd.none
+              in
+              ( setExport ( Export.continue slipbox export ) model
+              , cmd
+              )
+            Nothing -> ( model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
 
 newContent : Content
 newContent =
@@ -1161,6 +1224,118 @@ tabView content =
             , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
 
+
+    ExportModeTab export -> case Export.view export of
+      Export.ErrorStateNoDiscussionsView ->
+        column
+          [ headingCenter "We cannot start export mode without discussions!"
+          , Element.paragraph [ Element.width <| Element.maximum 800 Element.fill, Element.centerX ]
+            [ Element.text "Export Mode is used to bring discussions out of the app and into your hands! "
+            , Element.text "Start some discussions! Adding relevant facts to discussions is the sustainable way to use this application! "
+            , Element.text "When you have a discussion you want to do something with, come back here! "
+            , Element.text "As you build up your knowledge, your discussions will be come richer with knowledge and more useful to you. "
+            , Element.text "We bet you will much to share soon! "
+            ]
+          -- TODO : What feature can help people more directly create discussions from what they already have?
+          , button ( Just <| ChangeTab CreateMode ) ( Element.text "Create Notes and Discussions")
+          ]
+
+      Export.InputProjectTitleView title canContinue ->
+        let buttonNode = if canContinue then button ( Just ExportModeContinue ) ( Element.text "Continue") else Element.none
+        in
+        column
+          [ headingCenter "Give a title to the project you're exporting!"
+          , multiline ExportModeUpdateInput title "Project Title (required)"
+          , buttonNode
+          ]
+
+      Export.SelectDiscussionsView title filter selectedDiscussions unselectedFilteredDiscussions canContinue ->
+        let
+          continueNodeWithSelectedDiscussions =
+            if canContinue then
+              column
+                [ headingCenter "Selected Discussions"
+                , column
+                  <| List.map
+                  (\d ->
+                    Element.row
+                      [ Element.Border.width 1, Element.width Element.fill, Element.width <| Element.maximum 600 Element.fill, Element.centerX ]
+                      [ Element.el [ Element.paddingEach leftPad ] <| Element.text <| Note.getContent d
+                      , Element.el [ Element.alignRight ] <| button ( Just <| ExportModeToggleDiscussion d ) ( Element.text "Unselect Discussion" )
+                      ]
+                  )
+                  selectedDiscussions
+                , button ( Just ExportModeContinue ) ( Element.text "Continue")
+                ]
+            else
+              Element.none
+        in
+        column
+          [ headingCenter "Select Relevant Discussions to Project"
+          , Element.el [ Element.centerX ] <| Element.text title
+          , continueNodeWithSelectedDiscussions
+          , Element.column
+            [ Element.width <| Element.maximum 600 Element.fill
+            , Element.height Element.fill
+            , Element.spacingXY 10 10
+            , Element.padding 5
+            , Element.Border.width 2
+            , Element.Border.rounded 6
+            , Element.centerX
+            ]
+            [ multiline ExportModeUpdateInput filter "Filter Note"
+            , Element.row [ Element.width Element.fill ]
+              [ Element.el
+                [ Element.width Element.fill
+                , Element.Font.bold
+                , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                ] <| Element.text "Select Discussions"
+              ]
+            , Element.el [ Element.width Element.fill ] <| Element.table
+              [ Element.width Element.fill
+              , Element.padding 8
+              , Element.spacingXY 8 8
+              , Element.centerX
+              , Element.height <| Element.maximum 300 Element.fill
+              , Element.scrollbarY
+              ]
+              { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) unselectedFilteredDiscussions
+              , columns =
+                [ { header = Element.none
+                  , width = Element.fillPortion 4
+                  , view = \row -> listButton ( Just <| ExportModeToggleDiscussion row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
+                  }
+                ]
+              }
+            ]
+          ]
+
+
+      Export.ConfigureContentView title notes ->
+        column
+          [ headingCenter "Configure Notes"
+          , Element.el [ Element.centerX ] <| Element.text title
+          , button ( Just ExportModeFinish ) ( Element.text "Continue")
+          , column
+            <| List.map
+            (\d ->
+              Element.row
+                [ Element.Border.width 1, Element.width Element.fill, Element.width <| Element.maximum 600 Element.fill, Element.centerX ]
+                [ Element.paragraph [ Element.width Element.fill, Element.padding 8 ] [ Element.text <| Note.getContent d ]
+                , Element.el [ Element.alignRight ] <| button ( Just <| ExportModeRemove d ) ( Element.text "Remove Note" )
+                ]
+            )
+            notes
+          ]
+
+
+      Export.PromptAnotherExportView ->
+        column
+          [ headingCenter "Success! Your new project has downloaded. "
+          , button ( Just ExportModeContinue ) ( Element.text "Start Another Project" )
+          ]
+
+
 coaching : Bool -> Element Msg -> Element Msg
 coaching coachingOpen text =
   let
@@ -1528,6 +1703,7 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab DiscoveryMode ) <| sameTab selectedTab DiscoveryMode
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Edit Mode" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
+          , leftNavExpandedButtonLambda Element.alignLeft exportIcon "Export Mode" ( ChangeTab ExportMode ) <| sameTab selectedTab ExportMode
           ]
         ]
     Contracted ->
@@ -1551,6 +1727,7 @@ leftNav sideNavState selectedTab slipbox =
           ]
           [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab DiscoveryMode ) brainIcon <| sameTab selectedTab DiscoveryMode
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab EditMode ) toolsIcon <| sameTab selectedTab EditMode
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab ExportMode ) exportIcon <| sameTab selectedTab ExportMode
           ]
         ]
 
@@ -1570,6 +1747,11 @@ sameTab tab tab_ =
     DiscoveryModeTab _ ->
       case tab_ of
         DiscoveryMode -> True
+        _ -> False
+
+    ExportModeTab _ ->
+      case tab_ of
+        ExportMode -> True
         _ -> False
 
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
@@ -1593,6 +1775,9 @@ brainIcon = iconBuilder FontAwesome.Solid.brain
 
 toolsIcon : Element Msg
 toolsIcon = iconBuilder FontAwesome.Solid.tools
+
+exportIcon : Element Msg
+exportIcon = iconBuilder FontAwesome.Solid.fileDownload
 
 barsButton : Element Msg
 barsButton =
@@ -1626,6 +1811,7 @@ listButton onPress label =
     , label = label
     }
 
+leftPad = {right=0,top=0,bottom=0,left=8}
 rightWidth = {right=1,top=0,bottom=0,left=0}
 
 listButtonWithBreakLink : Maybe Msg -> Maybe Msg -> Element Msg -> Element Msg
