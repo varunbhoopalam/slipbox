@@ -5421,11 +5421,15 @@ var $author$project$Edit$NoteSelected = function (a) {
 	return {$: 1, a: a};
 };
 var $author$project$Edit$cancel = function (edit) {
-	if (edit.$ === 3) {
-		var previousNoteSelected = edit.a;
-		return $author$project$Edit$NoteSelected(previousNoteSelected);
-	} else {
-		return edit;
+	switch (edit.$) {
+		case 3:
+			var previousNoteSelected = edit.a;
+			return $author$project$Edit$NoteSelected(previousNoteSelected);
+		case 4:
+			var previousNoteSelected = edit.b;
+			return $author$project$Edit$NoteSelected(previousNoteSelected);
+		default:
+			return edit;
 	}
 };
 var $elm$json$Json$Encode$null = _Json_encodeNull;
@@ -5435,6 +5439,51 @@ var $author$project$Main$changesMade = _Platform_outgoingPort(
 		return $elm$json$Json$Encode$null;
 	});
 var $author$project$Slipbox$Slipbox = $elm$core$Basics$identity;
+var $author$project$Link$Info = F3(
+	function (id, sourceId, targetId) {
+		return {cT: id, dI: sourceId, dL: targetId};
+	});
+var $author$project$Link$Link = $elm$core$Basics$identity;
+var $author$project$IdGenerator$IdGenerator = $elm$core$Basics$identity;
+var $author$project$IdGenerator$generateId = function (generator) {
+	var id = generator;
+	return _Utils_Tuple2(id, id + 1);
+};
+var $author$project$Note$getInfo = function (note) {
+	var content = note;
+	return content;
+};
+var $author$project$Note$getId = function (note) {
+	return $author$project$Note$getInfo(note).cT;
+};
+var $author$project$Link$create = F3(
+	function (generator, sourceNote, targetNote) {
+		var _v0 = $author$project$IdGenerator$generateId(generator);
+		var id = _v0.a;
+		var idGenerator = _v0.b;
+		return _Utils_Tuple2(
+			A3(
+				$author$project$Link$Info,
+				id,
+				$author$project$Note$getId(sourceNote),
+				$author$project$Note$getId(targetNote)),
+			idGenerator);
+	});
+var $author$project$Slipbox$getContent = function (slipbox) {
+	var content = slipbox;
+	return content;
+};
+var $author$project$Slipbox$addLink = F3(
+	function (note1, note2, slipbox) {
+		var content = $author$project$Slipbox$getContent(slipbox);
+		var _v0 = A3($author$project$Link$create, content.ae, note1, note2);
+		var link = _v0.a;
+		var idGenerator = _v0.b;
+		var links = A2($elm$core$List$cons, link, content.gT);
+		return _Utils_update(
+			content,
+			{ae: idGenerator, gT: links, aJ: true});
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -5446,10 +5495,6 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $author$project$Slipbox$getContent = function (slipbox) {
-	var content = slipbox;
-	return content;
-};
 var $author$project$Link$getInfo = function (link) {
 	var info = link;
 	return info;
@@ -5481,14 +5526,25 @@ var $author$project$Slipbox$breakLink = F2(
 	});
 var $author$project$Edit$confirm = F2(
 	function (slipbox, edit) {
-		if (edit.$ === 3) {
-			var previousNoteSelected = edit.a;
-			var link = edit.b;
-			return _Utils_Tuple2(
-				A2($author$project$Slipbox$breakLink, link, slipbox),
-				$author$project$Edit$NoteSelected(previousNoteSelected));
-		} else {
-			return _Utils_Tuple2(slipbox, edit);
+		switch (edit.$) {
+			case 3:
+				var previousNoteSelected = edit.a;
+				var link = edit.b;
+				return _Utils_Tuple2(
+					A2($author$project$Slipbox$breakLink, link, slipbox),
+					$author$project$Edit$NoteSelected(previousNoteSelected));
+			case 4:
+				var previousNoteSelected = edit.b;
+				var notesToLink = edit.c;
+				return _Utils_Tuple2(
+					A3(
+						$elm$core$List$foldl,
+						$author$project$Slipbox$addLink(previousNoteSelected),
+						slipbox,
+						notesToLink),
+					$author$project$Edit$NoteSelected(previousNoteSelected));
+			default:
+				return _Utils_Tuple2(slipbox, edit);
 		}
 	});
 var $author$project$Export$ConfigureContent = F2(
@@ -5548,13 +5604,6 @@ var $elm$core$List$head = function (list) {
 };
 var $author$project$Link$getSourceId = function (link) {
 	return $author$project$Link$getInfo(link).dI;
-};
-var $author$project$Note$getInfo = function (note) {
-	var content = note;
-	return content;
-};
-var $author$project$Note$getId = function (note) {
-	return $author$project$Note$getInfo(note).cT;
 };
 var $author$project$Note$isNoteFromId = F2(
 	function (id, note) {
@@ -5945,14 +5994,8 @@ var $author$project$Slipbox$Content = F5(
 	function (notes, links, sources, idGenerator, unsavedChanges) {
 		return {ae: idGenerator, gT: links, R: notes, bi: sources, aJ: unsavedChanges};
 	});
-var $author$project$IdGenerator$IdGenerator = $elm$core$Basics$identity;
 var $author$project$IdGenerator$decode = A2($elm$json$Json$Decode$map, $elm$core$Basics$identity, $elm$json$Json$Decode$int);
 var $elm$json$Json$Decode$field = _Json_decodeField;
-var $author$project$Link$Info = F3(
-	function (id, sourceId, targetId) {
-		return {cT: id, dI: sourceId, dL: targetId};
-	});
-var $author$project$Link$Link = $elm$core$Basics$identity;
 var $author$project$Link$link_ = F3(
 	function (id, source, target) {
 		return A3($author$project$Link$Info, id, source, target);
@@ -6467,26 +6510,45 @@ var $author$project$Discovery$hover = F2(
 			return discovery;
 		}
 	});
+var $author$project$Edit$AddLinkDiscussionChosen = F6(
+	function (a, b, c, d, e, f) {
+		return {$: 5, a: a, b: b, c: c, d: d, e: e, f: f};
+	});
 var $author$project$Edit$ConfirmBreakLink = F5(
 	function (a, b, c, d, e) {
 		return {$: 3, a: a, b: b, c: c, d: d, e: e};
 	});
 var $author$project$Edit$hover = F2(
 	function (note, edit) {
-		if (edit.$ === 3) {
-			var pn = edit.a;
-			var link = edit.b;
-			var graph = edit.c;
-			var selectedNote = edit.d;
-			return A5(
-				$author$project$Edit$ConfirmBreakLink,
-				pn,
-				link,
-				graph,
-				selectedNote,
-				$elm$core$Maybe$Just(note));
-		} else {
-			return edit;
+		switch (edit.$) {
+			case 3:
+				var pn = edit.a;
+				var link = edit.b;
+				var graph = edit.c;
+				var selectedNote = edit.d;
+				return A5(
+					$author$project$Edit$ConfirmBreakLink,
+					pn,
+					link,
+					graph,
+					selectedNote,
+					$elm$core$Maybe$Just(note));
+			case 5:
+				var pn = edit.a;
+				var discussion = edit.b;
+				var graph = edit.c;
+				var selectedNote = edit.d;
+				var notesToLink = edit.f;
+				return A6(
+					$author$project$Edit$AddLinkDiscussionChosen,
+					pn,
+					discussion,
+					graph,
+					selectedNote,
+					$elm$core$Maybe$Just(note),
+					notesToLink);
+			default:
+				return edit;
 		}
 	});
 var $author$project$Create$CoachingModalClosed = 1;
@@ -6554,10 +6616,6 @@ var $author$project$Create$next = function (create) {
 var $author$project$Create$PromptCreateAnother = function (a) {
 	return {$: 6, a: a};
 };
-var $author$project$IdGenerator$generateId = function (generator) {
-	var id = generator;
-	return _Utils_Tuple2(id, id + 1);
-};
 var $author$project$Note$create = F2(
 	function (generator, record) {
 		var _v0 = $author$project$IdGenerator$generateId(generator);
@@ -6591,30 +6649,6 @@ var $author$project$Slipbox$addDiscussion = F2(
 					aJ: true
 				}),
 			note);
-	});
-var $author$project$Link$create = F3(
-	function (generator, sourceNote, targetNote) {
-		var _v0 = $author$project$IdGenerator$generateId(generator);
-		var id = _v0.a;
-		var idGenerator = _v0.b;
-		return _Utils_Tuple2(
-			A3(
-				$author$project$Link$Info,
-				id,
-				$author$project$Note$getId(sourceNote),
-				$author$project$Note$getId(targetNote)),
-			idGenerator);
-	});
-var $author$project$Slipbox$addLink = F3(
-	function (note1, note2, slipbox) {
-		var content = $author$project$Slipbox$getContent(slipbox);
-		var _v0 = A3($author$project$Link$create, content.ae, note1, note2);
-		var link = _v0.a;
-		var idGenerator = _v0.b;
-		var links = A2($elm$core$List$cons, link, content.gT);
-		return _Utils_update(
-			content,
-			{ae: idGenerator, gT: links, aJ: true});
 	});
 var $author$project$Slipbox$addNote = F3(
 	function (noteContent, sourceTitle, slipbox) {
@@ -7025,14 +7059,22 @@ var $author$project$Discovery$stopHover = function (discovery) {
 	}
 };
 var $author$project$Edit$stopHover = function (edit) {
-	if (edit.$ === 3) {
-		var pn = edit.a;
-		var link = edit.b;
-		var graph = edit.c;
-		var selectedNote = edit.d;
-		return A5($author$project$Edit$ConfirmBreakLink, pn, link, graph, selectedNote, $elm$core$Maybe$Nothing);
-	} else {
-		return edit;
+	switch (edit.$) {
+		case 3:
+			var pn = edit.a;
+			var link = edit.b;
+			var graph = edit.c;
+			var selectedNote = edit.d;
+			return A5($author$project$Edit$ConfirmBreakLink, pn, link, graph, selectedNote, $elm$core$Maybe$Nothing);
+		case 5:
+			var pn = edit.a;
+			var discussion = edit.b;
+			var graph = edit.c;
+			var selectedNote = edit.d;
+			var notesToLink = edit.f;
+			return A6($author$project$Edit$AddLinkDiscussionChosen, pn, discussion, graph, selectedNote, $elm$core$Maybe$Nothing, notesToLink);
+		default:
+			return edit;
 	}
 };
 var $elm$time$Time$Posix = $elm$core$Basics$identity;
@@ -8942,12 +8984,21 @@ var $author$project$Discovery$updateInput = F2(
 				return discovery;
 		}
 	});
+var $author$project$Edit$AddLinkChooseDiscussion = F3(
+	function (a, b, c) {
+		return {$: 4, a: a, b: b, c: c};
+	});
 var $author$project$Edit$updateInput = F2(
 	function (input, edit) {
-		if (!edit.$) {
-			return $author$project$Edit$SelectNote(input);
-		} else {
-			return edit;
+		switch (edit.$) {
+			case 0:
+				return $author$project$Edit$SelectNote(input);
+			case 4:
+				var psn = edit.b;
+				var notesToLink = edit.c;
+				return A3($author$project$Edit$AddLinkChooseDiscussion, input, psn, notesToLink);
+			default:
+				return edit;
 		}
 	});
 var $author$project$Export$updateInput = F2(
@@ -18708,6 +18759,8 @@ var $author$project$Discovery$view = function (discovery) {
 				discussionInput);
 	}
 };
+var $author$project$Edit$AddLinkChooseDiscussionView = {$: 4};
+var $author$project$Edit$AddLinkDiscussionChosenView = {$: 5};
 var $author$project$Edit$ViewConfirmBreakLink = F4(
 	function (a, b, c, d) {
 		return {$: 3, a: a, b: b, c: c, d: d};
@@ -18786,12 +18839,25 @@ var $author$project$Edit$view = F2(
 					$author$project$Edit$ViewDiscussionSelected,
 					discussion,
 					lambda(linkedNotes));
-			default:
+			case 3:
 				var link = edit.b;
 				var graph = edit.c;
 				var selectedNote = edit.d;
 				var hoveredNote = edit.e;
 				return A4($author$project$Edit$ViewConfirmBreakLink, link, graph, selectedNote, hoveredNote);
+			case 4:
+				var filter = edit.a;
+				var note = edit.b;
+				var createdLinks = edit.c;
+				return $author$project$Edit$AddLinkChooseDiscussionView;
+			default:
+				var previousNoteSelected = edit.a;
+				var discussion = edit.b;
+				var graph = edit.c;
+				var selectedNote = edit.d;
+				var hoveredNote = edit.e;
+				var createdLinks = edit.f;
+				return $author$project$Edit$AddLinkDiscussionChosenView;
 		}
 	});
 var $author$project$Export$ConfigureContentView = F2(
@@ -19242,7 +19308,7 @@ var $author$project$Main$tabView = function (content) {
 									])),
 								linkedNotes
 							]));
-				default:
+				case 3:
 					var linkToBreak = _v1.a;
 					var graph = _v1.b;
 					var selectedNote = _v1.c;
@@ -19324,6 +19390,10 @@ var $author$project$Main$tabView = function (content) {
 								selectedNote,
 								hoverNote)
 							]));
+				case 4:
+					return $mdgriffith$elm_ui$Element$text('todo');
+				default:
+					return $mdgriffith$elm_ui$Element$text('todo');
 			}
 		case 1:
 			var create = _v0.a;

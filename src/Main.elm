@@ -767,6 +767,12 @@ tabView content =
             , svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
             ]
 
+        Edit.AddLinkChooseDiscussionView -> Element.text "todo"
+
+
+        Edit.AddLinkDiscussionChosenView -> Element.text "todo"
+
+
     CreateModeTab create ->
       case Create.view create of
         Create.NoteInputView coachingOpen canContinue noteInput ->
