@@ -14,6 +14,7 @@ module Edit exposing
   , hover
   , stopHover
   , chooseDiscussion
+  , toChooseDiscussion
   , addLink
   , cancelAddLink
   )
@@ -199,6 +200,14 @@ chooseDiscussion discussion slipbox edit =
         Nothing
         createdLinks
     _ -> edit
+
+toChooseDiscussion : Edit -> Edit
+toChooseDiscussion edit =
+  case edit of
+    NoteSelected note ->
+      AddLinkChooseDiscussion "" note []
+    AddLinkDiscussionChosen pns _ _ _ _ notesToLink ->
+      AddLinkChooseDiscussion "" pns notesToLink
 
 addLink : Edit -> Edit
 addLink edit =

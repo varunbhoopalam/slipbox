@@ -225,6 +225,9 @@ type Msg
   | EditModeHoverNote Note.Note
   | EditModeStopHover
   | EditModeSelectNoteScreen
+  | EditModeAddLink
+  | EditModeCancelAddLink
+  | EditModeToChooseDiscussion
   | ExportModeContinue
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
@@ -407,6 +410,9 @@ update message model =
     EditModeHoverNote note -> editModeLambda <| Edit.hover note
     EditModeStopHover -> editModeLambda Edit.stopHover
     EditModeSelectNoteScreen -> editModeLambda Edit.toSelectNote
+    EditModeAddLink -> editModeLambda Edit.addLink
+    EditModeCancelAddLink -> editModeLambda Edit.cancelAddLink
+    EditModeToChooseDiscussion -> editModeLambda Edit.toChooseDiscussion
     ExportModeContinue ->
       case getSlipbox model of
         Just slipbox -> exportModeLambda <| Export.continue slipbox
@@ -1440,6 +1446,7 @@ type GraphNote
   | Linked Note.Note X Y
   | Discussion Note.Note X Y
   | Regular Note.Note X Y
+  | CannotSelect X Y
 
 type alias X = String
 type alias Y = String
@@ -1474,6 +1481,17 @@ toGraphNote selectedNote notePosition =
         Discussion note x y
       else
         Regular note x y
+
+toGraphNoteWithCreatedLinkStateAndNoSelectState : ( List Note.Note ) -> ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
+toGraphNoteWithCreatedLinkStateAndNoSelectState notesAssociatedToCreatedLinks unselectableNotes selectedNote notePosition =
+  let
+    cannotSelect = List.any ( Note.is notePosition.note ) unselectableNotes
+  in
+  if cannotSelect then
+    CannotSelect ( String.fromFloat notePosition.x ) ( String.fromFloat notePosition.y )
+  else
+    toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote notePosition
+
 
 toGraphNoteWithCreatedLinkState : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
 toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote notePosition =
@@ -1553,6 +1571,9 @@ viewGraphNote onClick mouseOver mouseOut graphNote =
         [ svgRect xCenter yCenter ]
 
     Regular note x y -> gLambda note [ svgCircle x y "5" ]
+
+    CannotSelect x y -> svgCircle x y "5"
+
 
 type alias PositionExtremes =
   { minX : Float
@@ -1956,6 +1977,7 @@ type TabGraph
  = ConfirmBreakLink Link.Link
  | DiscussionChosenView ( List Note.Note )
  | ViewDiscussionView
+ | EditModeAddLinkFlow ( List Note.Note ) ( List Note.Note )
 
 svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
 svgGraph graph tab selectedNote maybeHoverNote =
@@ -1975,12 +1997,19 @@ svgGraph graph tab selectedNote maybeHoverNote =
 
         DiscussionChosenView newlyLinkedNotes ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover ( toGraphNoteWithCreatedLinkState newlyLinkedNotes selectedNote )
+          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover
+            ( toGraphNoteWithCreatedLinkState newlyLinkedNotes selectedNote )
           )
 
         ViewDiscussionView ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
           , notesLambda DiscoveryModeSelectNote DiscoveryModeHoverNote DiscoveryModeStopHover ( toGraphNote selectedNote )
+          )
+
+        EditModeAddLinkFlow newlyLinkedNotes unselectableNotes ->
+          ( linkLambda <| toCreateTabGraphLink graph.positions
+          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover
+            ( toGraphNoteWithCreatedLinkStateAndNoSelectState newlyLinkedNotes unselectableNotes selectedNote )
           )
 
     legend = Element.el [ Element.alignBottom ] <|
