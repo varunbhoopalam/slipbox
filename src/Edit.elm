@@ -30,8 +30,8 @@ type Edit
   | NoteSelected Note.Note
   | DiscussionSelected Note.Note
   | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote HoveredNote
-  | AddLinkChooseDiscussion Filter Note.Note CreatedLinks
-  | AddLinkDiscussionChosen PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote CreatedLinks
+  | AddLinkChooseDiscussion Filter Note.Note NotesDesignatedForLink
+  | AddLinkDiscussionChosen PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink
 
 init : Edit
 init = SelectNote ""
@@ -44,7 +44,9 @@ type alias Discussion = Note.Note
 type alias SelectedNote = Note.Note
 type alias HoveredNote = Maybe Note.Note
 type alias PreviousNoteSelected = Note.Note
-type alias CreatedLinks = List Note.Note
+type alias NotesDesignatedForLink = List Note.Note
+type alias NotesAlreadyLinked = List Note.Note
+type alias SelectedNoteIsLinked = Bool
 
 type EditView
   = ViewSelectNote Filter
@@ -52,9 +54,7 @@ type EditView
   | ViewDiscussionSelected Note.Note ConnectedNotes
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
   | AddLinkChooseDiscussionView
-  | AddLinkDiscussionChosenView
--- PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote
--- TODO: What is an elegant way to classify notes on the graph so main does not have to do it? Should I create a module for this?
+  | AddLinkDiscussionChosenView PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink NotesAlreadyLinked SelectedNoteIsLinked
 
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
@@ -98,6 +98,14 @@ view slipbox edit =
 
     AddLinkDiscussionChosen previousNoteSelected discussion graph selectedNote hoveredNote createdLinks ->
       AddLinkDiscussionChosenView
+        previousNoteSelected
+        discussion
+        graph
+        selectedNote
+        hoveredNote
+        createdLinks
+        ( previousNoteSelected :: ( List.map Tuple.first <| Slipbox.getLinkedNotes previousNoteSelected slipbox ) )
+        ( List.any ( Note.is selectedNote ) createdLinks)
 
 
 toSelectNote : Edit -> Edit

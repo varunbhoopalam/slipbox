@@ -770,7 +770,75 @@ tabView content =
         Edit.AddLinkChooseDiscussionView -> Element.text "todo"
 
 
-        Edit.AddLinkDiscussionChosenView -> Element.text "todo"
+        Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked ->
+          let
+            linkNode =
+              if selectedNoteIsLinked then
+                Element.column
+                  [ Element.width Element.fill
+                  ]
+                  [ Element.text "Linked"
+                  , Element.Input.button
+                    [ Element.padding 8
+                    , Element.Border.width 1
+                    ]
+                    { onPress = Just EditModeCancelAddLink
+                    , label = Element.text "Cancel Create Link"
+                    }
+                  ]
+              else
+                Element.Input.button
+                  [ Element.padding 8
+                  , Element.Border.width 1
+                  ]
+                  { onPress = Just EditModeAddLink
+                  , label = Element.text "Create Link"
+                  }
+          in
+          Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ Element.textColumn
+                [ Element.width Element.fill
+                , Element.padding 8
+                , Element.Border.width 1
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Discussion"
+                , Element.paragraph [] [ Element.text <| Note.getContent discussion ]
+                ]
+              , Element.textColumn
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Created Note"
+                , Element.paragraph [] [ Element.text <| Note.getContent note ]
+                ]
+              , Element.column
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ Element.textColumn
+                  [ Element.spacingXY 10 10
+                  ]
+                  [ heading "Selected Note"
+                  , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                  ]
+                , linkNode
+                ]
+              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Done Linking" )
+              ]
+            , svgGraph graph ( EditModeAddLinkFlow notesToLink notesNotSelectable ) selectedNote hoverNote
+            ]
 
 
     CreateModeTab create ->
@@ -1390,8 +1458,25 @@ type alias NotePosition =
   , vy : Float
   }
 
-toCreateTabGraphNote : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
-toCreateTabGraphNote notesAssociatedToCreatedLinks selectedNote notePosition =
+toGraphNote : Note.Note -> NotePosition -> GraphNote
+toGraphNote selectedNote notePosition =
+  let
+      note = notePosition.note
+      isSelectedNote = Note.is note selectedNote
+      isDiscussion = Note.getVariant note == Note.Discussion
+      x = String.fromFloat notePosition.x
+      y = String.fromFloat notePosition.y
+    in
+    if isSelectedNote then
+      Selected note x y
+    else
+      if isDiscussion then
+        Discussion note x y
+      else
+        Regular note x y
+
+toGraphNoteWithCreatedLinkState : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
+toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote notePosition =
   let
     note = notePosition.note
     isSelectedNote = Note.is note selectedNote
@@ -1878,26 +1963,24 @@ svgGraph graph tab selectedNote maybeHoverNote =
 
     linkLambda filterMap = List.filterMap filterMap graph.links
 
-    notesLambda onSelect onMouseOver onMouseOut linkedNotes =
-      List.map
-        ( \n -> viewGraphNote onSelect onMouseOver onMouseOut n )
-        <| List.map ( toCreateTabGraphNote linkedNotes selectedNote ) graph.positions
+    notesLambda onSelect onMouseOver onMouseOut mapper =
+      List.map ( \n -> viewGraphNote onSelect onMouseOver onMouseOut n ) <| List.map mapper graph.positions
 
     ( links, notes ) =
       case tab of
         ConfirmBreakLink link ->
           ( linkLambda <| toGraphLinkDeleteLink graph.positions link
-          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover []
+          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover ( toGraphNote selectedNote )
           )
 
         DiscussionChosenView newlyLinkedNotes ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover newlyLinkedNotes
+          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover ( toGraphNoteWithCreatedLinkState newlyLinkedNotes selectedNote )
           )
 
         ViewDiscussionView ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda DiscoveryModeSelectNote DiscoveryModeHoverNote DiscoveryModeStopHover []
+          , notesLambda DiscoveryModeSelectNote DiscoveryModeHoverNote DiscoveryModeStopHover ( toGraphNote selectedNote )
           )
 
     legend = Element.el [ Element.alignBottom ] <|
