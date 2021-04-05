@@ -229,6 +229,7 @@ type Msg
   | EditModeCancelAddLink
   | EditModeToChooseDiscussion
   | EditModeChooseDiscussion Note.Note
+  | EditModeToggleStrayNoteFilter Bool
   | ExportModeContinue
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
@@ -381,7 +382,7 @@ update message model =
     CreateTabNoSource -> createModeAndSlipboxLambda Create.noSource
     CreateTabNewSource -> createModeLambda Create.newSource
     CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
-    CreateTabCreateAnotherNote -> createModeLambda (\c -> Create.init)
+    CreateTabCreateAnotherNote -> createModeLambda (\_ -> Create.init)
     CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
     CreateTabHoverNote note -> createModeLambda <| Create.hover note
     CreateTabStopHover -> createModeLambda Create.stopHover
@@ -418,6 +419,7 @@ update message model =
       case getSlipbox model of
         Just slipbox -> editModeLambda <| Edit.chooseDiscussion discussion slipbox
         Nothing -> ( model, Cmd.none )
+    EditModeToggleStrayNoteFilter _ -> editModeLambda Edit.toggleStrayNoteFilter
     ExportModeContinue ->
       case getSlipbox model of
         Just slipbox -> exportModeLambda <| Export.continue slipbox
@@ -592,14 +594,7 @@ tabView content =
   case content.tab of
     EditModeTab edit ->
       case Edit.view content.slipbox edit of
-        Edit.ViewSelectNote filter ->
-          let
-            discussionFilter = if String.isEmpty filter then Nothing else Just filter
-            data =
-              let toDiscussionRecord = \q -> { discussion = Note.getContent q, note = q }
-              in
-              List.map toDiscussionRecord <| Slipbox.getNotes discussionFilter content.slipbox
-          in
+        Edit.ViewSelectNote filter strayNoteFilter notes ->
           column
             [ headingCenter "Select Note"
             , Element.column
@@ -612,6 +607,12 @@ tabView content =
               , Element.centerX
               ]
               [ multiline EditModeUpdateInput filter "Filter Note"
+              , Element.Input.checkbox []
+                { onChange = EditModeToggleStrayNoteFilter
+                , icon = Element.Input.defaultCheckbox
+                , checked = strayNoteFilter
+                , label = Element.Input.labelLeft [ ] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
+                }
               , Element.row [ Element.width Element.fill ]
                 [ Element.el
                   [ Element.width Element.fill
@@ -627,7 +628,7 @@ tabView content =
                 , Element.height <| Element.maximum 300 Element.fill
                 , Element.scrollbarY
                 ]
-                { data = data
+                { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) notes
                 , columns =
                   [ { header = Element.none
                     , width = Element.fillPortion 4

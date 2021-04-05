@@ -15,10 +15,12 @@ module Slipbox exposing
   , addSource
   , addLink
   , breakLink
+  , getStrayNotes
   )
 
 import Note
 import Link
+import Set
 import Source
 import IdGenerator
 import Json.Encode
@@ -171,6 +173,25 @@ getDiscussionTreeWithCollapsedDiscussions discussion slipbox =
   ( discussion :: List.map Tuple.first allTuples
   , List.map Tuple.second allTuples
   )
+
+{-| A stray note is a note that is not directly or indirectly linked to a discussion.
+This function returns all stray notes in the slipbox.
+-}
+getStrayNotes : ( Maybe String ) -> Slipbox -> List Note.Note
+getStrayNotes filter slipbox =
+  let
+    idsAssociatedToDiscussion discussion existingIds =
+      Set.union existingIds
+        <| Set.fromList
+          <| List.map Note.getId
+            <| Tuple.first
+              <| getDiscussionTreeWithCollapsedDiscussions discussion slipbox
+    idsAssociatedToAllDiscussions = List.foldl idsAssociatedToDiscussion Set.empty ( getDiscussions Nothing slipbox )
+    noteNotAssociatedToAnyDiscussion note = not <| Set.member ( Note.getId note ) idsAssociatedToAllDiscussions
+  in
+  List.filter
+    noteNotAssociatedToAnyDiscussion
+    <| getNotes filter slipbox
 
 isADifferentDiscussion : Note.Note -> Note.Note -> Bool
 isADifferentDiscussion note discussion =

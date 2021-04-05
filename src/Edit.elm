@@ -4,9 +4,9 @@ module Edit exposing
   , EditView(..)
   , view
   , toSelectNote
-  , toAddLinksFlow
   , select
   , updateInput
+  , toggleStrayNoteFilter
   , toConfirmBreakLink
   , selectNoteOnGraph
   , cancel
@@ -27,7 +27,7 @@ import Source
 import SourceTitle
 
 type Edit
-  = SelectNote Filter
+  = SelectNote Filter StrayNoteFilter
   | NoteSelected Note.Note
   | DiscussionSelected Note.Note
   | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote HoveredNote
@@ -35,9 +35,10 @@ type Edit
   | AddLinkDiscussionChosen PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink
 
 init : Edit
-init = SelectNote ""
+init = SelectNote "" False
 
 type alias Filter = String
+type alias StrayNoteFilter = Bool
 type alias NoteLinkTuple = ( Note.Note, Link.Link )
 type alias DirectlyLinkedDiscussions = Maybe ( List NoteLinkTuple )
 type alias ConnectedNotes = Maybe ( List NoteLinkTuple )
@@ -51,7 +52,7 @@ type alias SelectedNoteIsLinked = Bool
 type alias ChangeMade = Bool
 
 type EditView
-  = ViewSelectNote Filter
+  = ViewSelectNote Filter StrayNoteFilter ( List Note.Note )
   | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
   | ViewDiscussionSelected Note.Note ConnectedNotes
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
@@ -61,7 +62,19 @@ type EditView
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
   case edit of
-    SelectNote filter -> ViewSelectNote filter
+    SelectNote filter strayNoteFilter ->
+      let
+        discussionFilter = if String.isEmpty filter then Nothing else Just filter
+        filteredNotes =
+          if strayNoteFilter then
+            Slipbox.getStrayNotes discussionFilter slipbox
+          else
+            Slipbox.getNotes discussionFilter slipbox
+      in
+      ViewSelectNote
+        filter
+        strayNoteFilter
+        filteredNotes
 
     NoteSelected note ->
       let
@@ -118,14 +131,8 @@ view slipbox edit =
 toSelectNote : Edit -> Edit
 toSelectNote edit =
   case edit of
-    SelectNote _ -> edit
-    _ -> SelectNote ""
-
-toAddLinksFlow : Edit -> Edit
-toAddLinksFlow edit =
-  case edit of
-    NoteSelected note -> AddLinkChooseDiscussion "" note []
-    _ -> edit
+    SelectNote _ _ -> edit
+    _ -> SelectNote "" False
 
 select : Note.Note -> Edit
 select note =
@@ -136,8 +143,14 @@ select note =
 updateInput : String -> Edit -> Edit
 updateInput input edit =
   case edit of
-    SelectNote _ -> SelectNote input
+    SelectNote _ strayNoteFilter -> SelectNote input strayNoteFilter
     AddLinkChooseDiscussion _ psn notesToLink -> AddLinkChooseDiscussion input psn notesToLink
+    _ -> edit
+
+toggleStrayNoteFilter : Edit -> Edit
+toggleStrayNoteFilter edit =
+  case edit of
+    SelectNote input strayNoteFilter -> SelectNote input ( not strayNoteFilter )
     _ -> edit
 
 toConfirmBreakLink : Note.Note -> Link.Link -> Slipbox.Slipbox -> Edit
