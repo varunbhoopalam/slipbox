@@ -48,13 +48,14 @@ type alias PreviousNoteSelected = Note.Note
 type alias NotesDesignatedForLink = List Note.Note
 type alias NotesAlreadyLinked = List Note.Note
 type alias SelectedNoteIsLinked = Bool
+type alias ChangeMade = Bool
 
 type EditView
   = ViewSelectNote Filter
   | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
   | ViewDiscussionSelected Note.Note ConnectedNotes
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
-  | AddLinkChooseDiscussionView
+  | AddLinkChooseDiscussionView Filter ( List Discussion ) ChangeMade
   | AddLinkDiscussionChosenView PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink NotesAlreadyLinked SelectedNoteIsLinked
 
 view : Slipbox.Slipbox -> Edit -> EditView
@@ -93,8 +94,13 @@ view slipbox edit =
     ConfirmBreakLink _ link graph selectedNote hoveredNote ->
       ViewConfirmBreakLink link graph selectedNote hoveredNote
 
-    AddLinkChooseDiscussion filter note createdLinks ->
+    AddLinkChooseDiscussion filter _ createdLinks ->
+      let dFilter = if String.isEmpty filter then Nothing else Just filter
+      in
       AddLinkChooseDiscussionView
+        filter
+        ( Slipbox.getDiscussions dFilter slipbox )
+        ( not <| List.isEmpty createdLinks )
 
 
     AddLinkDiscussionChosen previousNoteSelected discussion graph selectedNote hoveredNote createdLinks ->
@@ -148,6 +154,8 @@ selectNoteOnGraph note edit =
   case edit of
     ConfirmBreakLink pn link graph _ hoveredNote ->
       ConfirmBreakLink pn link graph note hoveredNote
+    AddLinkDiscussionChosen pns discussion graph _ hoveredNote notesToLink ->
+      AddLinkDiscussionChosen pns discussion graph note hoveredNote notesToLink
     _ -> edit
 
 cancel : Edit -> Edit
@@ -208,6 +216,7 @@ toChooseDiscussion edit =
       AddLinkChooseDiscussion "" note []
     AddLinkDiscussionChosen pns _ _ _ _ notesToLink ->
       AddLinkChooseDiscussion "" pns notesToLink
+    _ -> edit
 
 addLink : Edit -> Edit
 addLink edit =

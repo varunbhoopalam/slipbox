@@ -228,6 +228,7 @@ type Msg
   | EditModeAddLink
   | EditModeCancelAddLink
   | EditModeToChooseDiscussion
+  | EditModeChooseDiscussion Note.Note
   | ExportModeContinue
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
@@ -413,6 +414,10 @@ update message model =
     EditModeAddLink -> editModeLambda Edit.addLink
     EditModeCancelAddLink -> editModeLambda Edit.cancelAddLink
     EditModeToChooseDiscussion -> editModeLambda Edit.toChooseDiscussion
+    EditModeChooseDiscussion discussion ->
+      case getSlipbox model of
+        Just slipbox -> editModeLambda <| Edit.chooseDiscussion discussion slipbox
+        Nothing -> ( model, Cmd.none )
     ExportModeContinue ->
       case getSlipbox model of
         Just slipbox -> exportModeLambda <| Export.continue slipbox
@@ -690,6 +695,7 @@ tabView content =
               , textLambda "Content" <| Note.getContent note
               , source
               , discussions
+              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Add Links")
               , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
             , linkedNotes
@@ -773,7 +779,58 @@ tabView content =
             , svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
             ]
 
-        Edit.AddLinkChooseDiscussionView -> Element.text "todo"
+        Edit.AddLinkChooseDiscussionView filter discussions changeMade ->
+          let
+            buttonNode =
+              if changeMade then
+                Element.row
+                  [ Element.centerX
+                  , Element.spacingXY 8 8
+                  ]
+                  [ button ( Just EditModeConfirm ) ( Element.text "Finish Adding Links" )
+                  , button ( Just EditModeCancel ) ( Element.text "Cancel" )
+                  ]
+              else
+                button ( Just EditModeCancel ) ( Element.text "Cancel")
+          in
+          column
+            [ headingCenter "Select Discussion"
+            , buttonNode
+            , Element.column
+              [ Element.width <| Element.maximum 600 Element.fill
+              , Element.height Element.fill
+              , Element.spacingXY 10 10
+              , Element.padding 5
+              , Element.Border.width 2
+              , Element.Border.rounded 6
+              , Element.centerX
+              ]
+              [ multiline EditModeUpdateInput filter "Filter Discussion"
+              , Element.row [ Element.width Element.fill ]
+                [ Element.el
+                  [ Element.width Element.fill
+                  , Element.Font.bold
+                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+                  ] <| Element.text "Discussion"
+                ]
+              , Element.el [ Element.width Element.fill ] <| Element.table
+                [ Element.width Element.fill
+                , Element.padding 8
+                , Element.spacingXY 8 8
+                , Element.centerX
+                , Element.height <| Element.maximum 300 Element.fill
+                , Element.scrollbarY
+                ]
+                { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) discussions
+                , columns =
+                  [ { header = Element.none
+                    , width = Element.fillPortion 4
+                    , view = \row -> listButton ( Just <| EditModeChooseDiscussion row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
+                    }
+                  ]
+                }
+              ]
+            ]
 
 
         Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked ->
@@ -1572,7 +1629,7 @@ viewGraphNote onClick mouseOver mouseOut graphNote =
 
     Regular note x y -> gLambda note [ svgCircle x y "5" ]
 
-    CannotSelect x y -> svgCircle x y "5"
+    CannotSelect x y -> svgCircleNoFill x y "5"
 
 
 type alias PositionExtremes =
@@ -2008,17 +2065,18 @@ svgGraph graph tab selectedNote maybeHoverNote =
 
         EditModeAddLinkFlow newlyLinkedNotes unselectableNotes ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover
+          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover
             ( toGraphNoteWithCreatedLinkStateAndNoSelectState newlyLinkedNotes unselectableNotes selectedNote )
           )
 
     legend = Element.el [ Element.alignBottom ] <|
-      Element.wrappedRow []
+      Element.wrappedRow [ Element.Font.size 9 ]
       [ selectedNoteLegend
       , linkedCircleLegend
       , discussionLegend
       , circleLegend
       , linkBreakLegend
+      , cannotSelectCircleLegend
       ]
 
     hover =
@@ -2028,6 +2086,7 @@ svgGraph graph tab selectedNote maybeHoverNote =
             [ Element.alignTop
             , Element.alignLeft
             , Element.padding 8
+            , Element.Font.size 12
             ] <| textWrap <| Note.getContent hoverNote
         Nothing -> Element.none
   in
@@ -2038,8 +2097,8 @@ svgGraph graph tab selectedNote maybeHoverNote =
     ] <|Element.el
     [ Element.width Element.fill
     , Element.height Element.fill
-    , Element.inFront legend
-    , Element.inFront hover
+    , Element.behindContent legend
+    , Element.behindContent hover
     ]
     <| Element.html <| Svg.svg
     [ Svg.Attributes.width "100%"
@@ -2057,6 +2116,16 @@ svgCircle cx cy r =
   Svg.circle
     [ Svg.Attributes.r r
     , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+    , Svg.Attributes.cx cx
+    , Svg.Attributes.cy cy
+    ]
+    []
+
+svgCircleNoFill cx cy r =
+  Svg.circle
+    [ Svg.Attributes.r r
+    , Svg.Attributes.stroke "rgba(137, 196, 244, 1)"
+    , Svg.Attributes.fill "none"
     , Svg.Attributes.cx cx
     , Svg.Attributes.cy cy
     ]
@@ -2121,6 +2190,13 @@ circleLegend =
     []
     [ Element.html <| svgLegend [ svgCircle "20" "20" "10" ]
     , Element.text "Regular Note"
+    ]
+
+cannotSelectCircleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgCircleNoFill "20" "20" "10" ]
+    , Element.text "Cannot Select Note"
     ]
 
 linkBreakLegend =
