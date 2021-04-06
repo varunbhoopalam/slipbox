@@ -230,6 +230,7 @@ type Msg
   | EditModeToChooseDiscussion
   | EditModeChooseDiscussion Note.Note
   | EditModeToggleStrayNoteFilter Bool
+  | EditModeToConfirmDelete Note.Note
   | ExportModeContinue
   | ExportModeUpdateInput String
   | ExportModeToggleDiscussion Note.Note
@@ -420,6 +421,11 @@ update message model =
         Just slipbox -> editModeLambda <| Edit.chooseDiscussion discussion slipbox
         Nothing -> ( model, Cmd.none )
     EditModeToggleStrayNoteFilter _ -> editModeLambda Edit.toggleStrayNoteFilter
+    EditModeToConfirmDelete note ->
+      case getSlipbox model of
+        Just slipbox ->
+          ( setTab ( EditModeTab <| Edit.toConfirmDelete note slipbox ) model, Cmd.none )
+        Nothing -> ( model, Cmd.none )
     ExportModeContinue ->
       case getSlipbox model of
         Just slipbox -> exportModeLambda <| Export.continue slipbox
@@ -696,7 +702,8 @@ tabView content =
               , textLambda "Content" <| Note.getContent note
               , source
               , discussions
-              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Add Links")
+              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Add Links" )
+              , button ( Just <| EditModeToConfirmDelete note ) ( Element.text "Delete" )
               , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
             , linkedNotes
@@ -740,6 +747,7 @@ tabView content =
               ]
               [ Element.el [ Element.padding 8 ] <| heading "Discussion"
               , textLambda "Content" <| Note.getContent note
+              , button ( Just <| EditModeToConfirmDelete note ) ( Element.text "Delete" )
               , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
             , linkedNotes
@@ -833,7 +841,6 @@ tabView content =
               ]
             ]
 
-
         Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked ->
           let
             linkNode =
@@ -904,6 +911,41 @@ tabView content =
             , svgGraph graph ( EditModeAddLinkFlow notesToLink notesNotSelectable ) selectedNote hoverNote
             ]
 
+        Edit.ViewConfirmDelete note graph selectedNote hoveredNote ->
+          Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            [ Element.column
+              [ Element.width smallerElement
+              , Element.height Element.fill
+              ]
+              [ Element.textColumn
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Selected Note"
+                , Element.paragraph [] [ Element.text <| Note.getContent selectedNote ]
+                ]
+              , Element.column
+                [ Element.width Element.fill
+                , Element.Border.width 1
+                , Element.padding 8
+                , Element.spacingXY 10 10
+                ]
+                [ heading "Confirm Delete Note"
+                , Element.paragraph [] [ Element.text <| Note.getContent note ]
+                , Element.row
+                  [ Element.spacingXY 10 10 ]
+                  [ button ( Just EditModeConfirm ) ( Element.text "Confirm" )
+                  , button ( Just EditModeCancel ) ( Element.text "Cancel" )
+                  ]
+                ]
+              ]
+            , svgGraph graph ( ConfirmDelete note ) selectedNote hoveredNote
+            ]
 
     CreateModeTab create ->
       case Create.view create of
@@ -1362,7 +1404,6 @@ tabView content =
             , button ( Just DiscoveryModeBack ) ( Element.text "Cancel" )
             ]
 
-
     ExportModeTab export -> case Export.view export of
       Export.ErrorStateNoDiscussionsView ->
         column
@@ -1504,6 +1545,7 @@ type GraphNote
   | Linked Note.Note X Y
   | Discussion Note.Note X Y
   | Regular Note.Note X Y
+  | ToBeDeleted Note.Note X Y
   | CannotSelect X Y
 
 type alias X = String
@@ -1550,7 +1592,6 @@ toGraphNoteWithCreatedLinkStateAndNoSelectState notesAssociatedToCreatedLinks un
   else
     toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote notePosition
 
-
 toGraphNoteWithCreatedLinkState : ( List Note.Note ) -> Note.Note -> NotePosition -> GraphNote
 toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote notePosition =
   let
@@ -1573,6 +1614,26 @@ toGraphNoteWithCreatedLinkState notesAssociatedToCreatedLinks selectedNote noteP
       case hasCreatedLink of
         True -> Linked note x y
         False -> Regular note x y
+
+toGraphNoteWithDeleteNoteState : Note.Note -> Note.Note -> NotePosition -> GraphNote
+toGraphNoteWithDeleteNoteState selectedNote noteToBeDeleted notePosition =
+  let
+      note = notePosition.note
+      isSelectedNote = Note.is note selectedNote
+      isNoteToBeDeleted = Note.is note noteToBeDeleted
+      isDiscussion = Note.getVariant note == Note.Discussion
+      x = String.fromFloat notePosition.x
+      y = String.fromFloat notePosition.y
+    in
+    if isSelectedNote then
+      Selected note x y
+    else if isNoteToBeDeleted then
+      ToBeDeleted note x y
+    else
+      if isDiscussion then
+        Discussion note x y
+      else
+        Regular note x y
 
 
 viewGraphNote : ( Note.Note -> Msg ) -> ( Note.Note -> Msg ) -> Msg -> GraphNote -> Svg.Svg Msg
@@ -1631,6 +1692,8 @@ viewGraphNote onClick mouseOver mouseOut graphNote =
     Regular note x y -> gLambda note [ svgCircle x y "5" ]
 
     CannotSelect x y -> svgCircleNoFill x y "5"
+
+    ToBeDeleted note x y -> gLambda note [ svgCircleRedWithBorder x y "5" ]
 
 
 type alias PositionExtremes =
@@ -2036,6 +2099,7 @@ type TabGraph
  | DiscussionChosenView ( List Note.Note )
  | ViewDiscussionView
  | EditModeAddLinkFlow ( List Note.Note ) ( List Note.Note )
+ | ConfirmDelete Note.Note
 
 svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
 svgGraph graph tab selectedNote maybeHoverNote =
@@ -2070,6 +2134,12 @@ svgGraph graph tab selectedNote maybeHoverNote =
             ( toGraphNoteWithCreatedLinkStateAndNoSelectState newlyLinkedNotes unselectableNotes selectedNote )
           )
 
+        ConfirmDelete note ->
+          ( linkLambda <| toCreateTabGraphLink graph.positions
+          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover
+            ( toGraphNoteWithDeleteNoteState selectedNote note )
+          )
+
     legend = Element.el [ Element.alignBottom ] <|
       Element.wrappedRow [ Element.Font.size 9 ]
       [ selectedNoteLegend
@@ -2078,6 +2148,7 @@ svgGraph graph tab selectedNote maybeHoverNote =
       , circleLegend
       , linkBreakLegend
       , cannotSelectCircleLegend
+      , toBeDeletedCircleLegend
       ]
 
     hover =
@@ -2117,6 +2188,16 @@ svgCircle cx cy r =
   Svg.circle
     [ Svg.Attributes.r r
     , Svg.Attributes.fill "rgba(137, 196, 244, 1)"
+    , Svg.Attributes.cx cx
+    , Svg.Attributes.cy cy
+    ]
+    []
+
+svgCircleRedWithBorder cx cy r =
+  Svg.circle
+    [ Svg.Attributes.r r
+    , Svg.Attributes.fill "rgba(255, 0, 0, 1)"
+    , Svg.Attributes.strokeDasharray "5"
     , Svg.Attributes.cx cx
     , Svg.Attributes.cy cy
     ]
@@ -2197,6 +2278,13 @@ cannotSelectCircleLegend =
   Element.row
     []
     [ Element.html <| svgLegend [ svgCircleNoFill "20" "20" "10" ]
+    , Element.text "Cannot Select Note"
+    ]
+
+toBeDeletedCircleLegend =
+  Element.row
+    []
+    [ Element.html <| svgLegend [ svgCircleRedWithBorder "20" "20" "10" ]
     , Element.text "Cannot Select Note"
     ]
 
