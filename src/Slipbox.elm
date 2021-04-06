@@ -16,6 +16,7 @@ module Slipbox exposing
   , addLink
   , breakLink
   , getStrayNotes
+  , deleteNote
   )
 
 import Note
@@ -89,10 +90,10 @@ getLinkedNotes note slipbox =
       content = getContent slipbox
       relevantLinks = List.filter ( isAssociated note ) content.links
   in
-  List.filterMap ( convertLinktoLinkNoteTuple note content.notes ) relevantLinks
+  List.filterMap ( toLinkNoteTuple note content.notes ) relevantLinks
 
-convertLinktoLinkNoteTuple : Note.Note -> ( List Note.Note ) -> Link.Link -> ( Maybe ( Note.Note, Link.Link ) )
-convertLinktoLinkNoteTuple targetNote notes link =
+toLinkNoteTuple : Note.Note -> ( List Note.Note ) -> Link.Link -> ( Maybe ( Note.Note, Link.Link ) )
+toLinkNoteTuple targetNote notes link =
   if Link.isTarget link targetNote then
     case List.head <| List.filter ( Link.isSource link ) notes of
       Just note -> Just ( note, link )
@@ -222,7 +223,7 @@ getLinkedNotes_ note notes links =
   let
       relevantLinks = List.filter ( isAssociated note ) links
   in
-  List.filterMap ( convertLinktoLinkNoteTuple note notes ) relevantLinks
+  List.filterMap ( toLinkNoteTuple note notes ) relevantLinks
 
 addNote : String -> String -> Slipbox -> ( Slipbox, Note.Note )
 addNote noteContent sourceTitle slipbox =
@@ -294,6 +295,17 @@ breakLink link slipbox =
       { content | links = List.filter (\l -> not <| Link.is l link ) content.links
       , unsavedChanges = True
       }
+
+deleteNote : Note.Note -> Slipbox -> Slipbox
+deleteNote note slipbox =
+  let
+    relevantLinks = List.map Tuple.second <| getLinkedNotes note slipbox
+    content = getContent <| List.foldl breakLink slipbox relevantLinks
+  in
+  Slipbox
+    { content | notes = List.filter (\n -> not <| Note.is n note) content.notes
+    , unsavedChanges = True
+    }
 
 flatten2D : List (List a) -> List a
 flatten2D list =

@@ -8,6 +8,7 @@ module Edit exposing
   , updateInput
   , toggleStrayNoteFilter
   , toConfirmBreakLink
+  , toConfirmDelete
   , selectNoteOnGraph
   , cancel
   , confirm
@@ -31,6 +32,7 @@ type Edit
   | NoteSelected Note.Note
   | DiscussionSelected Note.Note
   | ConfirmBreakLink PreviousNoteSelected Link.Link Graph.Graph SelectedNote HoveredNote
+  | ConfirmDelete PreviousNoteSelected Graph.Graph SelectedNote HoveredNote
   | AddLinkChooseDiscussion Filter Note.Note NotesDesignatedForLink
   | AddLinkDiscussionChosen PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink
 
@@ -56,6 +58,7 @@ type EditView
   | ViewNoteSelected Note.Note ( Maybe Source.Source ) DirectlyLinkedDiscussions ConnectedNotes
   | ViewDiscussionSelected Note.Note ConnectedNotes
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
+  | ViewConfirmDelete PreviousNoteSelected Graph.Graph SelectedNote HoveredNote
   | AddLinkChooseDiscussionView Filter ( List Discussion ) ChangeMade
   | AddLinkDiscussionChosenView PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink NotesAlreadyLinked SelectedNoteIsLinked
 
@@ -106,6 +109,9 @@ view slipbox edit =
 
     ConfirmBreakLink _ link graph selectedNote hoveredNote ->
       ViewConfirmBreakLink link graph selectedNote hoveredNote
+
+    ConfirmDelete pns graph selectedNote hoveredNote ->
+      ViewConfirmDelete pns graph selectedNote hoveredNote
 
     AddLinkChooseDiscussion filter _ createdLinks ->
       let dFilter = if String.isEmpty filter then Nothing else Just filter
@@ -162,6 +168,19 @@ toConfirmBreakLink note link slipbox =
     note
     Nothing
 
+toConfirmDelete : Note.Note -> Slipbox.Slipbox -> Edit
+toConfirmDelete note slipbox =
+  let
+    noteLinkTuples = Slipbox.getLinkedNotes note slipbox
+    notes = ( note :: ( List.map Tuple.first noteLinkTuples ) )
+    links = List.map Tuple.second noteLinkTuples
+  in
+  ConfirmDelete
+    note
+    ( Graph.simulatePositions ( notes, links ) )
+    note
+    Nothing
+
 selectNoteOnGraph : Note.Note -> Edit -> Edit
 selectNoteOnGraph note edit =
   case edit of
@@ -169,6 +188,8 @@ selectNoteOnGraph note edit =
       ConfirmBreakLink pn link graph note hoveredNote
     AddLinkDiscussionChosen pns discussion graph _ hoveredNote notesToLink ->
       AddLinkDiscussionChosen pns discussion graph note hoveredNote notesToLink
+    ConfirmDelete pn graph _ hoveredNote ->
+      ConfirmDelete pn graph note hoveredNote
     _ -> edit
 
 cancel : Edit -> Edit
@@ -177,6 +198,8 @@ cancel edit =
     ConfirmBreakLink previousNoteSelected _ _ _ _ ->
       NoteSelected previousNoteSelected
     AddLinkChooseDiscussion _ previousNoteSelected _ ->
+      NoteSelected previousNoteSelected
+    ConfirmDelete previousNoteSelected _ _ _ ->
       NoteSelected previousNoteSelected
     _ -> edit
 
@@ -189,6 +212,9 @@ confirm slipbox edit =
     AddLinkChooseDiscussion _ previousNoteSelected notesToLink ->
       ( List.foldl ( Slipbox.addLink previousNoteSelected ) slipbox notesToLink, NoteSelected previousNoteSelected )
 
+    ConfirmDelete previousNoteSelected _ _ _ ->
+      ( Slipbox.deleteNote previousNoteSelected slipbox, init )
+
     _ -> ( slipbox, edit )
 
 hover : Note.Note -> Edit -> Edit
@@ -198,6 +224,9 @@ hover note edit =
       ConfirmBreakLink pn link graph selectedNote <| Just note
     AddLinkDiscussionChosen pn discussion graph selectedNote _ notesToLink ->
       AddLinkDiscussionChosen pn discussion graph selectedNote ( Just note ) notesToLink
+    ConfirmDelete pn graph selected _ ->
+      ConfirmDelete pn graph selected <| Just note
+
     _ -> edit
 
 stopHover : Edit -> Edit
@@ -207,6 +236,8 @@ stopHover edit =
       ConfirmBreakLink pn link graph selectedNote Nothing
     AddLinkDiscussionChosen pn discussion graph selectedNote _ notesToLink ->
       AddLinkDiscussionChosen pn discussion graph selectedNote Nothing notesToLink
+    ConfirmDelete pn graph selected _ ->
+      ConfirmDelete pn graph selected Nothing
     _ -> edit
 
 chooseDiscussion : Note.Note -> Slipbox.Slipbox -> Edit -> Edit
