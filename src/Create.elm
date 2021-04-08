@@ -59,14 +59,11 @@ toAddLinkState : Note.Note -> Slipbox.Slipbox -> Create -> Create
 toAddLinkState question slipbox create =
   case create of
     ChooseDiscussion coachingModal createModeInternal ->
-      let
-        updatedInternal = read question createModeInternal
-      in
       FindLinksForDiscussion
         coachingModal
         ( Graph.simulatePositions
           <| Slipbox.getDiscussionTreeWithCollapsedDiscussions question slipbox )
-        updatedInternal
+        createModeInternal
         question
         question
         Nothing
@@ -220,7 +217,7 @@ type alias NotesAssociatedToCreatedLinks = List Note.Note
 type alias HoveredNote = Maybe Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
-  | ChooseDiscussionView CoachingOpen CanContinue CreatedNote QuestionsRead
+  | ChooseDiscussionView CoachingOpen CanContinue CreatedNote
   | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks HoveredNote
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
@@ -242,7 +239,7 @@ view create =
         note = getNote createModeInternal
         canContinue = List.isEmpty <| getCreatedLinks createModeInternal
       in
-      ChooseDiscussionView (isOpen coachingModal) canContinue note ( getQuestionsRead createModeInternal )
+      ChooseDiscussionView (isOpen coachingModal) canContinue note
 
     FindLinksForDiscussion _ graph createModeInternal question selectedNote hoveredNote->
       let
@@ -293,72 +290,61 @@ isOpen modal =
 
 -- CREATEMODEINTERNAL
 type CreateModeInternal
-  = CreateModeInternal CreatedNote QuestionsRead LinksCreated Source LinkedDiscussion
+  = CreateModeInternal CreatedNote LinksCreated Source LinkedDiscussion
 
 getNote : CreateModeInternal -> CreatedNote
 getNote internal =
   case internal of
-    CreateModeInternal note _ _ _ _ -> note
+    CreateModeInternal note _ _ _ -> note
 
 getSource : CreateModeInternal -> Source
 getSource internal =
   case internal of
-    CreateModeInternal _ _ _ source _ -> source
+    CreateModeInternal _ _ source _ -> source
 
 getDiscussion : CreateModeInternal -> LinkedDiscussion
 getDiscussion internal =
   case internal of
-    CreateModeInternal _ _ _ _ linkedDiscussion -> linkedDiscussion
+    CreateModeInternal _ _ _ linkedDiscussion -> linkedDiscussion
 
 setExistingSource : Source.Source -> CreateModeInternal -> CreateModeInternal
 setExistingSource source internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ discussion ->
-      CreateModeInternal note questionsRead linksCreated ( Existing source ) discussion
+    CreateModeInternal note linksCreated _ discussion ->
+      CreateModeInternal note linksCreated ( Existing source ) discussion
 
 setNewSource : Title -> Author -> Content -> CreateModeInternal -> CreateModeInternal
 setNewSource title author content internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated _ discussion ->
-      CreateModeInternal note questionsRead linksCreated ( New title author content ) discussion
+    CreateModeInternal note linksCreated _ discussion ->
+      CreateModeInternal note linksCreated ( New title author content ) discussion
 
 setDiscussion : String -> CreateModeInternal -> CreateModeInternal
 setDiscussion discussion internal =
   case internal of
-    CreateModeInternal note questionsRead linksCreated source _ ->
-      CreateModeInternal note questionsRead linksCreated source <| Just discussion
+    CreateModeInternal note linksCreated source _ ->
+      CreateModeInternal note linksCreated source <| Just discussion
 
 createModeInternalInit : CreateModeInternal
 createModeInternalInit =
-  CreateModeInternal "" [] [] None Nothing
+  CreateModeInternal "" [] None Nothing
 
 getCreatedLinks : CreateModeInternal -> LinksCreated
 getCreatedLinks internal =
   case internal of
-    CreateModeInternal _ _ links _ _ -> links
+    CreateModeInternal _ links _ _ -> links
 
 setCreatedLinks : LinksCreated -> CreateModeInternal -> CreateModeInternal
 setCreatedLinks linksCreated internal =
   case internal of
-    CreateModeInternal note questionsRead _ source discussion ->
-      CreateModeInternal note questionsRead linksCreated source discussion
+    CreateModeInternal note _ source discussion ->
+      CreateModeInternal note linksCreated source discussion
 
 setNote : CreatedNote -> CreateModeInternal -> CreateModeInternal
 setNote note internal =
   case internal of
-    CreateModeInternal _ questionsRead linksCreated source discussion ->
-      CreateModeInternal note questionsRead linksCreated source discussion
-
-read : Discussion -> CreateModeInternal -> CreateModeInternal
-read question internal =
-  case internal of
-    CreateModeInternal note questionsRead linksCreated source discussion ->
-      CreateModeInternal note (question :: questionsRead) linksCreated source discussion
-
-getQuestionsRead : CreateModeInternal -> QuestionsRead
-getQuestionsRead internal =
-  case internal of
-    CreateModeInternal _ questionsRead _ _ _ -> questionsRead
+    CreateModeInternal _ linksCreated source discussion ->
+      CreateModeInternal note linksCreated source discussion
 
 linkIsForNote : Note.Note -> Link -> Bool
 linkIsForNote note link =
@@ -393,9 +379,6 @@ type Source
   = None
   | New Title Author Content
   | Existing Source.Source
-
--- QUESTIONSREAD
-type alias QuestionsRead = ( List Note.Note )
 
 -- LINKSCREATED
 type alias LinksCreated = ( List Link )

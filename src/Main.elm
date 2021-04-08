@@ -976,7 +976,7 @@ tabView content =
             , continueNode
             ]
 
-        Create.ChooseDiscussionView  coachingOpen canContinue note discussionsRead ->
+        Create.ChooseDiscussionView  coachingOpen canContinue note ->
           let
             coachingText =
               Element.paragraph
@@ -1001,8 +1001,7 @@ tabView content =
               let
                 toDiscussionRecord =
                   \q ->
-                    { read = List.any ( Note.is q) discussionsRead
-                    , discussion = Note.getContent q
+                    { discussion = Note.getContent q
                     , note = q
                     }
               in
@@ -1036,8 +1035,7 @@ tabView content =
                   , Element.centerX
                   ]
                   [ Element.row [ Element.width Element.fill ]
-                    [ Element.el (Element.width ( Element.fillPortion 1 ) :: headerAttrs) <| Element.text "Read"
-                    , Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Discussion"
+                    [ Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Discussion"
                     ]
                   , Element.el [ Element.width Element.fill ] <| Element.table
                     [ Element.width Element.fill
@@ -1049,14 +1047,6 @@ tabView content =
                     { data = discussionTabularData
                     , columns =
                       [ { header = Element.none
-                        , width = Element.fillPortion 1
-                        , view =
-                              \row ->
-                                  case row.read of
-                                    True -> Element.text "read"
-                                    False -> Element.text "unread"
-                        }
-                      , { header = Element.none
                         , width = Element.fillPortion 4
                         , view =
                               \row ->
