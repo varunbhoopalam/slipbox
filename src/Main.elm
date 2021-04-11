@@ -603,46 +603,13 @@ tabView content =
         Edit.ViewSelectNote filter strayNoteFilter notes ->
           column
             [ headingCenter "Select Note"
-            , Element.column
-              [ Element.width <| Element.maximum 600 Element.fill
-              , Element.height Element.fill
-              , Element.spacingXY 10 10
-              , Element.padding 5
-              , Element.Border.width 2
-              , Element.Border.rounded 6
-              , Element.centerX
-              ]
-              [ multiline EditModeUpdateInput filter "Filter Note"
-              , Element.Input.checkbox []
-                { onChange = EditModeToggleStrayNoteFilter
-                , icon = Element.Input.defaultCheckbox
-                , checked = strayNoteFilter
-                , label = Element.Input.labelLeft [ ] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
-                }
-              , Element.row [ Element.width Element.fill ]
-                [ Element.el
-                  [ Element.width Element.fill
-                  , Element.Font.bold
-                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                  ] <| Element.text "Note"
-                ]
-              , Element.el [ Element.width Element.fill ] <| Element.table
-                [ Element.width Element.fill
-                , Element.padding 8
-                , Element.spacingXY 8 8
-                , Element.centerX
-                , Element.height <| Element.maximum 300 Element.fill
-                , Element.scrollbarY
-                ]
-                { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) notes
-                , columns =
-                  [ { header = Element.none
-                    , width = Element.fillPortion 4
-                    , view = \row -> listButton ( Just <| EditModeSelectNote row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
-                    }
-                  ]
-                }
-              ]
+            , Element.Input.checkbox []
+              { onChange = EditModeToggleStrayNoteFilter
+              , icon = Element.Input.defaultCheckbox
+              , checked = strayNoteFilter
+              , label = Element.Input.labelLeft [ ] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
+              }
+            , tableWithFilter filter notes EditModeUpdateInput EditModeSelectNote "Note"
             ]
 
         Edit.ViewNoteSelected note maybeSource directlyLinkedDiscussions connectedNotes ->
@@ -805,40 +772,7 @@ tabView content =
           column
             [ headingCenter "Select Discussion"
             , buttonNode
-            , Element.column
-              [ Element.width <| Element.maximum 600 Element.fill
-              , Element.height Element.fill
-              , Element.spacingXY 10 10
-              , Element.padding 5
-              , Element.Border.width 2
-              , Element.Border.rounded 6
-              , Element.centerX
-              ]
-              [ multiline EditModeUpdateInput filter "Filter Discussion"
-              , Element.row [ Element.width Element.fill ]
-                [ Element.el
-                  [ Element.width Element.fill
-                  , Element.Font.bold
-                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                  ] <| Element.text "Discussion"
-                ]
-              , Element.el [ Element.width Element.fill ] <| Element.table
-                [ Element.width Element.fill
-                , Element.padding 8
-                , Element.spacingXY 8 8
-                , Element.centerX
-                , Element.height <| Element.maximum 300 Element.fill
-                , Element.scrollbarY
-                ]
-                { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) discussions
-                , columns =
-                  [ { header = Element.none
-                    , width = Element.fillPortion 4
-                    , view = \row -> listButton ( Just <| EditModeChooseDiscussion row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
-                    }
-                  ]
-                }
-              ]
+            , tableWithFilter filter discussions EditModeUpdateInput EditModeChooseDiscussion "Discussion"
             ]
 
         Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked ->
@@ -948,7 +882,7 @@ tabView content =
             ]
 
     CreateModeTab create ->
-      case Create.view create of
+      case Create.view content.slipbox create of
         Create.NoteInputView coachingOpen canContinue noteInput ->
           let
             coachingText =
@@ -976,7 +910,7 @@ tabView content =
             , continueNode
             ]
 
-        Create.ChooseDiscussionView  coachingOpen canContinue note discussionsRead ->
+        Create.ChooseDiscussionView  coachingOpen canContinue note filter filteredDiscussions ->
           let
             coachingText =
               Element.paragraph
@@ -996,20 +930,8 @@ tabView content =
                   ( Element.text "Continue without linking" )
               else
                   ( Element.text "Next" )
-            discussions = Slipbox.getDiscussions Nothing content.slipbox
-            discussionTabularData =
-              let
-                toDiscussionRecord =
-                  \q ->
-                    { read = List.any ( Note.is q) discussionsRead
-                    , discussion = Note.getContent q
-                    , note = q
-                    }
-              in
-              List.map toDiscussionRecord discussions
-
             tableNode =
-              if List.isEmpty discussions then
+              if List.isEmpty <| Slipbox.getDiscussions Nothing content.slipbox then
                 Element.paragraph
                   [ Element.Font.center
                   , Element.width <| Element.maximum 800 Element.fill
@@ -1020,59 +942,8 @@ tabView content =
                   , Element.text "Add a discussion in the next step to start linking notes together! "
                   ]
               else
-                let
-                    headerAttrs =
-                        [ Element.Font.bold
-                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                        ]
-                in
-                Element.column
-                  [ Element.width <| Element.maximum 600 Element.fill
-                  , Element.height Element.fill
-                  , Element.spacingXY 10 10
-                  , Element.padding 5
-                  , Element.Border.width 2
-                  , Element.Border.rounded 6
-                  , Element.centerX
-                  ]
-                  [ Element.row [ Element.width Element.fill ]
-                    [ Element.el (Element.width ( Element.fillPortion 1 ) :: headerAttrs) <| Element.text "Read"
-                    , Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Discussion"
-                    ]
-                  , Element.el [ Element.width Element.fill ] <| Element.table
-                    [ Element.width Element.fill
-                    , Element.spacingXY 8 8
-                    , Element.centerX
-                    , Element.height <| Element.maximum 600 Element.fill
-                    , Element.scrollbarY
-                    ]
-                    { data = discussionTabularData
-                    , columns =
-                      [ { header = Element.none
-                        , width = Element.fillPortion 1
-                        , view =
-                              \row ->
-                                  case row.read of
-                                    True -> Element.text "read"
-                                    False -> Element.text "unread"
-                        }
-                      , { header = Element.none
-                        , width = Element.fillPortion 4
-                        , view =
-                              \row ->
-                                  Element.Input.button
-                                    []
-                                    { onPress = Just <| CreateTabToFindLinksForDiscussion row.note
-                                    , label =
-                                      Element.paragraph
-                                        []
-                                        [ Element.text row.discussion
-                                        ]
-                                    }
-                        }
-                      ]
-                    }
-                  ]
+                tableWithFilter
+                  filter filteredDiscussions ( \s -> CreateTabUpdateInput <| Create.Filter s ) CreateTabToFindLinksForDiscussion "Discussion"
           in
           column
             [ headingCenter "Further Existing Arguments"
@@ -1322,56 +1193,11 @@ tabView content =
                 Nothing
               else
                 Just filterInput
-            discussionTabularData =
-              let
-                toDiscussionRecord =
-                  \q ->
-                    { discussion = Note.getContent q
-                    , note = q
-                    }
-              in
-              List.map toDiscussionRecord <|
-                Slipbox.getDiscussions discussionFilter content.slipbox
+            discussions = Slipbox.getDiscussions discussionFilter content.slipbox
           in
           column
             [ headingCenter "Select Discussion"
-            , Element.column
-              [ Element.width <| Element.maximum 600 Element.fill
-              , Element.height Element.fill
-              , Element.spacingXY 10 10
-              , Element.padding 5
-              , Element.Border.width 2
-              , Element.Border.rounded 6
-              , Element.centerX
-              ]
-              [ multiline DiscoveryModeUpdateInput filterInput "Filter Discussion"
-              , Element.row [ Element.width Element.fill ]
-                [ Element.el
-                  [ Element.width Element.fill
-                  , Element.Font.bold
-                  , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                  ]
-                  <| Element.text "Discussion"
-                ]
-              , Element.el [ Element.width Element.fill ] <| Element.table
-                [ Element.width Element.fill
-                , Element.spacingXY 8 8
-                , Element.centerX
-                , Element.height <| Element.maximum 600 Element.fill
-                , Element.scrollbarY
-                ]
-                { data = discussionTabularData
-                , columns =
-                  [ { header = Element.none
-                    , width = Element.fillPortion 4
-                    , view = \row -> Element.Input.button []
-                      { onPress = Just <| DiscoveryModeSelectDiscussion row.note
-                      , label = Element.paragraph [] [ Element.text row.discussion ]
-                      }
-                    }
-                  ]
-                }
-              ]
+            , tableWithFilter filterInput discussions DiscoveryModeUpdateInput DiscoveryModeSelectDiscussion "Discussion"
             ]
 
         Discovery.DesignateDiscussionEntryPointView selectedNote input ->
@@ -1453,42 +1279,8 @@ tabView content =
           [ headingCenter "Select Relevant Discussions to Project"
           , Element.el [ Element.centerX ] <| Element.text title
           , continueNodeWithSelectedDiscussions
-          , Element.column
-            [ Element.width <| Element.maximum 600 Element.fill
-            , Element.height Element.fill
-            , Element.spacingXY 10 10
-            , Element.padding 5
-            , Element.Border.width 2
-            , Element.Border.rounded 6
-            , Element.centerX
-            ]
-            [ multiline ExportModeUpdateInput filter "Filter Note"
-            , Element.row [ Element.width Element.fill ]
-              [ Element.el
-                [ Element.width Element.fill
-                , Element.Font.bold
-                , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                ] <| Element.text "Select Discussions"
-              ]
-            , Element.el [ Element.width Element.fill ] <| Element.table
-              [ Element.width Element.fill
-              , Element.padding 8
-              , Element.spacingXY 8 8
-              , Element.centerX
-              , Element.height <| Element.maximum 300 Element.fill
-              , Element.scrollbarY
-              ]
-              { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) unselectedFilteredDiscussions
-              , columns =
-                [ { header = Element.none
-                  , width = Element.fillPortion 4
-                  , view = \row -> listButton ( Just <| ExportModeToggleDiscussion row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
-                  }
-                ]
-              }
-            ]
+          , tableWithFilter filter unselectedFilteredDiscussions ExportModeUpdateInput ExportModeToggleDiscussion "Discussion"
           ]
-
 
       Export.ConfigureContentView title notes ->
         column
@@ -1506,7 +1298,6 @@ tabView content =
             )
             notes
           ]
-
 
       Export.PromptAnotherExportView ->
         column
@@ -2092,6 +1883,43 @@ heading title = Element.paragraph [ Element.Font.bold ] [ Element.text title ]
 headingCenter title = Element.el [ Element.centerX ] <| heading title
 
 textWrap text = Element.paragraph [] [ Element.text text ]
+
+tableWithFilter : String -> ( List Note.Note ) -> ( String -> Msg ) -> ( Note.Note -> Msg ) -> String -> Element Msg
+tableWithFilter filter notes updateFilter onSelect tableTitle =
+  Element.column
+    [ Element.width <| Element.maximum 600 Element.fill
+    , Element.height Element.fill
+    , Element.spacingXY 10 10
+    , Element.padding 5
+    , Element.Border.width 2
+    , Element.Border.rounded 6
+    , Element.centerX
+    ]
+    [ multiline updateFilter filter "Filter"
+    , Element.row [ Element.width Element.fill ]
+      [ Element.el
+        [ Element.width Element.fill
+        , Element.Font.bold
+        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
+        ] <| Element.text tableTitle
+      ]
+    , Element.el [ Element.width Element.fill ] <| Element.table
+      [ Element.width Element.fill
+      , Element.padding 8
+      , Element.spacingXY 8 8
+      , Element.centerX
+      , Element.height <| Element.maximum 300 Element.fill
+      , Element.scrollbarY
+      ]
+      { data = List.map ( \q -> { discussion = Note.getContent q, note = q } ) notes
+      , columns =
+        [ { header = Element.none
+          , width = Element.fillPortion 4
+          , view = \row -> listButton ( Just <| onSelect row.note ) ( Element.paragraph [] [ Element.text row.discussion ] )
+          }
+        ]
+      }
+    ]
 
 -- SVG HELPERS
 type TabGraph
