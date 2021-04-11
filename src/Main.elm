@@ -969,7 +969,7 @@ tabView content =
             , tableNode
             ]
 
-        Create.DiscussionChosenView createTabGraph note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks hoverNote ->
+        Create.DiscussionChosenView createTabGraph note discussion selectedNote selectedNoteIsLinked notesAssociatedToCreatedLinks hoverNote canContinue ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -993,6 +993,11 @@ tabView content =
                   { onPress = Just CreateTabCreateLinkForSelectedNote
                   , label = Element.text "Create Link"
                   }
+            continueLabel =
+              if canContinue then
+                  ( Element.text "Continue without linking" )
+              else
+                  ( Element.text "Finish adding links" )
           in
           Element.row
             [ Element.width Element.fill
@@ -1034,7 +1039,8 @@ tabView content =
                   ]
                 , linkNode
                 ]
-              , button ( Just CreateTabToChooseDiscussion ) ( Element.text "Done Linking" )
+              , button ( Just CreateTabToChooseDiscussion ) ( Element.text "Find more notes to link" )
+              , button ( Just CreateTabNextStep ) continueLabel
               ]
             , svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks ) selectedNote hoverNote
             ]

@@ -8271,6 +8271,10 @@ var $author$project$Create$next = function (create) {
 			var coachingModal = create.a;
 			var createModeInternal = create.b;
 			return A3($author$project$Create$DesignateDiscussionEntryPoint, coachingModal, createModeInternal, '');
+		case 2:
+			var coachingModal = create.a;
+			var createModeInternal = create.c;
+			return A3($author$project$Create$DesignateDiscussionEntryPoint, coachingModal, createModeInternal, '');
 		case 3:
 			var coachingModal = create.a;
 			var createModeInternal = create.b;
@@ -19250,9 +19254,9 @@ var $author$project$Create$DesignateDiscussionEntryPointView = F2(
 	function (a, b) {
 		return {$: 3, a: a, b: b};
 	});
-var $author$project$Create$DiscussionChosenView = F7(
-	function (a, b, c, d, e, f, g) {
-		return {$: 2, a: a, b: b, c: c, d: d, e: e, f: f, g: g};
+var $author$project$Create$DiscussionChosenView = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {$: 2, a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h};
 	});
 var $author$project$Create$NoteInputView = F3(
 	function (a, b, c) {
@@ -19310,7 +19314,9 @@ var $author$project$Create$view = F2(
 					$elm$core$List$any,
 					$author$project$Create$linkIsForNote(selectedNote),
 					createdLinks);
-				return A7($author$project$Create$DiscussionChosenView, graph, note, question, selectedNote, selectedNoteIsLinked, notesAssociatedToCreatedLinks, hoveredNote);
+				var canContinue = $elm$core$List$isEmpty(
+					$author$project$Create$getCreatedLinks(createModeInternal));
+				return A8($author$project$Create$DiscussionChosenView, graph, note, question, selectedNote, selectedNoteIsLinked, notesAssociatedToCreatedLinks, hoveredNote, canContinue);
 			case 3:
 				var createModeInternal = create.b;
 				var string = create.c;
@@ -20470,6 +20476,7 @@ var $author$project$Main$tabView = function (content) {
 					var selectedNoteIsLinked = _v9.e;
 					var notesAssociatedToCreatedLinks = _v9.f;
 					var hoverNote = _v9.g;
+					var canContinue = _v9.h;
 					var linkNode = selectedNoteIsLinked ? A2(
 						$mdgriffith$elm_ui$Element$column,
 						_List_fromArray(
@@ -20501,6 +20508,7 @@ var $author$project$Main$tabView = function (content) {
 							n: $mdgriffith$elm_ui$Element$text('Create Link'),
 							v: $elm$core$Maybe$Just($author$project$Main$CreateTabCreateLinkForSelectedNote)
 						});
+					var continueLabel = canContinue ? $mdgriffith$elm_ui$Element$text('Continue without linking') : $mdgriffith$elm_ui$Element$text('Finish adding links');
 					return A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
@@ -20594,7 +20602,11 @@ var $author$project$Main$tabView = function (content) {
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$CreateTabToChooseDiscussion),
-										$mdgriffith$elm_ui$Element$text('Done Linking'))
+										$mdgriffith$elm_ui$Element$text('Find more notes to link')),
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just($author$project$Main$CreateTabNextStep),
+										continueLabel)
 									])),
 								A4(
 								$author$project$Main$svgGraph,
