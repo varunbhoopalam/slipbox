@@ -671,6 +671,7 @@ tabView content =
               , source
               , discussions
               , button ( Just EditModeToChooseDiscussion ) ( Element.text "Add Links" )
+              , button ( Just <| DiscoveryModeStartNewDiscussion note ) ( Element.text "Start New Discussion From Note")
               , button ( Just <| EditModeToConfirmDelete note ) ( Element.text "Delete" )
               , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]

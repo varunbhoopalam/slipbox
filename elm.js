@@ -19839,6 +19839,11 @@ var $author$project$Main$tabView = function (content) {
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just(
+											$author$project$Main$DiscoveryModeStartNewDiscussion(note)),
+										$mdgriffith$elm_ui$Element$text('Start New Discussion From Note')),
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just(
 											$author$project$Main$EditModeToConfirmDelete(note)),
 										$mdgriffith$elm_ui$Element$text('Delete')),
 										A2(
