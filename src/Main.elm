@@ -1450,12 +1450,21 @@ viewGraphNote onClick mouseOver mouseOut graphNote =
         xCenter = center x
         yCenter = center y
         transformation = "rotate(45 " ++ x ++ " " ++ y ++ ")"
+        fillAttribute =
+          if Note.getVariant note == Note.Regular then
+            [ Svg.Attributes.fill "rgba(137, 196, 244, 1)" ]
+          else
+            []
+        g = Svg.g <| List.concat
+          [ [ Svg.Attributes.cursor "Pointer"
+            , Svg.Events.onClick <| onClick note
+            , Svg.Events.onMouseOver <| mouseOver note
+            , Svg.Events.onMouseOut mouseOut
+            ]
+          , fillAttribute
+          ]
       in
-      gLambda note
-        [ svgRect xCenter yCenter
-        , svgRectTransform xCenter yCenter transformation
-        ]
-
+      g [ svgRect xCenter yCenter, svgRectTransform xCenter yCenter transformation]
 
     Linked note x y ->
       let
@@ -2045,8 +2054,7 @@ svgCircleNoFill cx cy r =
 
 svgRectTransform x y transform =
   Svg.rect
-    [ Svg.Attributes.fill "rgb(0,0,0)"
-    , Svg.Attributes.width "20"
+    [ Svg.Attributes.width "20"
     , Svg.Attributes.height "20"
     , Svg.Attributes.x x
     , Svg.Attributes.y y
