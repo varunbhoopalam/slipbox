@@ -28,12 +28,14 @@ import Source
 
 type Create
   = NoteInput CoachingModal CreateModeInternal
-  | ChooseDiscussion CoachingModal CreateModeInternal
+  | ChooseDiscussion CoachingModal CreateModeInternal Filter
   | FindLinksForDiscussion CoachingModal Graph.Graph CreateModeInternal Discussion SelectedNote HoveredNote
   | DesignateDiscussionEntryPoint CoachingModal CreateModeInternal String
   | ChooseSourceCategory CoachingModal CreateModeInternal String
   | CreateNewSource CoachingModal CreateModeInternal Title Author Content
   | PromptCreateAnother CreateModeInternal
+
+type alias Filter = String
 
 init : Create
 init =
@@ -50,15 +52,15 @@ toggleCoachingModal create =
 next : Create -> Create
 next create =
   case create of
-    NoteInput coachingModal createModeInternal -> ChooseDiscussion coachingModal createModeInternal
-    ChooseDiscussion coachingModal createModeInternal -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
+    NoteInput coachingModal createModeInternal -> ChooseDiscussion coachingModal createModeInternal ""
+    ChooseDiscussion coachingModal createModeInternal _ -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
     DesignateDiscussionEntryPoint coachingModal createModeInternal _ -> ChooseSourceCategory coachingModal createModeInternal ""
     _ -> create
 
 toAddLinkState : Note.Note -> Slipbox.Slipbox -> Create -> Create
 toAddLinkState question slipbox create =
   case create of
-    ChooseDiscussion coachingModal createModeInternal ->
+    ChooseDiscussion coachingModal createModeInternal _ ->
       FindLinksForDiscussion
         coachingModal
         ( Graph.simulatePositions
@@ -73,7 +75,7 @@ toChooseDiscussionState : Create -> Create
 toChooseDiscussionState create =
   case create of
     FindLinksForDiscussion coachingModal _ createModeInternal _ _ _ ->
-      ChooseDiscussion coachingModal createModeInternal
+      ChooseDiscussion coachingModal createModeInternal ""
     _ -> create
 
 createLink : Create -> Create
@@ -174,6 +176,7 @@ type Input
   | SourceTitle String
   | SourceAuthor String
   | SourceContent String
+  | Filter String
 
 updateInput : Input -> Create -> Create
 updateInput input create =
@@ -210,22 +213,30 @@ updateInput input create =
           CreateNewSource coachingModal internal title author content
         _ -> create
 
+    Filter filter ->
+      case create of
+        ChooseDiscussion modal internal _ ->
+          ChooseDiscussion modal internal filter
+        _ -> create
+
+
 type alias CoachingOpen = Bool
 type alias CanContinue = Bool
 type alias SelectedNoteIsLinked = Bool
 type alias NotesAssociatedToCreatedLinks = List Note.Note
 type alias HoveredNote = Maybe Note.Note
+type alias Discussions = List Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
-  | ChooseDiscussionView CoachingOpen CanContinue CreatedNote
+  | ChooseDiscussionView CoachingOpen CanContinue CreatedNote Filter Discussions
   | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks HoveredNote
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
   | PromptCreateAnotherView CreatedNote
 
-view : Create -> CreateView
-view create =
+view : Slipbox.Slipbox -> Create -> CreateView
+view slipbox create =
   case create of
     NoteInput coachingModal createModeInternal ->
       let
@@ -234,12 +245,15 @@ view create =
       in
       NoteInputView (isOpen coachingModal) canContinue note
 
-    ChooseDiscussion coachingModal createModeInternal ->
+    ChooseDiscussion coachingModal createModeInternal filter ->
       let
         note = getNote createModeInternal
         canContinue = List.isEmpty <| getCreatedLinks createModeInternal
+        dFilter = if String.isEmpty filter then Nothing else Just filter
+        discussions = Slipbox.getDiscussions dFilter slipbox
       in
-      ChooseDiscussionView (isOpen coachingModal) canContinue note
+      ChooseDiscussionView (isOpen coachingModal) canContinue note filter discussions
+      ChooseDiscussionView (isOpen coachingModal) canContinue note filter discussions
 
     FindLinksForDiscussion _ graph createModeInternal question selectedNote hoveredNote->
       let
@@ -412,7 +426,7 @@ getCoachingModal : Create -> ( Maybe CoachingModal )
 getCoachingModal model =
   case model of
     NoteInput coachingModal _ -> Just coachingModal
-    ChooseDiscussion coachingModal _ -> Just coachingModal
+    ChooseDiscussion coachingModal _ _ -> Just coachingModal
     FindLinksForDiscussion coachingModal _ _ _ _ _ -> Just coachingModal
     DesignateDiscussionEntryPoint coachingModal _ _ -> Just coachingModal
     ChooseSourceCategory coachingModal _ _ -> Just coachingModal
@@ -423,7 +437,7 @@ setCoachingModal : CoachingModal -> Create -> Create
 setCoachingModal coachingModal model =
    case model of
      NoteInput _ internal -> NoteInput coachingModal internal
-     ChooseDiscussion _ internal -> ChooseDiscussion coachingModal internal
+     ChooseDiscussion _ internal filter -> ChooseDiscussion coachingModal internal filter
 
      FindLinksForDiscussion _ graph internal question selectedNote hoveredNote ->
        FindLinksForDiscussion coachingModal graph internal question selectedNote hoveredNote
@@ -439,7 +453,7 @@ getInternal : Create -> CreateModeInternal
 getInternal create =
   case create of
     NoteInput _ createModeInternal -> createModeInternal
-    ChooseDiscussion _ createModeInternal -> createModeInternal
+    ChooseDiscussion _ createModeInternal _ -> createModeInternal
     FindLinksForDiscussion _ _ createModeInternal _ _ _ -> createModeInternal
     DesignateDiscussionEntryPoint _ createModeInternal _ -> createModeInternal
     ChooseSourceCategory _ createModeInternal _ -> createModeInternal

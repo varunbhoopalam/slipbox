@@ -882,7 +882,7 @@ tabView content =
             ]
 
     CreateModeTab create ->
-      case Create.view create of
+      case Create.view content.slipbox create of
         Create.NoteInputView coachingOpen canContinue noteInput ->
           let
             coachingText =
@@ -910,7 +910,7 @@ tabView content =
             , continueNode
             ]
 
-        Create.ChooseDiscussionView  coachingOpen canContinue note ->
+        Create.ChooseDiscussionView  coachingOpen canContinue note filter filteredDiscussions ->
           let
             coachingText =
               Element.paragraph
@@ -930,19 +930,8 @@ tabView content =
                   ( Element.text "Continue without linking" )
               else
                   ( Element.text "Next" )
-            discussions = Slipbox.getDiscussions Nothing content.slipbox
-            discussionTabularData =
-              let
-                toDiscussionRecord =
-                  \q ->
-                    { discussion = Note.getContent q
-                    , note = q
-                    }
-              in
-              List.map toDiscussionRecord discussions
-
             tableNode =
-              if List.isEmpty discussions then
+              if List.isEmpty <| Slipbox.getDiscussions Nothing content.slipbox then
                 Element.paragraph
                   [ Element.Font.center
                   , Element.width <| Element.maximum 800 Element.fill
@@ -953,52 +942,8 @@ tabView content =
                   , Element.text "Add a discussion in the next step to start linking notes together! "
                   ]
               else
-                --TODO: Add filter
-                --tableWithFilter filter notes EditModeUpdateInput EditModeSelectNote "Note"
-                let
-                    headerAttrs =
-                        [ Element.Font.bold
-                        , Element.Border.widthEach { bottom = 2, top = 0, left = 0, right = 0 }
-                        ]
-                in
-                Element.column
-                  [ Element.width <| Element.maximum 600 Element.fill
-                  , Element.height Element.fill
-                  , Element.spacingXY 10 10
-                  , Element.padding 5
-                  , Element.Border.width 2
-                  , Element.Border.rounded 6
-                  , Element.centerX
-                  ]
-                  [ Element.row [ Element.width Element.fill ]
-                    [ Element.el (Element.width ( Element.fillPortion 4 ) :: headerAttrs) <| Element.text "Discussion"
-                    ]
-                  , Element.el [ Element.width Element.fill ] <| Element.table
-                    [ Element.width Element.fill
-                    , Element.spacingXY 8 8
-                    , Element.centerX
-                    , Element.height <| Element.maximum 600 Element.fill
-                    , Element.scrollbarY
-                    ]
-                    { data = discussionTabularData
-                    , columns =
-                      [ { header = Element.none
-                        , width = Element.fillPortion 4
-                        , view =
-                              \row ->
-                                  Element.Input.button
-                                    []
-                                    { onPress = Just <| CreateTabToFindLinksForDiscussion row.note
-                                    , label =
-                                      Element.paragraph
-                                        []
-                                        [ Element.text row.discussion
-                                        ]
-                                    }
-                        }
-                      ]
-                    }
-                  ]
+                tableWithFilter
+                  filter filteredDiscussions ( \s -> CreateTabUpdateInput <| Create.Filter s ) CreateTabToFindLinksForDiscussion "Discussion"
           in
           column
             [ headingCenter "Further Existing Arguments"
