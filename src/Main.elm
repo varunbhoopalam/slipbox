@@ -213,7 +213,7 @@ type Msg
   | DiscoveryModeBack
   | DiscoveryModeSelectNote Note.Note
   | DiscoveryModeSubmit
-  | DiscoveryModeStartNewDiscussion
+  | DiscoveryModeStartNewDiscussion Note.Note
   | DiscoveryModeHoverNote Note.Note
   | DiscoveryModeStopHover
   | EditModeUpdateInput String
@@ -396,7 +396,8 @@ update message model =
     DiscoveryModeBack -> discoveryModeLambda Discovery.back
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
     DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
-    DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
+    DiscoveryModeStartNewDiscussion note ->
+      ( setTab ( DiscoveryModeTab <| Discovery.startNewDiscussion note ) model, Cmd.none )
     DiscoveryModeHoverNote note -> discoveryModeLambda <| Discovery.hover note
     DiscoveryModeStopHover -> discoveryModeLambda Discovery.stopHover
 
@@ -603,11 +604,11 @@ tabView content =
         Edit.ViewSelectNote filter strayNoteFilter notes ->
           column
             [ headingCenter "Select Note"
-            , Element.Input.checkbox []
+            , Element.el [ Element.centerX ] <| Element.Input.checkbox []
               { onChange = EditModeToggleStrayNoteFilter
               , icon = Element.Input.defaultCheckbox
               , checked = strayNoteFilter
-              , label = Element.Input.labelLeft [ ] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
+              , label = Element.Input.labelRight [] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
               }
             , tableWithFilter filter notes EditModeUpdateInput EditModeSelectNote "Note"
             ]
@@ -670,6 +671,7 @@ tabView content =
               , source
               , discussions
               , button ( Just EditModeToChooseDiscussion ) ( Element.text "Add Links" )
+              , button ( Just <| DiscoveryModeStartNewDiscussion note ) ( Element.text "Start New Discussion From Note")
               , button ( Just <| EditModeToConfirmDelete note ) ( Element.text "Delete" )
               , button ( Just EditModeSelectNoteScreen ) ( Element.text "Select Note Screen")
               ]
@@ -1146,7 +1148,7 @@ tabView content =
                   ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
               else if Note.getVariant selectedNote == Note.Regular then
                 button
-                  ( Just DiscoveryModeStartNewDiscussion )
+                  ( Just <| DiscoveryModeStartNewDiscussion selectedNote )
                   ( Element.el [ Element.centerX ] <| Element.text "Designate New Discussion Entry Point" )
               else
                 Element.none

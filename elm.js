@@ -8695,13 +8695,8 @@ var $author$project$Discovery$DesignateDiscussionEntryPoint = F2(
 	function (a, b) {
 		return {$: 2, a: a, b: b};
 	});
-var $author$project$Discovery$startNewDiscussion = function (discovery) {
-	if (!discovery.$) {
-		var selectedNote = discovery.b;
-		return A2($author$project$Discovery$DesignateDiscussionEntryPoint, selectedNote, '');
-	} else {
-		return discovery;
-	}
+var $author$project$Discovery$startNewDiscussion = function (note) {
+	return A2($author$project$Discovery$DesignateDiscussionEntryPoint, note, '');
 };
 var $author$project$Create$stopHover = function (create) {
 	if (create.$ === 2) {
@@ -9450,7 +9445,14 @@ var $author$project$Main$update = F2(
 			case 29:
 				return discoveryModeAndSlipboxLambda($author$project$Discovery$submit);
 			case 30:
-				return discoveryModeLambda($author$project$Discovery$startNewDiscussion);
+				var note = message.a;
+				return _Utils_Tuple2(
+					A2(
+						$author$project$Main$setTab,
+						$author$project$Main$DiscoveryModeTab(
+							$author$project$Discovery$startNewDiscussion(note)),
+						model),
+					$elm$core$Platform$Cmd$none);
 			case 31:
 				var note = message.a;
 				return discoveryModeLambda(
@@ -16466,7 +16468,9 @@ var $author$project$Main$DiscoveryModeBack = {$: 27};
 var $author$project$Main$DiscoveryModeSelectDiscussion = function (a) {
 	return {$: 26, a: a};
 };
-var $author$project$Main$DiscoveryModeStartNewDiscussion = {$: 30};
+var $author$project$Main$DiscoveryModeStartNewDiscussion = function (a) {
+	return {$: 30, a: a};
+};
 var $author$project$Main$DiscoveryModeSubmit = {$: 29};
 var $author$project$Main$DiscoveryModeUpdateInput = function (a) {
 	return {$: 25, a: a};
@@ -17081,8 +17085,8 @@ var $mdgriffith$elm_ui$Element$Input$Label = F3(
 	function (a, b, c) {
 		return {$: 0, a: a, b: b, c: c};
 	});
-var $mdgriffith$elm_ui$Element$Input$OnLeft = 1;
-var $mdgriffith$elm_ui$Element$Input$labelLeft = $mdgriffith$elm_ui$Element$Input$Label(1);
+var $mdgriffith$elm_ui$Element$Input$OnRight = 0;
+var $mdgriffith$elm_ui$Element$Input$labelRight = $mdgriffith$elm_ui$Element$Input$Label(0);
 var $author$project$Main$leftPad = {bS: 0, b4: 8, cc: 0, ci: 0};
 var $author$project$Main$rightWidth = {bS: 0, b4: 0, cc: 1, ci: 0};
 var $author$project$Main$listButtonWithBreakLink = F3(
@@ -19650,17 +19654,21 @@ var $author$project$Main$tabView = function (content) {
 							[
 								$author$project$Main$headingCenter('Select Note'),
 								A2(
-								$mdgriffith$elm_ui$Element$Input$checkbox,
-								_List_Nil,
-								{
-									f5: strayNoteFilter,
-									gE: $mdgriffith$elm_ui$Element$Input$defaultCheckbox,
-									n: A2(
-										$mdgriffith$elm_ui$Element$Input$labelLeft,
-										_List_Nil,
-										$mdgriffith$elm_ui$Element$text('Notes Unattached to Discussions Only (Stray Notes)')),
-									eS: $author$project$Main$EditModeToggleStrayNoteFilter
-								}),
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[$mdgriffith$elm_ui$Element$centerX]),
+								A2(
+									$mdgriffith$elm_ui$Element$Input$checkbox,
+									_List_Nil,
+									{
+										f5: strayNoteFilter,
+										gE: $mdgriffith$elm_ui$Element$Input$defaultCheckbox,
+										n: A2(
+											$mdgriffith$elm_ui$Element$Input$labelRight,
+											_List_Nil,
+											$mdgriffith$elm_ui$Element$text('Notes Unattached to Discussions Only (Stray Notes)')),
+										eS: $author$project$Main$EditModeToggleStrayNoteFilter
+									})),
 								A5($author$project$Main$tableWithFilter, filter, notes, $author$project$Main$EditModeUpdateInput, $author$project$Main$EditModeSelectNote, 'Note')
 							]));
 				case 1:
@@ -19832,6 +19840,11 @@ var $author$project$Main$tabView = function (content) {
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$EditModeToChooseDiscussion),
 										$mdgriffith$elm_ui$Element$text('Add Links')),
+										A2(
+										$author$project$Main$button,
+										$elm$core$Maybe$Just(
+											$author$project$Main$DiscoveryModeStartNewDiscussion(note)),
+										$mdgriffith$elm_ui$Element$text('Start New Discussion From Note')),
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just(
@@ -20777,7 +20790,8 @@ var $author$project$Main$tabView = function (content) {
 								[$mdgriffith$elm_ui$Element$centerX]),
 							$mdgriffith$elm_ui$Element$text('Go to Discussion'))) : ((!$author$project$Note$getVariant(selectedNote)) ? A2(
 						$author$project$Main$button,
-						$elm$core$Maybe$Just($author$project$Main$DiscoveryModeStartNewDiscussion),
+						$elm$core$Maybe$Just(
+							$author$project$Main$DiscoveryModeStartNewDiscussion(selectedNote)),
 						A2(
 							$mdgriffith$elm_ui$Element$el,
 							_List_fromArray(

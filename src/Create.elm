@@ -253,7 +253,6 @@ view slipbox create =
         discussions = Slipbox.getDiscussions dFilter slipbox
       in
       ChooseDiscussionView (isOpen coachingModal) canContinue note filter discussions
-      ChooseDiscussionView (isOpen coachingModal) canContinue note filter discussions
 
     FindLinksForDiscussion _ graph createModeInternal question selectedNote hoveredNote->
       let

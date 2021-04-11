@@ -100,9 +100,5 @@ submit slipbox discovery =
       ( newSlipbox, viewDiscussion discussion newSlipbox discovery )
     _ -> ( slipbox, discovery )
 
-startNewDiscussion : Discovery -> Discovery
-startNewDiscussion discovery =
-  case discovery of
-    ViewDiscussion _ selectedNote _ _ ->
-      DesignateDiscussionEntryPoint selectedNote ""
-    _ -> discovery
+startNewDiscussion : Note.Note -> Discovery
+startNewDiscussion note = DesignateDiscussionEntryPoint note ""
