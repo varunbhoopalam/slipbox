@@ -17085,8 +17085,8 @@ var $mdgriffith$elm_ui$Element$Input$Label = F3(
 	function (a, b, c) {
 		return {$: 0, a: a, b: b, c: c};
 	});
-var $mdgriffith$elm_ui$Element$Input$OnLeft = 1;
-var $mdgriffith$elm_ui$Element$Input$labelLeft = $mdgriffith$elm_ui$Element$Input$Label(1);
+var $mdgriffith$elm_ui$Element$Input$OnRight = 0;
+var $mdgriffith$elm_ui$Element$Input$labelRight = $mdgriffith$elm_ui$Element$Input$Label(0);
 var $author$project$Main$leftPad = {bS: 0, b4: 8, cc: 0, ci: 0};
 var $author$project$Main$rightWidth = {bS: 0, b4: 0, cc: 1, ci: 0};
 var $author$project$Main$listButtonWithBreakLink = F3(
@@ -19654,17 +19654,21 @@ var $author$project$Main$tabView = function (content) {
 							[
 								$author$project$Main$headingCenter('Select Note'),
 								A2(
-								$mdgriffith$elm_ui$Element$Input$checkbox,
-								_List_Nil,
-								{
-									f5: strayNoteFilter,
-									gE: $mdgriffith$elm_ui$Element$Input$defaultCheckbox,
-									n: A2(
-										$mdgriffith$elm_ui$Element$Input$labelLeft,
-										_List_Nil,
-										$mdgriffith$elm_ui$Element$text('Notes Unattached to Discussions Only (Stray Notes)')),
-									eS: $author$project$Main$EditModeToggleStrayNoteFilter
-								}),
+								$mdgriffith$elm_ui$Element$el,
+								_List_fromArray(
+									[$mdgriffith$elm_ui$Element$centerX]),
+								A2(
+									$mdgriffith$elm_ui$Element$Input$checkbox,
+									_List_Nil,
+									{
+										f5: strayNoteFilter,
+										gE: $mdgriffith$elm_ui$Element$Input$defaultCheckbox,
+										n: A2(
+											$mdgriffith$elm_ui$Element$Input$labelRight,
+											_List_Nil,
+											$mdgriffith$elm_ui$Element$text('Notes Unattached to Discussions Only (Stray Notes)')),
+										eS: $author$project$Main$EditModeToggleStrayNoteFilter
+									})),
 								A5($author$project$Main$tableWithFilter, filter, notes, $author$project$Main$EditModeUpdateInput, $author$project$Main$EditModeSelectNote, 'Note')
 							]));
 				case 1:

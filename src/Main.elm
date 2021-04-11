@@ -604,11 +604,11 @@ tabView content =
         Edit.ViewSelectNote filter strayNoteFilter notes ->
           column
             [ headingCenter "Select Note"
-            , Element.Input.checkbox []
+            , Element.el [ Element.centerX ] <| Element.Input.checkbox []
               { onChange = EditModeToggleStrayNoteFilter
               , icon = Element.Input.defaultCheckbox
               , checked = strayNoteFilter
-              , label = Element.Input.labelLeft [ ] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
+              , label = Element.Input.labelRight [] <| Element.text "Notes Unattached to Discussions Only (Stray Notes)"
               }
             , tableWithFilter filter notes EditModeUpdateInput EditModeSelectNote "Note"
             ]
