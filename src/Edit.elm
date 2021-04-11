@@ -60,7 +60,7 @@ type EditView
   | ViewConfirmBreakLink Link.Link Graph.Graph SelectedNote HoveredNote
   | ViewConfirmDelete PreviousNoteSelected Graph.Graph SelectedNote HoveredNote
   | AddLinkChooseDiscussionView Filter ( List Discussion ) ChangeMade
-  | AddLinkDiscussionChosenView PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink NotesAlreadyLinked SelectedNoteIsLinked
+  | AddLinkDiscussionChosenView PreviousNoteSelected Discussion Graph.Graph SelectedNote HoveredNote NotesDesignatedForLink NotesAlreadyLinked SelectedNoteIsLinked ChangeMade
 
 view : Slipbox.Slipbox -> Edit -> EditView
 view slipbox edit =
@@ -132,6 +132,7 @@ view slipbox edit =
         createdLinks
         ( previousNoteSelected :: ( List.map Tuple.first <| Slipbox.getLinkedNotes previousNoteSelected slipbox ) )
         ( List.any ( Note.is selectedNote ) createdLinks)
+        ( not <| List.isEmpty createdLinks )
 
 
 toSelectNote : Edit -> Edit
@@ -210,6 +211,9 @@ confirm slipbox edit =
       ( Slipbox.breakLink link slipbox, NoteSelected previousNoteSelected )
 
     AddLinkChooseDiscussion _ previousNoteSelected notesToLink ->
+      ( List.foldl ( Slipbox.addLink previousNoteSelected ) slipbox notesToLink, NoteSelected previousNoteSelected )
+
+    AddLinkDiscussionChosen previousNoteSelected _ _ _ _ notesToLink ->
       ( List.foldl ( Slipbox.addLink previousNoteSelected ) slipbox notesToLink, NoteSelected previousNoteSelected )
 
     ConfirmDelete previousNoteSelected _ _ _ ->

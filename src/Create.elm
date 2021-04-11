@@ -54,6 +54,7 @@ next create =
   case create of
     NoteInput coachingModal createModeInternal -> ChooseDiscussion coachingModal createModeInternal ""
     ChooseDiscussion coachingModal createModeInternal _ -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
+    FindLinksForDiscussion coachingModal _ createModeInternal _ _ _ -> DesignateDiscussionEntryPoint coachingModal createModeInternal ""
     DesignateDiscussionEntryPoint coachingModal createModeInternal _ -> ChooseSourceCategory coachingModal createModeInternal ""
     _ -> create
 
@@ -229,7 +230,7 @@ type alias Discussions = List Note.Note
 type CreateView
   = NoteInputView CoachingOpen CanContinue CreatedNote
   | ChooseDiscussionView CoachingOpen CanContinue CreatedNote Filter Discussions
-  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks HoveredNote
+  | DiscussionChosenView Graph.Graph CreatedNote Discussion SelectedNote SelectedNoteIsLinked NotesAssociatedToCreatedLinks HoveredNote CanContinue
   | DesignateDiscussionEntryPointView CreatedNote String
   | ChooseSourceCategoryView CreatedNote String
   | CreateNewSourceView CreatedNote Title Author Content
@@ -263,6 +264,7 @@ view slipbox create =
             ( linkIsForNote selectedNote )
             createdLinks
         notesAssociatedToCreatedLinks = List.map getNoteOnLink createdLinks
+        canContinue = List.isEmpty <| getCreatedLinks createModeInternal
       in
       DiscussionChosenView
         graph
@@ -272,6 +274,7 @@ view slipbox create =
         selectedNoteIsLinked
         notesAssociatedToCreatedLinks
         hoveredNote
+        canContinue
 
     DesignateDiscussionEntryPoint _ createModeInternal string ->
       DesignateDiscussionEntryPointView ( getNote createModeInternal ) string
