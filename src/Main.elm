@@ -213,7 +213,7 @@ type Msg
   | DiscoveryModeBack
   | DiscoveryModeSelectNote Note.Note
   | DiscoveryModeSubmit
-  | DiscoveryModeStartNewDiscussion
+  | DiscoveryModeStartNewDiscussion Note.Note
   | DiscoveryModeHoverNote Note.Note
   | DiscoveryModeStopHover
   | EditModeUpdateInput String
@@ -396,7 +396,8 @@ update message model =
     DiscoveryModeBack -> discoveryModeLambda Discovery.back
     DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
     DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
-    DiscoveryModeStartNewDiscussion -> discoveryModeLambda Discovery.startNewDiscussion
+    DiscoveryModeStartNewDiscussion note ->
+      ( setTab ( DiscoveryModeTab <| Discovery.startNewDiscussion note ) model, Cmd.none )
     DiscoveryModeHoverNote note -> discoveryModeLambda <| Discovery.hover note
     DiscoveryModeStopHover -> discoveryModeLambda Discovery.stopHover
 
@@ -1146,7 +1147,7 @@ tabView content =
                   ( Element.el [ Element.centerX ] <| Element.text "Go to Discussion" )
               else if Note.getVariant selectedNote == Note.Regular then
                 button
-                  ( Just DiscoveryModeStartNewDiscussion )
+                  ( Just <| DiscoveryModeStartNewDiscussion selectedNote )
                   ( Element.el [ Element.centerX ] <| Element.text "Designate New Discussion Entry Point" )
               else
                 Element.none
