@@ -777,7 +777,7 @@ tabView content =
             , tableWithFilter filter discussions EditModeUpdateInput EditModeChooseDiscussion "Discussion"
             ]
 
-        Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked ->
+        Edit.AddLinkDiscussionChosenView note discussion graph selectedNote hoverNote notesToLink notesNotSelectable selectedNoteIsLinked changeMade ->
           let
             linkNode =
               if selectedNoteIsLinked then
@@ -801,6 +801,11 @@ tabView content =
                   { onPress = Just EditModeAddLink
                   , label = Element.text "Create Link"
                   }
+            finishButton =
+              if changeMade then
+                button ( Just EditModeConfirm ) ( Element.text "Finish Adding Links" )
+              else
+                Element.none
           in
           Element.row
             [ Element.width Element.fill
@@ -842,7 +847,8 @@ tabView content =
                   ]
                 , linkNode
                 ]
-              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Done Linking" )
+              , button ( Just EditModeToChooseDiscussion ) ( Element.text "Find more notes to link" )
+              , finishButton
               ]
             , svgGraph graph ( EditModeAddLinkFlow notesToLink notesNotSelectable ) selectedNote hoverNote
             ]

@@ -7414,6 +7414,16 @@ var $author$project$Edit$confirm = F2(
 						slipbox,
 						notesToLink),
 					$author$project$Edit$NoteSelected(previousNoteSelected));
+			case 6:
+				var previousNoteSelected = edit.a;
+				var notesToLink = edit.f;
+				return _Utils_Tuple2(
+					A3(
+						$elm$core$List$foldl,
+						$author$project$Slipbox$addLink(previousNoteSelected),
+						slipbox,
+						notesToLink),
+					$author$project$Edit$NoteSelected(previousNoteSelected));
 			case 4:
 				var previousNoteSelected = edit.a;
 				return _Utils_Tuple2(
@@ -19367,9 +19377,9 @@ var $author$project$Edit$AddLinkChooseDiscussionView = F3(
 	function (a, b, c) {
 		return {$: 5, a: a, b: b, c: c};
 	});
-var $author$project$Edit$AddLinkDiscussionChosenView = F8(
-	function (a, b, c, d, e, f, g, h) {
-		return {$: 6, a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h};
+var $author$project$Edit$AddLinkDiscussionChosenView = F9(
+	function (a, b, c, d, e, f, g, h, i) {
+		return {$: 6, a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h, i: i};
 	});
 var $author$project$Edit$ViewConfirmBreakLink = F4(
 	function (a, b, c, d) {
@@ -19571,7 +19581,7 @@ var $author$project$Edit$view = F2(
 				var selectedNote = edit.d;
 				var hoveredNote = edit.e;
 				var createdLinks = edit.f;
-				return A8(
+				return A9(
 					$author$project$Edit$AddLinkDiscussionChosenView,
 					previousNoteSelected,
 					discussion,
@@ -19589,7 +19599,8 @@ var $author$project$Edit$view = F2(
 					A2(
 						$elm$core$List$any,
 						$author$project$Note$is(selectedNote),
-						createdLinks));
+						createdLinks),
+					!$elm$core$List$isEmpty(createdLinks));
 		}
 	});
 var $author$project$Export$ConfigureContentView = F2(
@@ -20111,6 +20122,7 @@ var $author$project$Main$tabView = function (content) {
 					var notesToLink = _v1.f;
 					var notesNotSelectable = _v1.g;
 					var selectedNoteIsLinked = _v1.h;
+					var changeMade = _v1.i;
 					var linkNode = selectedNoteIsLinked ? A2(
 						$mdgriffith$elm_ui$Element$column,
 						_List_fromArray(
@@ -20142,6 +20154,10 @@ var $author$project$Main$tabView = function (content) {
 							n: $mdgriffith$elm_ui$Element$text('Create Link'),
 							v: $elm$core$Maybe$Just($author$project$Main$EditModeAddLink)
 						});
+					var finishButton = changeMade ? A2(
+						$author$project$Main$button,
+						$elm$core$Maybe$Just($author$project$Main$EditModeConfirm),
+						$mdgriffith$elm_ui$Element$text('Finish Adding Links')) : $mdgriffith$elm_ui$Element$none;
 					return A2(
 						$mdgriffith$elm_ui$Element$row,
 						_List_fromArray(
@@ -20236,7 +20252,8 @@ var $author$project$Main$tabView = function (content) {
 										A2(
 										$author$project$Main$button,
 										$elm$core$Maybe$Just($author$project$Main$EditModeToChooseDiscussion),
-										$mdgriffith$elm_ui$Element$text('Done Linking'))
+										$mdgriffith$elm_ui$Element$text('Find more notes to link')),
+										finishButton
 									])),
 								A4(
 								$author$project$Main$svgGraph,
