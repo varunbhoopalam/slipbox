@@ -18047,7 +18047,6 @@ var $author$project$Main$svgRectTransform = F3(
 			$elm$svg$Svg$rect,
 			_List_fromArray(
 				[
-					$elm$svg$Svg$Attributes$fill('rgb(0,0,0)'),
 					$elm$svg$Svg$Attributes$width('20'),
 					$elm$svg$Svg$Attributes$height('20'),
 					$elm$svg$Svg$Attributes$x(x),
@@ -18425,6 +18424,25 @@ var $author$project$Main$viewGraphNote = F4(
 				var x = graphNote.b;
 				var y = graphNote.c;
 				var transformation = 'rotate(45 ' + (x + (' ' + (y + ')')));
+				var fillAttribute = (!$author$project$Note$getVariant(note)) ? _List_fromArray(
+					[
+						$elm$svg$Svg$Attributes$fill('rgba(137, 196, 244, 1)')
+					]) : _List_Nil;
+				var g = $elm$svg$Svg$g(
+					$elm$core$List$concat(
+						_List_fromArray(
+							[
+								_List_fromArray(
+								[
+									$elm$svg$Svg$Attributes$cursor('Pointer'),
+									$elm$svg$Svg$Events$onClick(
+									onClick(note)),
+									$elm$svg$Svg$Events$onMouseOver(
+									mouseOver(note)),
+									$elm$svg$Svg$Events$onMouseOut(mouseOut)
+								]),
+								fillAttribute
+							])));
 				var center = function (str) {
 					var _v1 = $elm$core$String$toFloat(str);
 					if (!_v1.$) {
@@ -18436,9 +18454,7 @@ var $author$project$Main$viewGraphNote = F4(
 				};
 				var xCenter = center(x);
 				var yCenter = center(y);
-				return A2(
-					gLambda,
-					note,
+				return g(
 					_List_fromArray(
 						[
 							A2($author$project$Main$svgRect, xCenter, yCenter),
