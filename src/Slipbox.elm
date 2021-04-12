@@ -10,6 +10,7 @@ module Slipbox exposing
   , unsavedChanges
   , saveChanges
   , getDiscussionTreeWithCollapsedDiscussions
+  , getAllDiscussionsAndLinksBetweenDiscussions
   , addNote
   , addDiscussion
   , addSource
@@ -193,6 +194,62 @@ getStrayNotes filter slipbox =
   List.filter
     noteNotAssociatedToAnyDiscussion
     <| getNotes filter slipbox
+
+{-| Returns all discussions in a slipbox and which discussions are linked
+Discussions are linked if there is a chain of notes that go from one discussion's entry point to another discussion's entry point
+Example:
+Discussion A and Discussion C are not linked if the entry point of Discussion B is in the chain of notes that connect
+the Discussion A and C entry points. In this case the following links would exist
+Link: A - B
+Link: B - C
+-}
+getAllDiscussionsAndLinksBetweenDiscussions : Slipbox -> ( List Note.Note, List Link.Link )
+getAllDiscussionsAndLinksBetweenDiscussions slipbox =
+  let
+    discussions = getDiscussions Nothing slipbox
+    discussionsWithLinkedDiscussions =
+      List.map
+      ( \d ->
+        ( d
+        , List.filter
+          ( \n -> Note.getVariant n == Note.Discussion )
+          <| Tuple.first <| getDiscussionTreeWithCollapsedDiscussions d slipbox
+        )
+      )
+      discussions
+    uniqueDiscussionLinks =
+      List.foldl
+        ( \(discussion, linkedDiscussions) existingDiscussionLinks ->
+          List.concat
+            [ List.filterMap
+              ( \linkedNode ->
+                if isUniqueLink existingDiscussionLinks (discussion, linkedNode) then
+                  Just (discussion, linkedNode)
+                else
+                  Nothing
+              )
+              linkedDiscussions
+            , existingDiscussionLinks
+            ]
+        )
+        []
+        discussionsWithLinkedDiscussions
+    uniqueLinks =
+      List.map
+        ( \(alpha, beta) -> Tuple.first <| Link.create ( .idGenerator <| getContent slipbox ) alpha beta )
+        uniqueDiscussionLinks
+  in
+  ( discussions, uniqueLinks )
+
+isUniqueLink : ( List ( Note.Note, Note.Note ) ) -> ( Note.Note, Note.Note ) -> Bool
+isUniqueLink existingDiscussionLinks (alphaProspect, betaProspect) =
+  not <| List.any
+    (\(alpha, beta) ->
+      ( ( Note.is alpha alphaProspect ) && ( Note.is beta betaProspect ) )
+      ||
+      ( ( Note.is beta alphaProspect ) && ( Note.is alpha betaProspect ) )
+    )
+    existingDiscussionLinks
 
 isADifferentDiscussion : Note.Note -> Note.Note -> Bool
 isADifferentDiscussion note discussion =
