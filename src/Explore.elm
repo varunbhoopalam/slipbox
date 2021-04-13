@@ -1,7 +1,7 @@
 module Explore exposing
   ( Explore
   , init
-  , ExploreView
+  , ExploreView(..)
   , view
   , hover
   , stopHover

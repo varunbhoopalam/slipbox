@@ -10,6 +10,7 @@ import Element.Background
 import Element.Border
 import Element.Font
 import Element.Input
+import Explore
 import Export
 import File.Download
 import FontAwesome.Attributes
@@ -145,6 +146,25 @@ setExport export model =
         _ -> model
     _ -> model
 
+getExplore : Model -> Maybe Explore.Explore
+getExplore model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExploreModeTab explore -> Just explore
+        _ -> Nothing
+    _ -> Nothing
+
+setExplore : Explore.Explore -> Model -> Model
+setExplore explore model =
+  case model of
+    Session content ->
+      case content.tab of
+        ExploreModeTab _ ->
+          Session { content | tab = ExploreModeTab explore }
+        _ -> model
+    _ -> model
+
 -- CONTENT
 type alias Content = 
   { tab: Tab
@@ -166,12 +186,14 @@ type Tab
   | CreateModeTab Create.Create
   | DiscoveryModeTab Discovery.Discovery
   | ExportModeTab Export.Export
+  | ExploreModeTab Explore.Explore
 
 type Tab_
   = EditMode
   | CreateMode
   | DiscoveryMode
   | ExportMode
+  | ExploreMode
 
 -- INIT
 
@@ -198,7 +220,6 @@ type Msg
   | CreateTabToChooseDiscussion
   | CreateTabCreateLinkForSelectedNote
   | CreateTabRemoveLink
-  | CreateTabSelectNote Note.Note
   | CreateTabContinueWithSelectedSource Source.Source
   | CreateTabNoSource
   | CreateTabNewSource
@@ -206,24 +227,16 @@ type Msg
   | CreateTabUpdateInput Create.Input
   | CreateTabCreateAnotherNote
   | CreateTabSubmitNewDiscussion
-  | CreateTabHoverNote Note.Note
-  | CreateTabStopHover
   | DiscoveryModeUpdateInput String
   | DiscoveryModeSelectDiscussion Note.Note
   | DiscoveryModeBack
-  | DiscoveryModeSelectNote Note.Note
   | DiscoveryModeSubmit
   | DiscoveryModeStartNewDiscussion Note.Note
-  | DiscoveryModeHoverNote Note.Note
-  | DiscoveryModeStopHover
   | EditModeUpdateInput String
   | EditModeSelectNote Note.Note
   | EditModeConfirmBreakLink Note.Note Link.Link
-  | EditModeSelectNoteOnGraph Note.Note
   | EditModeCancel
   | EditModeConfirm
-  | EditModeHoverNote Note.Note
-  | EditModeStopHover
   | EditModeSelectNoteScreen
   | EditModeAddLink
   | EditModeCancelAddLink
@@ -236,6 +249,9 @@ type Msg
   | ExportModeToggleDiscussion Note.Note
   | ExportModeRemove Note.Note
   | ExportModeFinish
+  | HoverNote Note.Note
+  | StopHoverNote
+  | SelectNoteOnGraph Note.Note
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
@@ -253,6 +269,7 @@ update message model =
     discoveryModeLambda updater = getAndSetLambda getDiscovery setDiscovery updater
     editModeLambda updater = getAndSetLambda getEdit setEdit updater
     exportModeLambda updater = getAndSetLambda getExport setExport updater
+    exploreModeLambda updater = getAndSetLambda getExplore setExplore updater
 
     getAndSetWithSlipboxLambda getter setter updater =
       case getSlipbox model of
@@ -357,6 +374,17 @@ update message model =
                       )
                     _ -> ( model, Cmd.none )
 
+            ExploreMode ->
+              case content.tab of
+                ExploreModeTab _ -> ( model, Cmd.none )
+                _ ->
+                  case getSlipbox model of
+                    Just slipbox ->
+                      ( Session { content | tab = ExploreModeTab <| Explore.init slipbox }
+                      , Cmd.none
+                      )
+                    _ -> ( model, Cmd.none )
+
         _ -> ( model, Cmd.none )
 
     ToggleSideNav ->
@@ -377,7 +405,6 @@ update message model =
     CreateTabToChooseDiscussion -> createModeLambda Create.toChooseDiscussionState
     CreateTabCreateLinkForSelectedNote -> createModeLambda Create.createLink
     CreateTabRemoveLink -> createModeLambda Create.removeLink
-    CreateTabSelectNote newSelectedNote -> createModeLambda <| Create.selectNote newSelectedNote
     CreateTabUpdateInput input -> createModeLambda <| Create.updateInput input
     CreateTabContinueWithSelectedSource source -> createModeAndSlipboxLambda <| Create.selectSource source
     CreateTabNoSource -> createModeAndSlipboxLambda Create.noSource
@@ -385,21 +412,17 @@ update message model =
     CreateTabSubmitNewSource -> createModeAndSlipboxLambda Create.submitNewSource
     CreateTabCreateAnotherNote -> createModeLambda (\_ -> Create.init)
     CreateTabSubmitNewDiscussion -> createModeLambda Create.submitNewDiscussion
-    CreateTabHoverNote note -> createModeLambda <| Create.hover note
-    CreateTabStopHover -> createModeLambda Create.stopHover
 
     DiscoveryModeUpdateInput input -> discoveryModeLambda <| Discovery.updateInput input
     DiscoveryModeSelectDiscussion discussion ->
       case getSlipbox model of
-        Just slipbox -> discoveryModeLambda <| Discovery.viewDiscussion discussion slipbox
+        Just slipbox ->
+          ( setTab ( DiscoveryModeTab <| Discovery.viewDiscussion discussion slipbox ) model, Cmd.none )
         Nothing -> ( model, Cmd.none )
     DiscoveryModeBack -> discoveryModeLambda Discovery.back
-    DiscoveryModeSelectNote note -> discoveryModeLambda <| Discovery.selectNote note
     DiscoveryModeSubmit -> discoveryModeAndSlipboxLambda Discovery.submit
     DiscoveryModeStartNewDiscussion note ->
       ( setTab ( DiscoveryModeTab <| Discovery.startNewDiscussion note ) model, Cmd.none )
-    DiscoveryModeHoverNote note -> discoveryModeLambda <| Discovery.hover note
-    DiscoveryModeStopHover -> discoveryModeLambda Discovery.stopHover
 
     EditModeUpdateInput input -> editModeLambda <| Edit.updateInput input
     EditModeSelectNote note -> ( setTab ( EditModeTab <| Edit.select note ) model, Cmd.none )
@@ -408,11 +431,8 @@ update message model =
         Just slipbox ->
           ( setTab ( EditModeTab <| Edit.toConfirmBreakLink note link slipbox ) model, Cmd.none )
         Nothing -> ( model, Cmd.none )
-    EditModeSelectNoteOnGraph note -> editModeLambda <| Edit.selectNoteOnGraph note
     EditModeCancel -> editModeLambda Edit.cancel
     EditModeConfirm -> editModeAndSlipboxLambda Edit.confirm
-    EditModeHoverNote note -> editModeLambda <| Edit.hover note
-    EditModeStopHover -> editModeLambda Edit.stopHover
     EditModeSelectNoteScreen -> editModeLambda Edit.toSelectNote
     EditModeAddLink -> editModeLambda Edit.addLink
     EditModeCancelAddLink -> editModeLambda Edit.cancelAddLink
@@ -450,6 +470,35 @@ update message model =
               )
             Nothing -> ( model, Cmd.none )
         Nothing -> ( model, Cmd.none )
+    HoverNote note ->
+      case model of
+        Session content ->
+          case content.tab of
+            EditModeTab _ -> editModeLambda <| Edit.hover note
+            CreateModeTab _ -> createModeLambda <| Create.hover note
+            DiscoveryModeTab _ -> discoveryModeLambda <| Discovery.hover note
+            ExploreModeTab _ -> exploreModeLambda <| Explore.hover note
+            _ -> ( model, Cmd.none )
+        _ -> ( model, Cmd.none )
+    StopHoverNote ->
+      case model of
+        Session content ->
+          case content.tab of
+            EditModeTab _ -> editModeLambda Edit.stopHover
+            CreateModeTab _ -> createModeLambda Create.stopHover
+            DiscoveryModeTab _ -> discoveryModeLambda Discovery.stopHover
+            ExploreModeTab _ -> exploreModeLambda Explore.stopHover
+            _ -> ( model, Cmd.none )
+        _ -> ( model, Cmd.none )
+    SelectNoteOnGraph note ->
+      case model of
+        Session content ->
+          case content.tab of
+            EditModeTab _ -> editModeLambda <| Edit.selectNoteOnGraph note
+            CreateModeTab _ -> createModeLambda <| Create.selectNote note
+            DiscoveryModeTab _ -> discoveryModeLambda <| Discovery.selectNote note
+            _ -> ( model, Cmd.none )
+        _ -> ( model, Cmd.none )
 
 newContent : Content
 newContent =
@@ -754,7 +803,7 @@ tabView content =
                   ]
                 ]
               ]
-            , svgGraph graph ( ConfirmBreakLink linkToBreak ) selectedNote hoverNote
+            , svgGraph graph ( ConfirmBreakLink linkToBreak selectedNote ) hoverNote
             ]
 
         Edit.AddLinkChooseDiscussionView filter discussions changeMade ->
@@ -850,7 +899,7 @@ tabView content =
               , button ( Just EditModeToChooseDiscussion ) ( Element.text "Find more notes to link" )
               , finishButton
               ]
-            , svgGraph graph ( EditModeAddLinkFlow notesToLink notesNotSelectable ) selectedNote hoverNote
+            , svgGraph graph ( EditModeAddLinkFlow notesToLink notesNotSelectable selectedNote ) hoverNote
             ]
 
         Edit.ViewConfirmDelete note graph selectedNote hoveredNote ->
@@ -886,7 +935,7 @@ tabView content =
                   ]
                 ]
               ]
-            , svgGraph graph ( ConfirmDelete note ) selectedNote hoveredNote
+            , svgGraph graph ( ConfirmDelete note selectedNote ) hoveredNote
             ]
 
     CreateModeTab create ->
@@ -1042,7 +1091,7 @@ tabView content =
               , button ( Just CreateTabToChooseDiscussion ) ( Element.text "Find more notes to link" )
               , button ( Just CreateTabNextStep ) continueLabel
               ]
-            , svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks ) selectedNote hoverNote
+            , svgGraph createTabGraph ( DiscussionChosenView notesAssociatedToCreatedLinks selectedNote ) hoverNote
             ]
 
         Create.DesignateDiscussionEntryPointView note input ->
@@ -1197,7 +1246,7 @@ tabView content =
                 ]
               , button ( Just DiscoveryModeBack ) ( Element.text "Back" )
               ]
-            , svgGraph discussionGraph ViewDiscussionView selectedNote hoverNote
+            , svgGraph discussionGraph ( ViewDiscussionView selectedNote ) hoverNote
             ]
 
         Discovery.ChooseDiscussionView filterInput ->
@@ -1318,6 +1367,26 @@ tabView content =
           [ headingCenter "Success! Your new project has downloaded. "
           , button ( Just ExportModeContinue ) ( Element.text "Start Another Project" )
           ]
+
+    ExploreModeTab explore -> case Explore.view explore of
+      Explore.ErrorStateNoDiscussionsView ->
+        column
+          [ headingCenter "We cannot use explore mode without discussions!"
+          , Element.paragraph [ Element.width <| Element.maximum 800 Element.fill, Element.centerX ]
+            [ Element.text "Explore Mode is used to generate insight from our discussions! "
+            , Element.text "Start some discussions! Adding relevant facts to discussions is the sustainable way to use this application! "
+            , Element.text "When you have a discussion you want to do something with, come back here! "
+            , Element.text "As you build up your knowledge, your discussions will be come richer with knowledge and more useful to you. "
+            , Element.text "We bet there will be a lot to explore soon! "
+            ]
+          -- TODO : What feature can help people more directly create discussions from what they already have?
+          , button ( Just <| ChangeTab CreateMode ) ( Element.text "Create Notes and Discussions")
+          ]
+
+      Explore.ForceDirectedGraphView graph hoveredNote ->
+        svgGraph graph ExploreForceDirectedGraph hoveredNote
+
+
 
 
 coaching : Bool -> Element Msg -> Element Msg
@@ -1751,6 +1820,7 @@ leftNav sideNavState selectedTab slipbox =
           [ leftNavExpandedButtonLambda Element.alignLeft brainIcon "Discovery Mode" ( ChangeTab DiscoveryMode ) <| sameTab selectedTab DiscoveryMode
           , leftNavExpandedButtonLambda Element.alignLeft toolsIcon "Edit Mode" ( ChangeTab EditMode ) <| sameTab selectedTab EditMode
           , leftNavExpandedButtonLambda Element.alignLeft exportIcon "Export Mode" ( ChangeTab ExportMode ) <| sameTab selectedTab ExportMode
+          , leftNavExpandedButtonLambda Element.alignLeft mapIcon "Explore Mode" ( ChangeTab ExploreMode ) <| sameTab selectedTab ExploreMode
           ]
         ]
     Contracted ->
@@ -1775,6 +1845,7 @@ leftNav sideNavState selectedTab slipbox =
           [ leftNavContractedButtonLambda Element.alignLeft ( ChangeTab DiscoveryMode ) brainIcon <| sameTab selectedTab DiscoveryMode
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab EditMode ) toolsIcon <| sameTab selectedTab EditMode
           , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab ExportMode ) exportIcon <| sameTab selectedTab ExportMode
+          , leftNavContractedButtonLambda Element.alignLeft ( ChangeTab ExploreMode ) mapIcon <| sameTab selectedTab ExploreMode
           ]
         ]
 
@@ -1801,6 +1872,11 @@ sameTab tab tab_ =
         ExportMode -> True
         _ -> False
 
+    ExploreModeTab _ ->
+      case tab_ of
+        ExploreMode -> True
+        _ -> False
+
 iconBuilder : FontAwesome.Icon.Icon -> Element Msg
 iconBuilder icon =
   Element.el []
@@ -1819,6 +1895,9 @@ saveIcon = iconBuilder FontAwesome.Solid.save
 
 brainIcon : Element Msg
 brainIcon = iconBuilder FontAwesome.Solid.brain
+
+mapIcon : Element Msg
+mapIcon = iconBuilder FontAwesome.Solid.map
 
 toolsIcon : Element Msg
 toolsIcon = iconBuilder FontAwesome.Solid.tools
@@ -1946,49 +2025,47 @@ tableWithFilter filter notes updateFilter onSelect tableTitle =
 
 -- SVG HELPERS
 type TabGraph
- = ConfirmBreakLink Link.Link
- | DiscussionChosenView ( List Note.Note )
- | ViewDiscussionView
- | EditModeAddLinkFlow ( List Note.Note ) ( List Note.Note )
- | ConfirmDelete Note.Note
+ = ConfirmBreakLink Link.Link Note.Note
+ | DiscussionChosenView ( List Note.Note ) Note.Note
+ | ViewDiscussionView Note.Note
+ | EditModeAddLinkFlow ( List Note.Note ) ( List Note.Note ) Note.Note
+ | ConfirmDelete Note.Note Note.Note
+ | ExploreForceDirectedGraph
 
-svgGraph : Graph.Graph -> TabGraph -> Note.Note -> Maybe Note.Note -> Element Msg
-svgGraph graph tab selectedNote maybeHoverNote =
+svgGraph : Graph.Graph -> TabGraph -> Maybe Note.Note -> Element Msg
+svgGraph graph tab maybeHoverNote =
   let
-
     linkLambda filterMap = List.filterMap filterMap graph.links
 
-    notesLambda onSelect onMouseOver onMouseOut mapper =
-      List.map ( \n -> viewGraphNote onSelect onMouseOver onMouseOut n ) <| List.map mapper graph.positions
+    notesLambda onSelect mapper =
+      List.map ( \n -> viewGraphNote onSelect HoverNote StopHoverNote n ) <| List.map mapper graph.positions
 
     ( links, notes ) =
       case tab of
-        ConfirmBreakLink link ->
+        ConfirmBreakLink link selectedNote ->
           ( linkLambda <| toGraphLinkDeleteLink graph.positions link
-          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover ( toGraphNote selectedNote )
+          , notesLambda SelectNoteOnGraph ( toGraphNote selectedNote )
           )
-
-        DiscussionChosenView newlyLinkedNotes ->
+        DiscussionChosenView newlyLinkedNotes selectedNote ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda CreateTabSelectNote CreateTabHoverNote CreateTabStopHover
-            ( toGraphNoteWithCreatedLinkState newlyLinkedNotes selectedNote )
+          , notesLambda SelectNoteOnGraph ( toGraphNoteWithCreatedLinkState newlyLinkedNotes selectedNote )
           )
-
-        ViewDiscussionView ->
+        ViewDiscussionView selectedNote ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda DiscoveryModeSelectNote DiscoveryModeHoverNote DiscoveryModeStopHover ( toGraphNote selectedNote )
+          , notesLambda SelectNoteOnGraph ( toGraphNote selectedNote )
           )
-
-        EditModeAddLinkFlow newlyLinkedNotes unselectableNotes ->
+        EditModeAddLinkFlow newlyLinkedNotes unselectableNotes selectedNote ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover
-            ( toGraphNoteWithCreatedLinkStateAndNoSelectState newlyLinkedNotes unselectableNotes selectedNote )
+          , notesLambda SelectNoteOnGraph ( toGraphNoteWithCreatedLinkStateAndNoSelectState newlyLinkedNotes unselectableNotes selectedNote )
           )
-
-        ConfirmDelete note ->
+        ConfirmDelete note selectedNote ->
           ( linkLambda <| toCreateTabGraphLink graph.positions
-          , notesLambda EditModeSelectNoteOnGraph EditModeHoverNote EditModeStopHover
-            ( toGraphNoteWithDeleteNoteState selectedNote note )
+          , notesLambda SelectNoteOnGraph ( toGraphNoteWithDeleteNoteState selectedNote note )
+          )
+        ExploreForceDirectedGraph ->
+          ( linkLambda <| toCreateTabGraphLink graph.positions
+          , notesLambda DiscoveryModeSelectDiscussion
+            (\n -> Discussion n.note (String.fromFloat n.x) (String.fromFloat n.y) )
           )
 
     legend = Element.el [ Element.alignBottom ] <|

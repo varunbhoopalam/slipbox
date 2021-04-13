@@ -49,8 +49,8 @@ view discovery =
     DesignateDiscussionEntryPoint selectedNote discussionInput ->
       DesignateDiscussionEntryPointView (Note.getContent selectedNote) discussionInput
 
-viewDiscussion : Discussion -> Slipbox.Slipbox -> Discovery -> Discovery
-viewDiscussion discussion slipbox _ =
+viewDiscussion : Discussion -> Slipbox.Slipbox -> Discovery
+viewDiscussion discussion slipbox =
   ViewDiscussion
     discussion
     discussion
@@ -97,7 +97,7 @@ submit slipbox discovery =
         ( slipboxWithNewDiscussion, discussion ) = Slipbox.addDiscussion discussionInput slipbox
         newSlipbox = Slipbox.addLink discussion selectedNote slipboxWithNewDiscussion
       in
-      ( newSlipbox, viewDiscussion discussion newSlipbox discovery )
+      ( newSlipbox, viewDiscussion discussion newSlipbox )
     _ -> ( slipbox, discovery )
 
 startNewDiscussion : Note.Note -> Discovery

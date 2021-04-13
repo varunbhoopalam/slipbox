@@ -223,7 +223,7 @@ getAllDiscussionsAndLinksBetweenDiscussions slipbox =
           List.concat
             [ List.filterMap
               ( \linkedNode ->
-                if isUniqueLink existingDiscussionLinks (discussion, linkedNode) then
+                if isUniqueLink existingDiscussionLinks (discussion, linkedNode) && ( not <| Note.is discussion linkedNode ) then
                   Just (discussion, linkedNode)
                 else
                   Nothing
